@@ -44,10 +44,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      # O Storage fica ligado: a migration do bucket "midia" e o upload de imagens precisam dele.
       - name: Subir Supabase local (migrations + seed)
         run: >-
           pnpm exec supabase start
-          -x realtime,storage-api,imgproxy,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          -x realtime,imgproxy,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
       - name: Exportar variáveis do Supabase local
         run: |
@@ -57,6 +58,8 @@ jobs:
             echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY:-$PUBLISHABLE_KEY}"
             echo "NEXT_PUBLIC_SITE_URL=http://localhost:3000"
             echo "DATABASE_URL=$DB_URL"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY:-$SECRET_KEY}"
+            echo "E2E_STORAGE=1"
             echo "MAILPIT_URL=${MAILPIT_URL:-${INBUCKET_URL:-http://127.0.0.1:54324}}"
           } >> "$GITHUB_ENV"
 

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { cache } from 'react';
 import { slugValido } from '@/domain/slug';
-import { buscarEmpresaPublicaPorSlug } from '@/server/db/admin';
+import { buscarEmpresaPublicaPorSlug, buscarSlugAtualPorAntigo } from '@/server/db/admin';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -15,10 +15,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: empresa ? empresa.nome : 'Buffet não encontrado' };
 }
 
-/** Página pública do buffet. Placeholder na Etapa 0: só o nome (nenhum outro dado é exposto). */
+/** Página pública do buffet. Placeholder: só o nome (nenhum outro dado é exposto). */
 export default async function PaginaPublicaBuffet({ params }: Props) {
-  const empresa = await buscar((await params).slug);
-  if (!empresa) notFound();
+  const { slug } = await params;
+  const empresa = await buscar(slug);
+  if (!empresa) {
+    // Link antigo ainda válido (troca de slug há menos de 12 meses): 308 para o atual.
+    const atual = slugValido(slug) ? await buscarSlugAtualPorAntigo(slug) : null;
+    if (atual) permanentRedirect(`/b/${atual}`);
+    notFound();
+  }
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center px-4 py-12 text-center">

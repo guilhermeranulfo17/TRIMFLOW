@@ -1,11 +1,17 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { DESTINO_PADRAO, ehRotaProtegida, ehRotaSoVisitante } from '@/server/auth/redirecionamento';
+import {
+  DESTINO_PADRAO,
+  ehRotaProtegida,
+  ehRotaSoVisitante,
+  precisaTrocarSenha,
+} from '@/server/auth/redirecionamento';
 
 /**
  * Renova a sessão do Supabase a cada requisição e aplica as regras de acesso:
  * - /app/** exige sessão (senão vai para /login?next=…)
  * - usuário logado em /login ou /cadastro vai para /app/leads
+ * - usuário com senha temporária (app_metadata.trocar_senha) vai para /nova-senha
  */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -41,6 +47,14 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.search = `?next=${encodeURIComponent(pathname + search)}`;
+    return redirecionar(url, response);
+  }
+
+  // Vendedor criado pelo dono entra com senha temporária: precisa criar a própria senha antes.
+  if (user && precisaTrocarSenha(user.app_metadata) && ehRotaProtegida(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/nova-senha';
+    url.search = '';
     return redirecionar(url, response);
   }
 

@@ -13,7 +13,7 @@ const AREAS = [
     rotulo: 'Minha empresa',
     url: /\/app\/empresa$/,
     titulo: 'Minha empresa',
-    vazio: 'Configure seu buffet',
+    vazio: 'Identidade do buffet',
   },
   { rotulo: 'Leads', url: /\/app\/leads$/, titulo: 'Leads', vazio: 'Sua caixa de leads' },
 ];

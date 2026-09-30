@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
+import { BadgePendencia } from './badge-pendencia';
 import { itemAtivo, ITENS_NAV } from './nav-items';
 
 /** Navegação lateral (desktop, ≥ md). */
-export function Sidebar() {
+export function Sidebar({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname();
   return (
     <aside className="bg-sidebar sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r px-3 py-4 md:flex">
@@ -31,6 +32,7 @@ export function Sidebar() {
             >
               <Icone className="size-5" aria-hidden />
               {rotulo}
+              <BadgePendencia quantidade={badges[href] ?? 0} className="ml-auto" />
             </Link>
           );
         })}

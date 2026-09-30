@@ -242,3 +242,80 @@ GitHub Actions em todo PR e em push para `main` e `claude/**`:
 - `/app/empresa/simulador`, só para o dono (`exigirPerfil('dono')`). O vendedor vê uma tela
   "Acesso restrito", sem o erro genérico.
 - É uma ferramenta de conferência, sem pretensão visual. Funciona em 375px e no desktop.
+
+# Etapa 2: Minha empresa (configuração pelo celular)
+
+## 16. Banco da Etapa 2
+
+- **`empresas`** ganhou `logo_path`, `capa_path`, `cor_marca` (hex, padrão `#7C5CD6`) e `sobre`
+  (≤ 600). O dono altera só essas colunas e as da Etapa 0 (grant por coluna). `slug`, `plano` e
+  `trial_ate` continuam fora do grant. Um trigger recusa `fuso` fora de `pg_timezone_names`.
+- **Slug**: muda só por `alterar_slug(novo)` (`security definer`, só dono, advisory lock). O slug
+  anterior vai para `slugs_antigos` por 12 meses; ninguém mais pode usá-lo nesse período
+  (`resolver_slug_disponivel` também pula slugs antigos válidos). Voltar a um slug antigo da
+  própria empresa é permitido. `/b/[slug]` consulta `slug_atual_por_antigo` e responde **308**.
+- **Storage**: bucket público `midia` (5 MB; jpeg, png, webp). Caminho
+  `{empresa_id}/{logo|capa|pacotes}/{uuid}.webp`. Leitura pública; gravar, trocar e apagar só o
+  dono, na pasta da própria empresa (policies em `storage.objects`).
+- **E-mail**: trigger em `auth.users` copia a troca de e-mail para `usuarios.email`.
+
+## 17. Server actions de configuração
+
+- Todas em `src/server/actions/empresa/` e com o mesmo formato: `acaoDoDono` (exige dono e
+  traduz erros), validação com o **mesmo schema Zod do formulário**, gravação via `comUsuario`
+  (RLS), auditoria com `antes`/`depois` na mesma transação, `revalidatePath` e retorno
+  `{ ok, mensagem } | { ok: false, erro, campos? }`. Os `campos` voltam para o campo certo do
+  formulário (`aplicarErrosServidor`).
+- **Salvar por seção**: cada card tem o próprio botão; listas (faixas, cardápio, ajustes,
+  feriados, vínculos) são gravadas por "substituir tudo" numa transação.
+- **Pacote novo nasce sem preço**: a tabela exige preço conforme o modelo, então o pacote é
+  criado como "por faixa, sem faixas" (excedente 0). O motor e as pendências tratam isso como
+  "sem preço" e o editor abre na seção Preço. Evita um formulário gigante de criação.
+- **Duplicar** copia faixas, cardápio, crianças, tipos e vínculos; a cópia nasce **inativa** com
+  " (cópia)". As fotos são compartilhadas: um arquivo só é apagado do Storage quando nenhum
+  outro pacote o usa.
+- **Opcional x pacote**: um select por pacote (pode comprar / só neste / já vem incluso) garante
+  que nunca é compatível e incluso ao mesmo tempo. Marcar como incluso pelo editor do pacote
+  troca um "compatível" que existisse.
+- **Ajustes por dia**: uma lista única (dia da semana ou feriado, todos os turnos ou um turno,
+  %), gravada de uma vez. Feriados são só as datas.
+- **Pendências** (badge do menu): pacote ativo com preço, **tipo de festa ativo** (o motor exige
+  um tipo; incluído porque uma empresa nova não conseguia simular), turno ativo e espaço ativo.
+
+## 18. Imagens
+
+- O navegador redimensiona (canvas) e exporta WEBP 0,82 (logo 512 px, capa 1920 px, foto de
+  pacote 1600 px) e envia direto ao Storage com a sessão do dono; as policies valem ali. Depois
+  uma server action valida o caminho (`{empresa}/{tipo}/{uuid}.webp`), grava e apaga o arquivo
+  anterior. Se a gravação falhar depois do upload, sobra um arquivo solto (ver próximos passos).
+- `next/image` com `unoptimized` (sem otimizador da Vercel): os arquivos já chegam no tamanho certo.
+
+## 19. Usuários e service role
+
+- **Primeira chave administrativa**: `SUPABASE_SERVICE_ROLE_KEY`, lida **só** em
+  `src/server/auth/admin-supabase.ts` (`server-only`). O ESLint proíbe importar esse módulo em
+  componentes, `src/lib`, páginas e no middleware; quem usa são as server actions de Usuários e
+  a troca de senha. Sem a variável, criar vendedor mostra uma mensagem simples e o resto funciona.
+- A regra fica em `src/server/usuarios/gerenciar.ts` com dependências injetadas (`AuthAdmin`,
+  banco), para os testes de integração usarem uma Admin API falsa.
+- **Criar vendedor**: Auth primeiro (`email_confirm`, `app_metadata.trocar_senha = true`, sem
+  `nome_buffet` → o trigger de cadastro ignora), depois `usuarios` + auditoria numa transação
+  com o cliente administrativo (o painel não tem grant de insert em `usuarios`). Falhou o banco,
+  o usuário do Auth é apagado. A senha temporária (12 caracteres legíveis, `node:crypto`) é
+  mostrada uma vez e nunca gravada.
+- **Troca obrigatória**: `app_metadata` (o usuário não consegue alterar). Checada no middleware,
+  no login (redirect de server action não passa pelo middleware) e em `exigirSessao`. Ao salvar
+  a nova senha, a Admin API limpa a marca.
+- **Desativar** = `usuarios.ativo = false` + ban no Auth, na mesma transação (se o Auth falhar,
+  nada muda). Reativar desfaz. O dono não desativa a si mesmo.
+- Limite de desconto: tela em %, banco em `numeric(5,2)` (Etapa 0), conversão por bp.
+
+## 20. Interface
+
+- Componentes próprios em `src/components/app/campos` (dinheiro, percentual, duração, dias,
+  telefone, lista ordenável, itens de cardápio, upload) e `form/` (seção, campo, formulário
+  inline). Toast próprio (sem dependência nova), aviso de alterações não salvas
+  (`beforeunload` + clique em link interno).
+- Vendedor vê as telas de configuração com `fieldset disabled` e sem botões; Usuários, Plano e
+  Simulador ficam fora do menu dele e mostram "Acesso restrito" pela URL.
+- Reordenar com botões subir/descer (funciona no celular, sem arrastar).

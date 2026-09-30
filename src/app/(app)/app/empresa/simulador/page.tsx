@@ -1,8 +1,6 @@
 import { Calculator, Lock } from 'lucide-react';
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { EmptyState } from '@/components/app/empty-state';
-import { TituloPagina } from '@/components/app/titulo-pagina';
 import { compararDatas, diaDaSemanaNumero, hojeNoFuso, somarDias } from '@/domain/dates';
 import { AcessoNegadoError, exigirPerfil } from '@/server/auth/guards';
 import type { UsuarioAtual } from '@/server/auth/sessao';
@@ -27,7 +25,6 @@ export default async function SimuladorPage() {
     if (!(erro instanceof AcessoNegadoError)) throw erro;
     return (
       <>
-        <TituloPagina>Simulador de preço</TituloPagina>
         <EmptyState icone={Lock} titulo="Acesso restrito">
           Só o dono do buffet pode usar o simulador de preço.
         </EmptyState>
@@ -38,11 +35,8 @@ export default async function SimuladorPage() {
   const contexto = await carregarContexto(dono.id);
   const cabecalho = (
     <div className="mb-6">
-      <Link href="/app/empresa" className="text-muted-foreground text-sm hover:underline">
-        ← Minha empresa
-      </Link>
-      <TituloPagina>Simulador de preço</TituloPagina>
-      <p className="text-muted-foreground -mt-4 text-sm">
+      <h2 className="text-xl font-bold">Simulador de preço</h2>
+      <p className="text-muted-foreground text-sm">
         Ferramenta de conferência: monte uma festa e veja exatamente como o preço é calculado.
       </p>
     </div>
@@ -55,8 +49,8 @@ export default async function SimuladorPage() {
         <EmptyState icone={Calculator} titulo="Seu catálogo ainda está vazio">
           <p>
             Carregue um modelo de exemplo do seu segmento, com pacotes, opcionais, turnos e regras,
-            para testar o simulador. Os preços são exemplos e poderão ser editados na próxima versão
-            do Orkestra.
+            e depois ajuste nomes e preços em Catálogo e em Preços e regras. Ou cadastre seus
+            pacotes do zero no Catálogo.
           </p>
           <div className="mt-5">
             <BotaoCarregarModelo />

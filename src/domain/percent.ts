@@ -49,3 +49,9 @@ export function percentualTextoParaBp(texto: string): number {
   const [, inteiro = '0', decimal = ''] = m;
   return Number(inteiro) * 100 + Number(decimal.padEnd(2, '0'));
 }
+
+/** Basis points → texto decimal para colunas `numeric` do Postgres. 550 → "5.50". */
+export function bpParaPercentualTexto(bp: number): string {
+  if (!Number.isSafeInteger(bp) || bp < 0) throw new RangeError(`Basis points inválidos: ${bp}`);
+  return `${Math.trunc(bp / 100)}.${(bp % 100).toString().padStart(2, '0')}`;
+}

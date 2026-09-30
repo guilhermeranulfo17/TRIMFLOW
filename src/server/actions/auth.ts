@@ -14,7 +14,8 @@ import {
   type RecuperarSenhaInput,
 } from '@/domain/validacao/auth';
 import { cadastroSchema, type CadastroInput } from '@/domain/validacao/cadastro';
-import { destinoSeguro } from '@/server/auth/redirecionamento';
+import { criarAuthAdmin } from '@/server/auth/admin-supabase';
+import { destinoSeguro, precisaTrocarSenha } from '@/server/auth/redirecionamento';
 import { criarClienteSupabase } from '@/server/auth/supabase-server';
 import { auditoria } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
@@ -77,11 +78,13 @@ export async function entrar(input: LoginInput, next?: string | null): Promise<R
   if (!parsed.success) return DADOS_INVALIDOS;
 
   const supabase = await criarClienteSupabase();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.senha,
   });
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };
+  // Senha temporária (vendedor criado pelo dono): primeiro cria a senha pessoal.
+  if (precisaTrocarSenha(data.user?.app_metadata)) redirect('/nova-senha');
   redirect(destinoSeguro(next));
 }
 
@@ -121,6 +124,19 @@ export async function definirNovaSenha(input: NovaSenhaInput): Promise<Resultado
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.senha });
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };
+
+  // Primeiro acesso do vendedor: a senha temporária deixa de valer como obrigação.
+  if (precisaTrocarSenha(user.app_metadata)) {
+    try {
+      await criarAuthAdmin().concluirTrocaDeSenha(user.id);
+    } catch (erro) {
+      console.error('[auth] não foi possível concluir a troca de senha', erro);
+      return {
+        ok: false,
+        erro: 'Senha alterada, mas não conseguimos liberar seu acesso. Tente de novo.',
+      };
+    }
+  }
 
   await comUsuario(user.id, async (tx) => {
     const [linha] = await tx.execute<{ empresa_id: string | null }>(

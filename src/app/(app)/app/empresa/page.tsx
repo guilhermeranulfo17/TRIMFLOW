@@ -1,32 +1,49 @@
-import { Building2, Calculator } from 'lucide-react';
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { EmptyState } from '@/components/app/empty-state';
-import { TituloPagina } from '@/components/app/titulo-pagina';
+import { eq } from 'drizzle-orm';
 import { exigirSessao } from '@/server/auth/sessao';
+import { empresas } from '@/server/db/schema';
+import { comUsuario } from '@/server/db/tenant';
+import { urlDoSite } from '@/server/env';
+import { FormIdentidade } from './form-identidade';
+import { FormSlug } from './form-slug';
+import { SecaoImagens } from './secao-imagens';
 
 export const metadata: Metadata = { title: 'Minha empresa' };
 
-export default async function EmpresaPage() {
+export default async function IdentidadePage() {
   const usuario = await exigirSessao();
+  const [empresa] = await comUsuario(usuario.id, (tx) =>
+    tx.select().from(empresas).where(eq(empresas.id, usuario.empresa.id)),
+  );
+  if (!empresa) return null;
+  const somenteLeitura = usuario.perfil !== 'dono';
+
   return (
-    <>
-      <TituloPagina>Minha empresa</TituloPagina>
-      <EmptyState icone={Building2} titulo="Configure seu buffet">
-        Aqui você vai ajustar identidade, espaços e turnos, pacotes e opcionais, preços e regras,
-        seu link de divulgação e os usuários da equipe.
-      </EmptyState>
-      {usuario.perfil === 'dono' && (
-        <p className="mt-6 text-center text-sm">
-          <Link
-            href="/app/empresa/simulador"
-            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 underline-offset-4 hover:underline"
-          >
-            <Calculator className="size-4" aria-hidden />
-            Simulador de preço (teste)
-          </Link>
-        </p>
-      )}
-    </>
+    <div className="space-y-6">
+      <FormIdentidade
+        somenteLeitura={somenteLeitura}
+        inicial={{
+          nome: empresa.nome,
+          whatsappE164: empresa.whatsappE164 ?? '',
+          email: empresa.email ?? '',
+          cidade: empresa.cidade ?? '',
+          uf: (empresa.uf ?? '') as '',
+          fuso: empresa.fuso,
+          corMarca: empresa.corMarca,
+          sobre: empresa.sobre ?? '',
+        }}
+      />
+      <SecaoImagens
+        somenteLeitura={somenteLeitura}
+        empresaId={empresa.id}
+        logoPath={empresa.logoPath}
+        capaPath={empresa.capaPath}
+      />
+      <FormSlug
+        somenteLeitura={somenteLeitura}
+        slugAtual={empresa.slug}
+        urlSite={urlDoSite() ?? ''}
+      />
+    </div>
   );
 }

@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { BadgePendencia } from './badge-pendencia';
 import { itemAtivo, ITENS_NAV } from './nav-items';
 
 /** Barra de navegação inferior (celular, < md). */
-export function BottomNav() {
+export function BottomNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname();
   return (
     <nav
@@ -26,7 +27,13 @@ export function BottomNav() {
                   ativo ? 'text-primary' : 'text-muted-foreground',
                 )}
               >
-                <Icone className="size-5" aria-hidden />
+                <span className="relative">
+                  <Icone className="size-5" aria-hidden />
+                  <BadgePendencia
+                    quantidade={badges[href] ?? 0}
+                    className="absolute -top-2 -right-3"
+                  />
+                </span>
                 <span className="max-w-full truncate">{rotulo}</span>
               </Link>
             </li>

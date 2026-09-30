@@ -27,21 +27,30 @@ Não adicione dependências fora dessa lista sem perguntar.
 src/
   app/
     (auth)/          login, cadastro, recuperar-senha, nova-senha
-    (app)/app/       área logada: leads, agenda, numeros, empresa (+ empresa/simulador)
+    (app)/app/       área logada: leads, agenda, numeros, empresa
+      empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
+                     opcionais/[id]), regras, usuarios, plano, simulador
     auth/            rotas técnicas: confirm (link do e-mail), sair
     b/[slug]/        página pública do buffet
   components/
     ui/              shadcn (não misture regra de negócio aqui)
-    app/             painel: sidebar, bottom-nav, header, empty states
+    app/             painel: sidebar, bottom-nav, header, empty states, toast
+      campos/        campos reutilizáveis (dinheiro, %, duração, dias, telefone, upload…)
+      form/          Secao (salvar por seção), Campo, FormInline, erros do servidor
+      empresa/       peças de Minha empresa (listas, cards do catálogo, faixas de idade…)
     auth/            peças dos formulários de autenticação
-  domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/
+  domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
+                     conversao (campos), senha, imagem, plano
+    catalogo/        validações do catálogo, pendências do link público, resumos de preço
     preco/           motor de preço (calcularOrcamento, disponibilidade, aPartirDe, parcelas)
     modelos/         modelos de segmento (infantil, eventos, domicilio) validados com Zod
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario), admin (sem RLS)
-    actions/         server actions (auth, simulador)
+    actions/         server actions (auth, simulador, empresa/* da configuração)
     catalogo/        carregar (ContextoPreco via RLS), gravar-modelo, aplicar-modelo
-    auth/            cliente Supabase do servidor, sessão, guards, redirecionamento
+    auth/            cliente Supabase do servidor, sessão, guards, redirecionamento,
+                     admin-supabase (Admin API com service role, só servidor)
+    usuarios/        criar/desativar vendedor (dependências injetadas)
     env.ts, erros.ts
   lib/               utilitários de UI (cn)
   middleware.ts      sessão + proteção de /app/**
@@ -86,6 +95,12 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - `server/db/admin.ts` ignora RLS: só para casos revisados (ex.: página pública por slug),
   expondo o mínimo, com `import 'server-only'`.
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
+  `SUPABASE_SERVICE_ROLE_KEY` só é lida em `server/auth/admin-supabase.ts` (`server-only`); o
+  ESLint impede importá-lo em componentes, `lib`, páginas e middleware.
+- Imagens: bucket público `midia`, caminho `{empresa_id}/{logo|capa|pacotes}/{uuid}.webp`; o
+  navegador converte para WEBP e envia; a server action valida o caminho e grava.
+- Server action de configuração: `acaoDoDono` + schema Zod compartilhado + `comUsuario` +
+  auditoria (`antes`/`depois`) + `revalidatePath` (`server/actions/empresa/comum.ts`).
 - Guard de perfil: `await exigirPerfil('dono')` em páginas e actions restritas.
 - Nova tabela = migration com RLS, policies, grants mínimos, teste de integração de isolamento
   e espelho em `server/db/schema.ts` (catálogo em `server/db/schema-catalogo.ts`).
@@ -130,15 +145,21 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. A Etapa 0 (PR #1) já está na `main`.
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 (PR #1) e 1 (PR #2) na `main`.
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região
   `sa-east-1`.
   - As migrations da Etapa 0 (`20260930000001_fundacao`, `20260930000002_rls`,
     `20260930000003_cadastro`) já foram aplicadas manualmente. **Não reaplique.**
-  - Etapa 1 (a aplicar pelo dono antes do merge, nesta ordem): `20261001000001_catalogo_config`,
+  - Etapa 1 (já aplicadas): `20261001000001_catalogo_config`,
     `20261001000002_catalogo_pacotes_opcionais`, `20261001000003_catalogo_rls`.
+  - Etapa 2 (a aplicar pelo dono antes do merge, nesta ordem): `20261002000001_empresa_identidade`,
+    `20261002000002_slugs_antigos`, `20261002000003_storage_midia`,
+    `20261002000004_sincronizar_email`.
+- **Variáveis na Vercel:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+  `NEXT_PUBLIC_SITE_URL`, `DATABASE_URL` e, desde a Etapa 2, `SUPABASE_SERVICE_ROLE_KEY`
+  (secreta; sem ela, criar vendedor não funciona).
   - Quem aplica migrations em produção é o dono do projeto, manualmente. Nunca aplique
     migration nem rode o seed no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
