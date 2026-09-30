@@ -9,6 +9,14 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: {
+      provider: 'v8',
+      include: ['src/domain/**/*.ts'],
+      reporter: ['text', 'text-summary'],
+      thresholds: {
+        'src/domain/preco/**': { lines: 95, functions: 95, branches: 90, statements: 95 },
+      },
+    },
     projects: [
       {
         extends: true,
