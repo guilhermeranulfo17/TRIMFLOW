@@ -82,8 +82,8 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   expondo o mínimo, com `import 'server-only'`.
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
 - Guard de perfil: `await exigirPerfil('dono')` em páginas e actions restritas.
-- Nova tabela = migration com RLS + policies + grants mínimos + teste de integração de isolamento
-  - espelho em `server/db/schema.ts`.
+- Nova tabela = migration com RLS, policies, grants mínimos, teste de integração de isolamento
+  e espelho em `server/db/schema.ts`.
 
 ## Comandos
 
@@ -117,6 +117,25 @@ http://localhost:3000/b/buffet-demo. E-mails locais (recuperação de senha): ht
 
 Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 `TEST_DB_SHIM=1 TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/orkestra_test pnpm test:integration`.
+
+## Ambiente
+
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. A Etapa 0 (PR #1) já está na `main`.
+- **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
+  https://trimflow-tau.vercel.app.
+- **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região
+  `sa-east-1`.
+  - As migrations da Etapa 0 (`20260930000001_fundacao`, `20260930000002_rls`,
+    `20260930000003_cadastro`) já foram aplicadas manualmente. **Não reaplique.**
+  - Quem aplica migrations em produção é o dono do projeto, manualmente. Nunca aplique
+    migration nem rode o seed no banco de produção.
+- **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
+- **Fluxo de trabalho:**
+  - Cada etapa em uma **branch nova**, com **PR para a `main`**.
+  - Toda migration nova vai em **arquivo novo** em `supabase/migrations`. Nunca edite uma
+    migration já aplicada.
+  - O relatório final de cada etapa **lista as migrations novas**, na ordem de aplicação, para o
+    dono aplicar no banco de produção.
 
 ## Forma de trabalho
 
