@@ -145,30 +145,33 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 (PR #1) e 1 (PR #2) na `main`.
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0, 1 e 2 (PRs #1, #2 e #3) na `main`.
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região
   `sa-east-1`.
-  - As migrations da Etapa 0 (`20260930000001_fundacao`, `20260930000002_rls`,
-    `20260930000003_cadastro`) já foram aplicadas manualmente. **Não reaplique.**
-  - Etapa 1 (já aplicadas): `20261001000001_catalogo_config`,
-    `20261001000002_catalogo_pacotes_opcionais`, `20261001000003_catalogo_rls`.
-  - Etapa 2 (a aplicar pelo dono antes do merge, nesta ordem): `20261002000001_empresa_identidade`,
-    `20261002000002_slugs_antigos`, `20261002000003_storage_midia`,
-    `20261002000004_sincronizar_email`.
+  - **Migrations são aplicadas automaticamente** pelo workflow
+    `.github/workflows/migrations-producao.yml` no merge para a `main` (`supabase db push`).
+    Nada de aplicar à mão, nada de `migration repair`, `--include-all` ou reset. Todo PR mostra
+    no job "Migrations que serão aplicadas no merge" o dry-run contra produção.
+  - Segredos do GitHub usados pelo workflow: `SUPABASE_ACCESS_TOKEN` e `SUPABASE_DB_PASSWORD`.
 - **Variáveis na Vercel:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
   `NEXT_PUBLIC_SITE_URL`, `DATABASE_URL` e, desde a Etapa 2, `SUPABASE_SERVICE_ROLE_KEY`
   (secreta; sem ela, criar vendedor não funciona).
-  - Quem aplica migrations em produção é o dono do projeto, manualmente. Nunca aplique
-    migration nem rode o seed no banco de produção.
+  - Nunca rode o seed nem comandos manuais no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
 - **Fluxo de trabalho:**
   - Cada etapa em uma **branch nova**, com **PR para a `main`**.
   - Toda migration nova vai em **arquivo novo** em `supabase/migrations`. Nunca edite uma
     migration já aplicada.
-  - O relatório final de cada etapa **lista as migrations novas**, na ordem de aplicação, para o
-    dono aplicar no banco de produção.
+  - **Expandir → contrair.** A Vercel publica o código ao mesmo tempo que o workflow aplica as
+    migrations, então toda migration precisa funcionar com o código da versão anterior:
+    - Pode: criar tabela, coluna nullable ou com default, função, policy, índice.
+    - Não pode na mesma entrega: renomear ou apagar coluna/tabela usada pelo código em
+      produção, nem tornar coluna obrigatória sem default. Isso se faz em duas entregas:
+      primeiro o código deixa de usar, depois a migration remove.
+  - O relatório final de cada etapa lista as migrations novas (só para registro: o workflow
+    aplica no merge).
 
 ## Forma de trabalho
 
