@@ -59,6 +59,9 @@ jobs:
             echo "MAILPIT_URL=${MAILPIT_URL:-${INBUCKET_URL:-http://127.0.0.1:54324}}"
           } >> "$GITHUB_ENV"
 
+      - name: Recriar o banco do zero (pnpm db:reset)
+        run: pnpm db:reset
+
       - name: Testes de integração (RLS, cadastro, slug)
         run: pnpm test:integration
 
