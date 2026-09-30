@@ -1,0 +1,30 @@
+# dependências
+node_modules/
+.pnpm-store/
+
+# next
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# testes
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# env (nunca versionar segredos)
+.env
+.env*.local
+
+# supabase
+supabase/.branches
+supabase/.temp
+
+# vercel
+.vercel
+
+# sistema
+.DS_Store
+*.log
