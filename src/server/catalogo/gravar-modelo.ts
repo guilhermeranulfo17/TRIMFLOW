@@ -171,15 +171,13 @@ export async function gravarModelo(
         );
       }
       if (o.tiposEvento.length > 0) {
-        await tx
-          .insert(opcionalTiposEvento)
-          .values(
-            o.tiposEvento.map((t) => ({
-              empresaId,
-              opcionalId,
-              tipoEventoId: exigirId(idTipo, t),
-            })),
-          );
+        await tx.insert(opcionalTiposEvento).values(
+          o.tiposEvento.map((t) => ({
+            empresaId,
+            opcionalId,
+            tipoEventoId: exigirId(idTipo, t),
+          })),
+        );
       }
     }
 

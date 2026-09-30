@@ -11,7 +11,7 @@ export type UsuarioAtual = {
   nome: string;
   email: string;
   perfil: Perfil;
-  empresa: { id: string; nome: string; slug: string };
+  empresa: { id: string; nome: string; slug: string; fuso: string };
 };
 
 /**
@@ -36,6 +36,7 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
         empresaId: empresas.id,
         empresaNome: empresas.nome,
         empresaSlug: empresas.slug,
+        empresaFuso: empresas.fuso,
       })
       .from(usuarios)
       .innerJoin(empresas, eq(empresas.id, usuarios.empresaId))
@@ -49,7 +50,12 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
     nome: linha.nome,
     email: linha.email,
     perfil: linha.perfil,
-    empresa: { id: linha.empresaId, nome: linha.empresaNome, slug: linha.empresaSlug },
+    empresa: {
+      id: linha.empresaId,
+      nome: linha.empresaNome,
+      slug: linha.empresaSlug,
+      fuso: linha.empresaFuso,
+    },
   };
 });
 
