@@ -1,0 +1,84 @@
+import { formatInTimeZone } from 'date-fns-tz';
+import { ptBR } from 'date-fns/locale';
+
+/**
+ * Datas: instantes são salvos em UTC e exibidos no fuso da empresa.
+ * Datas civis (dia do evento, sem hora) circulam como "yyyy-MM-dd" e nunca sofrem conversão de fuso.
+ */
+
+export const FUSO_PADRAO = 'America/Sao_Paulo';
+
+export type DataCivil = string; // "2026-11-14"
+
+const REGEX_DATA_CIVIL = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+const DIAS_DA_SEMANA = [
+  'domingo',
+  'segunda-feira',
+  'terça-feira',
+  'quarta-feira',
+  'quinta-feira',
+  'sexta-feira',
+  'sábado',
+] as const;
+
+function partesDataCivil(data: string): [number, number, number] | null {
+  const m = REGEX_DATA_CIVIL.exec(data);
+  if (!m) return null;
+  const [, a, mes, d] = m;
+  const ano = Number(a);
+  const mesN = Number(mes);
+  const dia = Number(d);
+  const utc = new Date(Date.UTC(ano, mesN - 1, dia));
+  if (utc.getUTCFullYear() !== ano || utc.getUTCMonth() !== mesN - 1 || utc.getUTCDate() !== dia) {
+    return null;
+  }
+  return [ano, mesN, dia];
+}
+
+function paraDate(valor: Date | string): Date {
+  if (typeof valor === 'string' && REGEX_DATA_CIVIL.test(valor)) {
+    throw new RangeError(`Data inválida: ${valor}`);
+  }
+  const data = typeof valor === 'string' ? new Date(valor) : valor;
+  if (Number.isNaN(data.getTime())) throw new RangeError(`Data inválida: ${String(valor)}`);
+  return data;
+}
+
+/** Data civil de hoje no fuso informado ("yyyy-MM-dd"). */
+export function hojeNoFuso(fuso: string = FUSO_PADRAO, agora: Date = new Date()): DataCivil {
+  return formatInTimeZone(agora, fuso, 'yyyy-MM-dd');
+}
+
+/**
+ * Formata como "14/11/2026".
+ * - Data civil ("2026-11-14"): formatada como está, sem fuso.
+ * - Instante (Date ou ISO com hora): convertido para o fuso da empresa.
+ */
+export function formatData(valor: Date | string, fuso: string = FUSO_PADRAO): string {
+  if (typeof valor === 'string') {
+    const partes = partesDataCivil(valor);
+    if (partes) {
+      const [ano, mes, dia] = partes;
+      return `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${ano}`;
+    }
+  }
+  return formatInTimeZone(paraDate(valor), fuso, 'dd/MM/yyyy');
+}
+
+/** Formata instante como "14/11/2026 18:30" no fuso da empresa. */
+export function formatDataHora(valor: Date | string, fuso: string = FUSO_PADRAO): string {
+  return formatInTimeZone(paraDate(valor), fuso, 'dd/MM/yyyy HH:mm');
+}
+
+/** "sábado", "segunda-feira"… Aceita data civil ou instante (convertido para o fuso). */
+export function diaDaSemana(valor: Date | string, fuso: string = FUSO_PADRAO): string {
+  if (typeof valor === 'string') {
+    const partes = partesDataCivil(valor);
+    if (partes) {
+      const [ano, mes, dia] = partes;
+      return DIAS_DA_SEMANA[new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay()]!;
+    }
+  }
+  return formatInTimeZone(paraDate(valor), fuso, 'EEEE', { locale: ptBR });
+}

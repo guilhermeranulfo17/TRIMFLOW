@@ -1,0 +1,24 @@
+/**
+ * Formata uma razão como percentual pt-BR.
+ * formatPct(0.154) → "15,4%"; formatPct(0.15) → "15%"; formatPct(0.1545, 2) → "15,45%".
+ * Arredondamento meio para cima (metade se afasta do zero); zeros à direita são omitidos.
+ */
+export function formatPct(razao: number, casas = 1): string {
+  if (!Number.isFinite(razao)) throw new TypeError(`Razão inválida: ${razao}`);
+  if (!Number.isInteger(casas) || casas < 0 || casas > 4) {
+    throw new RangeError(`Casas decimais inválidas: ${casas}`);
+  }
+  const fator = 10 ** casas;
+  const negativo = razao < 0;
+  // toPrecision corrige ruído binário (0.154 * 1000 = 153.99999999999997).
+  const escalado = Number((Math.abs(razao) * 100 * fator).toPrecision(12));
+  const inteiro = Math.floor(escalado + 0.5);
+  if (inteiro === 0) return '0%';
+
+  const parteInteira = Math.trunc(inteiro / fator)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const parteDecimal =
+    casas > 0 ? (inteiro % fator).toString().padStart(casas, '0').replace(/0+$/, '') : '';
+  return `${negativo ? '-' : ''}${parteInteira}${parteDecimal ? `,${parteDecimal}` : ''}%`;
+}
