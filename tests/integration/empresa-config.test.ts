@@ -212,6 +212,15 @@ describe('storage: bucket midia', () => {
   const caminho = (empresa: string, tipo = 'logo') => `${empresa}/${tipo}/${randomUUID()}.webp`;
   const inserir = (tx: postgres.TransactionSql, nome: string) =>
     tx`insert into storage.objects (bucket_id, name) values ('midia', ${nome})`;
+  /**
+   * O Storage bloqueia DELETE direto por SQL (trigger `storage.protect_delete`); a Storage API
+   * liga `storage.allow_delete_query` na própria transação antes de apagar. Fazemos o mesmo:
+   * as policies de RLS continuam valendo.
+   */
+  const apagar = async (tx: postgres.TransactionSql, nome: string) => {
+    await tx`select set_config('storage.allow_delete_query', 'true', true)`;
+    return tx`delete from storage.objects where name = ${nome}`;
+  };
 
   it('é público (leitura pela URL do bucket)', async () => {
     const [b] = await sql`select public, file_size_limit from storage.buckets where id = 'midia'`;
@@ -223,7 +232,7 @@ describe('storage: bucket midia', () => {
       const nome = caminho(IDS.empresaA, 'pacotes');
       const ins = await inserir(tx, nome);
       const sel = await tx`select name from storage.objects where name = ${nome}`;
-      const del = await tx`delete from storage.objects where name = ${nome}`;
+      const del = await apagar(tx, nome);
       return [ins.count, sel.length, del.count];
     });
     expect(r).toEqual([1, 1, 1]);
@@ -254,13 +263,21 @@ describe('storage: bucket midia', () => {
     });
   });
 
+  it('DELETE direto por SQL é bloqueado (só pela Storage API)', async () => {
+    await comoUsuario(sql, IDS.donoA, async (tx) => {
+      const nome = caminho(IDS.empresaA);
+      await inserir(tx, nome);
+      await esperarErroSql(tx`delete from storage.objects where name = ${nome}`, '42501');
+    });
+  });
+
   it('dono de B não vê nem apaga arquivos de A', async () => {
     const r = await emTransacao(sql, async (tx) => {
       const nome = caminho(IDS.empresaA);
       await inserir(tx, nome);
       await assumirUsuario(tx, IDS.donoB);
       const sel = await tx`select 1 from storage.objects where name = ${nome}`;
-      const del = await tx`delete from storage.objects where name = ${nome}`;
+      const del = await apagar(tx, nome);
       return [sel.length, del.count];
     });
     expect(r).toEqual([0, 0]);
