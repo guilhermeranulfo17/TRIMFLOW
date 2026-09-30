@@ -1,27 +1,22 @@
-# Próximos passos (anotados durante as Etapas 0 e 1)
+# Próximos passos (anotados durante as Etapas 0, 1 e 2)
 
 Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi implementado.
 
-## Etapa 2: Configuração da empresa
+## Depois da Etapa 2 (pendências percebidas)
 
-- Edição de `empresas` (os grants por coluna já existem) e troca de **slug com redirecionamento
-  por 12 meses** (tabela `slugs_antigos`; hoje o slug não é editável).
-- **Convites de usuários** (vendedor): criar usuário no Auth sem `nome_buffet` nos metadados
-  (o trigger de cadastro ignora) e inserir em `usuarios` por uma função `security definer`
-  restrita ao dono.
-- Sincronizar `usuarios.email` quando o e-mail do Auth mudar.
-- Validar `empresas.fuso` contra `pg_timezone_names` (hoje só no app).
-- Upload de logo/capa (Storage, WEBP, 5 MB).
-- **Telas de edição do catálogo e das regras** sobre as tabelas da Etapa 1 (os grants e as
-  policies já estão prontos): tipos de evento, espaços, turnos, ajustes de dia, feriados, faixas
-  de idade (empresa e por pacote), pacotes com faixas e cardápio, opcionais e vínculos, faixas
-  de deslocamento e regras comerciais.
-- Fotos de pacotes e opcionais (`pacotes.fotos` já existe como lista vazia).
-- Validar no formulário o que o banco já garante (faixas de idade sem sobreposição, ajuste
-  único por dia e turno, preço conforme o modelo), com mensagens em português antes de gravar.
-- "Tabela própria" por dia (preços diferentes, não só %): hoje a tabela de dia é só ajuste em bp.
+- **Arquivos soltos no Storage**: se a gravação falhar depois do upload, o arquivo fica no bucket.
+  Criar uma limpeza periódica (arquivos de `midia` que nenhum registro referencia).
+- Fotos de **opcionais** (a tabela não tem coluna de fotos).
+- "Tabela própria" por dia (preços diferentes, não só %): hoje o ajuste de dia é só em bp.
 - Rever a interpretação das faixas de idade quando o pacote tem política própria (hoje: faixa da
   empresa → faixa do pacote que contém a idade mínima).
+- Marcar como incluso o **único** pacote compatível de um opcional faz o opcional voltar a valer
+  para todos os outros pacotes (regra "nenhum compatível = todos"). A tela avisa a regra; avaliar
+  um estado explícito "não disponível em nenhum".
+- Trocar o e-mail de um vendedor pela tela (hoje só pelo próprio usuário; o trigger sincroniza).
+- Reenviar/gerar nova senha temporária para um vendedor que perdeu a primeira.
+- Plano: assinatura pelo painel (hoje a tela só mostra o status).
+- Upload de imagem sem teste de ponta a ponta local (só no CI, com o storage-api).
 
 ## Etapa 3: Agenda
 
@@ -29,7 +24,9 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 
 ## Etapa 4: Link público
 
-- Página pública só com wizard quando a empresa tiver ao menos um pacote com preço e um turno.
+- Página pública só com wizard quando não houver pendências (`pendenciasDoLinkPublico`: pacote
+  com preço, tipo de festa, turno e espaço ativos).
+- Mostrar logo, capa, cor da marca e "sobre" (colunas da Etapa 2).
 - Plano `suspenso`: página pública mostra só o WhatsApp do buffet, sem wizard.
 - Leitura pública do catálogo por função `security definer` específica (hoje `anon` não lê nada),
   expondo só o necessário para o wizard.
@@ -37,7 +34,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 
 ## Etapa 5: Proposta
 
-- **Pacotes e opcionais usados em propostas passam a ser desativados, não excluídos** (hoje a
+- **Pacotes, opcionais, turnos, espaços e tipos de festa usados em propostas passam a ser
+  desativados, não excluídos** (hoje a
   exclusão física é permitida porque nada aponta para o catálogo).
 - Congelar o `ResultadoOrcamento` (com `versaoMotor`) dentro da proposta.
 
