@@ -117,7 +117,10 @@ export const ajustesDia = pgTable(
     atualizadoEm: atualizadoEm(),
   },
   (t) => [
-    foreignKey({ columns: [t.turnoId, t.empresaId], foreignColumns: [turnos.id, turnos.empresaId] }),
+    foreignKey({
+      columns: [t.turnoId, t.empresaId],
+      foreignColumns: [turnos.id, turnos.empresaId],
+    }),
   ],
 );
 
@@ -181,7 +184,6 @@ export const pacotes = pgTable(
   },
   (t) => [unique().on(t.id, t.empresaId)],
 );
-
 
 export const faixasPreco = pgTable(
   'faixas_preco',

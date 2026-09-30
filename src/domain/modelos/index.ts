@@ -61,7 +61,7 @@ export function contextoDoModelo(modelo: Modelo): ContextoPreco {
       nome: t.nome,
       horaInicio: t.horaInicio,
       duracaoMin: t.duracaoMin,
-      diasSemana: t.diasSemana,
+      diasSemana: [...t.diasSemana].sort((a, b) => a - b),
       ordem: i,
       ativo: true,
     })),

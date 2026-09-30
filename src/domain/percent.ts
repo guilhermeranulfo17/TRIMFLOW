@@ -38,3 +38,14 @@ export function formatBp(bp: number, opcoes: { sinal?: boolean } = {}): string {
   const sinal = bp < 0 ? '-' : opcoes.sinal && bp > 0 ? '+' : '';
   return `${sinal}${inteiro}${decimal ? `,${decimal}` : ''}%`;
 }
+
+/**
+ * Converte um percentual em texto decimal (como o Postgres devolve `numeric`, ex.: "5.00",
+ * "12.5", "100") em basis points inteiros, sem passar por float. "5.00" → 500.
+ */
+export function percentualTextoParaBp(texto: string): number {
+  const m = /^(\d{1,3})(?:\.(\d{1,2})\d*)?$/.exec(texto.trim());
+  if (!m) throw new RangeError(`Percentual inválido: ${texto}`);
+  const [, inteiro = '0', decimal = ''] = m;
+  return Number(inteiro) * 100 + Number(decimal.padEnd(2, '0'));
+}

@@ -7,7 +7,7 @@ import {
   somarMeses,
 } from '@/domain/dates';
 import { dividirArredondando, pctBp } from '@/domain/money';
-import { formatBp } from '@/domain/percent';
+import { formatBp, percentualTextoParaBp } from '@/domain/percent';
 
 describe('pctBp', () => {
   it.each([
@@ -104,5 +104,23 @@ describe('datas civis', () => {
     expect(dataCivilValida('2028-02-29')).toBe(true);
     expect(() => somarDias('2026-13-01', 1)).toThrow(RangeError);
     expect(() => compararDatas('x', '2026-01-01')).toThrow(RangeError);
+  });
+});
+
+describe('percentualTextoParaBp', () => {
+  it.each([
+    ['5.00', 500],
+    ['0', 0],
+    ['12.5', 1250],
+    ['100.00', 10000],
+    ['7.25', 725],
+    ['3.999', 399],
+  ])('%s → %i', (texto, bp) => {
+    expect(percentualTextoParaBp(texto)).toBe(bp);
+  });
+
+  it('recusa formatos inválidos', () => {
+    expect(() => percentualTextoParaBp('-1')).toThrow(RangeError);
+    expect(() => percentualTextoParaBp('abc')).toThrow(RangeError);
   });
 });
