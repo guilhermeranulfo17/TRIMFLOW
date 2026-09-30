@@ -27,7 +27,7 @@ Não adicione dependências fora dessa lista sem perguntar.
 src/
   app/
     (auth)/          login, cadastro, recuperar-senha, nova-senha
-    (app)/app/       área logada: leads, agenda, numeros, empresa
+    (app)/app/       área logada: leads, agenda, numeros, empresa (+ empresa/simulador)
     auth/            rotas técnicas: confirm (link do e-mail), sair
     b/[slug]/        página pública do buffet
   components/
@@ -35,9 +35,12 @@ src/
     app/             painel: sidebar, bottom-nav, header, empty states
     auth/            peças dos formulários de autenticação
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/
+    preco/           motor de preço (calcularOrcamento, disponibilidade, aPartirDe, parcelas)
+    modelos/         modelos de segmento (infantil, eventos, domicilio) validados com Zod
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario), admin (sem RLS)
-    actions/         server actions
+    actions/         server actions (auth, simulador)
+    catalogo/        carregar (ContextoPreco via RLS), gravar-modelo, aplicar-modelo
     auth/            cliente Supabase do servidor, sessão, guards, redirecionamento
     env.ts, erros.ts
   lib/               utilitários de UI (cn)
@@ -59,8 +62,10 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 
 ## Convenções
 
-- **Dinheiro:** sempre inteiro em centavos (`formatBRL`, `parseBRL`, `pct` em `domain/money`).
-  Proibido float para dinheiro. Arredondamento meio para cima.
+- **Dinheiro:** sempre inteiro em centavos (`formatBRL`, `parseBRL`, `pct`, `pctBp` em
+  `domain/money`). Proibido float para dinheiro. Arredondamento meio para cima.
+- **Percentuais e fatores:** inteiro em basis points (1% = 100 bp), aplicados com `pctBp` e
+  exibidos com `formatBp`. **Durações:** minutos inteiros.
 - **Telefone:** sempre E.164 no banco (`+5534991355450`). Exibição com `formatPhoneBR`.
 - **Datas:** instantes em UTC (`timestamptz`), exibidos no fuso da empresa (`empresas.fuso`).
   Datas civis (dia do evento) como `yyyy-MM-dd`, sem conversão de fuso. Formato "14/11/2026".
@@ -83,7 +88,10 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
 - Guard de perfil: `await exigirPerfil('dono')` em páginas e actions restritas.
 - Nova tabela = migration com RLS, policies, grants mínimos, teste de integração de isolamento
-  e espelho em `server/db/schema.ts`.
+  e espelho em `server/db/schema.ts` (catálogo em `server/db/schema-catalogo.ts`).
+- Tabela filha usa FK composta `(pai_id, empresa_id)` → `(id, empresa_id)` do pai.
+- O preço é calculado **sempre no servidor** com `calcularOrcamento`; "hoje" e o limite de
+  desconto vêm do servidor, nunca do navegador.
 
 ## Comandos
 
@@ -94,6 +102,7 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 | `pnpm lint` / `pnpm typecheck` / `pnpm format` | Qualidade                                               |
 | `pnpm test`                                    | Vitest: unitários + integração (precisa do banco local) |
 | `pnpm test:unit`                               | Só unitários (não precisa de banco)                     |
+| `pnpm test:coverage`                           | Unitários com cobertura (mínimo de 95% no motor)        |
 | `pnpm test:integration`                        | Integração: RLS, cadastro, slug (banco local)           |
 | `pnpm test:e2e`                                | Playwright (sobe o app; precisa do Supabase local)      |
 | `pnpm db:start` / `pnpm db:stop`               | Sobe/para o Supabase local (Docker)                     |
@@ -112,7 +121,8 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 6. `pnpm dev` e abra http://localhost:3000.
 
 Contas do seed (senha `demo12345`): `dono@demo.local` (dono) e `vendedor@demo.local` (vendedor)
-do **Buffet Demo**, e `dono@testeb.local` do **Buffet Teste B**. Página pública:
+do **Buffet Demo** (com o catálogo do modelo infantil), e `dono@testeb.local` do **Buffet Teste B**
+(catálogo vazio). Página pública:
 http://localhost:3000/b/buffet-demo. E-mails locais (recuperação de senha): http://127.0.0.1:54324.
 
 Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
@@ -127,6 +137,8 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
   `sa-east-1`.
   - As migrations da Etapa 0 (`20260930000001_fundacao`, `20260930000002_rls`,
     `20260930000003_cadastro`) já foram aplicadas manualmente. **Não reaplique.**
+  - Etapa 1 (a aplicar pelo dono antes do merge, nesta ordem): `20261001000001_catalogo_config`,
+    `20261001000002_catalogo_pacotes_opcionais`, `20261001000003_catalogo_rls`.
   - Quem aplica migrations em produção é o dono do projeto, manualmente. Nunca aplique
     migration nem rode o seed no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
