@@ -319,3 +319,80 @@ GitHub Actions em todo PR e em push para `main` e `claude/**`:
 - Vendedor vê as telas de configuração com `fieldset disabled` e sem botões; Usuários, Plano e
   Simulador ficam fora do menu dele e mostram "Acesso restrito" pela URL.
 - Reordenar com botões subir/descer (funciona no celular, sem arrastar).
+
+# Etapa 3: agenda, disponibilidade e deploy automático do banco
+
+## 21. Deploy automático das migrations
+
+- `.github/workflows/migrations-producao.yml` roda em push na `main` que muda
+  `supabase/migrations/**` (e manualmente). Passos: `supabase link` → `db push --dry-run`
+  (vai para o resumo do job) → `db push`. `concurrency` fixa, sem cancelar execução em
+  andamento. CLI fixada em 2.118.0 (a mesma do `package.json`).
+- No PR, o job "Migrations que serão aplicadas no merge" faz o dry-run contra produção e
+  publica a lista no resumo. Sem os segredos (PR de fork), é pulado sem falhar o CI. Ele também
+  prova, antes do merge, que o runner conecta no banco.
+- Segredos do repositório: `SUPABASE_ACCESS_TOKEN` e `SUPABASE_DB_PASSWORD`. O ref do projeto
+  fica no próprio workflow.
+- **Expandir → contrair:** a Vercel publica o código junto com o workflow; toda migration
+  precisa funcionar com o código anterior (regra no `CLAUDE.md`). As 4 migrations desta etapa
+  são só adições.
+
+## 22. Modelo da agenda
+
+- **Slot** = espaço + data + turno. Intervalo = `[data + hora_inicio no fuso da empresa,
+início + duração + intervalo entre eventos)`. `regras_comerciais.intervalo_entre_eventos_min`
+  (padrão 60) é o tempo de limpeza/montagem.
+- **Ocupam:** reserva confirmada ativa e pré-reserva ativa **não vencida**. Pré-reserva com
+  `expira_em <= now()` conta como livre em toda leitura e checagem, mesmo antes do job.
+- **Conflito por horário, não por turno:** turnos diferentes do mesmo espaço conflitam se os
+  intervalos se sobrepõem (encostar não conflita). Turno que passa da meia-noite alcança o dia
+  seguinte.
+- **Capacidade:** `espacos.eventos_simultaneos` (padrão 1). Com capacidade > 1, contamos as
+  ocupações que tocam o intervalo do slot (regra conservadora, simples de explicar).
+- **Bloqueio** vale para o slot quando a data é a mesma, o turno é nulo (dia inteiro) ou igual,
+  e o espaço é nulo (todos) ou igual. Um evento da noite de D que invade D+1 **não** é barrado
+  por bloqueio de D+1 (o bloqueio é por data e turno, não por horário).
+- `reservas.fim` guarda o intervalo da época: mudar o intervalo depois não recalcula reservas
+  antigas (vale para as novas).
+- **Turnos com folga:** para o padrão de 60 min não fazer os turnos colados do modelo infantil
+  conflitarem entre si, o modelo e o seed passaram para Almoço 10h–14h, Tarde 15h–19h e Noite
+  20h–00h. Empresas em produção mantêm os seus turnos e podem ajustar o intervalo.
+
+## 23. Escrita só por funções, com trava
+
+- `reservas` e `bloqueios`: leitura por RLS na mesma empresa; **nenhum** grant de escrita. Toda
+  escrita passa por funções `security definer` (`criar_reserva`, `confirmar_reserva`,
+  `cancelar_reserva`, `estender_pre_reserva`, `criar_bloqueio`, `remover_bloqueio`), que
+  validam empresa e perfil, gravam auditoria e travam antes de checar conflito.
+- **Trava por empresa** (`pg_advisory_xact_lock`), não por (empresa, espaço, data): turnos que
+  passam da meia-noite alcançam outras datas e bloqueios podem valer para todos os espaços.
+  Travar por empresa é correto em todos esses casos, e a contenção num buffet é desprezível. O
+  teste de concorrência (duas conexões reais) prova que só uma transação vence.
+- `criar_bloqueio` aceita um período (até 1 ano) numa única transação e recusa se houver
+  reserva ativa em qualquer slot atingido (o dono cancela antes).
+- Erros com código estável (`AGENDA_SLOT_OCUPADO`…); o app traduz em `domain/agenda/mensagens`.
+- Espaço ou turno com reserva não pode ser excluído (FK); a tela avisa para desativar.
+
+## 24. Disponibilidade e jobs
+
+- `_disponibilidade(empresa, de, ate, espaco)` monta cada data × turno do dia × espaço ativo e
+  devolve `estado` (`livre`, `pre_reservado`, `reservado`, `bloqueado`, `lotado`), `vagas`,
+  `capacidade` e o `expira_em` mais próximo. **Nunca** devolve nome de cliente. Máximo de 400
+  dias por chamada.
+- `disponibilidade(...)` é a versão do painel (exige a empresa do usuário). `anon` não executa
+  nada nesta etapa; a Etapa 4 cria um wrapper por slug sobre `_disponibilidade`.
+- **Domínio × SQL:** `src/domain/agenda` repete a regra (`intervaloDoSlot`, `estadoDoSlot`) e
+  um teste de integração compara os dois numa tabela de casos.
+- **Jobs (`pg_cron`)**: `vencer_pre_reservas` a cada 5 min e `marcar_realizadas` às 07:00 UTC
+  (04:00 de Brasília). A migration só agenda se `pg_cron` existir (o Postgres puro dos testes
+  não tem). Os jobs só persistem o estado.
+
+## 25. Tela da agenda
+
+- **Celular:** lista dos próximos 60 dias (ou do mês escolhido) agrupada por data. **Desktop:**
+  calendário mensal com bolinhas por estado e filtro por espaço. Tocar num dia abre o painel
+  (sheet no celular, feito sobre o Dialog que já existia) com os turnos de cada espaço e as
+  ações de cada estado.
+- Aviso no topo das pré-reservas que vencem em 12h. Vendedor reserva, confirma e cancela, mas
+  não bloqueia.
+- O simulador mostra o estado do slot escolhido, com a mesma função `disponibilidade`.

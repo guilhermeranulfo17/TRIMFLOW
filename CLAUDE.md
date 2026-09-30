@@ -27,7 +27,7 @@ Não adicione dependências fora dessa lista sem perguntar.
 src/
   app/
     (auth)/          login, cadastro, recuperar-senha, nova-senha
-    (app)/app/       área logada: leads, agenda, numeros, empresa
+    (app)/app/       área logada: leads, agenda (lista/calendário/painel do dia), numeros, empresa
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, usuarios, plano, simulador
     auth/            rotas técnicas: confirm (link do e-mail), sair
@@ -42,6 +42,7 @@ src/
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
                      conversao (campos), senha, imagem, plano
     catalogo/        validações do catálogo, pendências do link público, resumos de preço
+    agenda/          intervalo do slot, estado do slot, calendário, mensagens (= regra do SQL)
     preco/           motor de preço (calcularOrcamento, disponibilidade, aPartirDe, parcelas)
     modelos/         modelos de segmento (infantil, eventos, domicilio) validados com Zod
   server/
@@ -51,6 +52,7 @@ src/
     auth/            cliente Supabase do servidor, sessão, guards, redirecionamento,
                      admin-supabase (Admin API com service role, só servidor)
     usuarios/        criar/desativar vendedor (dependências injetadas)
+    agenda/          leituras da agenda (disponibilidade, reservas, bloqueios) e erros
     env.ts, erros.ts
   lib/               utilitários de UI (cn)
   middleware.ts      sessão + proteção de /app/**
@@ -107,6 +109,10 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - Tabela filha usa FK composta `(pai_id, empresa_id)` → `(id, empresa_id)` do pai.
 - O preço é calculado **sempre no servidor** com `calcularOrcamento`; "hoje" e o limite de
   desconto vêm do servidor, nunca do navegador.
+- **Agenda:** `reservas` e `bloqueios` só são escritos pelas funções SQL (`criar_reserva`,
+  `criar_bloqueio`…), que travam a empresa e checam conflito. Nunca escreva nessas tabelas pelo
+  Drizzle. A regra de ocupação existe no SQL e em `domain/agenda`, com teste de equivalência:
+  mudou uma, mude a outra.
 
 ## Comandos
 
