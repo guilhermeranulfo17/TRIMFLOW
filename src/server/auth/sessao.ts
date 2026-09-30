@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { empresas, usuarios, type Perfil } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
+import { precisaTrocarSenha } from './redirecionamento';
 import { criarClienteSupabase } from './supabase-server';
 
 export type UsuarioAtual = {
@@ -24,6 +25,8 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+  // Redirect de server action não passa pelo middleware: a troca obrigatória vale aqui também.
+  if (precisaTrocarSenha(user.app_metadata)) redirect('/nova-senha');
 
   const [linha] = await comUsuario(user.id, (tx) =>
     tx

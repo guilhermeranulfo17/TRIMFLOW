@@ -19,7 +19,7 @@ const POR_CODIGO: Record<string, string> = {
   over_email_send_rate_limit: 'Muitos e-mails enviados. Aguarde alguns minutos e tente de novo.',
   otp_expired: 'Esse link expirou. Peça um novo.',
   session_not_found: 'Sua sessão expirou. Entre novamente.',
-  user_banned: 'Esta conta está bloqueada. Fale com o suporte.',
+  user_banned: 'Seu acesso foi desativado. Fale com o dono do buffet.',
   signup_disabled: 'Cadastro temporariamente indisponível.',
   unexpected_failure: 'Não foi possível concluir agora. Tente novamente em instantes.',
 };

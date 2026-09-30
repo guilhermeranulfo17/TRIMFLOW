@@ -19,6 +19,7 @@ export const novoVendedorSchema = z.object({
   limiteDescontoBp: bp(0, 10_000, 'o limite de desconto'),
 });
 export type NovoVendedorEntrada = z.input<typeof novoVendedorSchema>;
+export type NovoVendedorSaida = z.output<typeof novoVendedorSchema>;
 
 export const limiteDescontoSchema = z.object({
   limiteDescontoBp: bp(0, 10_000, 'o limite de desconto'),

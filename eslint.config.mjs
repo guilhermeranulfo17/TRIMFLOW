@@ -52,7 +52,7 @@ const config = [
     },
   },
   {
-    // Código de cliente nunca importa acesso administrativo ao banco.
+    // Código de cliente nunca importa acesso administrativo ao banco nem ao Auth.
     files: ['src/components/**/*.tsx', 'src/lib/**/*.ts'],
     rules: {
       'no-restricted-imports': [
@@ -60,6 +60,27 @@ const config = [
         {
           patterns: [
             { group: ['@/server/db/*'], message: 'Componentes não acessam o banco diretamente.' },
+            {
+              group: ['@/server/auth/admin-supabase'],
+              message: 'A Admin API (service role) só é usada em server actions.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Páginas e layouts também não usam a service role: isso fica nas server actions.
+    files: ['src/app/**/*.tsx', 'src/app/**/*.ts', 'src/middleware.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/server/auth/admin-supabase'],
+              message: 'A Admin API (service role) só é usada em server actions.',
+            },
           ],
         },
       ],
