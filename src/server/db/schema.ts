@@ -38,8 +38,24 @@ export const empresas = pgTable('empresas', {
   fuso: text('fuso').notNull().default('America/Sao_Paulo'),
   plano: planoEmpresa('plano').notNull().default('trial'),
   trialAte: timestamp('trial_ate', { withTimezone: true }),
+  /** Caminho no bucket midia: {empresa_id}/logo/{uuid}.webp */
+  logoPath: text('logo_path'),
+  /** Caminho no bucket midia: {empresa_id}/capa/{uuid}.webp */
+  capaPath: text('capa_path'),
+  corMarca: text('cor_marca').notNull().default('#7C5CD6'),
+  sobre: text('sobre'),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
+});
+
+/** Slugs já usados: /b/{slug antigo} redireciona para o atual até expiraEm (Etapa 2). */
+export const slugsAntigos = pgTable('slugs_antigos', {
+  slug: text('slug').primaryKey(),
+  empresaId: uuid('empresa_id')
+    .notNull()
+    .references(() => empresas.id, { onDelete: 'cascade' }),
+  expiraEm: timestamp('expira_em', { withTimezone: true }).notNull(),
+  criadoEm: criadoEm(),
 });
 
 export const usuarios = pgTable(
