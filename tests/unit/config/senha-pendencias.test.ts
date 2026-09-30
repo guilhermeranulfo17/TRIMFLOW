@@ -47,6 +47,7 @@ describe('pendências do link público', () => {
         quantidadeFaixas: 0,
       },
     ],
+    tiposEvento: [{ ativo: true }],
     turnos: [{ ativo: true }],
     espacos: [{ ativo: true }],
   };
@@ -55,10 +56,22 @@ describe('pendências do link público', () => {
     expect(pendenciasDoLinkPublico(completo)).toEqual([]);
   });
 
-  it('catálogo vazio acusa as três pendências', () => {
+  it('catálogo vazio acusa as quatro pendências', () => {
     expect(
-      pendenciasDoLinkPublico({ pacotes: [], turnos: [], espacos: [] }).map((p) => p.codigo),
-    ).toEqual(['SEM_PACOTE_COM_PRECO', 'SEM_TURNO_ATIVO', 'SEM_ESPACO_ATIVO']);
+      pendenciasDoLinkPublico({ pacotes: [], tiposEvento: [], turnos: [], espacos: [] }).map(
+        (p) => p.codigo,
+      ),
+    ).toEqual([
+      'SEM_PACOTE_COM_PRECO',
+      'SEM_TIPO_EVENTO_ATIVO',
+      'SEM_TURNO_ATIVO',
+      'SEM_ESPACO_ATIVO',
+    ]);
+  });
+
+  it('tipo de festa inativo conta como ausente (vai para o Catálogo)', () => {
+    const r = pendenciasDoLinkPublico({ ...completo, tiposEvento: [{ ativo: false }] });
+    expect(r.map((p) => [p.codigo, p.secao])).toEqual([['SEM_TIPO_EVENTO_ATIVO', 'catalogo']]);
   });
 
   it('pacotes inativos ou sem preço não contam', () => {

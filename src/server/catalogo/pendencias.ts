@@ -2,13 +2,13 @@ import 'server-only';
 import { count, eq } from 'drizzle-orm';
 import { cache } from 'react';
 import { pendenciasDoLinkPublico, type Pendencia } from '@/domain/catalogo/pendencias';
-import { espacos, faixasPreco, pacotes, turnos } from '@/server/db/schema';
+import { espacos, faixasPreco, pacotes, tiposEvento, turnos } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 
 /** O que falta para o link público funcionar (memoizado por requisição). */
 export const carregarPendencias = cache(async (usuarioId: string): Promise<Pendencia[]> => {
   return comUsuario(usuarioId, async (tx) => {
-    const [listaPacotes, qtdFaixas, listaTurnos, listaEspacos] = await Promise.all([
+    const [listaPacotes, qtdFaixas, listaTipos, listaTurnos, listaEspacos] = await Promise.all([
       tx
         .select({
           id: pacotes.id,
@@ -22,6 +22,11 @@ export const carregarPendencias = cache(async (usuarioId: string): Promise<Pende
         .select({ pacoteId: faixasPreco.pacoteId, n: count() })
         .from(faixasPreco)
         .groupBy(faixasPreco.pacoteId),
+      tx
+        .select({ ativo: tiposEvento.ativo })
+        .from(tiposEvento)
+        .where(eq(tiposEvento.ativo, true))
+        .limit(1),
       tx.select({ ativo: turnos.ativo }).from(turnos).where(eq(turnos.ativo, true)).limit(1),
       tx.select({ ativo: espacos.ativo }).from(espacos).where(eq(espacos.ativo, true)).limit(1),
     ]);
@@ -31,6 +36,7 @@ export const carregarPendencias = cache(async (usuarioId: string): Promise<Pende
         ...p,
         quantidadeFaixas: faixasPorPacote.get(p.id) ?? 0,
       })),
+      tiposEvento: listaTipos,
       turnos: listaTurnos,
       espacos: listaEspacos,
     });
