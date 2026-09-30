@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Tokens da identidade Orkestra.
+ * Cores em hex para bater 1:1 com o guia visual; tema escuro preparado em .dark (sem toggle ainda).
+ */
+:root {
+  --radius-card: 12px;
+  --radius-control: 10px;
+
+  --background: #fafafc;
+  --foreground: #16141f;
+
+  --card: #ffffff;
+  --card-foreground: #16141f;
+  --popover: #ffffff;
+  --popover-foreground: #16141f;
+
+  --primary: #7c5cd6;
+  --primary-hover: #6a4bc4;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1eefb;
+  --secondary-foreground: #3d2f73;
+
+  --muted: #f3f2f7;
+  --muted-foreground: #5f5b6e;
+
+  --accent: #f1eefb;
+  --accent-foreground: #3d2f73;
+
+  --destructive: #d93f4c;
+  --destructive-foreground: #ffffff;
+
+  --success: #1f9d6b;
+
+  --border: #e6e4ee;
+  --input: #dcd9e6;
+  --ring: #7c5cd6;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #16141f;
+}
+
+.dark {
+  --background: #120f1a;
+  --foreground: #f3f1fa;
+
+  --card: #1a1625;
+  --card-foreground: #f3f1fa;
+  --popover: #1a1625;
+  --popover-foreground: #f3f1fa;
+
+  --primary: #8f73e0;
+  --primary-hover: #a58ee8;
+  --primary-foreground: #ffffff;
+
+  --secondary: #262036;
+  --secondary-foreground: #ddd5f7;
+
+  --muted: #231e31;
+  --muted-foreground: #a7a1b8;
+
+  --accent: #2a2340;
+  --accent-foreground: #ddd5f7;
+
+  --destructive: #ef5b67;
+  --destructive-foreground: #ffffff;
+
+  --success: #3cc28d;
+
+  --border: #2c2640;
+  --input: #3a3350;
+  --ring: #8f73e0;
+
+  --sidebar: #1a1625;
+  --sidebar-foreground: #f3f1fa;
+}
+
+@theme inline {
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+
+  --radius-card: var(--radius-card);
+  --radius-control: var(--radius-control);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    overflow-x: hidden;
+  }
+}
