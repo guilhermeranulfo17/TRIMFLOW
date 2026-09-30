@@ -92,3 +92,6 @@ export type RegistroAuditoria = typeof auditoria.$inferSelect;
 export type NovoRegistroAuditoria = typeof auditoria.$inferInsert;
 export type Perfil = (typeof perfilUsuario.enumValues)[number];
 export type Segmento = (typeof segmentoEmpresa.enumValues)[number];
+
+// Catálogo e regras comerciais (Etapa 1).
+export * from './schema-catalogo';
