@@ -22,6 +22,11 @@ concurrency:
 permissions:
   contents: read
 
+# shell: bash explícito = `bash -eo pipefail`: falha no dry-run não some no `| tee`.
+defaults:
+  run:
+    shell: bash
+
 env:
   SUPABASE_PROJECT_REF: nsqoenggvshzkhbpurfi
 

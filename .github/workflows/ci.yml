@@ -12,6 +12,11 @@ concurrency:
 permissions:
   contents: read
 
+# shell: bash explícito = `bash -eo pipefail`: falha no dry-run não some no `| tee`.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # Mostra no resumo do job quais migrations serão aplicadas em produção no merge.
   # Sem os segredos (PR de fork, Dependabot), o job é pulado sem falhar o CI.
