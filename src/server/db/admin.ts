@@ -1,5 +1,5 @@
 import 'server-only';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { obterDb } from './client';
 import { empresas } from './schema';
 
@@ -22,4 +22,15 @@ export async function buscarEmpresaPublicaPorSlug(slug: string): Promise<Empresa
     .where(eq(empresas.slug, slug))
     .limit(1);
   return empresa ?? null;
+}
+
+/**
+ * Redirecionamento de slug antigo em /b/[slug]: o visitante anônimo chega por um link antigo.
+ * Devolve só o slug atual, e só enquanto o antigo ainda vale (12 meses após a troca).
+ */
+export async function buscarSlugAtualPorAntigo(slug: string): Promise<string | null> {
+  const [linha] = await obterDb().execute<{ atual: string | null }>(
+    sql`select public.slug_atual_por_antigo(${slug}) as atual`,
+  );
+  return linha?.atual ?? null;
 }
