@@ -1,6 +1,7 @@
 import 'server-only';
 import { unstable_rethrow } from 'next/navigation';
 import type { z } from 'zod';
+import { idSchema } from '@/domain/validacao/comum';
 import { AcessoNegadoError, exigirPerfil } from '@/server/auth/guards';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { auditoria } from '@/server/db/schema';
@@ -105,4 +106,11 @@ export function diferencas<T extends Record<string, unknown>>(antes: T, depois: 
       mudou[chave] = { antes: antes[chave], depois: valor };
   }
   return mudou;
+}
+
+export const NAO_ENCONTRADO = 'Esse cadastro não existe mais. Recarregue a página.';
+
+/** Id recebido do navegador tem formato de uuid? (evita erro de tipo no banco) */
+export function idValido(id: unknown): id is string {
+  return typeof id === 'string' && idSchema.safeParse(id).success;
 }

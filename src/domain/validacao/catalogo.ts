@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_FOTOS_PACOTE } from '../imagem';
 import {
   validarFaixasIdade,
   validarPrecoPacote,
@@ -151,3 +152,23 @@ export const vinculosOpcionalSchema = z
     adicionarProblemas(ctx, validarVinculosOpcional({ compativeis, inclusos }));
   });
 export type VinculosOpcionalEntrada = z.input<typeof vinculosOpcionalSchema>;
+
+/** Política de crianças do pacote: própria (com faixas) ou a da empresa. */
+export const faixasIdadePacoteSchema = z
+  .object({ propria: z.boolean(), faixas: z.array(faixaIdadeSchema).max(10) })
+  .superRefine((v, ctx) => {
+    if (!v.propria) return;
+    if (v.faixas.length === 0) {
+      ctx.addIssue({ code: 'custom', path: ['faixas'], message: 'Adicione pelo menos uma faixa.' });
+      return;
+    }
+    adicionarProblemas(ctx, validarFaixasIdade(v.faixas));
+  });
+export type FaixasIdadePacoteEntrada = z.input<typeof faixasIdadePacoteSchema>;
+
+export const fotosPacoteSchema = z.object({
+  caminhos: z
+    .array(z.string().max(200))
+    .max(MAX_FOTOS_PACOTE, `Use no máximo ${MAX_FOTOS_PACOTE} fotos.`)
+    .refine((c) => new Set(c).size === c.length, 'Foto repetida.'),
+});

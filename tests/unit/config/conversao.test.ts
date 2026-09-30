@@ -31,6 +31,7 @@ describe('dinheiro', () => {
   it('centavos → texto sem R$', () => {
     expect(centavosParaTexto(450000)).toBe('4.500,00');
     expect(centavosParaTexto(0)).toBe('0,00');
+    expect(centavosParaTexto(Number.NaN)).toBe('');
     expect(centavosParaTexto(null)).toBe('');
     expect(centavosParaTexto(undefined)).toBe('');
   });

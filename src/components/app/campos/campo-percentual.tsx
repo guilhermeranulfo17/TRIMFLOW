@@ -25,7 +25,8 @@ export function CampoPercentual({
   const ultimo = useRef(valor);
 
   useEffect(() => {
-    if (valor !== ultimo.current) {
+    // Vazio pode chegar como null ou NaN (formulário): os dois valem "sem valor".
+    if (semValor(valor) ? !semValor(ultimo.current) : valor !== ultimo.current) {
       ultimo.current = valor;
       setTexto(bpParaTexto(valor));
     }
@@ -54,4 +55,8 @@ export function CampoPercentual({
       </span>
     </div>
   );
+}
+
+function semValor(v: number | null | undefined): boolean {
+  return v === null || v === undefined || Number.isNaN(v);
 }

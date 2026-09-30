@@ -14,9 +14,14 @@ import {
 import { gravarOrdem, proximaOrdem } from '@/server/catalogo/lista';
 import { espacos, turnos } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { acaoDoDono, auditar, diferencas, validar, type ResultadoAcao } from './comum';
-
-const NAO_ENCONTRADO = 'Esse cadastro não existe mais. Recarregue a página.';
+import {
+  acaoDoDono,
+  auditar,
+  diferencas,
+  NAO_ENCONTRADO,
+  validar,
+  type ResultadoAcao,
+} from './comum';
 
 function revalidar() {
   // O layout recalcula as pendências (badge do menu).

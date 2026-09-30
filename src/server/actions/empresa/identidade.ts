@@ -10,7 +10,7 @@ import {
   type IdentidadeEntrada,
   type SlugEntrada,
 } from '@/domain/validacao/empresa';
-import { criarClienteSupabase } from '@/server/auth/supabase-server';
+import { apagarArquivosMidia } from '@/server/catalogo/midia';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { acaoDoDono, auditar, diferencas, validar, type ResultadoAcao } from './comum';
@@ -98,13 +98,6 @@ export async function alterarSlug(entrada: SlugEntrada): Promise<ResultadoAcao<{
 
 type TipoImagemEmpresa = 'logo' | 'capa';
 
-async function apagarDoStorage(caminho: string | null | undefined) {
-  if (!caminho) return;
-  const supabase = await criarClienteSupabase();
-  const { error } = await supabase.storage.from('midia').remove([caminho]);
-  if (error) console.error('[storage] não foi possível apagar', caminho, error.message);
-}
-
 export async function salvarImagemEmpresa(entrada: {
   tipo: TipoImagemEmpresa;
   caminho: string | null;
@@ -138,7 +131,7 @@ export async function salvarImagemEmpresa(entrada: {
       );
       return linha?.caminho ?? null;
     });
-    if (anterior && anterior !== caminho) await apagarDoStorage(anterior);
+    if (anterior && anterior !== caminho) await apagarArquivosMidia([anterior]);
     revalidatePath('/app/empresa');
     const nome = tipo === 'logo' ? 'Logo' : 'Capa';
     return { ok: true, mensagem: caminho ? `${nome} atualizada.` : `${nome} removida.` };

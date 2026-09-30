@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { UploadImagem } from '@/components/app/campos';
 import { Secao } from '@/components/app/form/secao';
 import { useToast } from '@/components/app/toast';
-import { urlPublicaMidia } from '@/lib/supabase-browser';
+import { urlPublicaMidia } from '@/lib/midia';
 import { salvarImagemEmpresa } from '@/server/actions/empresa/identidade';
 
 export function SecaoImagens({

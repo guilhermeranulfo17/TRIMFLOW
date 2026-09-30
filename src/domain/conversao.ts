@@ -14,7 +14,7 @@ export function textoParaCentavos(texto: string): number | null {
 
 /** 450000 → "4.500,00" (sem o "R$"). */
 export function centavosParaTexto(centavos: number | null | undefined): string {
-  if (centavos === null || centavos === undefined) return '';
+  if (centavos === null || centavos === undefined || !Number.isInteger(centavos)) return '';
   return formatBRL(centavos).replace('R$ ', '');
 }
 
@@ -35,7 +35,7 @@ export function textoParaBp(
 
 /** 1000 → "10"; -1500 → "-15"; 1250 → "12,5". */
 export function bpParaTexto(bp: number | null | undefined): string {
-  if (bp === null || bp === undefined) return '';
+  if (bp === null || bp === undefined || !Number.isInteger(bp)) return '';
   const abs = Math.abs(bp);
   const inteiro = Math.trunc(abs / 100);
   const decimal = (abs % 100).toString().padStart(2, '0').replace(/0+$/, '');
