@@ -1,15 +1,6 @@
-# Próximos passos (anotados durante a Etapa 0)
+# Próximos passos (anotados durante as Etapas 0 e 1)
 
 Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi implementado.
-
-## Etapa 1: Domínio e motor de preço
-
-- Motor de preço puro em `src/domain/preco` reaproveitando `money.pct` (arredondamento por
-  linha antes da soma) e os exemplos do documento como testes de aceitação.
-- Tabelas de catálogo com `empresa_id`, RLS e o mesmo padrão de grants mínimos + testes de
-  isolamento (copiar `tests/integration/rls-isolamento.test.ts`).
-- Definir tipo para percentuais persistidos (`numeric(5,2)` chega como string no Drizzle):
-  converter para basis points inteiros no domínio.
 
 ## Etapa 2: Configuração da empresa
 
@@ -21,11 +12,34 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Sincronizar `usuarios.email` quando o e-mail do Auth mudar.
 - Validar `empresas.fuso` contra `pg_timezone_names` (hoje só no app).
 - Upload de logo/capa (Storage, WEBP, 5 MB).
+- **Telas de edição do catálogo e das regras** sobre as tabelas da Etapa 1 (os grants e as
+  policies já estão prontos): tipos de evento, espaços, turnos, ajustes de dia, feriados, faixas
+  de idade (empresa e por pacote), pacotes com faixas e cardápio, opcionais e vínculos, faixas
+  de deslocamento e regras comerciais.
+- Fotos de pacotes e opcionais (`pacotes.fotos` já existe como lista vazia).
+- Validar no formulário o que o banco já garante (faixas de idade sem sobreposição, ajuste
+  único por dia e turno, preço conforme o modelo), com mensagens em português antes de gravar.
+- "Tabela própria" por dia (preços diferentes, não só %): hoje a tabela de dia é só ajuste em bp.
+- Rever a interpretação das faixas de idade quando o pacote tem política própria (hoje: faixa da
+  empresa → faixa do pacote que contém a idade mínima).
+
+## Etapa 3: Agenda
+
+- Capacidade de eventos por turno e espaço (o motor não checa disponibilidade de slot).
 
 ## Etapa 4: Link público
 
 - Página pública só com wizard quando a empresa tiver ao menos um pacote com preço e um turno.
 - Plano `suspenso`: página pública mostra só o WhatsApp do buffet, sem wizard.
+- Leitura pública do catálogo por função `security definer` específica (hoje `anon` não lê nada),
+  expondo só o necessário para o wizard.
+- Usar `aPartirDe` no modo de exibição "faixa" e `turnosDoDia`/`pacotesDisponiveis` nos passos.
+
+## Etapa 5: Proposta
+
+- **Pacotes e opcionais usados em propostas passam a ser desativados, não excluídos** (hoje a
+  exclusão física é permitida porque nada aponta para o catálogo).
+- Congelar o `ResultadoOrcamento` (com `versaoMotor`) dentro da proposta.
 
 ## Etapa 9: Produção
 

@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   qualidade:
-    name: Lint, typecheck e unitários
+    name: Lint, typecheck, unitários e cobertura
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -28,7 +28,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
-      - run: pnpm test:unit
+      - name: Unitários com cobertura (mínimo de 95% no motor de preço)
+        run: pnpm test:coverage
 
   integracao-e2e:
     name: Integração (RLS) e E2E com Supabase local

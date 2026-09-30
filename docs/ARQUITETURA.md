@@ -152,6 +152,93 @@ Requisito: criar usuário do Auth, empresa, usuário dono e auditoria "em uma tr
 
 GitHub Actions em todo PR e em push para `main` e `claude/**`:
 
-- `qualidade`: lint, prettier, typecheck e unitários.
+- `qualidade`: lint, prettier, typecheck e unitários com cobertura (mínimo de 95% no motor).
 - `integracao-e2e`: `supabase start` (sem serviços desnecessários), integração, build e E2E.
   Em caso de falha, anexa o relatório do Playwright.
+
+---
+
+# Etapa 1: catálogo, regras e motor de preço
+
+## 11. Banco do catálogo
+
+- **16 tabelas novas** em 3 migrations: `20261001000001_catalogo_config`,
+  `20261001000002_catalogo_pacotes_opcionais` e `20261001000003_catalogo_rls`.
+- **Unidades inteiras, sempre:** dinheiro em centavos (`integer`; nenhuma festa passa de
+  R$ 21 milhões), percentuais e fatores em **basis points** (1% = 100 bp) e durações em minutos.
+  Nada de `numeric`, que chega como string no Drizzle e convida a usar float.
+- **FK composta entre empresas.** Todo pai tem `unique (id, empresa_id)` e toda filha referencia
+  `(pai_id, empresa_id)`. Assim, o próprio banco recusa ligar uma faixa, seção ou opcional a um
+  pacote de outra empresa, mesmo que o código erre. Os campos opcionais (`ajustes_dia.turno_id`,
+  `faixas_idade.pacote_id`) usam MATCH SIMPLE: quando o campo é nulo, não há checagem.
+- **Faixas de idade sem sobreposição** com uma exclusion constraint (`btree_gist`): a regra vale
+  para cada política (a da empresa e a de cada pacote).
+- **Ajuste de dia único por (tipo, dia, turno)** com `unique nulls not distinct`, para que
+  "sábado sem turno" também não se repita.
+- **Regras comerciais**: uma linha por empresa, criada por um trigger em `empresas`. As empresas
+  que já existiam recebem a linha pelo backfill `criar_regras_comerciais_faltantes()`, uma função
+  idempotente que também é testada. O painel lê as regras, e só o dono altera, por coluna. Ninguém
+  insere nem apaga pelo painel.
+- **RLS**: leitura por qualquer usuário ativo da empresa; inserir, alterar e excluir só pelo dono;
+  `anon` sem acesso. As policies saem de um bloco `DO` com a lista de tabelas, para ficarem
+  idênticas em todas. Além disso, o `with check` impede mover uma linha para outra empresa.
+- **Exclusão física permitida nesta etapa**, porque ainda não há orçamentos apontando para o
+  catálogo. A partir da Etapa 5, pacotes e opcionais usados em propostas passam a ser
+  desativados, não excluídos.
+
+## 12. Motor de preço (`src/domain/preco`)
+
+- **Função pura e determinística**: sem banco e sem `Date.now()`, porque "hoje" entra como
+  parâmetro. O resultado é JSON puro com `versaoMotor: 1`, pronto para ser congelado na proposta
+  (Etapa 5).
+- A ordem de cálculo é a do documento. Cada linha é arredondada meio para cima antes da soma,
+  via `pctBp` (BigInt). O teste de aceitação do documento bate até o centavo, e a cobertura
+  exigida no CI é de ≥ 95% (hoje 100% de linhas).
+- Com erro, `ok = false`, mas as linhas que puderam ser calculadas continuam no resultado. Um
+  opcional inválido não entra no total.
+- O schema Zod valida o formato na fronteira do servidor. As regras de negócio ficam no motor,
+  que devolve códigos e mensagens em português.
+
+**Interpretações (o documento não fixa):**
+
+1. **Criança informada na faixa da empresa, com o pacote tendo faixas próprias:** o cliente
+   informa as crianças antes de escolher o pacote. Por isso, a faixa da empresa é mapeada para a
+   faixa do pacote que contém a sua idade mínima. O id de uma faixa do próprio pacote também é
+   aceito.
+2. **Ajuste de 0 bp** não gera linha, mas "vence" a precedência. Assim, um feriado cadastrado
+   com 0% anula o +10% de sábado.
+3. **Espaço no local do cliente sem km informado**, com deslocamento configurado: erro
+   `DISTANCIA_OBRIGATORIA`. Um km informado para um espaço comum é ignorado.
+4. **Desconto**: o limite do usuário é conferido contra o valor pedido
+   (`DESCONTO_ACIMA_LIMITE`). O desconto aplicado nunca passa do subtotal (aviso
+   `DESCONTO_LIMITADO_AO_SUBTOTAL`).
+5. **Parcelas**: N começa em `parcelas_max` e diminui até a primeira parcela vencer hoje ou
+   depois. Se nem a última parcela cabe (o vencimento já passou), fica 1 parcela vencendo hoje,
+   com o aviso `PRAZO_PARCELAS_CURTO`. Saldo zero não gera parcelas.
+6. **Opcional repetido** na mesma entrada: `REFERENCIA_INVALIDA`.
+
+## 13. Modelos de segmento (`src/domain/modelos`)
+
+- São dados TypeScript validados com Zod, incluindo a integridade (chaves únicas, referências
+  existentes, faixas sem sobreposição, deslocamento só com espaço no local do cliente).
+- As referências internas são por **chave**, não por id. `contextoDoModelo` converte um modelo
+  em `ContextoPreco` com ids sintéticos, e os testes rodam o motor em cada modelo.
+- O seed do Buffet Demo é o modelo infantil em SQL. Um teste de integração compara o que está
+  no banco com o modelo, para os dois não divergirem.
+
+## 14. Servidor do catálogo
+
+- `carregarContexto` lê tudo via `comUsuario`, ou seja, sob o RLS. Recebe `comUsuario` injetável
+  para os testes.
+- `gravarModelo` grava tudo numa única transação, com o RLS valendo (só o dono consegue
+  inserir), e nunca sobrescreve: se existir qualquer pacote, não grava nada. Um
+  `pg_advisory_xact_lock` por empresa evita que dois cliques simultâneos dupliquem o catálogo,
+  o que é coberto por teste. A gravação fica registrada na auditoria.
+- No simulador, "hoje" (fuso da empresa) e o limite de desconto do usuário vêm do servidor.
+  O navegador só envia a escolha da festa.
+
+## 15. Simulador
+
+- `/app/empresa/simulador`, só para o dono (`exigirPerfil('dono')`). O vendedor vê uma tela
+  "Acesso restrito", sem o erro genérico.
+- É uma ferramenta de conferência, sem pretensão visual. Funciona em 375px e no desktop.

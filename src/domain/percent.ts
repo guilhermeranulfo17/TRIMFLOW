@@ -22,3 +22,30 @@ export function formatPct(razao: number, casas = 1): string {
     casas > 0 ? (inteiro % fator).toString().padStart(casas, '0').replace(/0+$/, '') : '';
   return `${negativo ? '-' : ''}${parteInteira}${parteDecimal ? `,${parteDecimal}` : ''}%`;
 }
+
+/**
+ * Formata basis points (1% = 100 bp) como percentual pt-BR, só com inteiros.
+ * formatBp(1000) → "10%"; formatBp(-1500) → "-15%"; formatBp(1250) → "12,5%"; formatBp(1234) → "12,34%".
+ * Com `{ sinal: true }` positivos ganham "+": formatBp(1000, { sinal: true }) → "+10%".
+ */
+export function formatBp(bp: number, opcoes: { sinal?: boolean } = {}): string {
+  if (!Number.isSafeInteger(bp)) throw new TypeError(`Basis points inválidos: ${bp}`);
+  const abs = Math.abs(bp);
+  const inteiro = Math.trunc(abs / 100)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const decimal = (abs % 100).toString().padStart(2, '0').replace(/0+$/, '');
+  const sinal = bp < 0 ? '-' : opcoes.sinal && bp > 0 ? '+' : '';
+  return `${sinal}${inteiro}${decimal ? `,${decimal}` : ''}%`;
+}
+
+/**
+ * Converte um percentual em texto decimal (como o Postgres devolve `numeric`, ex.: "5.00",
+ * "12.5", "100") em basis points inteiros, sem passar por float. "5.00" → 500.
+ */
+export function percentualTextoParaBp(texto: string): number {
+  const m = /^(\d{1,3})(?:\.(\d{1,2})\d*)?$/.exec(texto.trim());
+  if (!m) throw new RangeError(`Percentual inválido: ${texto}`);
+  const [, inteiro = '0', decimal = ''] = m;
+  return Number(inteiro) * 100 + Number(decimal.padEnd(2, '0'));
+}
