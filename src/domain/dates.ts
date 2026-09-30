@@ -82,3 +82,57 @@ export function diaDaSemana(valor: Date | string, fuso: string = FUSO_PADRAO): s
   }
   return formatInTimeZone(paraDate(valor), fuso, 'EEEE', { locale: ptBR });
 }
+
+// ---------------------------------------------------------------------------
+// Aritmética de datas civis ("yyyy-MM-dd"), sem fuso e sem Date.now().
+// ---------------------------------------------------------------------------
+
+function exigirDataCivil(data: string): [number, number, number] {
+  const partes = partesDataCivil(data);
+  if (!partes) throw new RangeError(`Data inválida: ${data}`);
+  return partes;
+}
+
+function paraDataCivil(utc: Date): DataCivil {
+  const ano = utc.getUTCFullYear().toString().padStart(4, '0');
+  const mes = (utc.getUTCMonth() + 1).toString().padStart(2, '0');
+  const dia = utc.getUTCDate().toString().padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+export function dataCivilValida(data: string): boolean {
+  return partesDataCivil(data) !== null;
+}
+
+/** Dia da semana de uma data civil: 0 = domingo … 6 = sábado. */
+export function diaDaSemanaNumero(data: DataCivil): number {
+  const [ano, mes, dia] = exigirDataCivil(data);
+  return new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay();
+}
+
+/** somarDias("2026-11-14", 7) → "2026-11-21". Aceita negativos. */
+export function somarDias(data: DataCivil, dias: number): DataCivil {
+  const [ano, mes, dia] = exigirDataCivil(data);
+  return paraDataCivil(new Date(Date.UTC(ano, mes - 1, dia + dias)));
+}
+
+/**
+ * Soma meses mantendo o dia; se o mês de destino for mais curto, usa o último dia dele.
+ * somarMeses("2026-03-31", -1) → "2026-02-28".
+ */
+export function somarMeses(data: DataCivil, meses: number): DataCivil {
+  const [ano, mes, dia] = exigirDataCivil(data);
+  const alvo = new Date(Date.UTC(ano, mes - 1 + meses, 1));
+  const ultimoDia = new Date(
+    Date.UTC(alvo.getUTCFullYear(), alvo.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  alvo.setUTCDate(Math.min(dia, ultimoDia));
+  return paraDataCivil(alvo);
+}
+
+/** Negativo se a < b, 0 se iguais, positivo se a > b. */
+export function compararDatas(a: DataCivil, b: DataCivil): number {
+  exigirDataCivil(a);
+  exigirDataCivil(b);
+  return a < b ? -1 : a > b ? 1 : 0;
+}

@@ -22,3 +22,19 @@ export function formatPct(razao: number, casas = 1): string {
     casas > 0 ? (inteiro % fator).toString().padStart(casas, '0').replace(/0+$/, '') : '';
   return `${negativo ? '-' : ''}${parteInteira}${parteDecimal ? `,${parteDecimal}` : ''}%`;
 }
+
+/**
+ * Formata basis points (1% = 100 bp) como percentual pt-BR, só com inteiros.
+ * formatBp(1000) → "10%"; formatBp(-1500) → "-15%"; formatBp(1250) → "12,5%"; formatBp(1234) → "12,34%".
+ * Com `{ sinal: true }` positivos ganham "+": formatBp(1000, { sinal: true }) → "+10%".
+ */
+export function formatBp(bp: number, opcoes: { sinal?: boolean } = {}): string {
+  if (!Number.isSafeInteger(bp)) throw new TypeError(`Basis points inválidos: ${bp}`);
+  const abs = Math.abs(bp);
+  const inteiro = Math.trunc(abs / 100)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const decimal = (abs % 100).toString().padStart(2, '0').replace(/0+$/, '');
+  const sinal = bp < 0 ? '-' : opcoes.sinal && bp > 0 ? '+' : '';
+  return `${sinal}${inteiro}${decimal ? `,${decimal}` : ''}%`;
+}

@@ -71,3 +71,35 @@ export function pct(cents: Centavos, percentual: number): Centavos {
   const resultado = Number(negativo ? -arredondado : arredondado);
   return resultado === 0 ? 0 : resultado;
 }
+
+/**
+ * Aplica um percentual em basis points (1% = 100 bp) a um valor em centavos,
+ * arredondando meio para cima (metade se afasta do zero). Só aritmética inteira.
+ *
+ * pctBp(577500, 1000) → 57750 (10%); pctBp(740250, 500) → 37013; pctBp(577500, -1500) → -86625
+ */
+export function pctBp(cents: Centavos, bp: number): Centavos {
+  assertCentavos(cents);
+  if (!Number.isSafeInteger(bp))
+    throw new TypeError(`Basis points inválidos: ${bp}. Use inteiros.`);
+  const numerador = BigInt(cents) * BigInt(bp);
+  const divisor = 10_000n;
+  const negativo = numerador < 0n;
+  const abs = negativo ? -numerador : numerador;
+  const arredondado = (abs * 2n + divisor) / (divisor * 2n);
+  const resultado = Number(negativo ? -arredondado : arredondado);
+  return resultado === 0 ? 0 : resultado;
+}
+
+/** Divisão inteira de centavos arredondada meio para cima (ex.: valor por convidado). */
+export function dividirArredondando(cents: Centavos, divisor: number): Centavos {
+  assertCentavos(cents);
+  if (!Number.isSafeInteger(divisor) || divisor <= 0) {
+    throw new RangeError(`Divisor inválido: ${divisor}`);
+  }
+  const negativo = cents < 0;
+  const abs = BigInt(Math.abs(cents));
+  const d = BigInt(divisor);
+  const resultado = Number((abs * 2n + d) / (d * 2n));
+  return negativo && resultado !== 0 ? -resultado : resultado;
+}
