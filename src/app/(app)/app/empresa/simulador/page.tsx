@@ -49,8 +49,8 @@ export default async function SimuladorPage() {
         <EmptyState icone={Calculator} titulo="Seu catálogo ainda está vazio">
           <p>
             Carregue um modelo de exemplo do seu segmento, com pacotes, opcionais, turnos e regras,
-            para testar o simulador. Os preços são exemplos e poderão ser editados na próxima versão
-            do Orkestra.
+            e depois ajuste nomes e preços em Catálogo e em Preços e regras. Ou cadastre seus
+            pacotes do zero no Catálogo.
           </p>
           <div className="mt-5">
             <BotaoCarregarModelo />

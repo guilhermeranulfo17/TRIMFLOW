@@ -93,7 +93,7 @@ export default async function CatalogoPage() {
         <p className="text-muted-foreground text-sm">
           Pacotes, opcionais e tipos de festa que o cliente vê no link.
         </p>
-        <LinkTestarPrecos />
+        {!somenteLeitura && <LinkTestarPrecos />}
       </div>
 
       {catalogoVazio && !somenteLeitura && (

@@ -53,7 +53,7 @@ export default async function RegrasPage() {
         <p className="text-muted-foreground text-sm">
           Regras que o motor de preço aplica em todo orçamento.
         </p>
-        <LinkTestarPrecos />
+        {!somenteLeitura && <LinkTestarPrecos />}
       </div>
       <FormAjustes
         ajustes={ajustesOrdenados.map((a) => ({

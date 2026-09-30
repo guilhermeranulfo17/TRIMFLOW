@@ -13,8 +13,8 @@ test.describe('simulador de preço', () => {
     });
     await expect(page).toHaveURL(/\/app\/leads$/);
 
-    await page.goto('/app/empresa');
-    await page.getByRole('link', { name: 'Simulador de preço (teste)' }).click();
+    await page.goto('/app/empresa/catalogo');
+    await page.getByRole('link', { name: 'Testar preços' }).click();
     await expect(page).toHaveURL(/\/app\/empresa\/simulador$/);
     await expect(
       page.getByRole('heading', { name: 'Seu catálogo ainda está vazio' }),
@@ -51,8 +51,9 @@ test.describe('simulador de preço', () => {
 
   test('vendedor não acessa o simulador', async ({ page }) => {
     await entrar(page, 'vendedor@demo.local', SENHA_SEED);
-    await page.goto('/app/empresa');
-    await expect(page.getByRole('link', { name: 'Simulador de preço (teste)' })).toHaveCount(0);
+    await page.goto('/app/empresa/catalogo');
+    await expect(page.getByRole('link', { name: 'Testar preços' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Simulador' })).toHaveCount(0);
 
     await page.goto('/app/empresa/simulador');
     await expect(page.getByRole('heading', { name: 'Acesso restrito' })).toBeVisible();

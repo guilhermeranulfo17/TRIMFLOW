@@ -102,7 +102,7 @@ export default async function EditarPacotePage({ params }: Props) {
         subtitulo={pacote.ativo ? 'Pacote ativo' : 'Pacote inativo (o cliente não vê)'}
         acoes={
           <>
-            <LinkTestarPrecos />
+            {!somenteLeitura && <LinkTestarPrecos />}
             {!somenteLeitura && (
               <AcoesItemCatalogo
                 id={pacote.id}

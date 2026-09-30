@@ -61,7 +61,7 @@ export default async function EditarOpcionalPage({ params }: Props) {
         subtitulo={opcional.ativo ? 'Opcional ativo' : 'Opcional inativo (o cliente não vê)'}
         acoes={
           <>
-            <LinkTestarPrecos />
+            {!somenteLeitura && <LinkTestarPrecos />}
             {!somenteLeitura && (
               <AcoesItemCatalogo
                 id={opcional.id}
