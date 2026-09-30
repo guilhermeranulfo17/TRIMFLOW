@@ -9,7 +9,9 @@ export default function CadastroPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Crie sua conta</CardTitle>
+        <CardTitle>
+          <h1 className="text-xl">Crie sua conta</h1>
+        </CardTitle>
         <CardDescription>14 dias grátis. Sem cartão de crédito.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

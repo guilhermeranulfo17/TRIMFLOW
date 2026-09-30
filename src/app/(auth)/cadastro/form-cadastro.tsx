@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { mascaraTelefoneBR } from '@/domain/mascara';
-import { cadastroSchema, ROTULO_SEGMENTO, SEGMENTOS } from '@/domain/validacao/auth';
+import { cadastroSchema, ROTULO_SEGMENTO, SEGMENTOS } from '@/domain/validacao/cadastro';
 import { cn } from '@/lib/utils';
 import { cadastrar } from '@/server/actions/auth';
 

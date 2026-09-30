@@ -6,15 +6,14 @@ import { redirect } from 'next/navigation';
 import { celularBRParaE164 } from '@/domain/phone';
 import { slugBaseDaEmpresa } from '@/domain/slug';
 import {
-  cadastroSchema,
   loginSchema,
   novaSenhaSchema,
   recuperarSenhaSchema,
-  type CadastroInput,
   type LoginInput,
   type NovaSenhaInput,
   type RecuperarSenhaInput,
 } from '@/domain/validacao/auth';
+import { cadastroSchema, type CadastroInput } from '@/domain/validacao/cadastro';
 import { destinoSeguro } from '@/server/auth/redirecionamento';
 import { criarClienteSupabase } from '@/server/auth/supabase-server';
 import { auditoria } from '@/server/db/schema';

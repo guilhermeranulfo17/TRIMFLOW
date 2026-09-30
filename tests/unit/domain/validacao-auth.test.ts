@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { cadastroSchema, loginSchema, novaSenhaSchema } from '@/domain/validacao/auth';
+import { loginSchema, novaSenhaSchema } from '@/domain/validacao/auth';
+import { cadastroSchema } from '@/domain/validacao/cadastro';
 
 const valido = {
   nome: 'Ana Souza',

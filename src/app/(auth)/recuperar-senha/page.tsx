@@ -14,7 +14,9 @@ export default async function RecuperarSenhaPage({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Esqueceu a senha?</CardTitle>
+        <CardTitle>
+          <h1 className="text-xl">Esqueceu a senha?</h1>
+        </CardTitle>
         <CardDescription>
           Informe seu e-mail e enviaremos um link para criar uma nova.
         </CardDescription>

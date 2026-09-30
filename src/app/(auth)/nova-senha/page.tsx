@@ -16,7 +16,9 @@ export default async function NovaSenhaPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Criar nova senha</CardTitle>
+        <CardTitle>
+          <h1 className="text-xl">Criar nova senha</h1>
+        </CardTitle>
         <CardDescription>Escolha uma senha com pelo menos 8 caracteres.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

@@ -12,6 +12,7 @@ export function AvisoForm({
   return (
     <div
       role={tipo === 'erro' ? 'alert' : 'status'}
+      data-testid="aviso-form"
       className={cn(
         'rounded-control flex items-start gap-2 border px-3 py-2.5 text-sm',
         tipo === 'erro'
