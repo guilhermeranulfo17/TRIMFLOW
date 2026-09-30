@@ -109,3 +109,9 @@ export const deslocamentoSchema = z
     adicionarProblemas(ctx, validarFaixasDeslocamento(d.faixas));
   });
 export type DeslocamentoEntrada = z.input<typeof deslocamentoSchema>;
+
+/** Configuração da agenda (Etapa 3). */
+export const agendaRegrasSchema = z.object({
+  intervaloEntreEventosMin: inteiro('o intervalo entre eventos', 0, 720),
+});
+export type AgendaRegrasEntrada = z.input<typeof agendaRegrasSchema>;

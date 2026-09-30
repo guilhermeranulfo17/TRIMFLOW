@@ -21,7 +21,7 @@ export const modeloInfantil: Modelo = {
     {
       chave: 'almoco',
       nome: 'Almoço',
-      horaInicio: '11:00',
+      horaInicio: '10:00',
       duracaoMin: 240,
       diasSemana: TODOS_OS_DIAS,
     },
@@ -35,7 +35,7 @@ export const modeloInfantil: Modelo = {
     {
       chave: 'noite',
       nome: 'Noite',
-      horaInicio: '19:00',
+      horaInicio: '20:00',
       duracaoMin: 240,
       diasSemana: TODOS_OS_DIAS,
     },

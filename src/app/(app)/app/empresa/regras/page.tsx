@@ -11,6 +11,7 @@ import {
   turnos,
 } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
+import { FormAgenda } from './form-agenda';
 import { FormAjustes } from './form-ajustes';
 import { FormCondicoes } from './form-condicoes';
 import { FormCriancasEmpresa } from './form-criancas-empresa';
@@ -85,6 +86,10 @@ export default async function RegrasPage() {
           valorKmCentavos: regras.deslocamentoValorKmCentavos,
           faixas: dados.faixasKm.map((f) => ({ ateKm: f.ateKm, valorCentavos: f.valorCentavos })),
         }}
+        somenteLeitura={somenteLeitura}
+      />
+      <FormAgenda
+        inicial={{ intervaloEntreEventosMin: regras.intervaloEntreEventosMin }}
         somenteLeitura={somenteLeitura}
       />
       <FormCondicoes

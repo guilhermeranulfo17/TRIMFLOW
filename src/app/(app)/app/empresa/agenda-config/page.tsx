@@ -17,6 +17,7 @@ export default async function AgendaConfigPage() {
         id: espacos.id,
         nome: espacos.nome,
         capacidadeMax: espacos.capacidadeMax,
+        eventosSimultaneos: espacos.eventosSimultaneos,
         noLocalDoCliente: espacos.noLocalDoCliente,
         ativo: espacos.ativo,
       })

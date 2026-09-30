@@ -95,9 +95,9 @@ begin
     values (demo, 'Salão principal', 120, false, 0);
 
   insert into public.turnos (empresa_id, nome, hora_inicio, duracao_min, dias_semana, ordem) values
-    (demo, 'Almoço', '11:00', 240, '{0,1,2,3,4,5,6}', 0),
+    (demo, 'Almoço', '10:00', 240, '{0,1,2,3,4,5,6}', 0),
     (demo, 'Tarde', '15:00', 240, '{0,1,2,3,4,5,6}', 1),
-    (demo, 'Noite', '19:00', 240, '{0,1,2,3,4,5,6}', 2);
+    (demo, 'Noite', '20:00', 240, '{0,1,2,3,4,5,6}', 2);
 
   insert into public.ajustes_dia (empresa_id, tipo, dia_semana, ajuste_bp) values
     (demo, 'dia_semana', 1, -1500),
@@ -187,5 +187,66 @@ begin
     deslocamento_km_gratis = 0,
     deslocamento_valor_km_centavos = 0
   where empresa_id = demo;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Agenda do Buffet Demo (Etapa 3). Datas relativas a hoje, para o seed nunca envelhecer.
+-- Idempotente: só grava se o Buffet Demo ainda não tiver reservas.
+--   3 reservas confirmadas no próximo mês (dias 25, 26 e 27, turnos diferentes)
+--   1 pré-reserva que vence em 20h, 1 pré-reserva já vencida
+--   1 bloqueio de dia inteiro e 1 bloqueio de um turno
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  demo      constant uuid := '11111111-1111-4111-8111-111111111111';
+  dona      constant uuid := '1a000000-0000-4000-8000-000000000001';
+  vendedor  constant uuid := '1a000000-0000-4000-8000-000000000002';
+  v_espaco  uuid;
+  v_fuso    text;
+  v_interv  integer;
+  v_mes     date := (date_trunc('month', current_date) + interval '1 month')::date;
+begin
+  if exists (select 1 from public.reservas where empresa_id = demo) then
+    return;
+  end if;
+  select id into v_espaco from public.espacos where empresa_id = demo order by ordem limit 1;
+  if v_espaco is null then
+    return;
+  end if;
+  select e.fuso, r.intervalo_entre_eventos_min into v_fuso, v_interv
+  from public.empresas e join public.regras_comerciais r on r.empresa_id = e.id where e.id = demo;
+
+  insert into public.reservas (
+    empresa_id, espaco_id, turno_id, data, inicio, fim, tipo, status, expira_em, cliente_nome,
+    cliente_whatsapp_e164, convidados, valor_total_centavos, sinal_centavos, sinal_pago_em,
+    criado_por, confirmada_por, confirmada_em
+  )
+  select demo, v_espaco, t.id, x.data, i.inicio, i.fim, x.tipo::public.tipo_reserva,
+         x.status::public.status_reserva, x.expira_em, x.cliente, x.whatsapp, x.convidados,
+         x.valor, x.sinal, x.sinal_pago_em, x.criado_por,
+         case when x.tipo = 'confirmada' then x.criado_por end,
+         case when x.tipo = 'confirmada' then now() end
+  from (values
+    ('Almoço', v_mes + 24, 'confirmada', 'ativa', null::timestamptz, 'Ana Paula Ribeiro',
+     '+5534991112201', 60, 650000, 195000, current_date, dona),
+    ('Tarde', v_mes + 25, 'confirmada', 'ativa', null::timestamptz, 'Carlos Menezes',
+     '+5534991112202', 80, 780000, 234000, current_date, dona),
+    ('Noite', v_mes + 26, 'confirmada', 'ativa', null::timestamptz, 'Juliana Prado',
+     null, 45, null, null, null, vendedor),
+    ('Tarde', current_date + 3, 'pre_reserva', 'ativa', now() + interval '20 hours',
+     'Mariana Costa', '+5534991112204', 50, null, null, null, vendedor),
+    ('Noite', current_date + 4, 'pre_reserva', 'vencida', now() - interval '2 hours',
+     'Roberto Lima', '+5534991112205', 70, null, null, null, vendedor)
+  ) as x(turno, data, tipo, status, expira_em, cliente, whatsapp, convidados, valor, sinal,
+         sinal_pago_em, criado_por)
+  join public.turnos t on t.empresa_id = demo and t.nome = x.turno
+  cross join lateral public._agenda_intervalo(x.data, t.hora_inicio, t.duracao_min, v_fuso, v_interv) i;
+
+  insert into public.bloqueios (empresa_id, data, turno_id, espaco_id, motivo, criado_por)
+  values (demo, current_date + 5, null, null, 'Manutenção do salão', dona);
+  insert into public.bloqueios (empresa_id, data, turno_id, espaco_id, motivo, criado_por)
+  select demo, current_date + 6, t.id, v_espaco, 'Evento da família', dona
+  from public.turnos t where t.empresa_id = demo and t.nome = 'Noite';
 end;
 $$;

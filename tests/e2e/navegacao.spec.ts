@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 import { entrar, SENHA_SEED, semRolagemHorizontal } from './helpers';
 
 const AREAS = [
-  { rotulo: 'Agenda', url: /\/app\/agenda$/, titulo: 'Agenda', vazio: 'Suas datas em um só lugar' },
+  // A agenda do Buffet Demo já tem eventos (seed): confere o botão principal em vez do vazio.
+  { rotulo: 'Agenda', url: /\/app\/agenda$/, titulo: 'Agenda', botao: 'Registrar evento' },
   {
     rotulo: 'Números',
     url: /\/app\/numeros$/,
@@ -29,7 +30,11 @@ test('navega pelas 4 áreas sem rolagem horizontal', async ({ page }) => {
     await nav.getByRole('link', { name: area.rotulo }).click();
     await expect(page).toHaveURL(area.url);
     await expect(page.getByRole('heading', { name: area.titulo, level: 1 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: area.vazio })).toBeVisible();
+    if ('vazio' in area) {
+      await expect(page.getByRole('heading', { name: area.vazio })).toBeVisible();
+    } else {
+      await expect(page.getByRole('button', { name: area.botao })).toBeVisible();
+    }
     await expect(nav.getByRole('link', { name: area.rotulo })).toHaveAttribute(
       'aria-current',
       'page',

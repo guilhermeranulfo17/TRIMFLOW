@@ -12,7 +12,7 @@ import {
   type TurnoEntrada,
 } from '@/domain/validacao/catalogo';
 import { gravarOrdem, proximaOrdem } from '@/server/catalogo/lista';
-import { espacos, turnos } from '@/server/db/schema';
+import { espacos, reservas, turnos } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import {
   acaoDoDono,
@@ -22,6 +22,15 @@ import {
   validar,
   type ResultadoAcao,
 } from './comum';
+
+/** Espaço/turno com reservas não pode ser excluído (a FK recusaria com erro técnico). */
+async function temReservas(usuarioId: string, tipo: 'espaco' | 'turno', id: string) {
+  const coluna = tipo === 'espaco' ? reservas.espacoId : reservas.turnoId;
+  const [linha] = await comUsuario(usuarioId, (tx) =>
+    tx.select({ id: reservas.id }).from(reservas).where(eq(coluna, id)).limit(1),
+  );
+  return !!linha;
+}
 
 function revalidar() {
   // O layout recalcula as pendências (badge do menu).
@@ -65,6 +74,9 @@ export async function salvarEspaco(
 export async function excluirEspaco(id: string): Promise<ResultadoAcao> {
   return acaoDoDono(async (dono) => {
     if (!idSchema.safeParse(id).success) return { ok: false, erro: NAO_ENCONTRADO };
+    if (await temReservas(dono.id, 'espaco', id)) {
+      return { ok: false, erro: 'Este espaço tem reservas na agenda. Desative em vez de excluir.' };
+    }
     const apagado = await comUsuario(dono.id, async (tx) => {
       const [linha] = await tx
         .delete(espacos)
@@ -136,6 +148,9 @@ export async function salvarTurno(
 export async function excluirTurno(id: string): Promise<ResultadoAcao> {
   return acaoDoDono(async (dono) => {
     if (!idSchema.safeParse(id).success) return { ok: false, erro: NAO_ENCONTRADO };
+    if (await temReservas(dono.id, 'turno', id)) {
+      return { ok: false, erro: 'Este turno tem reservas na agenda. Desative em vez de excluir.' };
+    }
     const apagado = await comUsuario(dono.id, async (tx) => {
       const [linha] = await tx
         .delete(turnos)
