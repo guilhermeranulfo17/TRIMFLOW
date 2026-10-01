@@ -108,3 +108,66 @@ export async function preReservar(tx: Tx, c: Cenario, token: string, ip = 'ip-te
     sugestoes?: { data: string; turno_id: string }[];
   };
 }
+
+export type OpcoesInterno = {
+  orcamentoId?: string | null;
+  whatsapp?: string;
+  nome?: string;
+  data: string;
+  turno?: string;
+  convidados?: number;
+  subtotal?: number;
+  desconto?: number;
+  observacoes?: string;
+  observacoesInternas?: string;
+  descontoMotivo?: string;
+  foraAntecedencia?: boolean;
+  validade?: string;
+};
+
+/** public.salvar_orcamento_interno (chame com a identidade do usuário já assumida). */
+export async function salvarInterno(tx: Tx, c: Cenario, o: OpcoesInterno) {
+  const subtotal = o.subtotal ?? 500_000;
+  const desconto = o.desconto ?? 0;
+  const total = subtotal - desconto;
+  const resultado = {
+    versaoMotor: 1,
+    ok: true,
+    linhas: [],
+    subtotalCentavos: subtotal,
+    descontoCentavos: desconto,
+    totalCentavos: total,
+    sinalCentavos: Math.round(total * 0.3),
+  };
+  const itens = [
+    {
+      tipo: 'pacote',
+      descricao: 'Pacote Interno',
+      quantidade: 1,
+      valorUnitarioCentavos: subtotal,
+      subtotalCentavos: subtotal,
+      detalhe: 'Valor fixo',
+    },
+    ...(desconto
+      ? [
+          {
+            tipo: 'desconto',
+            descricao: 'Desconto',
+            quantidade: 1,
+            valorUnitarioCentavos: -desconto,
+            subtotalCentavos: -desconto,
+            detalhe: '',
+          },
+        ]
+      : []),
+  ];
+  const validade = o.validade ?? (await dataDaqui(tx, 15));
+  const [r] = await tx`select * from public.salvar_orcamento_interno(
+    ${o.orcamentoId ?? null}::uuid, ${o.whatsapp ?? '+5534990055001'}, ${o.nome ?? 'Cliente Interno'},
+    'instagram'::public.origem_lead, ${tx.json(resultado)}, ${tx.json(itens)}, ${total},
+    ${validade}::date, ${tx.json({ interno: true })}, ${c.tipo}, ${o.data}::date,
+    ${o.turno ?? c.turno}, ${c.espaco}, ${o.convidados ?? 50}, null,
+    ${tx.json({ cardapio: [] })}, ${o.observacoes ?? null}, ${o.observacoesInternas ?? null},
+    ${o.descontoMotivo ?? null}, ${o.foraAntecedencia ?? false})`;
+  return r as { id: string; token: string; numero: number; versao: number; lead_id: string };
+}

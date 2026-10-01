@@ -383,10 +383,12 @@ describe('proposta', () => {
       const token = await orcamentoConcluido(tx, c, { data });
       await comoAnon(tx, async () => {
         const [p] = await tx`select publico.proposta(${c.slug}, ${token}) as p`;
-        expect(p!.p).toMatchObject({ status: 'visualizado', total_centavos: 500_000 });
+        // Ler a proposta não marca visualizada: só a abertura registrada (Etapa 5) marca.
+        expect(p!.p).toMatchObject({ status: 'enviado', total_centavos: 500_000 });
         expect(p!.p.itens).toHaveLength(1);
         expect(p!.p.cliente_primeiro_nome).toBe('Maria');
-        expect(JSON.stringify(p!.p)).not.toContain('+55');
+        // nunca o WhatsApp do cliente (o do buffet aparece no rodapé)
+        expect(JSON.stringify(p!.p)).not.toContain('+5534991110000');
         await esperarMensagem(
           tx,
           () => tx`select publico.proposta('buffet-teste-b', ${token})`,
