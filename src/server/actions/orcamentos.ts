@@ -9,8 +9,10 @@ import { montarPrevia, type Previa } from '@/domain/publico';
 import { linkWhatsApp, mensagemEnvioProposta } from '@/domain/publico/whatsapp';
 import {
   orcamentoInternoSchema,
+  previaInternaSchema,
   type OrcamentoInterno,
   type OrcamentoInternoEntrada,
+  type PreviaInternaEntrada,
 } from '@/domain/validacao/orcamento-interno';
 import { exigirSessao } from '@/server/auth/sessao';
 import { carregarDisponibilidade } from '@/server/agenda/carregar';
@@ -71,7 +73,7 @@ async function acao<T>(
   }
 }
 
-function calcular(base: BaseInterna, o: OrcamentoInterno): Previa {
+function calcular(base: BaseInterna, o: Pick<OrcamentoInterno, 'escolhas' | 'ajustes'>): Previa {
   const a = o.ajustes;
   return montarPrevia(base.ctx, o.escolhas, {
     hoje: base.hoje,
@@ -90,11 +92,11 @@ export type PreviaInterna = Previa & { limiteDescontoBp: number };
 
 /** Recalcula a cada mudança (servidor). */
 export async function previaInterna(
-  entrada: OrcamentoInternoEntrada,
+  entrada: PreviaInternaEntrada,
 ): Promise<ResultadoInterno<PreviaInterna>> {
   return acao(async () => {
     const usuario = await exigirSessao();
-    const r = orcamentoInternoSchema.safeParse(entrada);
+    const r = previaInternaSchema.safeParse(entrada);
     if (!r.success) return { ok: false, erro: 'Confira os campos do orçamento.' };
     const base = await carregarBaseInterna(usuario);
     if (!base) return { ok: false, erro: 'Não foi possível carregar seu catálogo.' };
@@ -243,21 +245,23 @@ export async function procurarCliente(
   }, 'cliente');
 }
 
-export type TurnoNoDia = { turnoId: string; espacoId: string; estado: string; vagas: number };
+export type SlotNoMes = { data: string; turnoId: string; espacoId: string; livre: boolean };
 
-/** Estado da agenda no dia escolhido (mesma função da Agenda). */
-export async function agendaDoDia(data: string): Promise<ResultadoInterno<TurnoNoDia[]>> {
+/** Estado da agenda no mês (mesma leitura da Agenda), para o calendário do orçamento. */
+export async function agendaDoMes(mes: string): Promise<ResultadoInterno<SlotNoMes[]>> {
   return acao(async () => {
     const usuario = await exigirSessao();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return { ok: true, dados: [] };
-    const slots = await carregarDisponibilidade(usuario, data, data);
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: true, dados: [] };
+    const [ano, m] = mes.split('-').map(Number) as [number, number];
+    const ultimo = new Date(Date.UTC(ano, m, 0)).getUTCDate();
+    const slots = await carregarDisponibilidade(usuario, `${mes}-01`, `${mes}-${ultimo}`);
     return {
       ok: true,
       dados: slots.map((s) => ({
+        data: s.data,
         turnoId: s.turnoId,
         espacoId: s.espacoId,
-        estado: s.estado,
-        vagas: s.vagas,
+        livre: s.estado === 'livre',
       })),
     };
   }, 'agenda');
