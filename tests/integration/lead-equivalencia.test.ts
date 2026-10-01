@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
+import { temperaturaPorAberturas } from '@/domain/proposta';
 import { EVENTOS_LEAD, STATUS_LEAD, TEMPERATURAS, transicaoLead } from '@/domain/publico';
 import { conectar } from '../support/db';
 
@@ -26,6 +27,34 @@ describe('equivalência do status do lead: domínio × SQL', () => {
         status: l.novo_status,
         temperatura: l.nova_temperatura,
       });
+    }
+  });
+});
+
+describe('equivalência da temperatura por aberturas: domínio × SQL', () => {
+  it('casos com aberturas dentro e fora da janela de 3 dias', async () => {
+    const agora = new Date('2026-10-01T12:00:00Z');
+    const h = (horas: number) => new Date(agora.getTime() - horas * 3_600_000);
+    const casos: Date[][] = [
+      [],
+      [h(1)],
+      [h(1), h(2)],
+      [h(1), h(71)],
+      [h(1), h(73)],
+      [h(80), h(90)],
+      [h(0), h(72)],
+    ];
+    for (const instantes of casos) {
+      for (const atual of TEMPERATURAS) {
+        const [r] = await sql`select public._temperatura_aberturas(
+          ${instantes.map((i) => i.toISOString())}::timestamptz[], ${agora.toISOString()}::timestamptz,
+          ${atual}::public.temperatura_lead)::text as t`;
+        expect({ instantes: instantes.length, atual, t: r!.t }).toEqual({
+          instantes: instantes.length,
+          atual,
+          t: temperaturaPorAberturas(instantes, agora, atual),
+        });
+      }
     }
   });
 });

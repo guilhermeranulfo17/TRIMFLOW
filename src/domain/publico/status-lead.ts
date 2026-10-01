@@ -26,7 +26,12 @@ export type EventoLead =
   | 'reserva_cancelada'
   | 'realizada'
   | 'abandonou'
-  | 'whatsapp_clicado';
+  | 'whatsapp_clicado'
+  | 'orcamento_criado'
+  | 'versao_criada'
+  | 'orcamento_expirado'
+  | 'proposta_aberta'
+  | 'proposta_enviada';
 
 export const STATUS_LEAD: StatusLead[] = [
   'novo',
@@ -54,6 +59,11 @@ export const EVENTOS_LEAD: EventoLead[] = [
   'realizada',
   'abandonou',
   'whatsapp_clicado',
+  'orcamento_criado',
+  'versao_criada',
+  'orcamento_expirado',
+  'proposta_aberta',
+  'proposta_enviada',
 ];
 
 const VOLTA_PARA_ANDAMENTO: StatusLead[] = [
@@ -72,6 +82,8 @@ function proximoStatus(s: StatusLead, evento: EventoLead): StatusLead {
     case 'voltou':
       return VOLTA_PARA_ANDAMENTO.includes(s) ? 'em_andamento' : s;
     case 'orcamento_concluido':
+    case 'orcamento_criado':
+    case 'versao_criada':
       return s === 'pre_reservado' || s === 'reservado' ? s : 'em_andamento';
     case 'pre_reserva_pedida':
       return s === 'reservado' ? 'reservado' : 'pre_reservado';
@@ -86,6 +98,8 @@ function proximoStatus(s: StatusLead, evento: EventoLead): StatusLead {
       return 'realizado';
     case 'abandonou':
       return s === 'novo' ? 'abandonou' : s;
+    case 'orcamento_expirado':
+      return s === 'em_andamento' ? 'frio' : s;
     default:
       return s;
   }
@@ -93,7 +107,14 @@ function proximoStatus(s: StatusLead, evento: EventoLead): StatusLead {
 
 function proximaTemperatura(t: TemperaturaLead, evento: EventoLead): TemperaturaLead {
   if (evento === 'pre_reserva_pedida' || evento === 'visita_pedida') return 'quente';
-  if (evento === 'orcamento_concluido' && t !== 'quente') return 'morno';
+  if (
+    (evento === 'orcamento_concluido' ||
+      evento === 'orcamento_criado' ||
+      evento === 'versao_criada') &&
+    t !== 'quente'
+  ) {
+    return 'morno';
+  }
   return t;
 }
 
