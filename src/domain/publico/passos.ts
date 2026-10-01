@@ -1,9 +1,10 @@
 import { contarConvidados } from '../preco/equivalentes';
+import { dataCivilValida, diaDaSemanaNumero } from '../dates';
 import {
   pacotesDisponiveis,
-  turnosDoDia,
   type ContextoPreco,
-  type EspacoCtx,
+  type DataCivil,
+  type Id,
   type PacoteCtx,
 } from '../preco';
 import type { Escolhas } from './tipos';
@@ -42,15 +43,46 @@ export function passoAnterior(passo: NumeroPasso, tipoNaUrl = false): NumeroPass
   return anterior as NumeroPasso;
 }
 
-/** Espaços ativos; com um só, ele é escolhido sozinho. */
-export function espacosAtivos(ctx: ContextoPreco): EspacoCtx[] {
-  return ctx.espacos.filter((e) => e.ativo);
+/**
+ * O que as regras dos passos precisam saber. No servidor vem do ContextoPreco
+ * (`dadosDoContexto`); no navegador, da vitrine + a prévia (que nunca têm tabela de preço).
+ * As listas já vêm só com itens ativos.
+ */
+export type DadosPassos = {
+  tiposEvento: { id: Id }[];
+  turnos: { id: Id; diasSemana: number[] }[];
+  espacos: { id: Id; nome: string; capacidadeMax: number; noLocalDoCliente: boolean }[];
+  /** pacotes do tipo escolhido, com disponibilidade pelos convidados (prévia do servidor) */
+  pacotes?: { id: Id; disponivel: boolean; motivo?: string }[];
+};
+
+export function dadosDoContexto(ctx: ContextoPreco, e: Escolhas): DadosPassos {
+  return {
+    tiposEvento: ctx.tiposEvento.filter((t) => t.ativo),
+    turnos: ctx.turnos.filter((t) => t.ativo),
+    espacos: ctx.espacos.filter((x) => x.ativo),
+    pacotes: pacotesDoPasso(ctx, e).map((p) => ({
+      id: p.pacote.id,
+      disponivel: p.disponivel,
+      ...(p.motivo ? { motivo: p.motivo } : {}),
+    })),
+  };
 }
 
-export function espacoEscolhido(ctx: ContextoPreco, e: Escolhas): EspacoCtx | null {
-  const ativos = espacosAtivos(ctx);
-  if (ativos.length === 1) return ativos[0]!;
-  return ativos.find((x) => x.id === e.espacoId) ?? null;
+/** Com um só espaço, ele é escolhido sozinho. */
+export function espacoEscolhido<T extends { id: Id }>(espacos: T[], e: Escolhas): T | null {
+  if (espacos.length === 1) return espacos[0]!;
+  return espacos.find((x) => x.id === e.espacoId) ?? null;
+}
+
+/** Turnos que existem no dia da semana da data. */
+export function turnosNaData<T extends { diasSemana: number[] }>(
+  turnos: T[],
+  data: DataCivil,
+): T[] {
+  if (!dataCivilValida(data)) return [];
+  const dia = diaDaSemanaNumero(data);
+  return turnos.filter((t) => t.diasSemana.includes(dia));
 }
 
 export function pessoas(e: Escolhas): number {
@@ -64,21 +96,21 @@ export function pessoas(e: Escolhas): number {
 export function motivoDoBotaoDesabilitado(
   passo: NumeroPasso,
   e: Escolhas,
-  ctx: ContextoPreco,
+  d: DadosPassos,
 ): string | null {
   switch (passo) {
     case 1:
-      if (!e.tipoEventoId || !ctx.tiposEvento.some((t) => t.ativo && t.id === e.tipoEventoId)) {
+      if (!e.tipoEventoId || !d.tiposEvento.some((t) => t.id === e.tipoEventoId)) {
         return 'Escolha o tipo de festa.';
       }
       return null;
     case 2: {
+      const espaco = espacoEscolhido(d.espacos, e);
+      if (!espaco) return 'Escolha o espaço.';
       if (!e.data) return 'Escolha a data da festa.';
-      if (!e.turnoId || !turnosDoDia(ctx, e.data).some((t) => t.id === e.turnoId)) {
+      if (!e.turnoId || !turnosNaData(d.turnos, e.data).some((t) => t.id === e.turnoId)) {
         return 'Escolha o horário.';
       }
-      const espaco = espacoEscolhido(ctx, e);
-      if (!espaco) return 'Escolha o espaço.';
       if (pessoas(e) < 1) return 'Informe quantos convidados.';
       if (pessoas(e) > espaco.capacidadeMax) {
         return `${espaco.nome} recebe até ${espaco.capacidadeMax} pessoas.`;
@@ -92,9 +124,9 @@ export function motivoDoBotaoDesabilitado(
       return null;
     case 4: {
       if (!e.pacoteId) return 'Escolha um pacote.';
-      const disponivel = pacotesDoPasso(ctx, e).find((p) => p.pacote.id === e.pacoteId);
-      if (!disponivel) return 'Escolha um pacote.';
-      if (!disponivel.disponivel) return `Esse pacote é ${disponivel.motivo}.`;
+      const pacote = d.pacotes?.find((p) => p.id === e.pacoteId);
+      if (!pacote) return 'Escolha um pacote.';
+      if (!pacote.disponivel) return `Esse pacote é ${pacote.motivo}.`;
       return null;
     }
     default:
@@ -106,13 +138,13 @@ export function motivoDoBotaoDesabilitado(
 export function passoPermitido(
   pedido: NumeroPasso,
   e: Escolhas,
-  ctx: ContextoPreco,
+  d: DadosPassos,
   opcoes: { temToken: boolean; tipoNaUrl?: boolean },
 ): NumeroPasso {
   let passo = primeiroPasso(opcoes.tipoNaUrl ?? false);
   while (passo < pedido) {
     if (passo === PASSO_CONTATO && !opcoes.temToken) return passo;
-    if (motivoDoBotaoDesabilitado(passo, e, ctx)) return passo;
+    if (motivoDoBotaoDesabilitado(passo, e, d)) return passo;
     passo = (passo + 1) as NumeroPasso;
   }
   return passo;

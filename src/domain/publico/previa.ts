@@ -26,7 +26,10 @@ export function entradaDoMotor(
   pacoteId: Id | undefined = e.pacoteId,
   opcionais: Escolhas['opcionais'] = e.opcionais,
 ): EntradaOrcamento | null {
-  const espaco = espacoEscolhido(ctx, e);
+  const espaco = espacoEscolhido(
+    ctx.espacos.filter((x) => x.ativo),
+    e,
+  );
   if (!e.tipoEventoId || !e.data || !e.turnoId || !espaco || !pacoteId) return null;
   return {
     canal: 'publico',
@@ -66,6 +69,8 @@ export type Previa = {
   pacotes: PacotePrevia[];
   opcionais: OpcionalPrevia[];
   resultado: ResultadoOrcamento | null;
+  /** valor da hora extra do pacote escolhido (0 = o pacote não vende hora extra) */
+  horaExtraCentavos: number | null;
   avisos: string[];
 };
 
@@ -79,7 +84,10 @@ export function montarPrevia(
   e: Escolhas,
   opcoes: { hoje: DataCivil; comContato: boolean; modo: ModoPreco },
 ): Previa {
-  const espaco = espacoEscolhido(ctxOriginal, e);
+  const espaco = espacoEscolhido(
+    ctxOriginal.espacos.filter((x) => x.ativo),
+    e,
+  );
   const ctx = contextoSemDeslocamento(ctxOriginal);
   const avisos = espaco?.noLocalDoCliente ? [AVISO_DESLOCAMENTO] : [];
   const vazia: Previa = {
@@ -88,6 +96,7 @@ export function montarPrevia(
     pacotes: [],
     opcionais: [],
     resultado: null,
+    horaExtraCentavos: null,
     avisos,
   };
   if (!e.tipoEventoId) return vazia;
@@ -116,6 +125,8 @@ export function montarPrevia(
   });
 
   if (e.pacoteId) {
+    previa.horaExtraCentavos =
+      ctx.pacotes.find((p) => p.id === e.pacoteId)?.valorHoraExtraCentavos ?? null;
     previa.opcionais = opcionaisDisponiveis(ctx, {
       pacoteId: e.pacoteId,
       tipoEventoId: e.tipoEventoId,

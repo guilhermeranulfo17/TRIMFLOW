@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
 import { hojeNoFuso } from '@/domain/dates';
-import type { ContextoPreco, Id } from '@/domain/preco';
+import type { ContextoPreco, Id, ResultadoOrcamento } from '@/domain/preco';
 import { montarVitrine, type ExtrasPacote, type VitrinePublica } from '@/domain/publico';
 import { slugValido } from '@/domain/slug';
 import { urlPublicaMidia } from '@/lib/midia';
@@ -169,4 +169,79 @@ export async function carregarVitrine(
   if (!contexto) return null;
   const hoje = hojeNoFuso(contexto.fuso);
   return { vitrine: montarVitrine(contexto.ctx, contexto.extras, hoje), contexto };
+}
+
+export type EstadoOrcamento = {
+  status: string;
+  passoAtual: number;
+  rascunho: unknown;
+  ehTeste: boolean;
+  numero: number;
+};
+
+/** Orçamento em andamento do cookie (retomar o wizard). Nunca em cache. */
+export async function lerEstadoOrcamento(
+  slug: string,
+  token: string,
+  comAnon: ComAnon = comAnonPadrao,
+): Promise<EstadoOrcamento | null> {
+  const [linha] = await comAnon((tx) =>
+    tx.execute<{ e: Record<string, unknown> | null }>(
+      sql`select publico.estado_orcamento(${slug}, ${token}) as e`,
+    ),
+  );
+  return linha?.e ? camelizar<EstadoOrcamento>(linha.e) : null;
+}
+
+export type PropostaPublica = {
+  numero: number;
+  status: 'enviado' | 'visualizado' | 'substituido' | 'aceito' | 'expirado';
+  ehTeste: boolean;
+  enviadoEm: string;
+  validadeAte: string;
+  hoje: string;
+  resultado: ResultadoOrcamento;
+  totalCentavos: number;
+  data: string;
+  convidados: number;
+  tipoEvento: string | null;
+  turno: { nome: string; horaInicio: string } | null;
+  espaco: string | null;
+  clientePrimeiroNome: string | null;
+  itens: {
+    tipo: string;
+    descricao: string;
+    quantidade: number;
+    valorUnitarioCentavos: number;
+    subtotalCentavos: number;
+    detalhe: string | null;
+  }[];
+  reserva: { tipo: string; status: string; expiraEm: string | null } | null;
+  suspenso: boolean;
+  regras: { prazoPreReservaHoras: number; sinalBp: number; cancelamentoTexto: string | null };
+};
+
+/** Proposta congelada pelo token (marca visualizada/expirada). Null se não existir aqui. */
+export async function lerProposta(
+  slug: string,
+  token: string,
+  comAnon: ComAnon = comAnonPadrao,
+): Promise<PropostaPublica | null> {
+  try {
+    const [linha] = await comAnon((tx) =>
+      tx.execute<{ p: unknown }>(sql`select publico.proposta(${slug}, ${token}) as p`),
+    );
+    // O resultado do motor já está em camelCase; só as chaves de primeiro nível vêm do SQL.
+    const bruto = linha!.p as Record<string, unknown>;
+    const { resultado, ...resto } = bruto;
+    return {
+      ...camelizar<Omit<PropostaPublica, 'resultado'>>(resto),
+      resultado,
+    } as PropostaPublica;
+  } catch (erro) {
+    const mensagem =
+      (erro as { cause?: { message?: string } }).cause?.message ?? (erro as Error).message;
+    if (mensagem === 'PUBLICO_ORCAMENTO_NAO_ENCONTRADO') return null;
+    throw erro;
+  }
 }

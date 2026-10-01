@@ -6,6 +6,7 @@ import { limitesDoMes } from '@/domain/agenda';
 import { hojeNoFuso, somarDias } from '@/domain/dates';
 import { celularBRParaE164 } from '@/domain/phone';
 import {
+  dadosDoContexto,
   motivoDoBotaoDesabilitado,
   montarPrevia,
   origemDoParametro,
@@ -77,8 +78,8 @@ function escolhasValidas(entrada: EscolhasEntrada): Escolhas | null {
 type EstadoOrcamento = { status: string; passo_atual: number; eh_teste: boolean; numero: number };
 
 /** Token do cookie, só se o orçamento existe neste buffet e ainda aceita mudanças. */
-async function tokenEmAndamento(slug: string): Promise<string | null> {
-  const token = await lerTokenDoCookie(slug);
+async function tokenEmAndamento(slug: string, token: string | null = null): Promise<string | null> {
+  token ??= await lerTokenDoCookie(slug);
   if (!token) return null;
   const [linha] = await comAnon((tx) =>
     tx.execute<{ e: EstadoOrcamento | null }>(
@@ -218,7 +219,11 @@ export async function iniciarOrcamento(
     const contexto = await carregarContextoPublico(slug);
     if (!contexto) return invalido('Este buffet não está recebendo orçamentos pelo link agora.');
     for (const passo of [1, 2] as const) {
-      const motivo = motivoDoBotaoDesabilitado(passo, escolhas, contexto.ctx);
+      const motivo = motivoDoBotaoDesabilitado(
+        passo,
+        escolhas,
+        dadosDoContexto(contexto.ctx, escolhas),
+      );
       if (motivo) return invalido(motivo);
     }
     const teste = await ehModoTeste(slug);
@@ -253,12 +258,20 @@ export async function concluirOrcamento(
   slug: string,
   entrada: EscolhasEntrada,
 ): Promise<ResultadoPublico<{ token: string }>> {
+  return concluir(slug, entrada, null);
+}
+
+async function concluir(
+  slug: string,
+  entrada: EscolhasEntrada,
+  tokenInformado: string | null,
+): Promise<ResultadoPublico<{ token: string }>> {
   const escolhas = escolhasValidas(entrada);
   if (!slugValido(slug) || !escolhas) return invalido();
   try {
     const contexto = await carregarContextoPublico(slug);
     if (!contexto) return invalido('Este buffet não está recebendo orçamentos pelo link agora.');
-    const token = await tokenEmAndamento(slug);
+    const token = await tokenEmAndamento(slug, tokenInformado);
     if (!token) {
       return {
         ok: false,
@@ -417,6 +430,36 @@ export async function registrarFunil(
     );
   } catch {
     // Métrica nunca atrapalha o cliente.
+  }
+}
+
+/**
+ * Sugestão de data depois de SLOT_INDISPONIVEL: refaz o orçamento com a nova data/turno
+ * (o preço pode mudar com o dia) e devolve o token da proposta nova.
+ */
+export async function escolherOutraData(
+  slug: string,
+  token: string,
+  sugestao: { data: string; turnoId: string },
+): Promise<ResultadoPublico<{ token: string }>> {
+  if (!slugValido(slug) || !TOKEN_REGEX.test(token)) return invalido();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(sugestao.data) || !/^[0-9a-f-]{36}$/i.test(sugestao.turnoId)) {
+    return invalido();
+  }
+  try {
+    const [linha] = await comAnon((tx) =>
+      tx.execute<{ e: { status: string; rascunho: unknown } | null }>(
+        sql`select publico.estado_orcamento(${slug}, ${token}) as e`,
+      ),
+    );
+    const estado = linha?.e;
+    const atual = estado ? escolhasSchema.safeParse(estado.rascunho) : null;
+    if (!estado || !atual?.success || !['enviado', 'visualizado'].includes(estado.status)) {
+      return { ok: false, erro: traduzirErroPublico('PUBLICO_ORCAMENTO_FECHADO') };
+    }
+    return concluir(slug, { ...atual.data, data: sugestao.data, turnoId: sugestao.turnoId }, token);
+  } catch (erro) {
+    return falha(erro, 'outra-data');
   }
 }
 
