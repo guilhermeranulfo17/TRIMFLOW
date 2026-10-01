@@ -3,7 +3,7 @@
 import { Check } from 'lucide-react';
 import { formatBRL } from '@/domain/money';
 import { AVISO_DESLOCAMENTO } from '@/domain/publico/previa';
-import { classeOpcao, Contador } from './contador';
+import { classeOpcao, Contador } from '@/components/orcamento/contador';
 import type { PropsPasso } from './tipos';
 
 function precoDoExtra(cobranca: string, preco: number): string {

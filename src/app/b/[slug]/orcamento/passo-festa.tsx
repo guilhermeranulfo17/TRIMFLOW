@@ -1,7 +1,7 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import { classeOpcao } from './contador';
+import { classeOpcao } from '@/components/orcamento/contador';
 import type { PropsPasso } from './tipos';
 
 /** Passo 1: qual festa. */

@@ -43,3 +43,9 @@ export function mensagemPreReserva(buffet: string, r: ResumoMensagem): string {
 export function mensagemSemPacote(buffet: string, r: ResumoMensagem): string {
   return `Olá, ${buffet}! Quero um orçamento: ${detalhes(r)}. Não encontrei um pacote para essa quantidade.`;
 }
+
+/** Envio da proposta pelo vendedor: texto curto com o link. */
+export function mensagemEnvioProposta(buffet: string, cliente: string, link: string): string {
+  const primeiro = cliente.trim().split(/\s+/)[0] ?? cliente;
+  return `Olá, ${primeiro}! Segue a proposta da sua festa no ${buffet}: ${link}`;
+}

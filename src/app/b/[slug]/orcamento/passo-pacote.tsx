@@ -9,7 +9,7 @@ import { formatData } from '@/domain/dates';
 import { IconeWhatsApp } from '@/components/publico/icone-whatsapp';
 import { BOTAO_PRINCIPAL } from '@/components/publico/marca';
 import { urlPublicaMidia } from '@/lib/midia';
-import { classeOpcao } from './contador';
+import { classeOpcao } from '@/components/orcamento/contador';
 import type { PropsPasso } from './tipos';
 
 /** Passo 4: pacote, com o total de cada um calculado no servidor para a festa escolhida. */
