@@ -425,3 +425,24 @@ begin
   end if;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Proposta (Etapa 5): rodapé do Buffet Demo, textos de abertura e política de convidados.
+-- Idempotente: só preenche o que estiver vazio.
+-- ---------------------------------------------------------------------------
+update public.empresas set
+  razao_social = coalesce(razao_social, 'Buffet Demo Festas Ltda'),
+  cnpj = coalesce(cnpj, '11222333000181'),
+  endereco = coalesce(endereco, 'Av. Rondon Pacheco, 1000 - Uberlândia/MG')
+where id = '11111111-1111-4111-8111-111111111111';
+
+update public.tipos_evento set texto_abertura = case nome
+    when 'Aniversário infantil' then 'Olá, {nome}! Que alegria fazer parte desse dia. Preparamos a proposta do aniversário em {data}, para {convidados} convidados, com tudo o que o {buffet} oferece para a festa ser inesquecível.'
+    when 'Chá revelação' then 'Olá, {nome}! Preparamos com carinho a proposta do seu chá revelação em {data}, para {convidados} convidados.'
+    else 'Olá, {nome}! Segue a proposta para {tipo} em {data}, para {convidados} convidados no {buffet}.'
+  end
+where empresa_id = '11111111-1111-4111-8111-111111111111' and texto_abertura is null;
+
+update public.regras_comerciais set alteracao_convidados_texto =
+  'O número de convidados pode ser ajustado até 7 dias antes da festa. Convidados a mais são cobrados pelo valor por convidado da proposta.'
+where empresa_id = '11111111-1111-4111-8111-111111111111' and alteracao_convidados_texto = '';

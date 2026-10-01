@@ -629,7 +629,10 @@ begin
                         and v_o.validade_ate < publico._hoje(v_o.empresa_id)
                    then 'expirado' else v_o.status::text end,
     'passo_atual', v_o.passo_atual, 'rascunho', v_o.rascunho, 'eh_teste', v_o.eh_teste,
-    'numero', v_o.numero, 'versao', v_o.versao, 'token', v_o.token);
+    'numero', v_o.numero, 'versao', v_o.versao, 'token', v_o.token,
+    -- o próprio cliente (dono do token) vê o próprio nome na abertura da proposta
+    'cliente_nome', (select btrim(l.nome) from public.leads l where l.id = v_o.lead_id),
+    'observacoes', v_o.observacoes);
 end;
 $$;
 

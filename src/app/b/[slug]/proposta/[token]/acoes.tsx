@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck, CheckCircle2, Eye, RotateCcw } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, Download, Eye, RotateCcw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { diaDaSemana, formatData, formatDataHora } from '@/domain/dates';
@@ -17,16 +17,16 @@ import {
   type ResumoMensagem,
 } from '@/domain/publico/whatsapp';
 import {
+  atualizarPrecos,
   escolherOutraData,
   pedirVisita,
   preReservar,
-  recomecarOrcamento,
   registrarWhatsapp,
 } from '@/server/actions/publico';
 import { IconeWhatsApp } from '@/components/publico/icone-whatsapp';
 import { BOTAO_PRINCIPAL, BOTAO_SECUNDARIO } from '@/components/publico/marca';
 
-type Estado = 'aberta' | 'reservada' | 'expirada' | 'substituida' | 'suspensa';
+type Estado = 'aberta' | 'reservada' | 'expirada' | 'suspensa';
 
 type Props = {
   slug: string;
@@ -71,6 +71,10 @@ export function AcoesProposta(p: Props) {
         if (r.codigo === 'ORCAMENTO_EXPIRADO') setEstado('expirada');
         return;
       }
+      if ('atualizada' in r.dados) {
+        router.replace(`/b/${p.slug}/proposta/${r.dados.token}?atualizada=1`);
+        return;
+      }
       if (r.dados.reservado) {
         setEstado('reservada');
         setExpiraEm(r.dados.expiraEm);
@@ -92,9 +96,19 @@ export function AcoesProposta(p: Props) {
   }
 
   function refazer() {
+    setErro(null);
     iniciar(async () => {
-      await recomecarOrcamento(p.slug);
-      router.push(`/b/${p.slug}/orcamento?passo=2`);
+      const r = await atualizarPrecos(p.slug, p.token);
+      if (r.ok) {
+        router.push(`/b/${p.slug}/proposta/${r.dados.token}`);
+        return;
+      }
+      if (r.codigo === 'DATA_IMPOSSIVEL') {
+        // escolhas pré-preenchidas no wizard (o cookie aponta para este orçamento)
+        router.push(`/b/${p.slug}/orcamento?passo=2`);
+        return;
+      }
+      setErro(r.erro);
     });
   }
 
@@ -129,14 +143,26 @@ export function AcoesProposta(p: Props) {
     </a>
   );
 
-  if (estado === 'expirada' || estado === 'substituida') {
+  const botaoPdf = (
+    <a
+      href={`/b/${p.slug}/proposta/${p.token}/pdf`}
+      className={`${BOTAO_SECUNDARIO} w-full`}
+      data-testid="baixar-pdf"
+      download
+    >
+      <Download className="size-5" aria-hidden />
+      Baixar PDF
+    </a>
+  );
+
+  if (estado === 'expirada') {
     return (
       <section className="mt-6 flex flex-col gap-3" aria-live="polite">
-        <p className="text-muted-foreground">
-          {estado === 'expirada'
-            ? 'Os valores podem ter mudado. Monte de novo para ver os preços de hoje.'
-            : 'Você mudou alguma escolha depois desta proposta. Monte de novo para ver a versão atual.'}
-        </p>
+        {erro && (
+          <p role="alert" className="text-destructive font-semibold">
+            {erro}
+          </p>
+        )}
         <button
           type="button"
           onClick={refazer}
@@ -144,9 +170,10 @@ export function AcoesProposta(p: Props) {
           className={`${BOTAO_PRINCIPAL} w-full`}
         >
           <RotateCcw className="size-5" aria-hidden />
-          Refazer com os preços atuais
+          {pendente ? 'Atualizando…' : 'Atualizar com os preços de hoje'}
         </button>
         {botaoWhatsApp}
+        {botaoPdf}
       </section>
     );
   }
@@ -177,6 +204,7 @@ export function AcoesProposta(p: Props) {
             Combinar o sinal no WhatsApp
           </a>
         )}
+        {botaoPdf}
       </section>
     );
   }
@@ -233,7 +261,7 @@ export function AcoesProposta(p: Props) {
           className={`${BOTAO_SECUNDARIO} w-full`}
         >
           <Eye className="size-5" aria-hidden />
-          Quero visitar o buffet
+          Quero visitar o espaço
         </button>
       )}
       {visita === 'aberta' && (
@@ -299,6 +327,7 @@ export function AcoesProposta(p: Props) {
         </p>
       )}
       {botaoWhatsApp}
+      {botaoPdf}
     </section>
   );
 }
