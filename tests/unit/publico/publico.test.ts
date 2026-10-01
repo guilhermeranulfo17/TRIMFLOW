@@ -27,6 +27,7 @@ import {
   somenteAtivos,
   traduzirErroPublico,
   transicaoLead,
+  dadosDoContexto,
   type Escolhas,
 } from '@/domain/publico';
 import { escolhasSchema } from '@/domain/validacao/publico';
@@ -52,6 +53,14 @@ const completo: Escolhas = {
   criancas: [{ faixaIdadeId: idDoModelo.faixaIdade(1), quantidade: 10 }],
 };
 
+const motivo = (p: 1 | 2 | 3 | 4, e: Escolhas, c: ContextoPreco = base) =>
+  motivoDoBotaoDesabilitado(p, e, dadosDoContexto(c, e));
+const permitido = (
+  p: 1 | 2 | 3 | 4 | 5 | 6,
+  e: Escolhas,
+  o: { temToken: boolean; tipoNaUrl?: boolean },
+) => passoPermitido(p, e, dadosDoContexto(base, e), o);
+
 describe('passos', () => {
   it('navegação e ?tipo= pulando o passo 1', () => {
     expect(primeiroPasso(false)).toBe(1);
@@ -68,28 +77,24 @@ describe('passos', () => {
 
   it('motivo do botão desabilitado em cada passo', () => {
     const vazio = ESCOLHAS_VAZIAS;
-    expect(motivoDoBotaoDesabilitado(1, vazio, base)).toBe('Escolha o tipo de festa.');
-    expect(motivoDoBotaoDesabilitado(1, { ...vazio, tipoEventoId: tipo }, base)).toBeNull();
+    expect(motivo(1, vazio, base)).toBe('Escolha o tipo de festa.');
+    expect(motivo(1, { ...vazio, tipoEventoId: tipo }, base)).toBeNull();
     const e2 = { ...vazio, tipoEventoId: tipo };
-    expect(motivoDoBotaoDesabilitado(2, e2, base)).toBe('Escolha a data da festa.');
-    expect(motivoDoBotaoDesabilitado(2, { ...e2, data: SABADO }, base)).toBe('Escolha o horário.');
-    expect(motivoDoBotaoDesabilitado(2, { ...e2, data: SABADO, turnoId: tarde }, base)).toBe(
+    expect(motivo(2, e2, base)).toBe('Escolha a data da festa.');
+    expect(motivo(2, { ...e2, data: SABADO }, base)).toBe('Escolha o horário.');
+    expect(motivo(2, { ...e2, data: SABADO, turnoId: tarde }, base)).toBe(
       'Informe quantos convidados.',
     );
-    expect(
-      motivoDoBotaoDesabilitado(2, { ...e2, data: SABADO, turnoId: tarde, adultos: 500 }, base),
-    ).toBe('Salão principal recebe até 120 pessoas.');
-    expect(motivoDoBotaoDesabilitado(2, completo, base)).toBeNull();
-    expect(motivoDoBotaoDesabilitado(3, completo, base)).toBeNull();
-    expect(motivoDoBotaoDesabilitado(4, completo, base)).toBe('Escolha um pacote.');
-    expect(motivoDoBotaoDesabilitado(4, { ...completo, pacoteId: alegria }, base)).toBeNull();
-    expect(
-      motivoDoBotaoDesabilitado(
-        4,
-        { ...completo, adultos: 5, criancas: [], pacoteId: alegria },
-        base,
-      ),
-    ).toBe('Esse pacote é a partir de 15 convidados.');
+    expect(motivo(2, { ...e2, data: SABADO, turnoId: tarde, adultos: 500 }, base)).toBe(
+      'Salão principal recebe até 120 pessoas.',
+    );
+    expect(motivo(2, completo, base)).toBeNull();
+    expect(motivo(3, completo, base)).toBeNull();
+    expect(motivo(4, completo, base)).toBe('Escolha um pacote.');
+    expect(motivo(4, { ...completo, pacoteId: alegria }, base)).toBeNull();
+    expect(motivo(4, { ...completo, adultos: 5, criancas: [], pacoteId: alegria }, base)).toBe(
+      'Esse pacote é a partir de 15 convidados.',
+    );
   });
 
   it('com mais de um espaço, pede a escolha; no local do cliente, pede bairro e cidade', () => {
@@ -100,25 +105,21 @@ describe('passos', () => {
         { id: 'casa', nome: 'Na sua casa', capacidadeMax: 80, noLocalDoCliente: true, ativo: true },
       ],
     };
-    expect(motivoDoBotaoDesabilitado(2, completo, ctx)).toBe('Escolha o espaço.');
-    expect(motivoDoBotaoDesabilitado(2, { ...completo, espacoId: 'casa' }, ctx)).toBe(
+    expect(motivo(2, completo, ctx)).toBe('Escolha o espaço.');
+    expect(motivo(2, { ...completo, espacoId: 'casa' }, ctx)).toBe(
       'Informe o bairro e a cidade da festa.',
     );
     expect(
-      motivoDoBotaoDesabilitado(
-        2,
-        { ...completo, espacoId: 'casa', localCliente: 'Centro, Uberlândia' },
-        ctx,
-      ),
+      motivo(2, { ...completo, espacoId: 'casa', localCliente: 'Centro, Uberlândia' }, ctx),
     ).toBeNull();
   });
 
   it('passo pedido na URL é limitado ao que já foi preenchido (e ao contato)', () => {
-    expect(passoPermitido(6, ESCOLHAS_VAZIAS, base, { temToken: false })).toBe(1);
-    expect(passoPermitido(5, completo, base, { temToken: false })).toBe(3);
-    expect(passoPermitido(5, completo, base, { temToken: true })).toBe(4);
-    expect(passoPermitido(5, { ...completo, pacoteId: alegria }, base, { temToken: true })).toBe(5);
-    expect(passoPermitido(1, completo, base, { temToken: true, tipoNaUrl: true })).toBe(2);
+    expect(permitido(6, ESCOLHAS_VAZIAS, { temToken: false })).toBe(1);
+    expect(permitido(5, completo, { temToken: false })).toBe(3);
+    expect(permitido(5, completo, { temToken: true })).toBe(4);
+    expect(permitido(5, { ...completo, pacoteId: alegria }, { temToken: true })).toBe(5);
+    expect(permitido(1, completo, { temToken: true, tipoNaUrl: true })).toBe(2);
   });
 });
 
@@ -146,6 +147,7 @@ describe('prévia de preço por modo de exibição', () => {
       pacotes: [],
       opcionais: [],
       resultado: null,
+      horaExtraCentavos: null,
       avisos: [],
     });
   });
