@@ -16,7 +16,8 @@ const AREAS = [
     titulo: 'Minha empresa',
     vazio: 'Identidade do buffet',
   },
-  { rotulo: 'Leads', url: /\/app\/leads$/, titulo: 'Leads', vazio: 'Sua caixa de leads' },
+  // Os leads do Buffet Demo vêm do seed (Etapa 4): confere a lista.
+  { rotulo: 'Leads', url: /\/app\/leads$/, titulo: 'Leads', lista: 'lista-leads' },
 ];
 
 test('navega pelas 4 áreas sem rolagem horizontal', async ({ page }) => {
@@ -32,6 +33,8 @@ test('navega pelas 4 áreas sem rolagem horizontal', async ({ page }) => {
     await expect(page.getByRole('heading', { name: area.titulo, level: 1 })).toBeVisible();
     if ('vazio' in area) {
       await expect(page.getByRole('heading', { name: area.vazio })).toBeVisible();
+    } else if ('lista' in area) {
+      await expect(page.getByTestId(area.lista)).toBeVisible();
     } else {
       await expect(page.getByRole('button', { name: area.botao })).toBeVisible();
     }

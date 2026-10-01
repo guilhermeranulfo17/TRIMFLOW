@@ -250,3 +250,178 @@ begin
   from public.turnos t where t.empresa_id = demo and t.nome = 'Noite';
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Leads do link público (Etapa 4). Datas relativas a hoje. Idempotente: só grava se o Buffet
+-- Demo ainda não tiver leads.
+--   Carla (novo: deu o WhatsApp, está escolhendo o pacote)
+--   Rafael (em andamento: viu a proposta; pediu visita)
+--   Beatriz (abandonou: parou antes de concluir, há 2 dias)
+--   Patrícia (pré-reservado: pré-reserva pelo link, vence em 40h)
+--   Marcos (reservado: pré-reserva pelo link confirmada com sinal)
+-- Teste B: 1 lead novo. Funil: algumas sessões anônimas.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  demo      constant uuid := '11111111-1111-4111-8111-111111111111';
+  teste_b   constant uuid := '22222222-2222-4222-8222-222222222222';
+  dona      constant uuid := '1a000000-0000-4000-8000-000000000001';
+  v_tipo    uuid;
+  v_espaco  uuid;
+  v_fuso    text;
+  v_interv  integer;
+  v_lead    uuid;
+  v_orc     uuid;
+  r         record;
+begin
+  if exists (select 1 from public.leads where empresa_id = demo) then
+    return;
+  end if;
+  select id into v_tipo from public.tipos_evento where empresa_id = demo order by ordem limit 1;
+  select id into v_espaco from public.espacos where empresa_id = demo order by ordem limit 1;
+  if v_tipo is null or v_espaco is null then
+    return;
+  end if;
+  select e.fuso, rc.intervalo_entre_eventos_min into v_fuso, v_interv
+  from public.empresas e join public.regras_comerciais rc on rc.empresa_id = e.id where e.id = demo;
+
+  for r in
+    select * from (values
+      (1, 'Carla Mendes', '+5534991113301', 'instagram', 'novo', 'frio', 4, interval '2 hours',
+       'em_montagem', 'Tarde', 35, 55, null::integer, null::text),
+      (2, 'Rafael Souza', '+5534991113302', 'google', 'em_andamento', 'quente', 6, interval '5 hours',
+       'visualizado', 'Tarde', 40, 60, 450000, null),
+      (3, 'Beatriz Nunes', '+5534991113303', 'link_direto', 'abandonou', 'frio', 3, interval '2 days',
+       'em_montagem', 'Almoço', 50, 40, null, null),
+      (4, 'Patrícia Lima', '+5534991113304', 'whatsapp', 'pre_reservado', 'quente', 6, interval '1 hour',
+       'aceito', 'Noite', 45, 70, 560000, 'pre_reserva'),
+      (5, 'Marcos Oliveira', '+5534991113305', 'indicacao', 'reservado', 'quente', 6, interval '1 day',
+       'aceito', 'Almoço', 60, 80, 680000, 'confirmada')
+    ) as x(n, nome, whatsapp, origem, status, temperatura, passo, ha, status_orc, turno, dias,
+           convidados, total, reserva)
+  loop
+    insert into public.leads (
+      empresa_id, nome, whatsapp_e164, origem, status, temperatura, ultimo_passo,
+      consentimento_em, consentimento_versao, consentimento_texto, ultima_atividade_em, criado_em
+    ) values (
+      demo, r.nome, r.whatsapp, r.origem::public.origem_lead, r.status::public.status_lead,
+      r.temperatura::public.temperatura_lead, r.passo, now() - r.ha - interval '10 minutes',
+      '2026-10-v1', 'Autorizo o buffet a usar meu nome e WhatsApp para enviar este orçamento.',
+      now() - r.ha, now() - r.ha - interval '10 minutes'
+    ) returning id into v_lead;
+
+    insert into public.orcamentos (
+      empresa_id, lead_id, numero, token, status, canal, origem, rascunho, passo_atual,
+      resultado, total_centavos, validade_ate, tipo_evento_id, data, turno_id, espaco_id,
+      convidados, enviado_em, aceito_em, criado_em
+    )
+    select demo, v_lead, r.n, 'seedDemoOrcamento' || r.n || 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+           r.status_orc::public.status_orcamento, 'publico', r.origem::public.origem_lead,
+           jsonb_build_object('tipoEventoId', v_tipo, 'turnoId', t.id, 'adultos', r.convidados,
+                              'criancas', '[]'::jsonb, 'opcionais', '[]'::jsonb, 'horasExtras', 0,
+                              'data', (current_date + r.dias)::text),
+           r.passo,
+           case when r.total is not null then jsonb_build_object(
+             'versaoMotor', 1, 'ok', true, 'erros', '[]'::jsonb, 'avisos', '[]'::jsonb,
+             'convidadosEquivalentes', r.convidados, 'pessoasFisicas', r.convidados,
+             'linhas', '[]'::jsonb, 'subtotalCentavos', r.total, 'descontoCentavos', 0,
+             'totalCentavos', r.total, 'porConvidadoCentavos', r.total / r.convidados,
+             'sinalCentavos', r.total * 3 / 10, 'saldoCentavos', r.total - r.total * 3 / 10,
+             'parcelas', '[]'::jsonb) end,
+           r.total, case when r.total is not null then current_date + 15 end,
+           v_tipo, current_date + r.dias, t.id, v_espaco, r.convidados,
+           case when r.total is not null then now() - r.ha end,
+           case when r.status_orc = 'aceito' then now() - r.ha end,
+           now() - r.ha - interval '8 minutes'
+    from public.turnos t where t.empresa_id = demo and t.nome = r.turno
+    returning id into v_orc;
+
+    if r.total is not null then
+      insert into public.orcamento_itens (empresa_id, orcamento_id, ordem, tipo, descricao, quantidade,
+        valor_unitario_centavos, subtotal_centavos, detalhe)
+      values
+        (demo, v_orc, 0, 'pacote', 'Pacote Super', r.convidados, (r.total - 60000) / r.convidados,
+         r.total - 60000, r.convidados || ' convidados equivalentes'),
+        (demo, v_orc, 1, 'opcional', 'Mesa temática', 1, 60000, 60000, 'Valor fixo');
+    end if;
+
+    insert into public.atividades (empresa_id, lead_id, orcamento_id, tipo, dados, autor, criado_em)
+    values
+      (demo, v_lead, null, 'lead_criado', jsonb_build_object('origem', r.origem), 'cliente',
+       now() - r.ha - interval '10 minutes'),
+      (demo, v_lead, v_orc, 'orcamento_iniciado', jsonb_build_object('numero', r.n), 'cliente',
+       now() - r.ha - interval '8 minutes');
+    if r.total is not null then
+      insert into public.atividades (empresa_id, lead_id, orcamento_id, tipo, dados, autor, criado_em)
+      values (demo, v_lead, v_orc, 'orcamento_concluido',
+              jsonb_build_object('total_centavos', r.total, 'data', current_date + r.dias),
+              'cliente', now() - r.ha - interval '2 minutes');
+    end if;
+    if r.status = 'abandonou' then
+      insert into public.atividades (empresa_id, lead_id, tipo, dados, autor, criado_em)
+      values (demo, v_lead, 'status_alterado',
+              jsonb_build_object('status_antes', 'novo', 'status_depois', 'abandonou'), 'sistema',
+              now() - r.ha + interval '24 hours');
+    end if;
+
+    if r.reserva is not null then
+      insert into public.reservas (
+        empresa_id, espaco_id, turno_id, data, inicio, fim, tipo, status, expira_em, origem,
+        cliente_nome, cliente_whatsapp_e164, tipo_evento_id, convidados, valor_total_centavos,
+        sinal_centavos, sinal_pago_em, observacoes, lead_id, orcamento_id, confirmada_por,
+        confirmada_em
+      )
+      select demo, v_espaco, t.id, current_date + r.dias, i.inicio, i.fim,
+             r.reserva::public.tipo_reserva, 'ativa',
+             case when r.reserva = 'pre_reserva' then now() + interval '40 hours' end,
+             'link_publico', r.nome, r.whatsapp, v_tipo, r.convidados, r.total,
+             case when r.reserva = 'confirmada' then r.total * 3 / 10 end,
+             case when r.reserva = 'confirmada' then current_date end,
+             'Pré-reserva pelo link (orçamento nº ' || r.n || ').', v_lead, v_orc,
+             case when r.reserva = 'confirmada' then dona end,
+             case when r.reserva = 'confirmada' then now() - interval '20 hours' end
+      from public.turnos t
+      cross join lateral public._agenda_intervalo(current_date + r.dias, t.hora_inicio,
+        t.duracao_min, v_fuso, v_interv) i
+      where t.empresa_id = demo and t.nome = r.turno;
+
+      insert into public.atividades (empresa_id, lead_id, orcamento_id, tipo, dados, autor, usuario_id, criado_em)
+      values (demo, v_lead, v_orc, 'pre_reserva_pedida',
+              jsonb_build_object('data', current_date + r.dias), 'cliente', null, now() - r.ha);
+      if r.reserva = 'confirmada' then
+        insert into public.atividades (empresa_id, lead_id, orcamento_id, tipo, dados, autor, usuario_id, criado_em)
+        values (demo, v_lead, v_orc, 'reserva_confirmada',
+                jsonb_build_object('data', current_date + r.dias), 'usuario', dona,
+                now() - interval '20 hours');
+      end if;
+    end if;
+
+    if r.n = 2 then
+      insert into public.visitas (empresa_id, lead_id, orcamento_id, data_preferida, periodo, observacoes)
+      values (demo, v_lead, v_orc, current_date + 3, 'tarde', 'Quero ver o salão montado.');
+      insert into public.atividades (empresa_id, lead_id, orcamento_id, tipo, dados, autor, criado_em)
+      values (demo, v_lead, v_orc, 'visita_pedida',
+              jsonb_build_object('data_preferida', current_date + 3, 'periodo', 'tarde'), 'cliente',
+              now() - r.ha);
+    end if;
+  end loop;
+
+  -- Funil: sessões anônimas (sem dado pessoal).
+  insert into public.funil_eventos (empresa_id, sessao, passo, evento, origem, criado_em)
+  select demo, s.sessao, p.passo, 'passo_visto', 'instagram', now() - interval '1 day' + p.passo * interval '1 minute'
+  from (values ('5e000000-0000-4000-8000-000000000001'::uuid, 6),
+               ('5e000000-0000-4000-8000-000000000002'::uuid, 3),
+               ('5e000000-0000-4000-8000-000000000003'::uuid, 1)) as s(sessao, ate)
+  cross join generate_series(0, 6) as p(passo)
+  where p.passo <= s.ate;
+
+  -- Teste B: um lead novo, sem orçamento concluído.
+  if exists (select 1 from public.empresas where id = teste_b) then
+    insert into public.leads (empresa_id, nome, whatsapp_e164, origem, status, ultimo_passo,
+      consentimento_em, consentimento_versao, consentimento_texto)
+    values (teste_b, 'Lead do Teste B', '+5534991113399', 'link_direto', 'novo', 3, now(),
+      '2026-10-v1', 'Autorizo o buffet a usar meu nome e WhatsApp para enviar este orçamento.')
+    on conflict do nothing;
+  end if;
+end;
+$$;
