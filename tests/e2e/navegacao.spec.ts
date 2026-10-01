@@ -54,9 +54,14 @@ test('navega pelas 4 áreas sem rolagem horizontal', async ({ page }) => {
     expect(await semRolagemHorizontal(page)).toBe(true);
   }
 
-  const botao = page.getByRole('button', { name: /Novo orçamento/ });
+  // "+ Orçamento" leva ao orçamento interno (e some dentro dele).
+  const botao = page.getByRole('link', { name: 'Novo orçamento' });
   await expect(botao).toBeVisible();
-  await expect(botao).toBeDisabled();
+  await botao.click();
+  await expect(page).toHaveURL(/\/app\/orcamentos\/novo$/);
+  await expect(page.getByRole('heading', { name: 'Novo orçamento', level: 1 })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Novo orçamento' })).toHaveCount(0);
+  expect(await semRolagemHorizontal(page)).toBe(true);
 });
 
 test('vendedor vê o mesmo painel com o próprio nome no menu', async ({ page }) => {
