@@ -4,6 +4,7 @@ import { exigirSessao } from '@/server/auth/sessao';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { urlDoSite } from '@/server/env';
+import { FormDadosProposta } from './form-dados-proposta';
 import { FormIdentidade } from './form-identidade';
 import { FormSlug } from './form-slug';
 import { SecaoImagens } from './secao-imagens';
@@ -31,6 +32,14 @@ export default async function IdentidadePage() {
           fuso: empresa.fuso,
           corMarca: empresa.corMarca,
           sobre: empresa.sobre ?? '',
+        }}
+      />
+      <FormDadosProposta
+        somenteLeitura={somenteLeitura}
+        inicial={{
+          razaoSocial: empresa.razaoSocial ?? '',
+          cnpj: empresa.cnpj ?? '',
+          endereco: empresa.endereco ?? '',
         }}
       />
       <SecaoImagens

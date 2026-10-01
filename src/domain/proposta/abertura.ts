@@ -2,6 +2,11 @@
 export const VARIAVEIS_ABERTURA = ['nome', 'data', 'convidados', 'tipo', 'buffet'] as const;
 export type VariavelAbertura = (typeof VARIAVEIS_ABERTURA)[number];
 
+/** Valores de exemplo para a prévia do texto na configuração. */
+export function exemploAbertura(tipo: string, buffet: string): Record<VariavelAbertura, string> {
+  return { nome: 'Ana', data: '14/11/2026', convidados: '60', tipo: tipo.toLowerCase(), buffet };
+}
+
 /**
  * Preenche {nome}, {data}, {convidados}, {tipo} e {buffet}. Variável desconhecida fica como
  * está; texto vazio vira null (a proposta não mostra a abertura).

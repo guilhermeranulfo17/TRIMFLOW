@@ -27,8 +27,11 @@ export function ListaConfig<T extends ItemBase>({
   onExcluir,
   onReordenar,
   onAlternarAtivo,
+  emUso = [],
 }: {
   itens: T[];
+  /** ids usados em orçamentos: sem "Excluir" (só desativar) */
+  emUso?: string[];
   /** "espaço", "turno": usado nas mensagens. */
   nomeItem: string;
   rotulo: (item: T) => string;
@@ -88,12 +91,16 @@ export function ListaConfig<T extends ItemBase>({
               icone: item.ativo ? EyeOff : Eye,
               onSelecionar: () => executar(() => onAlternarAtivo(item)),
             },
-            {
-              rotulo: 'Excluir',
-              icone: Trash2,
-              perigosa: true,
-              onSelecionar: () => setExcluindo(item),
-            },
+            ...(emUso.includes(item.id)
+              ? []
+              : [
+                  {
+                    rotulo: 'Excluir',
+                    icone: Trash2,
+                    perigosa: true,
+                    onSelecionar: () => setExcluindo(item),
+                  },
+                ]),
           ];
           return (
             <div

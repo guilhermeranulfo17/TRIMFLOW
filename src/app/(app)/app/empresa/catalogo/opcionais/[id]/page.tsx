@@ -7,6 +7,7 @@ import { LinkTestarPrecos } from '@/components/app/empresa/link-testar-precos';
 import { idSchema } from '@/domain/validacao/comum';
 import { duplicarOpcional, excluirOpcional } from '@/server/actions/empresa/opcionais';
 import { exigirSessao } from '@/server/auth/sessao';
+import { carregarEmUso } from '@/server/catalogo/em-uso';
 import {
   opcionais,
   opcionalPacotes,
@@ -27,6 +28,7 @@ export default async function EditarOpcionalPage({ params }: Props) {
   if (!idSchema.safeParse(id).success) notFound();
   const usuario = await exigirSessao();
   const somenteLeitura = usuario.perfil !== 'dono';
+  const emUso = await carregarEmUso(usuario);
 
   const dados = await comUsuario(usuario.id, async (tx) => {
     const [opcional] = await tx.select().from(opcionais).where(eq(opcionais.id, id));
@@ -70,6 +72,7 @@ export default async function EditarOpcionalPage({ params }: Props) {
                 onDuplicar={duplicarOpcional}
                 onExcluir={excluirOpcional}
                 hrefBase="/app/empresa/catalogo/opcionais"
+                emUso={emUso.opcionais.includes(id)}
               />
             )}
           </>

@@ -2,6 +2,7 @@ import { asc } from 'drizzle-orm';
 import type { Metadata } from 'next';
 import { normalizarHora } from '@/domain/conversao';
 import { exigirSessao } from '@/server/auth/sessao';
+import { carregarEmUso } from '@/server/catalogo/em-uso';
 import { espacos, turnos } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { ListaEspacos, ListaTurnos } from './listas';
@@ -11,6 +12,7 @@ export const metadata: Metadata = { title: 'Espaços e turnos' };
 export default async function AgendaConfigPage() {
   const usuario = await exigirSessao();
   const somenteLeitura = usuario.perfil !== 'dono';
+  const emUso = await carregarEmUso(usuario);
   const { listaEspacos, listaTurnos } = await comUsuario(usuario.id, async (tx) => ({
     listaEspacos: await tx
       .select({
@@ -47,7 +49,11 @@ export default async function AgendaConfigPage() {
             Os salões ou áreas onde as festas acontecem, com a capacidade de cada um.
           </p>
         </div>
-        <ListaEspacos espacos={listaEspacos} somenteLeitura={somenteLeitura} />
+        <ListaEspacos
+          espacos={listaEspacos}
+          somenteLeitura={somenteLeitura}
+          emUso={emUso.espacos}
+        />
       </section>
       <section aria-labelledby="titulo-turnos" className="space-y-3">
         <div>
@@ -64,6 +70,7 @@ export default async function AgendaConfigPage() {
             horaInicio: normalizarHora(t.horaInicio) ?? t.horaInicio,
           }))}
           somenteLeitura={somenteLeitura}
+          emUso={emUso.turnos}
         />
       </section>
     </div>

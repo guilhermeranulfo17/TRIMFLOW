@@ -31,6 +31,8 @@ export const condicoesSchema = z.object({
   condicoesTexto: textoOpcional(2000),
   naoInclusoTexto: textoOpcional(2000),
   cancelamentoTexto: textoOpcional(2000),
+  /** aparece nas Políticas da proposta (opcional: o código anterior não manda) */
+  alteracaoConvidadosTexto: textoOpcional(1000).optional(),
   modoExibicaoPreco: z.enum(['exato', 'faixa', 'apos_contato']),
   ajusteIncide: z.enum(['pacote', 'pacote_opcionais']),
 });

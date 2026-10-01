@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { cnpjValido } from './cnpj';
 import { toE164 } from '../phone';
 import { SLUG_MAX, SLUG_MIN, SLUG_REGEX } from '../slug';
 import { nomeCurto, textoOpcional } from './comum';
@@ -69,6 +70,17 @@ export const identidadeSchema = z.object({
   sobre: textoOpcional(600),
 });
 export type IdentidadeEntrada = z.input<typeof identidadeSchema>;
+
+/** Dados do rodapé da proposta (razão social, CNPJ e endereço; todos opcionais). */
+export const dadosPropostaSchema = z.object({
+  razaoSocial: textoOpcional(160),
+  cnpj: z
+    .string()
+    .trim()
+    .refine((v) => v === '' || cnpjValido(v), 'CNPJ inválido. Confira os números.'),
+  endereco: textoOpcional(200),
+});
+export type DadosPropostaEntrada = z.input<typeof dadosPropostaSchema>;
 
 export const slugSchema = z.object({
   slug: z
