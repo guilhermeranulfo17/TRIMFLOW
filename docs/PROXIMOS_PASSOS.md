@@ -1,4 +1,4 @@
-# Próximos passos (anotados durante as Etapas 0, 1 e 2)
+# Próximos passos (anotados durante as Etapas 0 a 3)
 
 Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi implementado.
 
@@ -18,9 +18,17 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Plano: assinatura pelo painel (hoje a tela só mostra o status).
 - Upload de imagem sem teste de ponta a ponta local (só no CI, com o storage-api).
 
-## Etapa 3: Agenda
+## Depois da Etapa 3 (pendências percebidas)
 
-- Capacidade de eventos por turno e espaço (o motor não checa disponibilidade de slot).
+- Editar uma reserva (trocar data, turno ou dados do cliente) sem cancelar e criar outra.
+- Lista de espera para datas cheias.
+- Sincronização com Google Agenda; avisos de vencimento por WhatsApp (Etapa 7).
+- Bloqueio por horário (hoje é por data e turno): um evento da noite que invade o dia seguinte
+  não é barrado por um bloqueio desse dia.
+- Recalcular `reservas.fim` quando o intervalo entre eventos mudar (hoje vale só para as novas).
+- Regra de capacidade > 1 é conservadora (conta ocupações que tocam o slot); avaliar o pico de
+  simultaneidade real se algum buffet em domicílio precisar.
+- Relatório/histórico de reservas canceladas, vencidas e realizadas na tela.
 
 ## Etapa 4: Link público
 
@@ -31,6 +39,10 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Leitura pública do catálogo por função `security definer` específica (hoje `anon` não lê nada),
   expondo só o necessário para o wizard.
 - Usar `aPartirDe` no modo de exibição "faixa" e `turnosDoDia`/`pacotesDisponiveis` nos passos.
+- **Disponibilidade pública:** wrapper `security definer` por slug sobre `_disponibilidade`,
+  com `grant execute` para `anon`, expondo só estado e vagas (nunca cliente). Pré-reserva pelo
+  link usa `criar_reserva` com `origem = 'link_publico'` (via função própria para `anon`).
+- Preencher `reservas.lead_id` quando a tabela de leads existir (e criar a FK).
 
 ## Etapa 5: Proposta
 

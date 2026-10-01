@@ -1,9 +1,11 @@
 import { CircleAlert, TriangleAlert } from 'lucide-react';
+import { SeloEstado } from '@/components/app/agenda/estados';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatData } from '@/domain/dates';
 import { formatBRL } from '@/domain/money';
 import type { ResultadoOrcamento } from '@/domain/preco/tipos';
 import { cn } from '@/lib/utils';
+import type { SlotSimulador } from '@/server/actions/simulador';
 
 function Linha({ rotulo, valor, forte }: { rotulo: string; valor: string; forte?: boolean }) {
   return (
@@ -16,12 +18,30 @@ function Linha({ rotulo, valor, forte }: { rotulo: string; valor: string; forte?
   );
 }
 
-export function ResultadoSimulacao({ resultado }: { resultado?: ResultadoOrcamento }) {
+export function ResultadoSimulacao({
+  resultado,
+  slot,
+}: {
+  resultado?: ResultadoOrcamento;
+  slot?: SlotSimulador;
+}) {
   return (
     <Card className="lg:sticky lg:top-20" aria-live="polite">
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg">Resultado</h2>
+          {slot && (
+            <span className="flex items-center gap-2 text-sm font-normal" data-testid="estado-slot">
+              <span className="text-muted-foreground">Agenda:</span>
+              <SeloEstado estado={slot.estado}>
+                {slot.capacidade > 1 && slot.estado === 'livre'
+                  ? `Livre (${slot.vagas} de ${slot.capacidade})`
+                  : slot.estado === 'livre'
+                    ? 'Data livre'
+                    : undefined}
+              </SeloEstado>
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5 text-sm">

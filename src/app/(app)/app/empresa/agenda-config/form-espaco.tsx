@@ -29,6 +29,7 @@ export function FormEspaco({
     defaultValues: espaco ?? {
       nome: '',
       capacidadeMax: 100,
+      eventosSimultaneos: 1,
       noLocalDoCliente: false,
       ativo: true,
     },
@@ -79,6 +80,23 @@ export function FormEspaco({
           className="w-32"
           aria-invalid={!!e.capacidadeMax || undefined}
           {...form.register('capacidadeMax', { valueAsNumber: true })}
+        />
+      </Campo>
+      <Campo
+        id={`espaco-simultaneos-${p}`}
+        rotulo="Eventos ao mesmo tempo"
+        dica="Salão = 1. Buffet em domicílio: quantas festas a equipe atende ao mesmo tempo."
+        erro={e.eventosSimultaneos?.message}
+      >
+        <Input
+          id={`espaco-simultaneos-${p}`}
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={50}
+          className="w-32"
+          aria-invalid={!!e.eventosSimultaneos || undefined}
+          {...form.register('eventosSimultaneos', { valueAsNumber: true })}
         />
       </Campo>
       <CampoCheck

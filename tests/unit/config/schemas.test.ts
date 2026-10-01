@@ -78,6 +78,7 @@ describe('espaço, turno e tipo de evento', () => {
       espacoSchema.safeParse({
         nome: 'Salão',
         capacidadeMax: 120,
+        eventosSimultaneos: 1,
         noLocalDoCliente: false,
         ativo: true,
       }).success,
@@ -87,6 +88,7 @@ describe('espaço, turno e tipo de evento', () => {
         espacoSchema.safeParse({
           nome: '',
           capacidadeMax: 0,
+          eventosSimultaneos: 51,
           noLocalDoCliente: false,
           ativo: true,
         }),
@@ -94,6 +96,7 @@ describe('espaço, turno e tipo de evento', () => {
     ).toEqual([
       'nome: Informe o nome do espaço.',
       'capacidadeMax: A capacidade precisa ser pelo menos 1.',
+      'eventosSimultaneos: O número de eventos ao mesmo tempo pode ser no máximo 50.',
     ]);
   });
 

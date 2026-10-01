@@ -13,7 +13,11 @@ import {
 } from '@/domain/preco/disponibilidade';
 import type { ContextoPreco, Desconto, ResultadoOrcamento } from '@/domain/preco/tipos';
 import { cn } from '@/lib/utils';
-import { simularOrcamento, type EntradaSimulador } from '@/server/actions/simulador';
+import {
+  simularOrcamento,
+  type EntradaSimulador,
+  type SlotSimulador,
+} from '@/server/actions/simulador';
 import { ResultadoSimulacao } from './resultado';
 
 const campo =
@@ -76,6 +80,7 @@ export function Simulador({
   const [descontoTexto, setDescontoTexto] = useState('');
 
   const [resultado, setResultado] = useState<ResultadoOrcamento>();
+  const [slot, setSlot] = useState<SlotSimulador>(null);
   const [erro, setErro] = useState<string>();
   const [calculando, iniciar] = useTransition();
 
@@ -136,8 +141,10 @@ export function Simulador({
     }
     iniciar(async () => {
       const r = await simularOrcamento(entrada);
-      if (r.ok) setResultado(r.resultado);
-      else setErro(r.erro);
+      if (r.ok) {
+        setResultado(r.resultado);
+        setSlot(r.slot);
+      } else setErro(r.erro);
     });
   }
 
@@ -348,7 +355,7 @@ export function Simulador({
         </CardContent>
       </Card>
 
-      <ResultadoSimulacao resultado={resultado} />
+      <ResultadoSimulacao resultado={resultado} slot={resultado ? slot : null} />
     </div>
   );
 }

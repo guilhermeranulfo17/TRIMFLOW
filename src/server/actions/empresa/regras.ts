@@ -4,10 +4,12 @@ import { eq, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { faixasIdadeSchema, type FaixasIdadeEntrada } from '@/domain/validacao/catalogo';
 import {
+  agendaRegrasSchema,
   ajustesDiaSchema,
   condicoesSchema,
   deslocamentoSchema,
   feriadosSchema,
+  type AgendaRegrasEntrada,
   type AjustesDiaEntrada,
   type CondicoesEntrada,
   type DeslocamentoEntrada,
@@ -177,5 +179,32 @@ export async function salvarDeslocamento(entrada: DeslocamentoEntrada): Promise<
     });
     revalidar();
     return { ok: true, mensagem: 'Deslocamento salvo.' };
+  });
+}
+
+export async function salvarAgendaRegras(entrada: AgendaRegrasEntrada): Promise<ResultadoAcao> {
+  return acaoDoDono(async (dono) => {
+    const v = validar(agendaRegrasSchema, entrada);
+    if (!v.ok) return v.resultado;
+    await comUsuario(dono.id, async (tx) => {
+      const [antes] = await tx
+        .select({ intervaloEntreEventosMin: regrasComerciais.intervaloEntreEventosMin })
+        .from(regrasComerciais);
+      await tx
+        .update(regrasComerciais)
+        .set(v.dados)
+        .where(eq(regrasComerciais.empresaId, dono.empresa.id));
+      await auditar(
+        tx,
+        dono,
+        'regras.agenda_alterada',
+        'regras',
+        dono.empresa.id,
+        diferencas(antes ?? {}, v.dados),
+      );
+    });
+    revalidar();
+    revalidatePath('/app/agenda');
+    return { ok: true, mensagem: 'Intervalo entre eventos salvo.' };
   });
 }

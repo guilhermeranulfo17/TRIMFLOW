@@ -23,6 +23,7 @@ import {
 export const espacoSchema = z.object({
   nome: nomeCurto('o nome do espaço'),
   capacidadeMax: inteiro('a capacidade', 1, 100_000),
+  eventosSimultaneos: inteiro('o número de eventos ao mesmo tempo', 1, 50),
   noLocalDoCliente: z.boolean(),
   ativo: z.boolean(),
 });

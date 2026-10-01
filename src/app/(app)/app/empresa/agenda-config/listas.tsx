@@ -34,7 +34,9 @@ export function ListaEspacos({
       nomeItem="espaço"
       rotulo={(e) => e.nome}
       resumo={(e) =>
-        `Até ${e.capacidadeMax} convidados${e.noLocalDoCliente ? ' · no local do cliente' : ''}`
+        `Até ${e.capacidadeMax} convidados` +
+        (e.eventosSimultaneos > 1 ? ` · ${e.eventosSimultaneos} eventos ao mesmo tempo` : '') +
+        (e.noLocalDoCliente ? ' · no local do cliente' : '')
       }
       somenteLeitura={somenteLeitura}
       textoAdicionar="Adicionar espaço"

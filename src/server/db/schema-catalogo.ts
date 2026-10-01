@@ -65,6 +65,7 @@ export const espacos = pgTable(
     nome: text('nome').notNull(),
     capacidadeMax: integer('capacidade_max').notNull(),
     noLocalDoCliente: boolean('no_local_do_cliente').notNull().default(false),
+    eventosSimultaneos: integer('eventos_simultaneos').notNull().default(1),
     ordem: integer('ordem').notNull().default(0),
     ativo: boolean('ativo').notNull().default(true),
     criadoEm: criadoEm(),
@@ -156,6 +157,7 @@ export const regrasComerciais = pgTable('regras_comerciais', {
   deslocamentoModelo: deslocamentoModelo('deslocamento_modelo').notNull().default('nenhum'),
   deslocamentoKmGratis: integer('deslocamento_km_gratis').notNull().default(0),
   deslocamentoValorKmCentavos: integer('deslocamento_valor_km_centavos').notNull().default(0),
+  intervaloEntreEventosMin: integer('intervalo_entre_eventos_min').notNull().default(60),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 });
