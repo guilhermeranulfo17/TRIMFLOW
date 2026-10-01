@@ -103,6 +103,7 @@ export function descreverAtividade(
         ? `Viu a proposta: ${formatBRL(dados.total_centavos)}`
         : 'Viu a proposta';
     case 'voltou':
+      if (dados.canal === 'interno') return `${equipe} atendeu o cliente de novo`;
       return typeof dados.nome_informado === 'string'
         ? `Voltou ao link (informou o nome "${dados.nome_informado}")`
         : 'Voltou ao link';

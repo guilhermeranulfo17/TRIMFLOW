@@ -43,19 +43,26 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Exportar e apagar os dados de um lead a pedido (LGPD, Etapa 9). Revisão jurídica dos textos
   de privacidade e termos (hoje modelos).
 - Painel de métricas do funil (`funil_eventos`) em Números.
-- Bundle do painel de Leads (194 kB) carrega `libphonenumber-js/max` pelo `formatPhoneBR`.
 - Fotos de pacote na página pública usam `<img>`/`next/image` sem otimizador (como na Etapa 2).
 
-## Etapa 5: Proposta
+## Depois da Etapa 5 (pendências percebidas)
 
-- Proposta completa: PDF, versões (`orcamentos.versao`), rastreio de visualização detalhado,
-  "+ Orçamento" pelo painel (canal interno) e edição pelo vendedor.
-- Ações sobre o lead (status manual, anotações, tarefas, motivo de perda): Etapa 6.
-
-- **Pacotes, opcionais, turnos, espaços e tipos de festa usados em propostas passam a ser
-  desativados, não excluídos** (hoje a
-  exclusão física é permitida porque nada aponta para o catálogo).
-- Congelar o `ResultadoOrcamento` (com `versaoMotor`) dentro da proposta.
+- **Etapa 6:** caixa de leads com prioridade, perdido com motivo, notas e tarefas; status
+  manual do lead.
+- **Etapa 7:** avisos por WhatsApp (proposta aberta, pré-reserva vencendo) e follow-up
+  automático da proposta não aberta.
+- Assinatura eletrônica, contrato, cobrança e Pix do sinal; envio da proposta por e-mail.
+- Remover "feito com Orkestra" no plano superior (`empresas.rodape_orkestra` já existe, fixo
+  em true).
+- Comparar versões lado a lado na tela do lead (hoje: lista do que mudou entre versões).
+- Proposta com mais de um espaço/data (pacotes combinados) e itens avulsos com desconto por
+  item.
+- Cache do logo convertido para PNG (hoje o PDF baixa e converte a cada geração; ~100 ms).
+- Fontes do PDF por buffet (hoje Manrope para todos).
+- Bundles do painel que ainda carregam `libphonenumber-js/max` no navegador (Leads, Minha
+  empresa, Usuários) pelo `formatPhoneBR`/`CampoTelefone`: usar só a máscara no cliente, como
+  no "+ Orçamento".
+- Seed: os orçamentos fictícios usam totais aproximados (não recalculados pelo motor).
 
 ## Etapa 9: Produção
 

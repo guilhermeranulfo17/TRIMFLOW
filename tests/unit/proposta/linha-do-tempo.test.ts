@@ -17,6 +17,9 @@ describe('linha do tempo: atividades da proposta', () => {
       'Bia cadastrou o cliente',
     );
     expect(descreverAtividade('lead_criado', {})).toBe('Pediu orçamento pelo link');
+    expect(descreverAtividade('voltou', { canal: 'interno' }, 'Bia')).toBe(
+      'Bia atendeu o cliente de novo',
+    );
   });
 
   it('envio por canal, aberturas, vencimento e pré-reserva pela equipe', () => {
