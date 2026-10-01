@@ -16,7 +16,7 @@ export const ajustesInternosSchema = z.object({
         descricao: z
           .string()
           .trim()
-          .min(1, 'Descreva o item.')
+          .min(1, 'Descreva o item ou remova a linha.')
           .max(120, 'Use no máximo 120 caracteres.'),
         quantidade: z.number().int().min(1).max(10_000),
         valorUnitarioCentavos: z.number().int().min(0).max(100_000_000),
@@ -48,10 +48,35 @@ export const orcamentoInternoSchema = z.object({
   ajustes: ajustesInternosSchema,
 });
 
-/** Prévia (recalcular a cada mudança): só escolhas e ajustes, sem cliente. */
-export const previaInternaSchema = orcamentoInternoSchema.pick({ escolhas: true, ajustes: true });
+/**
+ * Tira da prévia os itens avulsos ainda sem descrição (a linha acabou de ser criada): a prévia
+ * continua calculando o total. Ao salvar, o schema completo cobra a descrição no próprio campo.
+ */
+export function semAvulsosIncompletos(ajustes: unknown): unknown {
+  if (!ajustes || typeof ajustes !== 'object') return ajustes;
+  const a = ajustes as { avulsos?: unknown };
+  if (!Array.isArray(a.avulsos)) return ajustes;
+  return {
+    ...a,
+    avulsos: a.avulsos.filter(
+      (i) =>
+        !i ||
+        typeof i !== 'object' ||
+        String((i as { descricao?: unknown }).descricao ?? '').trim() !== '',
+    ),
+  };
+}
 
-export type PreviaInternaEntrada = z.input<typeof previaInternaSchema>;
+/** Prévia (recalcular a cada mudança): só escolhas e ajustes, sem cliente. */
+export const previaInternaSchema = z.object({
+  escolhas: escolhasSchema,
+  ajustes: z.preprocess(semAvulsosIncompletos, ajustesInternosSchema),
+});
+
+export type PreviaInternaEntrada = {
+  escolhas: z.input<typeof escolhasSchema>;
+  ajustes: z.input<typeof ajustesInternosSchema>;
+};
 export type OrcamentoInternoEntrada = z.input<typeof orcamentoInternoSchema>;
 export type OrcamentoInterno = z.output<typeof orcamentoInternoSchema>;
 export type AjustesInternos = z.output<typeof ajustesInternosSchema>;

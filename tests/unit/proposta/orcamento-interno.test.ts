@@ -40,6 +40,43 @@ describe('orçamento interno: schema', () => {
     }
   });
 
+  it('prévia ignora avulso sem descrição (linha recém-criada) e o total continua', () => {
+    const r = previaInternaSchema.safeParse({
+      escolhas: { tipoEventoId: ID },
+      ajustes: {
+        avulsos: [
+          { descricao: '', quantidade: 1, valorUnitarioCentavos: 0 },
+          { descricao: '   ', quantidade: 2, valorUnitarioCentavos: 500 },
+          { descricao: 'Mesa extra', quantidade: 1, valorUnitarioCentavos: 15000 },
+        ],
+      },
+    });
+    expect(r.success).toBe(true);
+    expect(r.data!.ajustes.avulsos).toEqual([
+      { descricao: 'Mesa extra', quantidade: 1, valorUnitarioCentavos: 15000 },
+    ]);
+  });
+
+  it('ao salvar, avulso sem descrição tem erro no próprio campo', () => {
+    const r = orcamentoInternoSchema.safeParse({
+      ...valido,
+      ajustes: { avulsos: [{ descricao: '', quantidade: 1, valorUnitarioCentavos: 0 }] },
+    });
+    expect(r.success).toBe(false);
+    const issue = r.error!.issues[0]!;
+    expect(issue.path.join('.')).toBe('ajustes.avulsos.0.descricao');
+    expect(issue.message).toBe('Descreva o item ou remova a linha.');
+  });
+
+  it('prévia com outro erro devolve o caminho do campo', () => {
+    const r = previaInternaSchema.safeParse({
+      escolhas: {},
+      ajustes: { desconto: { tipo: 'percentual', bp: 20_000 } },
+    });
+    expect(r.success).toBe(false);
+    expect(r.error!.issues[0]!.path.join('.')).toBe('ajustes.desconto.bp');
+  });
+
   it('a prévia não exige o cliente', () => {
     expect(previaInternaSchema.safeParse({ escolhas: {}, ajustes: {} }).success).toBe(true);
   });
