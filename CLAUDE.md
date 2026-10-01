@@ -31,7 +31,8 @@ src/
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, usuarios, plano, simulador
     auth/            rotas técnicas: confirm (link do e-mail), sair
-    b/[slug]/        página pública do buffet
+    b/[slug]/        página pública do buffet, orcamento (wizard), proposta/[token]
+    (legal)/         privacidade e termos
   components/
     ui/              shadcn (não misture regra de negócio aqui)
     app/             painel: sidebar, bottom-nav, header, empty states, toast
@@ -44,15 +45,21 @@ src/
     catalogo/        validações do catálogo, pendências do link público, resumos de preço
     agenda/          intervalo do slot, estado do slot, calendário, mensagens (= regra do SQL)
     preco/           motor de preço (calcularOrcamento, disponibilidade, aPartirDe, parcelas)
+    publico/         link público: passos, prévia por modo de preço, vitrine, cor, WhatsApp,
+                     status do lead (= regra do SQL)
+    leads/           exibição de leads (filtros, linha do tempo)
     modelos/         modelos de segmento (infantil, eventos, domicilio) validados com Zod
   server/
-    db/              client, schema (espelho das migrations), tenant (comUsuario), admin (sem RLS)
+    db/              client, schema (espelho das migrations), tenant (comUsuario), anon (comAnon),
+                     admin (sem RLS)
     actions/         server actions (auth, simulador, empresa/* da configuração)
     catalogo/        carregar (ContextoPreco via RLS), gravar-modelo, aplicar-modelo
     auth/            cliente Supabase do servidor, sessão, guards, redirecionamento,
                      admin-supabase (Admin API com service role, só servidor)
     usuarios/        criar/desativar vendedor (dependências injetadas)
     agenda/          leituras da agenda (disponibilidade, reservas, bloqueios) e erros
+    publico/         leituras do link público (cache por slug), hash de IP, modo teste
+    leads/           leituras de Leads
     env.ts, erros.ts
   lib/               utilitários de UI (cn)
   middleware.ts      sessão + proteção de /app/**
@@ -94,8 +101,16 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `public.empresa_do_usuario()` e `public.perfil_do_usuario()`.
 - No servidor, queries da área logada usam `comUsuario(usuario.id, tx => …)` (`server/db/tenant.ts`):
   a transação roda como `authenticated` com as claims do usuário, então o RLS vale também aqui.
-- `server/db/admin.ts` ignora RLS: só para casos revisados (ex.: página pública por slug),
-  expondo o mínimo, com `import 'server-only'`.
+- `server/db/admin.ts` ignora RLS: só para casos revisados, expondo o mínimo, com
+  `import 'server-only'`.
+- **Link público:** só pelas funções do schema `publico` (fora da API do Supabase, `execute` só
+  para `anon`), chamadas pelo servidor com `comAnon(tx => …)`. `anon` não lê tabela nenhuma.
+  Funções com token também exigem o slug. O navegador manda só escolhas; preço, "hoje",
+  desconto (zero) e modo teste (sessão) são do servidor. Antes do WhatsApp o navegador nunca
+  recebe tabela de preço. IP só como `sha256(ip + IP_HASH_SALT)`; nada pessoal em logs.
+- **Leads e orçamentos** só são escritos pelas funções `publico.*` e da agenda. A regra de
+  status do lead existe no SQL (`_lead_transicao`) e em `domain/publico/status-lead`, com teste
+  de equivalência: mudou uma, mude a outra.
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
   `SUPABASE_SERVICE_ROLE_KEY` só é lida em `server/auth/admin-supabase.ts` (`server-only`); o
   ESLint impede importá-lo em componentes, `lib`, páginas e middleware.
@@ -143,15 +158,15 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 
 Contas do seed (senha `demo12345`): `dono@demo.local` (dono) e `vendedor@demo.local` (vendedor)
 do **Buffet Demo** (com o catálogo do modelo infantil), e `dono@testeb.local` do **Buffet Teste B**
-(catálogo vazio). Página pública:
-http://localhost:3000/b/buffet-demo. E-mails locais (recuperação de senha): http://127.0.0.1:54324.
+(catálogo vazio). O Buffet Demo tem 5 leads em estados diferentes (seed). Página pública:
+http://localhost:3000/b/buffet-demo (logado como dono, abre em modo teste). E-mails locais (recuperação de senha): http://127.0.0.1:54324.
 
 Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 `TEST_DB_SHIM=1 TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/orkestra_test pnpm test:integration`.
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0, 1 e 2 (PRs #1, #2 e #3) na `main`.
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 3 (PRs #1 a #4) na `main`.
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região
@@ -162,8 +177,10 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
     no job "Migrations que serão aplicadas no merge" o dry-run contra produção.
   - Segredos do GitHub usados pelo workflow: `SUPABASE_ACCESS_TOKEN` e `SUPABASE_DB_PASSWORD`.
 - **Variáveis na Vercel:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-  `NEXT_PUBLIC_SITE_URL`, `DATABASE_URL` e, desde a Etapa 2, `SUPABASE_SERVICE_ROLE_KEY`
-  (secreta; sem ela, criar vendedor não funciona).
+  `NEXT_PUBLIC_SITE_URL`, `DATABASE_URL`, desde a Etapa 2 `SUPABASE_SERVICE_ROLE_KEY`
+  (secreta; sem ela, criar vendedor não funciona) e, desde a Etapa 4, `IP_HASH_SALT`
+  (secreta; obrigatória: sem ela o servidor não sobe).
+  - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
 - **Fluxo de trabalho:**
