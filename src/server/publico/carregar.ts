@@ -14,7 +14,7 @@ import { tagDoBuffet } from './cache';
 
 /*
  * Leituras do link público. Só pelas funções do schema `publico`, como anon (comAnon).
- * Vitrine e catálogo ficam em cache por slug (tag `buffet:{slug}`, invalidada pelas actions de
+ * Catálogo (contexto + vitrine) fica em cache por slug (tag `buffet:{slug}`, invalidada pelas actions de
  * configuração). Disponibilidade e preço NUNCA ficam em cache.
  */
 
@@ -140,11 +140,13 @@ export async function lerContextoPublico(
 
 const OPCOES_CACHE = (slug: string) => ({ tags: [tagDoBuffet(slug)], revalidate: 300 });
 
-/** Buffet do slug (cache por slug + memo por requisição). Slug inválido = null sem consulta. */
-export const carregarBuffet = cache(async (slug: string): Promise<BuffetPublico | null> => {
-  if (!slugValido(slug)) return null;
-  return unstable_cache(() => lerBuffet(slug), ['publico-buffet', slug], OPCOES_CACHE(slug))();
-});
+/**
+ * Buffet do slug (memo por requisição). Sem cache entre requisições: é uma linha só e o
+ * plano (suspenso) precisa valer na hora. Slug inválido = null sem consulta.
+ */
+export const carregarBuffet = cache(async (slug: string): Promise<BuffetPublico | null> =>
+  slugValido(slug) ? lerBuffet(slug) : null,
+);
 
 export const carregarSlugAtual = cache(async (slug: string) =>
   slugValido(slug) ? lerSlugAtual(slug) : null,

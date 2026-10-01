@@ -106,6 +106,7 @@ jobs:
             echo "DATABASE_URL=$DB_URL"
             echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY:-$SECRET_KEY}"
             echo "E2E_STORAGE=1"
+            echo "IP_HASH_SALT=sal-do-ci-orkestra"
             echo "MAILPIT_URL=${MAILPIT_URL:-${INBUCKET_URL:-http://127.0.0.1:54324}}"
           } >> "$GITHUB_ENV"
 
