@@ -1,27 +1,21 @@
 'use client';
 
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Folha } from '@/components/app/agenda/folha';
+import { OrcamentosDoLead } from '@/components/app/orcamento/orcamentos-do-lead';
 import { formatData, formatDataHora } from '@/domain/dates';
-import { COR_STATUS_LEAD, descreverAtividade, resumoDaFesta } from '@/domain/leads';
-import { formatBRL } from '@/domain/money';
+import { COR_STATUS_LEAD, descreverAtividade } from '@/domain/leads';
 import { formatPhoneBR } from '@/domain/phone';
 import { ROTULO_ORIGEM } from '@/domain/publico/origem';
 import { ROTULO_STATUS_LEAD } from '@/domain/publico/status-lead';
 import type { DetalheLead } from '@/server/leads/carregar';
 
-const STATUS_ORCAMENTO: Record<string, string> = {
-  em_montagem: 'Em montagem',
-  enviado: 'Enviado',
-  visualizado: 'Visualizado',
-  aceito: 'Pré-reservado',
-  expirado: 'Expirado',
-  substituido: 'Substituído',
-};
 const PERIODO: Record<string, string> = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite' };
 const TEMPERATURA: Record<string, string> = { frio: 'Frio', morno: 'Morno', quente: 'Quente' };
 
-/** Detalhe do lead (sheet no celular): dados, propostas congeladas, visitas e linha do tempo. */
+/** Detalhe do lead (sheet no celular): dados, orçamentos com versões, visitas e linha do tempo. */
 export function DetalheDoLead({ lead, fecharHref }: { lead: DetalheLead; fecharHref: string }) {
   const router = useRouter();
   return (
@@ -58,54 +52,25 @@ export function DetalheDoLead({ lead, fecharHref }: { lead: DetalheLead; fecharH
           </p>
         )}
 
-        {lead.orcamentos.length > 0 && (
-          <section>
-            <h3 className="font-bold">Propostas</h3>
-            <div className="mt-2 flex flex-col gap-3">
-              {lead.orcamentos.map((o) => (
-                <div key={o.id} className="rounded-md border p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold">Nº {o.numero}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {STATUS_ORCAMENTO[o.status] ?? o.status}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground">{resumoDaFesta(o)}</p>
-                  {o.itens.length > 0 && (
-                    <ul className="mt-2 divide-y">
-                      {o.itens.map((i, n) => (
-                        <li key={n} className="flex justify-between gap-2 py-1">
-                          <span className="min-w-0">
-                            {i.descricao}
-                            {i.detalhe && (
-                              <span className="text-muted-foreground block text-xs">
-                                {i.detalhe}
-                              </span>
-                            )}
-                          </span>
-                          <span className="shrink-0 tabular-nums">
-                            {formatBRL(i.subtotalCentavos)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {o.totalCentavos != null && (
-                    <p className="mt-2 flex justify-between font-bold">
-                      <span>Total</span>
-                      <span className="tabular-nums">{formatBRL(o.totalCentavos)}</span>
-                    </p>
-                  )}
-                  {o.validadeAte && (
-                    <p className="text-muted-foreground text-xs">
-                      Válida até {formatData(o.validadeAte)}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        <section>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-bold">Orçamentos</h3>
+            {!lead.ehTeste && (
+              <Link
+                href={`/app/orcamentos/novo?lead=${lead.id}`}
+                className="text-primary inline-flex min-h-11 items-center gap-1 font-semibold underline-offset-2 hover:underline"
+              >
+                <Plus className="size-4" aria-hidden />
+                Orçamento
+              </Link>
+            )}
+          </div>
+          {lead.orcamentos.length > 0 ? (
+            <OrcamentosDoLead grupos={lead.orcamentos} />
+          ) : (
+            <p className="text-muted-foreground mt-1">Nenhum orçamento concluído ainda.</p>
+          )}
+        </section>
 
         {lead.visitas.length > 0 && (
           <section>
@@ -132,7 +97,7 @@ export function DetalheDoLead({ lead, fecharHref }: { lead: DetalheLead; fecharH
                   className="bg-primary absolute top-1.5 -left-[21px] size-2 rounded-full"
                   aria-hidden
                 />
-                <span className="block">{descreverAtividade(a.tipo, a.dados)}</span>
+                <span className="block">{descreverAtividade(a.tipo, a.dados, a.quem)}</span>
                 <span className="text-muted-foreground text-xs">{formatDataHora(a.criadoEm)}</span>
               </li>
             ))}

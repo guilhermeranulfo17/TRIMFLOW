@@ -258,6 +258,19 @@ export function FormCondicoes({
       >
         <Textarea id="cond-cancelamento" rows={3} {...form.register('cancelamentoTexto')} />
       </Campo>
+      <Campo
+        id="cond-convidados"
+        rotulo="Política de alteração de convidados"
+        erro={e.alteracaoConvidadosTexto?.message}
+        dica="Ex.: o número de convidados pode mudar até 10 dias antes, com ajuste no valor."
+      >
+        <Textarea
+          id="cond-convidados"
+          rows={3}
+          maxLength={1000}
+          {...form.register('alteracaoConvidadosTexto')}
+        />
+      </Campo>
     </Secao>
   );
 }

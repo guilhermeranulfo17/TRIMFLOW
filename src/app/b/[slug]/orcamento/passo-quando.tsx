@@ -6,7 +6,7 @@ import { montarCalendario, somarMes } from '@/domain/agenda/calendario';
 import { diaDaSemana, formatData, somarDias } from '@/domain/dates';
 import { espacoEscolhido, pessoas, turnosNaData } from '@/domain/publico/passos';
 import { verDisponibilidade, type DiaDisponivel } from '@/server/actions/publico';
-import { classeOpcao, Contador } from './contador';
+import { classeOpcao, Contador } from '@/components/orcamento/contador';
 import type { PropsPasso } from './tipos';
 
 const MESES = [

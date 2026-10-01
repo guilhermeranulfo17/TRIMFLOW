@@ -46,6 +46,8 @@ export const tipoEventoSchema = z.object({
   nome: nomeCurto('o nome do tipo de festa'),
   icone: z.union([z.literal(''), z.string().regex(/^[a-z0-9-]{1,50}$/)]),
   ativo: z.boolean(),
+  /** abertura da proposta, com variáveis ({nome}, {data}…); vazio = sem abertura */
+  textoAbertura: textoOpcional(600).optional(),
 });
 export type TipoEventoEntrada = z.input<typeof tipoEventoSchema>;
 

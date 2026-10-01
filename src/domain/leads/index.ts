@@ -50,12 +50,50 @@ export function resumoDaFesta(f: {
 
 const PERIODOS: Record<string, string> = { manha: 'manhã', tarde: 'tarde', noite: 'noite' };
 
-/** Texto da linha do tempo para cada atividade. */
-export function descreverAtividade(tipo: string, dados: Record<string, unknown>): string {
+const numeroDe = (dados: Record<string, unknown>) =>
+  typeof dados.numero === 'number' ? ` nº ${String(dados.numero).padStart(4, '0')}` : '';
+const totalDe = (dados: Record<string, unknown>) =>
+  typeof dados.total_centavos === 'number' ? `: ${formatBRL(dados.total_centavos)}` : '';
+
+/**
+ * Texto da linha do tempo para cada atividade. `quem` é o nome de quem fez, quando foi alguém
+ * da equipe (null = cliente ou sistema).
+ */
+export function descreverAtividade(
+  tipo: string,
+  dados: Record<string, unknown>,
+  quem: string | null = null,
+): string {
   const data = typeof dados.data === 'string' ? formatData(dados.data) : null;
+  const equipe = quem ?? 'A equipe';
   switch (tipo) {
+    case 'orcamento_criado':
+      return `${equipe} criou o orçamento${numeroDe(dados)}${totalDe(dados)}`;
+    case 'versao_criada': {
+      const versao = typeof dados.versao === 'number' ? `a versão ${dados.versao}` : 'uma versão';
+      return quem
+        ? `${quem} criou ${versao} do orçamento${numeroDe(dados)}${totalDe(dados)}`
+        : `Refez a proposta${numeroDe(dados)} (${versao.replace('a versão', 'versão')})${totalDe(dados)}`;
+    }
+    case 'proposta_enviada':
+      switch (dados.canal) {
+        case 'whatsapp':
+          return `${equipe} enviou a proposta${numeroDe(dados)} pelo WhatsApp`;
+        case 'pdf':
+          return `${equipe} baixou o PDF da proposta${numeroDe(dados)}`;
+        default:
+          return `${equipe} copiou o link da proposta${numeroDe(dados)}`;
+      }
+    case 'proposta_aberta': {
+      const vez = typeof dados.vez === 'number' && dados.vez > 1 ? ` (${dados.vez}ª vez)` : '';
+      return `Abriu a proposta${numeroDe(dados)}${vez}`;
+    }
+    case 'orcamento_expirado':
+      return `A proposta${numeroDe(dados)} venceu`;
     case 'lead_criado':
-      return 'Pediu orçamento pelo link';
+      return dados.canal === 'interno'
+        ? `${equipe} cadastrou o cliente`
+        : 'Pediu orçamento pelo link';
     case 'orcamento_iniciado':
       return dados.numero
         ? `Começou o orçamento nº ${String(dados.numero)}`
@@ -65,10 +103,12 @@ export function descreverAtividade(tipo: string, dados: Record<string, unknown>)
         ? `Viu a proposta: ${formatBRL(dados.total_centavos)}`
         : 'Viu a proposta';
     case 'voltou':
+      if (dados.canal === 'interno') return `${equipe} atendeu o cliente de novo`;
       return typeof dados.nome_informado === 'string'
         ? `Voltou ao link (informou o nome "${dados.nome_informado}")`
         : 'Voltou ao link';
     case 'pre_reserva_pedida':
+      if (quem) return data ? `${quem} pré-reservou ${data}` : `${quem} fez uma pré-reserva`;
       return data ? `Pediu pré-reserva para ${data}` : 'Pediu pré-reserva';
     case 'pre_reserva_vencida':
       return data ? `A pré-reserva de ${data} venceu` : 'A pré-reserva venceu';

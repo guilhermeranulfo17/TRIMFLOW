@@ -44,6 +44,11 @@ export const empresas = pgTable('empresas', {
   capaPath: text('capa_path'),
   corMarca: text('cor_marca').notNull().default('#7C5CD6'),
   sobre: text('sobre'),
+  razaoSocial: text('razao_social'),
+  /** só dígitos (14) */
+  cnpj: text('cnpj'),
+  endereco: text('endereco'),
+  rodapeOrkestra: boolean('rodape_orkestra').notNull().default(true),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 });

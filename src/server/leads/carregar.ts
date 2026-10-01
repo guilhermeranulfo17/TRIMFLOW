@@ -1,6 +1,9 @@
 import 'server-only';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { hojeNoFuso } from '@/domain/dates';
 import { FILTROS_LEAD, type ChaveFiltro } from '@/domain/leads';
+import { diferencasEntreVersoes, estadoValidade, type ResumoVersao } from '@/domain/proposta';
+import { linkWhatsApp, mensagemEnvioProposta } from '@/domain/publico/whatsapp';
 import type { StatusLead, TemperaturaLead } from '@/domain/publico/status-lead';
 import type { OrigemLead } from '@/domain/publico/tipos';
 import type { UsuarioAtual } from '@/server/auth/sessao';
@@ -12,18 +15,25 @@ import {
   orcamentos,
   tiposEvento,
   turnos,
+  usuarios,
   visitas,
 } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
+import { urlDoSite } from '@/server/env';
 
 /*
- * Leituras de Leads (dono e vendedor), sempre pelo RLS. Só leitura nesta etapa: ações sobre o
- * lead (anotar, mudar status, tarefas) ficam para a Etapa 6.
+ * Leituras de Leads (dono e vendedor), sempre pelo RLS. Ações sobre o lead (anotar, mudar
+ * status, tarefas) ficam para a Etapa 6; orçamentos têm as ações da proposta (Etapa 5).
  */
 
 export type ResumoOrcamento = {
   id: string;
   numero: number;
+  versao: number;
+  token: string;
+  canal: string;
+  aberturas: number;
+  ehTeste: boolean;
   status: string;
   tipoEvento: string | null;
   data: string | null;
@@ -65,11 +75,16 @@ async function resumosDosOrcamentos(
     .leftJoin(turnos, eq(turnos.id, orcamentos.turnoId))
     .leftJoin(espacos, eq(espacos.id, orcamentos.espacoId))
     .where(filtro)
-    .orderBy(desc(orcamentos.criadoEm), desc(orcamentos.numero));
+    .orderBy(desc(orcamentos.criadoEm), desc(orcamentos.numero), desc(orcamentos.versao));
   return linhas.map(({ o, tipoEvento, turno, espaco }) => ({
     id: o.id,
     leadId: o.leadId,
     numero: o.numero,
+    versao: o.versao,
+    token: o.token,
+    canal: o.canal,
+    aberturas: o.aberturas,
+    ehTeste: o.ehTeste,
     status: o.status,
     tipoEvento,
     data: o.data,
@@ -137,9 +152,8 @@ export async function listarLeads(
 export type DetalheLead = LeadDaLista & {
   consentimentoEm: string | null;
   criadoEm: string;
-  orcamentos: (ResumoOrcamento & {
-    itens: { descricao: string; detalhe: string | null; subtotalCentavos: number }[];
-  })[];
+  /** um grupo por número; versões da mais nova para a mais antiga (a primeira é a vigente) */
+  orcamentos: GrupoOrcamento[];
   visitas: {
     id: string;
     dataPreferida: string;
@@ -152,9 +166,22 @@ export type DetalheLead = LeadDaLista & {
     tipo: string;
     dados: Record<string, unknown>;
     autor: string;
+    /** nome de quem fez, quando foi alguém da equipe */
+    quem: string | null;
     criadoEm: string;
   }[];
 };
+
+export type VersaoDoLead = ResumoOrcamento & {
+  itens: { descricao: string; detalhe: string | null; subtotalCentavos: number }[];
+  /** o que mudou em relação à versão anterior */
+  diferencas: string[];
+  validade: { expirada: boolean; texto: string } | null;
+  link: string;
+  linkWhatsapp: string;
+};
+
+export type GrupoOrcamento = { numero: number; versoes: VersaoDoLead[] };
 
 export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<DetalheLead | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
@@ -166,6 +193,7 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
       tx
         .select({
           orcamentoId: orcamentoItens.orcamentoId,
+          tipo: orcamentoItens.tipo,
           descricao: orcamentoItens.descricao,
           detalhe: orcamentoItens.detalhe,
           subtotalCentavos: orcamentoItens.subtotalCentavos,
@@ -176,15 +204,32 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
         .orderBy(asc(orcamentoItens.ordem)),
       tx.select().from(visitas).where(eq(visitas.leadId, id)).orderBy(desc(visitas.criadoEm)),
       tx
-        .select()
+        .select({ a: atividades, quem: usuarios.nome })
         .from(atividades)
+        .leftJoin(usuarios, eq(usuarios.id, atividades.usuarioId))
         .where(eq(atividades.leadId, id))
         .orderBy(desc(atividades.criadoEm))
         .limit(100),
     ]);
-    const visiveis = resumos.filter(
-      (r) => r.status !== 'substituido' && r.status !== 'em_montagem',
-    );
+    const hoje = hojeNoFuso(usuario.empresa.fuso);
+    const site = urlDoSite() ?? '';
+    const itensDe = (oid: string) => itens.filter((i) => i.orcamentoId === oid);
+    const resumoVersao = (o: ResumoOrcamento): ResumoVersao => ({
+      data: o.data,
+      turno: o.turno,
+      espaco: o.espaco,
+      convidados: o.convidados,
+      pacote: itensDe(o.id).find((i) => i.tipo === 'pacote')?.descricao ?? null,
+      extras: itensDe(o.id)
+        .filter((i) => i.tipo === 'opcional')
+        .map((i) => i.descricao),
+      totalCentavos: o.totalCentavos,
+    });
+    const grupos = new Map<number, (typeof resumos)[number][]>();
+    for (const r of resumos) {
+      if (r.status === 'em_montagem') continue;
+      grupos.set(r.numero, [...(grupos.get(r.numero) ?? []), r]);
+    }
     return {
       id: l.id,
       nome: l.nome,
@@ -197,16 +242,33 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
       consentimentoEm: l.consentimentoEm?.toISOString() ?? null,
       criadoEm: l.criadoEm.toISOString(),
       orcamento: resumos.find((r) => r.status !== 'substituido') ?? null,
-      orcamentos: visiveis.map((o) => ({
-        ...o,
-        itens: itens
-          .filter((i) => i.orcamentoId === o.id)
-          .map(({ descricao, detalhe, subtotalCentavos }) => ({
-            descricao,
-            detalhe,
-            subtotalCentavos,
-          })),
-      })),
+      orcamentos: [...grupos.entries()].map(([numero, lista]) => {
+        const versoes = [...lista].sort((a, b) => b.versao - a.versao);
+        return {
+          numero,
+          versoes: versoes.map((o, i) => {
+            const anterior = versoes[i + 1];
+            const link = `${site}/b/${usuario.empresa.slug}/proposta/${o.token}`;
+            return {
+              ...o,
+              itens: itensDe(o.id).map(({ descricao, detalhe, subtotalCentavos }) => ({
+                descricao,
+                detalhe,
+                subtotalCentavos,
+              })),
+              diferencas: anterior
+                ? diferencasEntreVersoes(resumoVersao(anterior), resumoVersao(o))
+                : [],
+              validade: o.validadeAte ? estadoValidade(o.validadeAte, hoje) : null,
+              link,
+              linkWhatsapp: linkWhatsApp(
+                l.whatsappE164,
+                mensagemEnvioProposta(usuario.empresa.nome, l.nome, link),
+              ),
+            };
+          }),
+        };
+      }),
       visitas: listaVisitas.map((v) => ({
         id: v.id,
         dataPreferida: v.dataPreferida,
@@ -214,11 +276,12 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
         observacoes: v.observacoes,
         status: v.status,
       })),
-      atividades: listaAtividades.map((a) => ({
+      atividades: listaAtividades.map(({ a, quem }) => ({
         id: a.id,
         tipo: a.tipo,
         dados: (a.dados ?? {}) as Record<string, unknown>,
         autor: a.autor,
+        quem: a.autor === 'usuario' ? quem : null,
         criadoEm: a.criadoEm.toISOString(),
       })),
     };

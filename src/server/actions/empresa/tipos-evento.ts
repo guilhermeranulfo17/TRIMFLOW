@@ -28,7 +28,13 @@ export async function salvarTipoEvento(
     const v = validar(tipoEventoSchema, entrada);
     if (!v.ok) return v.resultado;
     if (id !== null && !idValido(id)) return { ok: false, erro: NAO_ENCONTRADO };
-    const dados = { ...v.dados, icone: v.dados.icone || null };
+    const dados = {
+      ...v.dados,
+      icone: v.dados.icone || null,
+      // undefined = não mexe (ativar/desativar pela lista); vazio = sem abertura
+      textoAbertura:
+        v.dados.textoAbertura === undefined ? undefined : v.dados.textoAbertura || null,
+    };
     const salvoId = await comUsuario(dono.id, async (tx) => {
       if (id === null) {
         const [novo] = await tx

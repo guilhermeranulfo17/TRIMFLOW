@@ -3,9 +3,12 @@
 import { eq, sql } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { toE164 } from '@/domain/phone';
+import { limparCnpj } from '@/domain/validacao/cnpj';
 import {
   caminhoImagemValido,
+  dadosPropostaSchema,
   identidadeSchema,
+  type DadosPropostaEntrada,
   slugSchema,
   type IdentidadeEntrada,
   type SlugEntrada,
@@ -56,6 +59,40 @@ export async function salvarIdentidade(entrada: IdentidadeEntrada): Promise<Resu
     });
     revalidatePath('/app', 'layout');
     return { ok: true, mensagem: 'Identidade salva.' };
+  });
+}
+
+/** Razão social, CNPJ e endereço: aparecem no rodapé da proposta (web e PDF). */
+export async function salvarDadosProposta(entrada: DadosPropostaEntrada): Promise<ResultadoAcao> {
+  return acaoDoDono(async (dono) => {
+    const v = validar(dadosPropostaSchema, entrada);
+    if (!v.ok) return v.resultado;
+    const novos = {
+      razaoSocial: v.dados.razaoSocial || null,
+      cnpj: v.dados.cnpj ? limparCnpj(v.dados.cnpj) : null,
+      endereco: v.dados.endereco || null,
+    };
+    await comUsuario(dono.id, async (tx) => {
+      const [antes] = await tx
+        .select({
+          razaoSocial: empresas.razaoSocial,
+          cnpj: empresas.cnpj,
+          endereco: empresas.endereco,
+        })
+        .from(empresas)
+        .where(eq(empresas.id, dono.empresa.id));
+      await tx.update(empresas).set(novos).where(eq(empresas.id, dono.empresa.id));
+      await auditar(
+        tx,
+        dono,
+        'empresa.dados_proposta_alterados',
+        'empresa',
+        dono.empresa.id,
+        diferencas(antes ?? {}, novos),
+      );
+    });
+    revalidatePath('/app/empresa');
+    return { ok: true, mensagem: 'Dados da proposta salvos.' };
   });
 }
 

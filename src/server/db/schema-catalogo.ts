@@ -49,6 +49,8 @@ export const tiposEvento = pgTable(
     empresaId: empresaId(),
     nome: text('nome').notNull(),
     icone: text('icone'),
+    /** abertura da proposta, com {nome}, {data}, {convidados}, {tipo}, {buffet} */
+    textoAbertura: text('texto_abertura'),
     ordem: integer('ordem').notNull().default(0),
     ativo: boolean('ativo').notNull().default(true),
     criadoEm: criadoEm(),
@@ -152,6 +154,7 @@ export const regrasComerciais = pgTable('regras_comerciais', {
   condicoesTexto: text('condicoes_texto').notNull().default(''),
   naoInclusoTexto: text('nao_incluso_texto').notNull().default(''),
   cancelamentoTexto: text('cancelamento_texto').notNull().default(''),
+  alteracaoConvidadosTexto: text('alteracao_convidados_texto').notNull().default(''),
   modoExibicaoPreco: modoExibicaoPreco('modo_exibicao_preco').notNull().default('exato'),
   ajusteIncide: ajusteIncide('ajuste_incide').notNull().default('pacote'),
   deslocamentoModelo: deslocamentoModelo('deslocamento_modelo').notNull().default('nenhum'),

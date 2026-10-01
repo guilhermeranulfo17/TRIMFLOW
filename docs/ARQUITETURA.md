@@ -429,8 +429,9 @@ início + duração + intervalo entre eventos)`. `regras_comerciais.intervalo_en
   a atividade "voltou") e a resposta é sempre um token novo, igual para lead novo ou antigo.
 - Número do orçamento sequencial por empresa, sob `pg_advisory_xact_lock` próprio. Token: 2 ×
   `gen_random_uuid()` em base64url (~244 bits, sem depender de `pgcrypto`).
-- Concluir de novo um orçamento já enviado (o cliente voltou e mudou algo) cria um orçamento
-  novo e marca o anterior como `substituido`: a URL de uma proposta nunca muda de conteúdo.
+- Concluir de novo um orçamento já enviado (o cliente voltou e mudou algo) marca o anterior como
+  `substituido`: a URL de uma proposta nunca muda de conteúdo. Desde a Etapa 5 isso cria uma
+  **versão** do mesmo número (seção 32), não um número novo.
 - **Status do lead:** regra única em `public._lead_transicao` com espelho em
   `domain/publico/status-lead.ts` e teste de equivalência em todas as combinações. As funções da
   agenda (`confirmar`, `cancelar`, `vencer_pre_reservas`, `marcar_realizadas`) mantêm assinatura
@@ -487,3 +488,126 @@ início + duração + intervalo entre eventos)`. `regras_comerciais.intervalo_en
   de 100 kB não é alcançável sem trocar de framework); wizard 150 kB; proposta 149 kB.
 - Espaço "no local do cliente": o preço público sai **sem deslocamento**, com aviso; CEP/km
   ficam para depois.
+
+## 32. Versões do orçamento (Etapa 5)
+
+- Um orçamento = um **número**; cada alteração = uma **linha nova** de `orcamentos` com o mesmo
+  `(empresa_id, numero)` e `versao` 1, 2, 3… Constraints: `unique (empresa_id, numero, versao)`
+  e o índice parcial `orcamentos_vigente_idx (empresa_id, numero) where status <> 'substituido'`
+  (no máximo uma vigente por número, também sob concorrência: teste com duas versões ao mesmo
+  tempo).
+- Núcleo único `_orcamento_concluir`: trava o número (advisory lock) e a agenda, marca a base
+  como `substituido` **antes** de inserir a versão nova, congela resultado, itens (com
+  `referencia_id` do catálogo) e conteúdo, e aplica o evento no lead (`versao_criada`,
+  `orcamento_criado` ou `orcamento_concluido`). Usado pelo wizard (`publico.concluir_versao`),
+  pela atualização de preços (`publico.atualizar_precos`) e pelo orçamento interno
+  (`salvar_orcamento_interno`). Uma versão concluída nunca muda.
+- Cada versão tem o seu token. `publico._orcamento(slug, token)` resolve sempre a **vigente** do
+  mesmo número: o token antigo leva à versão atual (a página redireciona com
+  `?atualizada=1` e mostra "Esta proposta foi atualizada em 12/11"); o PDF do token antigo
+  responde 307 para o PDF vigente. `publico.pre_reservar` exige o token vigente
+  (`PROPOSTA_ATUALIZADA` caso contrário). O painel abre qualquer versão pelo id (RLS).
+- **Dados existentes:** cada orçamento da Etapa 4 virou a versão 1 do próprio número (já tinham
+  `versao = 1`); `pacote_id` e `orcamento_itens.referencia_id` foram preenchidos a partir do
+  resultado congelado. Os `substituido` da Etapa 4 têm números diferentes e ficaram como estão.
+- **Compatibilidade no deploy:** todas as assinaturas `publico.*` usadas pela Etapa 4 continuam;
+  `publico.concluir_orcamento` (12 argumentos) virou um wrapper de `concluir_versao`.
+
+## 33. Versão nova de orçamento pré-reservado (decisão)
+
+A regra fica no núcleo, na mesma transação e com a trava da agenda:
+
+| O que mudou                                          | O que acontece                                                                                                                                                                                                                                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Só convidados, pacote, extras ou preço               | A reserva continua e passa a apontar para a versão nova (`orcamento_id`, convidados, valor), atualizada só pela função SQL                                                                                                                        |
+| Data, horário ou espaço, numa **pré-reserva**        | Se o slot novo estiver livre, troca atômica: cancela a antiga ("orçamento alterado") e cria a pré-reserva nova com o prazo cheio. Se não estiver livre, **recusa a versão inteira** (`AGENDA_SLOT_OCUPADO`) e a pré-reserva antiga continua de pé |
+| Data, horário ou espaço, numa **reserva confirmada** | Recusa com `ORCAMENTO_RESERVA_CONFIRMADA` ("cancele a reserva na Agenda antes"): o sinal já foi pago                                                                                                                                              |
+
+Por que recusar em vez de "liberar a antiga e só pré-reservar se o slot novo estiver livre": o
+vendedor nunca perde a data do cliente por acidente; quando o slot está livre o resultado é o
+mesmo da regra do documento.
+
+## 34. Conteúdo congelado e identidade ao vivo
+
+- Na conclusão de cada versão o servidor monta `orcamentos.conteudo` (`ConteudoCongelado`,
+  `formato: 1`, em `domain/proposta/conteudo.ts`): pacote com cardápio e duração, convidados por
+  faixa (com rótulo), espaço, abertura **já preenchida**, textos comerciais (condições, formas
+  de pagamento, não incluso, cancelamento, alteração de convidados) e o % do sinal. Mudar o
+  catálogo ou as regras depois **nunca** altera uma versão enviada (teste de integração na web e
+  no conteúdo do PDF).
+- **Não congelados (lidos ao vivo):** logo, cor, razão social, CNPJ, endereço e WhatsApp do
+  buffet. São identidade, não condição comercial; corrigir o CNPJ deve valer para todas.
+- **Versões da Etapa 4** (`conteudo` nulo) mostram só o que foi congelado na época: resultado,
+  itens e o sinal do resultado. Cardápio e políticas não aparecem nelas.
+- A abertura usa `{nome}` (primeiro nome), `{data}`, `{convidados}`, `{tipo}` e `{buffet}`;
+  variável desconhecida fica como está; texto vazio = sem abertura.
+
+## 35. Proposta e PDF
+
+- **Um modelo só:** `montarConteudo(versao, buffet)` gera o `ModeloProposta` com as 11 seções;
+  a página (`components/proposta/proposta-web.tsx`) e o PDF (`server/proposta/pdf.tsx`) só
+  desenham esse modelo. Um carregador para a web e o PDF público
+  (`server/proposta/carregar.ts`, via `publico.proposta` + `comAnon`) e uma variante com RLS
+  para o painel. `publico.proposta` nunca devolve observações internas, motivo do desconto nem
+  autor (teste procura as strings no JSON e no texto do PDF).
+- **PDF:** `@react-pdf/renderer` no servidor (sem navegador headless), runtime Node, `gru1`,
+  A4, Manrope TTF 400/600/800 no repositório (OFL, `src/server/proposta/fontes/`), sem
+  hifenização, título de seção com `minPresenceAhead` (nunca órfão), linha de item sem quebra
+  e cabeçalho da tabela repetido (`fixed`), rodapé com página. O logo é WEBP no Storage e o
+  react-pdf não lê WEBP: o servidor baixa (timeout 2,5 s) e converte para PNG 240 px com
+  **`sharp`** (autorizado nesta etapa); falhou, o PDF sai sem logo.
+- Rotas: `GET /b/[slug]/proposta/[token]/pdf` (limite 30/h por IP em `publico.tentativas`,
+  token antigo → 307, `Cache-Control: private, no-store`, `X-Robots-Tag: noindex`), `GET
+/app/orcamentos/[id]/pdf` (qualquer versão, RLS) e `GET /app/empresa/proposta-exemplo/pdf`.
+  Nome `Proposta 0042 - Buffet X - Ana Souza.pdf`, com `filename*` UTF-8 e versão ASCII.
+- `next.config`: `serverExternalPackages` com `@react-pdf/renderer` e `sharp`;
+  `outputFileTracingIncludes` leva a pasta das fontes para as três rotas de PDF. O JS do
+  navegador não muda.
+- Medido no build local: PDF do Buffet Demo ~120 ms (430 ms na primeira chamada), ~23 kB sem
+  logo. First Load JS: proposta 146 kB, `/app/orcamentos/novo` 169 kB.
+
+## 36. Orçamento interno ("+ Orçamento")
+
+- `/app/orcamentos/novo` (com `?lead=` preenche o cliente) e `/app/orcamentos/[id]/editar`
+  (nova versão a partir da vigente). Tela única, mobile-first, com resumo fixo recalculado no
+  servidor a cada mudança (`previaInterna`, mesmo motor, canal `interno`).
+- Desconto (% ou R$), itens avulsos e observações. O limite de desconto vem do banco
+  (`usuarios.limite_desconto_pct`; dono sem limite) e é conferido duas vezes: no motor
+  (`DESCONTO_ACIMA_LIMITE`) e em `salvar_orcamento_interno` (`ORCAMENTO_DESCONTO_ACIMA_LIMITE`).
+  O preço nunca vem do navegador: a action recalcula e grava.
+- Mesmo WhatsApp reaproveita o lead (aviso na tela ao digitar). Lead criado pelo painel nasce
+  com consentimento nulo e a origem informada.
+- Data dentro da antecedência: alerta e "Ciente da antecedência" (grava `fora_antecedencia`;
+  só então `pre_reservar_orcamento` aceita a data).
+- Saídas: Enviar pelo WhatsApp (`wa.me` para o cliente com o link), Copiar link, Baixar PDF e
+  Pré-reservar (origem `orcamento`, vai para a Agenda). Cada envio grava `proposta_enviada` na
+  linha do tempo (`marcar_orcamento_enviado`). Rascunho do formulário no `localStorage`.
+- No navegador só a máscara do telefone (sem `libphonenumber-js/max`): o servidor converte.
+
+## 37. Rastreio de aberturas e validade
+
+- `publico.proposta` só lê; a página chama `publico.registrar_abertura(slug, token,
+eh_usuario_empresa, ip_hash)`. Usuário logado da própria empresa (sessão, como o modo teste)
+  não conta. Soma `aberturas`, marca `visualizado` na primeira, grava a atividade
+  `proposta_aberta` no máximo 1 vez a cada 30 min e aplica a temperatura. Limite 120/h por IP.
+- **Quente** = 2 ou mais atividades `proposta_aberta` em 3 dias (`_temperatura_aberturas`,
+  espelho em `domain/proposta/temperatura.ts`, teste de equivalência). Como a atividade é
+  deduplicada a cada 30 min, aberturas seguidas contam como uma.
+- **Validade:** vale até `validade_ate` inclusive, no fuso do buffet. Vencida conta como
+  expirada já na leitura (`_orcamento_expirar` em `proposta`, `pre_reservar` e
+  `atualizar_precos`), antes do job `expirar_orcamentos` (pg_cron 04:10 de Brasília). Evento
+  `orcamento_expirado`: lead `em_andamento` → `frio`.
+- "Atualizar com os preços de hoje" (`publico.atualizar_precos`, só para vencida): o servidor
+  recalcula e cria a versão nova; data que não é mais possível devolve o código e o wizard abre
+  com as escolhas preenchidas.
+
+## 38. Exclusão vira desativação no catálogo
+
+- Trigger `before delete` em pacotes, opcionais, turnos, espaços e tipos de festa recusa com
+  `CATALOGO_ITEM_EM_USO` (errcode `restrict_violation`) quando algum orçamento usa o item;
+  liberado quando a empresa inteira está sendo apagada (cascata). `catalogo_em_uso()` lista os
+  usados e as telas trocam "Excluir" por "Desativar" (`server/catalogo/em-uso.ts`).
+- Dados da proposta em Minha empresa: razão social, CNPJ (dígitos verificadores no domínio,
+  só formato no banco) e endereço; abertura por tipo de festa com botões de variáveis e prévia;
+  política de alteração de convidados nas Regras; "Ver minha proposta" monta a proposta e o PDF
+  em memória com uma festa de exemplo (`domain/proposta/exemplo.ts`), sem gravar nada.

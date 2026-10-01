@@ -14,6 +14,7 @@ import {
   salvarTiposEventoPacote,
 } from '@/server/actions/empresa/pacotes';
 import { exigirSessao } from '@/server/auth/sessao';
+import { carregarEmUso } from '@/server/catalogo/em-uso';
 import {
   faixasIdade,
   faixasPreco,
@@ -47,6 +48,7 @@ export default async function EditarPacotePage({ params }: Props) {
   if (!idSchema.safeParse(id).success) notFound();
   const usuario = await exigirSessao();
   const somenteLeitura = usuario.perfil !== 'dono';
+  const emUso = await carregarEmUso(usuario);
 
   const dados = await comUsuario(usuario.id, async (tx) => {
     const [pacote] = await tx.select().from(pacotes).where(eq(pacotes.id, id));
@@ -111,6 +113,7 @@ export default async function EditarPacotePage({ params }: Props) {
                 onDuplicar={duplicarPacote}
                 onExcluir={excluirPacote}
                 hrefBase="/app/empresa/catalogo/pacotes"
+                emUso={emUso.pacotes.includes(id)}
               />
             )}
           </>

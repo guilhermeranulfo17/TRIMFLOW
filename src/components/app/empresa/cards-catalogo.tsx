@@ -37,8 +37,11 @@ export function CardsCatalogo({
   onDuplicar,
   onExcluir,
   onReordenar,
+  emUso = [],
 }: {
   itens: CardCatalogo[];
+  /** ids usados em orçamentos: sem "Excluir" (só desativar) */
+  emUso?: string[];
   nomeItem: 'pacote' | 'opcional';
   hrefEditar: (id: string) => string;
   comImagem?: boolean;
@@ -121,6 +124,11 @@ export function CardsCatalogo({
               </p>
               <p className="text-muted-foreground text-sm">{item.resumo}</p>
               {item.alerta && <p className="text-destructive text-xs font-medium">{item.alerta}</p>}
+              {emUso.includes(item.id) && !somenteLeitura && (
+                <p className="text-muted-foreground text-xs">
+                  Usado em orçamentos: para tirar do link, desative.
+                </p>
+              )}
             </div>
             <Button asChild variant="ghost" size="icon">
               <Link
@@ -144,12 +152,16 @@ export function CardsCatalogo({
                     icone: Copy,
                     onSelecionar: () => executar(() => onDuplicar(item.id)),
                   },
-                  {
-                    rotulo: 'Excluir',
-                    icone: Trash2,
-                    perigosa: true,
-                    onSelecionar: () => setExcluindo(item),
-                  },
+                  ...(emUso.includes(item.id)
+                    ? []
+                    : [
+                        {
+                          rotulo: 'Excluir',
+                          icone: Trash2,
+                          perigosa: true,
+                          onSelecionar: () => setExcluindo(item),
+                        },
+                      ]),
                 ]}
               />
             )}

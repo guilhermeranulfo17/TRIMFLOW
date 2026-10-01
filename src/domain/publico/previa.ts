@@ -25,6 +25,7 @@ export function entradaDoMotor(
   hoje: DataCivil,
   pacoteId: Id | undefined = e.pacoteId,
   opcionais: Escolhas['opcionais'] = e.opcionais,
+  extra: ExtraInterno = {},
 ): EntradaOrcamento | null {
   const espaco = espacoEscolhido(
     ctx.espacos.filter((x) => x.ativo),
@@ -44,8 +45,17 @@ export function entradaDoMotor(
     opcionais: opcionais.filter((o) => o.quantidade > 0),
     horasExtras: e.horasExtras,
     limiteDescontoBp: 0,
+    ...extra,
   };
 }
+
+/**
+ * Só o orçamento interno (painel): canal interno, itens avulsos, desconto e o limite de
+ * desconto do usuário (vindo do servidor). O link público nunca passa nada disso.
+ */
+export type ExtraInterno = Partial<
+  Pick<EntradaOrcamento, 'canal' | 'itensAvulsos' | 'desconto' | 'limiteDescontoBp'>
+>;
 
 export type PacotePrevia = {
   id: Id;
@@ -82,7 +92,7 @@ export type Previa = {
 export function montarPrevia(
   ctxOriginal: ContextoPreco,
   e: Escolhas,
-  opcoes: { hoje: DataCivil; comContato: boolean; modo: ModoPreco },
+  opcoes: { hoje: DataCivil; comContato: boolean; modo: ModoPreco; extra?: ExtraInterno },
 ): Previa {
   const espaco = espacoEscolhido(
     ctxOriginal.espacos.filter((x) => x.ativo),
@@ -114,7 +124,16 @@ export function montarPrevia(
   if (!opcoes.comContato) return previa;
 
   previa.pacotes = pacotesDoPasso(ctx, e).map((p) => {
-    const entrada = p.disponivel ? entradaDoMotor(ctx, e, opcoes.hoje, p.pacote.id, []) : null;
+    const entrada = p.disponivel
+      ? entradaDoMotor(
+          ctx,
+          e,
+          opcoes.hoje,
+          p.pacote.id,
+          [],
+          opcoes.extra?.canal ? { canal: opcoes.extra.canal } : {},
+        )
+      : null;
     const r = entrada ? calcularOrcamento(ctx, entrada) : null;
     return {
       id: p.pacote.id,
@@ -137,7 +156,7 @@ export function montarPrevia(
       qtdMin: o.qtdMin,
       qtdMax: o.qtdMax,
     }));
-    const entrada = entradaDoMotor(ctx, e, opcoes.hoje);
+    const entrada = entradaDoMotor(ctx, e, opcoes.hoje, e.pacoteId, e.opcionais, opcoes.extra);
     if (entrada) {
       previa.resultado = calcularOrcamento(ctx, entrada);
       previa.totalCentavos = previa.resultado.ok ? previa.resultado.totalCentavos : null;

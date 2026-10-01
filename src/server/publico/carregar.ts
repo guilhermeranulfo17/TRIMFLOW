@@ -3,7 +3,8 @@ import { sql } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
 import { hojeNoFuso } from '@/domain/dates';
-import type { ContextoPreco, Id, ResultadoOrcamento } from '@/domain/preco';
+import type { ContextoPreco, Id } from '@/domain/preco';
+import type { TextosComerciais } from '@/domain/proposta';
 import { montarVitrine, type ExtrasPacote, type VitrinePublica } from '@/domain/publico';
 import { slugValido } from '@/domain/slug';
 import { urlPublicaMidia } from '@/lib/midia';
@@ -81,6 +82,10 @@ export type ContextoPublico = {
   fuso: string;
   prazoPreReservaHoras: number;
   cancelamentoTexto: string | null;
+  /** textos comerciais congelados em cada versão da proposta */
+  textos: TextosComerciais;
+  /** texto de abertura (com variáveis) por tipo de festa */
+  aberturaPorTipo: Record<Id, string | null>;
 };
 
 type JsonContexto = {
@@ -88,8 +93,12 @@ type JsonContexto = {
   regras: LinhasCatalogo['regras'] & {
     prazoPreReservaHoras: number;
     cancelamentoTexto: string | null;
+    condicoesTexto?: string;
+    formasPagamento?: string[];
+    naoInclusoTexto?: string;
+    alteracaoConvidadosTexto?: string;
   };
-  tiposEvento: LinhasCatalogo['tiposEvento'];
+  tiposEvento: (LinhasCatalogo['tiposEvento'][number] & { textoAbertura?: string | null })[];
   espacos: LinhasCatalogo['espacos'];
   turnos: LinhasCatalogo['turnos'];
   ajustesDia: LinhasCatalogo['ajustesDia'];
@@ -126,6 +135,16 @@ export async function lerContextoPublico(
       fuso: j.fuso,
       prazoPreReservaHoras: j.regras.prazoPreReservaHoras,
       cancelamentoTexto: j.regras.cancelamentoTexto,
+      textos: {
+        condicoes: j.regras.condicoesTexto ?? '',
+        formasPagamento: j.regras.formasPagamento ?? [],
+        naoIncluso: j.regras.naoInclusoTexto ?? '',
+        cancelamento: j.regras.cancelamentoTexto ?? '',
+        alteracaoConvidados: j.regras.alteracaoConvidadosTexto ?? '',
+      },
+      aberturaPorTipo: Object.fromEntries(
+        j.tiposEvento.map((t) => [t.id, t.textoAbertura ?? null]),
+      ),
     };
   } catch (erro) {
     const mensagem =
@@ -193,57 +212,4 @@ export async function lerEstadoOrcamento(
     ),
   );
   return linha?.e ? camelizar<EstadoOrcamento>(linha.e) : null;
-}
-
-export type PropostaPublica = {
-  numero: number;
-  status: 'enviado' | 'visualizado' | 'substituido' | 'aceito' | 'expirado';
-  ehTeste: boolean;
-  enviadoEm: string;
-  validadeAte: string;
-  hoje: string;
-  resultado: ResultadoOrcamento;
-  totalCentavos: number;
-  data: string;
-  convidados: number;
-  tipoEvento: string | null;
-  turno: { nome: string; horaInicio: string } | null;
-  espaco: string | null;
-  clientePrimeiroNome: string | null;
-  itens: {
-    tipo: string;
-    descricao: string;
-    quantidade: number;
-    valorUnitarioCentavos: number;
-    subtotalCentavos: number;
-    detalhe: string | null;
-  }[];
-  reserva: { tipo: string; status: string; expiraEm: string | null } | null;
-  suspenso: boolean;
-  regras: { prazoPreReservaHoras: number; sinalBp: number; cancelamentoTexto: string | null };
-};
-
-/** Proposta congelada pelo token (marca visualizada/expirada). Null se não existir aqui. */
-export async function lerProposta(
-  slug: string,
-  token: string,
-  comAnon: ComAnon = comAnonPadrao,
-): Promise<PropostaPublica | null> {
-  try {
-    const [linha] = await comAnon((tx) =>
-      tx.execute<{ p: unknown }>(sql`select publico.proposta(${slug}, ${token}) as p`),
-    );
-    // O resultado do motor já está em camelCase; só as chaves de primeiro nível vêm do SQL.
-    const bruto = linha!.p as Record<string, unknown>;
-    const { resultado, ...resto } = bruto;
-    return {
-      ...camelizar<Omit<PropostaPublica, 'resultado'>>(resto),
-      resultado,
-    } as PropostaPublica;
-  } catch (erro) {
-    const mensagem =
-      (erro as { cause?: { message?: string } }).cause?.message ?? (erro as Error).message;
-    if (mensagem === 'PUBLICO_ORCAMENTO_NAO_ENCONTRADO') return null;
-    throw erro;
-  }
 }

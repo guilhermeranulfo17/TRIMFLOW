@@ -58,6 +58,8 @@ export function mensagemDeErroBanco(erro: unknown): string {
       return 'Algum valor está fora do permitido. Confira os campos.';
     case '42501':
       return 'Você não tem permissão para fazer isso.';
+    case '23001':
+      return 'Este item já foi usado em orçamentos e não pode ser excluído. Desative-o: ele some do link e as propostas já enviadas continuam iguais.';
     default:
       return 'Não foi possível salvar agora. Tente de novo em instantes.';
   }

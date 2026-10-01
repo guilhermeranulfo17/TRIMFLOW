@@ -16,7 +16,10 @@ export function AcoesItemCatalogo({
   onDuplicar,
   onExcluir,
   hrefBase,
+  emUso = false,
 }: {
+  /** usado em orçamentos: sem "Excluir" (o banco recusa; só desativar) */
+  emUso?: boolean;
   id: string;
   nome: string;
   nomeItem: 'pacote' | 'opcional';
@@ -47,12 +50,16 @@ export function AcoesItemCatalogo({
                 } else if (!r.ok) toast.erro(r.erro);
               }),
           },
-          {
-            rotulo: 'Excluir',
-            icone: Trash2,
-            perigosa: true,
-            onSelecionar: () => setConfirmando(true),
-          },
+          ...(emUso
+            ? []
+            : [
+                {
+                  rotulo: 'Excluir',
+                  icone: Trash2,
+                  perigosa: true,
+                  onSelecionar: () => setConfirmando(true),
+                },
+              ]),
         ]}
       />
       <DialogoConfirmacao

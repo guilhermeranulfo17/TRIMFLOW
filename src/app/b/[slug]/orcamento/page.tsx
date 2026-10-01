@@ -31,7 +31,9 @@ export default async function PaginaOrcamento({ params, searchParams }: Props) {
   const [modoTeste, token] = await Promise.all([ehModoTeste(slug), lerTokenDoCookie(slug)]);
   const estado = token ? await lerEstadoOrcamento(slug, token) : null;
   const emAndamento =
-    estado && ['em_montagem', 'enviado', 'visualizado'].includes(estado.status) ? estado : null;
+    estado && ['em_montagem', 'enviado', 'visualizado', 'expirado'].includes(estado.status)
+      ? estado
+      : null;
   const rascunho = emAndamento ? escolhasSchema.safeParse(emAndamento.rascunho) : null;
 
   const tipo = typeof busca.tipo === 'string' ? busca.tipo : undefined;

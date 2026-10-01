@@ -24,13 +24,16 @@ function Vazio({ children }: { children: React.ReactNode }) {
 export function ListaEspacos({
   espacos,
   somenteLeitura,
+  emUso,
 }: {
   espacos: EspacoItem[];
   somenteLeitura: boolean;
+  emUso?: string[];
 }) {
   return (
     <ListaConfig
       itens={espacos}
+      emUso={emUso}
       nomeItem="espaço"
       rotulo={(e) => e.nome}
       resumo={(e) =>
@@ -56,13 +59,16 @@ export function ListaEspacos({
 export function ListaTurnos({
   turnos,
   somenteLeitura,
+  emUso,
 }: {
   turnos: TurnoItem[];
   somenteLeitura: boolean;
+  emUso?: string[];
 }) {
   return (
     <ListaConfig
       itens={turnos}
+      emUso={emUso}
       nomeItem="turno"
       rotulo={(t) => t.nome}
       resumo={(t) =>

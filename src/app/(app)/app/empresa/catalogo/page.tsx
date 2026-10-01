@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { resumirPrecoOpcional, resumirPrecoPacote } from '@/domain/catalogo/resumo';
 import { urlPublicaMidia } from '@/lib/midia';
 import { exigirSessao } from '@/server/auth/sessao';
+import { carregarEmUso } from '@/server/catalogo/em-uso';
 import { faixasPreco, opcionais, pacotes, tiposEvento } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { BotaoCarregarModelo } from '../simulador/botao-carregar-modelo';
@@ -49,6 +50,7 @@ function Vazio({ children }: { children: React.ReactNode }) {
 export default async function CatalogoPage() {
   const usuario = await exigirSessao();
   const somenteLeitura = usuario.perfil !== 'dono';
+  const emUso = await carregarEmUso(usuario);
   const dados = await comUsuario(usuario.id, async (tx) => ({
     tipos: await tx
       .select({
@@ -56,6 +58,7 @@ export default async function CatalogoPage() {
         nome: tiposEvento.nome,
         icone: tiposEvento.icone,
         ativo: tiposEvento.ativo,
+        textoAbertura: tiposEvento.textoAbertura,
       })
       .from(tiposEvento)
       .orderBy(asc(tiposEvento.ordem), asc(tiposEvento.nome)),
@@ -128,7 +131,11 @@ export default async function CatalogoPage() {
             Nenhum pacote cadastrado. Sem pacote com preço, o link público não funciona.
           </Vazio>
         ) : (
-          <CardsPacotes pacotes={cardsPacotes} somenteLeitura={somenteLeitura} />
+          <CardsPacotes
+            pacotes={cardsPacotes}
+            somenteLeitura={somenteLeitura}
+            emUso={emUso.pacotes}
+          />
         )}
       </section>
 
@@ -151,7 +158,11 @@ export default async function CatalogoPage() {
         {cardsOpcionais.length === 0 ? (
           <Vazio>Nenhum opcional cadastrado. Ex.: mesa temática, garçom extra, DJ.</Vazio>
         ) : (
-          <CardsOpcionais opcionais={cardsOpcionais} somenteLeitura={somenteLeitura} />
+          <CardsOpcionais
+            opcionais={cardsOpcionais}
+            somenteLeitura={somenteLeitura}
+            emUso={emUso.opcionais}
+          />
         )}
       </section>
 
@@ -164,6 +175,8 @@ export default async function CatalogoPage() {
         <ListaTipos
           tipos={dados.tipos.map((t) => ({ ...t, icone: t.icone ?? '' }))}
           somenteLeitura={somenteLeitura}
+          emUso={emUso.tipos_evento}
+          buffetNome={usuario.empresa.nome}
         />
       </section>
     </div>

@@ -16,6 +16,8 @@ Documento de referência do produto: "Orkestra: Estrutura Lógica do Sistema". D
 - Zod (schemas compartilhados cliente/servidor) + react-hook-form
 - date-fns + date-fns-tz (fuso padrão America/Sao_Paulo), libphonenumber-js
 - Vitest (unit + integração) e Playwright (E2E)
+- PDF da proposta: `@react-pdf/renderer` (servidor, sem navegador headless) e `sharp` (logo WEBP
+  → PNG), fonte Manrope TTF no repositório (OFL)
 - pnpm, Node 22 (`.nvmrc`)
 - Deploy: Vercel (app) + Supabase Cloud (banco). CI: GitHub Actions
 
@@ -27,11 +29,12 @@ Não adicione dependências fora dessa lista sem perguntar.
 src/
   app/
     (auth)/          login, cadastro, recuperar-senha, nova-senha
-    (app)/app/       área logada: leads, agenda (lista/calendário/painel do dia), numeros, empresa
+    (app)/app/       área logada: leads, agenda (lista/calendário/painel do dia), numeros, empresa,
+                     orcamentos (novo, [id]/editar, [id]/pdf)
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
-                     opcionais/[id]), regras, usuarios, plano, simulador
+                     opcionais/[id]), regras, usuarios, plano, simulador, proposta-exemplo
     auth/            rotas técnicas: confirm (link do e-mail), sair
-    b/[slug]/        página pública do buffet, orcamento (wizard), proposta/[token]
+    b/[slug]/        página pública do buffet, orcamento (wizard), proposta/[token] (+ /pdf)
     (legal)/         privacidade e termos
   components/
     ui/              shadcn (não misture regra de negócio aqui)
@@ -39,6 +42,9 @@ src/
       campos/        campos reutilizáveis (dinheiro, %, duração, dias, telefone, upload…)
       form/          Secao (salvar por seção), Campo, FormInline, erros do servidor
       empresa/       peças de Minha empresa (listas, cards do catálogo, faixas de idade…)
+      orcamento/     "+ Orçamento" (formulário, calendário da agenda, saídas, orçamentos do lead)
+    orcamento/       peças compartilhadas do wizard e do orçamento interno (contador)
+    proposta/        proposta na web (desenha o ModeloProposta)
     auth/            peças dos formulários de autenticação
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
                      conversao (campos), senha, imagem, plano
@@ -48,6 +54,9 @@ src/
     publico/         link público: passos, prévia por modo de preço, vitrine, cor, WhatsApp,
                      status do lead (= regra do SQL)
     leads/           exibição de leads (filtros, linha do tempo)
+    proposta/        modelo único da proposta (web e PDF), conteúdo congelado, abertura,
+                     diferenças entre versões, validade, temperatura (= regra do SQL), arquivo,
+                     festa de exemplo
     modelos/         modelos de segmento (infantil, eventos, domicilio) validados com Zod
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario), anon (comAnon),
@@ -59,7 +68,10 @@ src/
     usuarios/        criar/desativar vendedor (dependências injetadas)
     agenda/          leituras da agenda (disponibilidade, reservas, bloqueios) e erros
     publico/         leituras do link público (cache por slug), hash de IP, modo teste
-    leads/           leituras de Leads
+    leads/           leituras de Leads (orçamentos agrupados por número, com versões)
+    proposta/        carregador da proposta (público e painel), versão a gravar, PDF, fontes,
+                     proposta de exemplo
+    orcamentos/      leituras do orçamento interno (base de preço, lead por WhatsApp, edição)
     env.ts, erros.ts
   lib/               utilitários de UI (cn)
   middleware.ts      sessão + proteção de /app/**
@@ -108,7 +120,8 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   Funções com token também exigem o slug. O navegador manda só escolhas; preço, "hoje",
   desconto (zero) e modo teste (sessão) são do servidor. Antes do WhatsApp o navegador nunca
   recebe tabela de preço. IP só como `sha256(ip + IP_HASH_SALT)`; nada pessoal em logs.
-- **Leads e orçamentos** só são escritos pelas funções `publico.*` e da agenda. A regra de
+- **Leads e orçamentos** só são escritos pelas funções `publico.*`, da agenda e do orçamento
+  interno (`salvar_orcamento_interno`, `pre_reservar_orcamento`, `marcar_orcamento_enviado`). A regra de
   status do lead existe no SQL (`_lead_transicao`) e em `domain/publico/status-lead`, com teste
   de equivalência: mudou uma, mude a outra.
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
@@ -123,7 +136,17 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   e espelho em `server/db/schema.ts` (catálogo em `server/db/schema-catalogo.ts`).
 - Tabela filha usa FK composta `(pai_id, empresa_id)` → `(id, empresa_id)` do pai.
 - O preço é calculado **sempre no servidor** com `calcularOrcamento`; "hoje" e o limite de
-  desconto vêm do servidor, nunca do navegador.
+  desconto vêm do servidor, nunca do navegador. O banco confere de novo o limite do vendedor.
+- **Versões:** alterar um orçamento cria uma versão nova (mesmo número, outra linha, outro
+  token); a anterior vira `substituido` e nunca muda. Token antigo abre a vigente. Tudo passa
+  por `_orcamento_concluir` (ver `docs/ARQUITETURA.md` §32–33).
+- **Proposta:** web e PDF desenham o mesmo `ModeloProposta` (`montarConteudo`). Condições,
+  cardápio e textos ficam congelados em `orcamentos.conteudo`; identidade do buffet é ao vivo.
+  `publico.proposta` e o PDF nunca levam observações internas, motivo do desconto nem autor.
+- **Catálogo usado em orçamento não é excluído, só desativado** (trigger
+  `CATALOGO_ITEM_EM_USO`; telas usam `carregarEmUso`).
+- Temperatura por aberturas existe no SQL (`_temperatura_aberturas`) e em
+  `domain/proposta/temperatura`, com teste de equivalência: mudou uma, mude a outra.
 - **Agenda:** `reservas` e `bloqueios` só são escritos pelas funções SQL (`criar_reserva`,
   `criar_bloqueio`…), que travam a empresa e checam conflito. Nunca escreva nessas tabelas pelo
   Drizzle. A regra de ocupação existe no SQL e em `domain/agenda`, com teste de equivalência:
@@ -158,7 +181,9 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 
 Contas do seed (senha `demo12345`): `dono@demo.local` (dono) e `vendedor@demo.local` (vendedor)
 do **Buffet Demo** (com o catálogo do modelo infantil), e `dono@testeb.local` do **Buffet Teste B**
-(catálogo vazio). O Buffet Demo tem 5 leads em estados diferentes (seed). Página pública:
+(catálogo vazio). O Buffet Demo tem 9 leads em estados diferentes (seed), entre eles um
+orçamento com 3 versões, um interno com desconto e avulso, uma proposta vencida e um lead
+quente por aberturas. Página pública:
 http://localhost:3000/b/buffet-demo (logado como dono, abre em modo teste). E-mails locais (recuperação de senha): http://127.0.0.1:54324.
 
 Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
@@ -166,7 +191,7 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 3 (PRs #1 a #4) na `main`.
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 4 (PRs #1 a #5) na `main`.
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região

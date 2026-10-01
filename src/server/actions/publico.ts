@@ -3,7 +3,7 @@
 import { sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { limitesDoMes } from '@/domain/agenda';
-import { hojeNoFuso, somarDias } from '@/domain/dates';
+import { hojeNoFuso } from '@/domain/dates';
 import { celularBRParaE164 } from '@/domain/phone';
 import {
   dadosDoContexto,
@@ -28,7 +28,8 @@ import {
   type VisitaEntrada,
 } from '@/domain/validacao/publico';
 import { comAnon } from '@/server/db/anon';
-import { carregarContextoPublico } from '@/server/publico/carregar';
+import { prepararVersao, type DadosVersao } from '@/server/proposta/versao';
+import { carregarBuffet, carregarContextoPublico } from '@/server/publico/carregar';
 import {
   cookieDoOrcamento,
   ehModoTeste,
@@ -75,20 +76,44 @@ function escolhasValidas(entrada: EscolhasEntrada): Escolhas | null {
   return r.success ? r.data : null;
 }
 
-type EstadoOrcamento = { status: string; passo_atual: number; eh_teste: boolean; numero: number };
+type EstadoOrcamento = {
+  status: string;
+  passo_atual: number;
+  eh_teste: boolean;
+  numero: number;
+  token: string;
+  cliente_nome: string | null;
+  rascunho: unknown;
+};
 
-/** Token do cookie, só se o orçamento existe neste buffet e ainda aceita mudanças. */
-async function tokenEmAndamento(slug: string, token: string | null = null): Promise<string | null> {
-  token ??= await lerTokenDoCookie(slug);
-  if (!token) return null;
+async function estadoDoToken(slug: string, token: string): Promise<EstadoOrcamento | null> {
   const [linha] = await comAnon((tx) =>
     tx.execute<{ e: EstadoOrcamento | null }>(
       sql`select publico.estado_orcamento(${slug}, ${token}) as e`,
     ),
   );
-  const estado = linha?.e;
-  if (!estado || !['em_montagem', 'enviado', 'visualizado'].includes(estado.status)) return null;
-  return token;
+  return linha?.e ?? null;
+}
+
+/**
+ * Orçamento do cookie (ou do token informado), só se existe neste buffet e ainda aceita
+ * mudanças. Devolve o token da VERSÃO VIGENTE e o nome do cliente (abertura da proposta).
+ */
+async function emAndamento(
+  slug: string,
+  token: string | null = null,
+): Promise<{ token: string; clienteNome: string } | null> {
+  token ??= await lerTokenDoCookie(slug);
+  if (!token) return null;
+  const estado = await estadoDoToken(slug, token);
+  if (!estado || !['em_montagem', 'enviado', 'visualizado', 'expirado'].includes(estado.status)) {
+    return null;
+  }
+  return { token: estado.token, clienteNome: estado.cliente_nome ?? '' };
+}
+
+async function tokenEmAndamento(slug: string, token: string | null = null): Promise<string | null> {
+  return (await emAndamento(slug, token))?.token ?? null;
 }
 
 function camposDoRascunho(e: Escolhas, espacoUnico: string | undefined) {
@@ -261,6 +286,43 @@ export async function concluirOrcamento(
   return concluir(slug, entrada, null);
 }
 
+/** Calcula no servidor (motor) e monta a versão a congelar; erro do motor vira mensagem. */
+async function prepararPublica(
+  slug: string,
+  contexto: NonNullable<Awaited<ReturnType<typeof carregarContextoPublico>>>,
+  escolhas: Escolhas,
+  clienteNome: string,
+): Promise<ResultadoPublico<DadosVersao>> {
+  const hoje = hojeNoFuso(contexto.fuso);
+  const { resultado } = montarPrevia(contexto.ctx, escolhas, {
+    hoje,
+    comContato: true,
+    modo: contexto.ctx.regras.modoExibicaoPreco,
+  });
+  if (!resultado) return invalido('Escolha um pacote.');
+  if (!resultado.ok) {
+    return {
+      ok: false,
+      erro: resultado.erros[0]?.mensagem ?? 'Confira os dados.',
+      codigo: 'MOTOR',
+    };
+  }
+  const buffet = await carregarBuffet(slug);
+  return {
+    ok: true,
+    dados: prepararVersao({
+      ctx: contexto.ctx,
+      escolhas,
+      resultado,
+      hoje,
+      textos: contexto.textos,
+      aberturaModelo: contexto.aberturaPorTipo[escolhas.tipoEventoId ?? ''] ?? null,
+      clienteNome,
+      buffetNome: buffet?.nome ?? '',
+    }),
+  };
+}
+
 async function concluir(
   slug: string,
   entrada: EscolhasEntrada,
@@ -271,39 +333,23 @@ async function concluir(
   try {
     const contexto = await carregarContextoPublico(slug);
     if (!contexto) return invalido('Este buffet não está recebendo orçamentos pelo link agora.');
-    const token = await tokenEmAndamento(slug, tokenInformado);
-    if (!token) {
+    const atual = await emAndamento(slug, tokenInformado);
+    if (!atual) {
       return {
         ok: false,
         erro: traduzirErroPublico('PUBLICO_ORCAMENTO_NAO_ENCONTRADO'),
         codigo: 'SEM_TOKEN',
       };
     }
-    const hoje = hojeNoFuso(contexto.fuso);
-    const { resultado } = montarPrevia(contexto.ctx, escolhas, {
-      hoje,
-      comContato: true,
-      modo: contexto.ctx.regras.modoExibicaoPreco,
-    });
-    if (!resultado) return invalido('Escolha um pacote.');
-    if (!resultado.ok) return invalido(resultado.erros[0]?.mensagem);
-
-    const itens = resultado.linhas.map((l) => ({
-      tipo: l.tipo,
-      descricao: l.descricao,
-      quantidade: l.quantidade,
-      valorUnitarioCentavos: l.valorUnitarioCentavos,
-      subtotalCentavos: l.subtotalCentavos,
-      detalhe: l.detalhe,
-    }));
-    const espacoUnico = contexto.ctx.espacos.length === 1 ? contexto.ctx.espacos[0]!.id : undefined;
-    const r = camposDoRascunho(escolhas, espacoUnico);
-    const validade = somarDias(hoje, contexto.ctx.regras.validadeDias);
+    const preparada = await prepararPublica(slug, contexto, escolhas, atual.clienteNome);
+    if (!preparada.ok) return preparada;
+    const v = preparada.dados;
     const [linha] = await comAnon((tx) =>
-      tx.execute<{ token: string }>(sql`select publico.concluir_orcamento(
-        ${slug}, ${token}, ${JSON.stringify(resultado)}::jsonb, ${JSON.stringify(itens)}::jsonb,
-        ${resultado.totalCentavos}, ${validade}::date, ${JSON.stringify(escolhas)}::jsonb,
-        ${r.tipoEventoId}, ${r.data}::date, ${r.turnoId}, ${r.espacoId}, ${r.convidados}) as token`),
+      tx.execute<{ token: string }>(sql`select publico.concluir_versao(
+        ${slug}, ${atual.token}, ${JSON.stringify(v.resultado)}::jsonb, ${JSON.stringify(v.itens)}::jsonb,
+        ${v.resultado.totalCentavos}, ${v.validade}::date, ${JSON.stringify(escolhas)}::jsonb,
+        ${v.campos.tipoEventoId}, ${v.campos.data}::date, ${v.campos.turnoId}, ${v.campos.espacoId},
+        ${v.campos.convidados}, ${v.campos.pacoteId}, ${JSON.stringify(v.conteudo)}::jsonb) as token`),
     );
     (await cookies()).set(cookieDoOrcamento(slug), linha!.token, OPCOES_COOKIE(slug));
     return { ok: true, dados: { token: linha!.token } };
@@ -324,7 +370,9 @@ export type ResultadoPreReserva =
       sinalCentavos: number;
       totalCentavos: number;
     }
-  | { reservado: false; codigo: 'SLOT_INDISPONIVEL'; sugestoes: Sugestao[] };
+  | { reservado: false; codigo: 'SLOT_INDISPONIVEL'; sugestoes: Sugestao[] }
+  /** existe versão mais nova: a tela recarrega na vigente */
+  | { reservado: false; atualizada: true; token: string };
 
 type RetornoSql = {
   ok: boolean;
@@ -334,6 +382,7 @@ type RetornoSql = {
   sinal_centavos?: number;
   total_centavos?: number;
   sugestoes?: { data: string; turno_id: string }[];
+  token?: string;
 };
 
 export async function preReservar(
@@ -360,6 +409,9 @@ export async function preReservar(
           totalCentavos: r.total_centavos ?? 0,
         },
       };
+    }
+    if (r.codigo === 'PROPOSTA_ATUALIZADA' && r.token) {
+      return { ok: true, dados: { reservado: false, atualizada: true, token: r.token } };
     }
     if (r.codigo === 'SLOT_INDISPONIVEL') {
       return {
@@ -467,4 +519,51 @@ export async function escolherOutraData(
 export async function recomecarOrcamento(slug: string): Promise<void> {
   if (!slugValido(slug)) return;
   (await cookies()).delete({ name: cookieDoOrcamento(slug), path: `/b/${slug}` });
+}
+
+/**
+ * "Atualizar com os preços de hoje" (proposta vencida): recalcula as mesmas escolhas e cria uma
+ * versão nova. Se a data não é mais possível, devolve DATA_IMPOSSIVEL e deixa o wizard pronto
+ * (cookie com o orçamento) para o cliente escolher outra data.
+ */
+export async function atualizarPrecos(
+  slug: string,
+  token: string,
+): Promise<ResultadoPublico<{ token: string }>> {
+  if (!slugValido(slug) || !TOKEN_REGEX.test(token)) return invalido();
+  try {
+    const estado = await estadoDoToken(slug, token);
+    const escolhas = estado ? escolhasSchema.safeParse(estado.rascunho) : null;
+    if (!estado || estado.status !== 'expirado' || !escolhas?.success) {
+      return { ok: false, erro: traduzirErroPublico('PUBLICO_ORCAMENTO_FECHADO') };
+    }
+    const contexto = await carregarContextoPublico(slug);
+    if (!contexto) return invalido('Este buffet não está recebendo orçamentos pelo link agora.');
+    (await cookies()).set(cookieDoOrcamento(slug), estado.token, OPCOES_COOKIE(slug));
+    const preparada = await prepararPublica(
+      slug,
+      contexto,
+      escolhas.data,
+      estado.cliente_nome ?? '',
+    );
+    if (!preparada.ok) {
+      return {
+        ok: false,
+        erro: 'Essa data não está mais disponível com os preços de hoje. Escolha outra data.',
+        codigo: 'DATA_IMPOSSIVEL',
+      };
+    }
+    const v = preparada.dados;
+    const [linha] = await comAnon((tx) =>
+      tx.execute<{ token: string }>(sql`select publico.atualizar_precos(
+        ${slug}, ${estado.token}, ${JSON.stringify(v.resultado)}::jsonb, ${JSON.stringify(v.itens)}::jsonb,
+        ${v.resultado.totalCentavos}, ${v.validade}::date, ${JSON.stringify(escolhas.data)}::jsonb,
+        ${v.campos.tipoEventoId}, ${v.campos.data}::date, ${v.campos.turnoId}, ${v.campos.espacoId},
+        ${v.campos.convidados}, ${v.campos.pacoteId}, ${JSON.stringify(v.conteudo)}::jsonb) as token`),
+    );
+    (await cookies()).set(cookieDoOrcamento(slug), linha!.token, OPCOES_COOKIE(slug));
+    return { ok: true, dados: { token: linha!.token } };
+  } catch (erro) {
+    return falha(erro, 'atualizar-precos');
+  }
 }

@@ -104,6 +104,7 @@ export default async function RegrasPage() {
           condicoesTexto: regras.condicoesTexto,
           naoInclusoTexto: regras.naoInclusoTexto,
           cancelamentoTexto: regras.cancelamentoTexto,
+          alteracaoConvidadosTexto: regras.alteracaoConvidadosTexto,
           modoExibicaoPreco: regras.modoExibicaoPreco,
           ajusteIncide: regras.ajusteIncide,
         }}
