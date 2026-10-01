@@ -5,6 +5,7 @@ import { SeloEstado } from '@/components/app/agenda/estados';
 import { prazoRestante } from '@/domain/agenda';
 import { diaDaSemana, formatData } from '@/domain/dates';
 import type { BaseAgenda, BloqueioAgenda, ReservaAgenda } from '@/server/agenda/carregar';
+import { SeloLink } from './item-reserva';
 
 /** Lista do celular: eventos, pré-reservas e bloqueios agrupados por data. */
 export function ListaAgenda({
@@ -67,7 +68,12 @@ export function ListaAgenda({
                           ` · ${prazoRestante(new Date(r.expiraEm), agora)}`}
                       </span>
                     </span>
-                    <SeloEstado estado={r.tipo === 'pre_reserva' ? 'pre_reservado' : 'reservado'} />
+                    <span className="flex items-center gap-1.5">
+                      {r.veioDoLink && <SeloLink />}
+                      <SeloEstado
+                        estado={r.tipo === 'pre_reserva' ? 'pre_reservado' : 'reservado'}
+                      />
+                    </span>
                   </span>
                 ))}
                 {bloq.map((b) => (

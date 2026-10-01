@@ -19,6 +19,7 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
     },
     { href: '/app/empresa/catalogo', rotulo: 'Catálogo', badge: contar('catalogo') },
     { href: '/app/empresa/regras', rotulo: 'Preços e regras' },
+    { href: '/app/empresa/link', rotulo: 'Link e divulgação' },
     ...(dono
       ? [
           { href: '/app/empresa/usuarios', rotulo: 'Usuários' },
