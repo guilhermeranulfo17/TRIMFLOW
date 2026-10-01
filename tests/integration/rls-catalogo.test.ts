@@ -77,9 +77,11 @@ describe.each(TABELAS_CATALOGO)('RLS em %s', (tabela) => {
 
   it('dono altera e exclui as próprias linhas', async () => {
     const [alteradas, excluidas] = await comCatalogos(async (tx) => {
-      // Espaço/turno com reserva não pode ser excluído (FK da agenda): limpa a agenda do seed
-      // nesta transação (desfeita no fim) para testar só a permissão do dono.
+      // Espaço/turno com reserva ou item usado em orçamento não pode ser excluído (FK da agenda e
+      // trigger da Etapa 5): limpa agenda e leads do seed nesta transação (desfeita no fim) para
+      // testar só a permissão do dono.
       await tx`delete from public.reservas where empresa_id = ${IDS.empresaA}`;
+      await tx`delete from public.leads where empresa_id = ${IDS.empresaA}`;
       await assumirUsuario(tx, IDS.donoA);
       const u =
         await tx`update ${tx('public.' + tabela)} set atualizado_em = now() where empresa_id = ${IDS.empresaA}`;

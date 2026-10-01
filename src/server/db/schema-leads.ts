@@ -72,6 +72,11 @@ export const tipoAtividade = pgEnum('tipo_atividade', [
   'reserva_confirmada',
   'reserva_cancelada',
   'status_alterado',
+  'proposta_aberta',
+  'proposta_enviada',
+  'versao_criada',
+  'orcamento_expirado',
+  'orcamento_criado',
 ]);
 export const autorAtividade = pgEnum('autor_atividade', ['cliente', 'usuario', 'sistema']);
 export const periodoVisita = pgEnum('periodo_visita', ['manha', 'tarde', 'noite']);
@@ -141,12 +146,26 @@ export const orcamentos = pgTable(
     enviadoEm: instante('enviado_em'),
     visualizadoEm: instante('visualizado_em'),
     aceitoEm: instante('aceito_em'),
+    /** só no canal interno */
+    criadoPor: uuid('criado_por').references(() => usuarios.id, { onDelete: 'set null' }),
+    /** aparecem na proposta */
+    observacoes: text('observacoes'),
+    /** NUNCA saem para o cliente */
+    observacoesInternas: text('observacoes_internas'),
+    descontoMotivo: text('desconto_motivo'),
+    foraAntecedencia: boolean('fora_antecedencia').notNull().default(false),
+    aberturas: integer('aberturas').notNull().default(0),
+    ultimaAberturaEm: instante('ultima_abertura_em'),
+    /** conteúdo congelado na conclusão (cardápio, textos, convidados por faixa) */
+    conteudo: jsonb('conteudo'),
+    pacoteId: uuid('pacote_id'),
+    canalEnvio: text('canal_envio'),
     criadoEm: instante('criado_em').notNull().defaultNow(),
     atualizadoEm: instante('atualizado_em').notNull().defaultNow(),
   },
   (t) => [
     unique().on(t.id, t.empresaId),
-    unique().on(t.empresaId, t.numero),
+    unique().on(t.empresaId, t.numero, t.versao),
     foreignKey({ columns: [t.leadId, t.empresaId], foreignColumns: [leads.id, leads.empresaId] }),
     foreignKey({
       columns: [t.tipoEventoId, t.empresaId],
@@ -176,6 +195,8 @@ export const orcamentoItens = pgTable(
     valorUnitarioCentavos: integer('valor_unitario_centavos').notNull(),
     subtotalCentavos: integer('subtotal_centavos').notNull(),
     detalhe: text('detalhe'),
+    /** pacote ou opcional de origem */
+    referenciaId: uuid('referencia_id'),
   },
   (t) => [
     foreignKey({
