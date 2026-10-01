@@ -446,3 +446,207 @@ where empresa_id = '11111111-1111-4111-8111-111111111111' and texto_abertura is 
 update public.regras_comerciais set alteracao_convidados_texto =
   'O número de convidados pode ser ajustado até 7 dias antes da festa. Convidados a mais são cobrados pelo valor por convidado da proposta.'
 where empresa_id = '11111111-1111-4111-8111-111111111111' and alteracao_convidados_texto = '';
+
+-- ---------------------------------------------------------------------------
+-- Propostas da Etapa 5 no Buffet Demo. Datas relativas a hoje. Idempotente: só grava se ainda
+-- não houver orçamentos com token "seedEtapa5…". Conteúdo congelado montado do catálogo atual.
+--   Fernanda (nº 0006, 3 versões: muda convidados e depois o pacote; vigente visualizada)
+--   Gustavo  (nº 0007, orçamento interno do vendedor: desconto de 5% e item avulso; enviado)
+--   Helena   (nº 0008, proposta vencida há 3 dias; lead frio)
+--   Igor     (nº 0009, proposta aberta 3 vezes em 2 dias; lead quente)
+-- ---------------------------------------------------------------------------
+create or replace function pg_temp.seed_conteudo(p_pacote text, p_adultos integer, p_nome text,
+  p_data date, p_tipo uuid)
+returns jsonb language sql as $$
+  select jsonb_build_object(
+    'formato', 1,
+    'pacote', (select jsonb_build_object('nome', p.nome, 'duracaoInclusaMin', p.duracao_inclusa_min,
+        'secoes', coalesce((select jsonb_agg(jsonb_build_object('nome', s.nome, 'itens', to_jsonb(s.itens))
+                                             order by s.ordem)
+                            from public.secoes_cardapio s
+                            where s.pacote_id = p.id and cardinality(s.itens) > 0), '[]'::jsonb))
+      from public.pacotes p
+      where p.empresa_id = '11111111-1111-4111-8111-111111111111' and p.nome = p_pacote),
+    'convidados', jsonb_build_object('adultos', p_adultos, 'criancas', '[]'::jsonb),
+    'espaco', (select jsonb_build_object('nome', e.nome, 'noLocalDoCliente', e.no_local_do_cliente,
+        'localCliente', null)
+      from public.espacos e where e.empresa_id = '11111111-1111-4111-8111-111111111111'
+      order by e.ordem limit 1),
+    'abertura', (select replace(replace(replace(replace(replace(t.texto_abertura,
+        '{nome}', split_part(p_nome, ' ', 1)), '{data}', to_char(p_data, 'DD/MM/YYYY')),
+        '{convidados}', p_adultos::text), '{tipo}', lower(t.nome)),
+        '{buffet}', 'Buffet Demo')
+      from public.tipos_evento t where t.id = p_tipo),
+    'textos', (select jsonb_build_object('condicoes', r.condicoes_texto,
+        'formasPagamento', to_jsonb(r.formas_pagamento), 'naoIncluso', r.nao_incluso_texto,
+        'cancelamento', r.cancelamento_texto, 'alteracaoConvidados', r.alteracao_convidados_texto,
+        'sinalBp', r.sinal_bp)
+      from public.regras_comerciais r
+      where r.empresa_id = '11111111-1111-4111-8111-111111111111'));
+$$;
+
+do $$
+declare
+  demo      constant uuid := '11111111-1111-4111-8111-111111111111';
+  vendedor  constant uuid := '1a000000-0000-4000-8000-000000000002';
+  v_tipo    uuid;
+  v_espaco  uuid;
+  v_turno   uuid;
+  v_lead    uuid;
+  v_orc     uuid;
+  v_itens   jsonb;
+  v_sub     integer;
+  v_total   integer;
+  r         record;
+begin
+  if exists (select 1 from public.orcamentos where token like 'seedEtapa5%')
+     or not exists (select 1 from public.leads where empresa_id = demo) then
+    return;
+  end if;
+  select id into v_tipo from public.tipos_evento where empresa_id = demo order by ordem limit 1;
+  select id into v_espaco from public.espacos where empresa_id = demo order by ordem limit 1;
+  select id into v_turno from public.turnos where empresa_id = demo and nome = 'Tarde';
+  if v_tipo is null or v_espaco is null or v_turno is null then
+    return;
+  end if;
+
+  -- leads
+  for r in
+    select * from (values
+      ('Fernanda Castro', '+5534991113306', 'instagram', 'em_andamento', 'morno', interval '20 hours'),
+      ('Gustavo Ramos', '+5534991113307', 'whatsapp', 'em_andamento', 'frio', interval '3 hours'),
+      ('Helena Prado', '+5534991113308', 'google', 'frio', 'frio', interval '3 days'),
+      ('Igor Teixeira', '+5534991113309', 'indicacao', 'em_andamento', 'quente', interval '1 hour')
+    ) as x(nome, whatsapp, origem, status, temperatura, ha)
+  loop
+    insert into public.leads (empresa_id, nome, whatsapp_e164, origem, status, temperatura,
+      ultimo_passo, consentimento_em, consentimento_versao, consentimento_texto,
+      ultima_atividade_em, criado_em)
+    values (demo, r.nome, r.whatsapp, r.origem::public.origem_lead, r.status::public.status_lead,
+      r.temperatura::public.temperatura_lead, 6,
+      case when r.origem <> 'whatsapp' then now() - interval '4 days' end,
+      case when r.origem <> 'whatsapp' then '2026-10-v1' end,
+      case when r.origem <> 'whatsapp' then 'Autorizo o buffet a usar meu nome e WhatsApp para enviar este orçamento.' end,
+      now() - r.ha, now() - interval '4 days')
+    on conflict do nothing;
+  end loop;
+
+  -- versões: (numero, versao, lead, status, pacote, adultos, valor pacote, dias, criado, canal,
+  --           avulso, desconto bp, aberturas, validade em dias a partir da criação)
+  for r in
+    select * from (values
+      (6, 1, 'Fernanda Castro', 'substituido', 'Alegria', 40, 390000, 45, interval '3 days', 'publico', false, 0, 0),
+      (6, 2, 'Fernanda Castro', 'substituido', 'Alegria', 55, 450000, 45, interval '2 days', 'publico', false, 0, 0),
+      (6, 3, 'Fernanda Castro', 'visualizado', 'Super', 55, 520000, 45, interval '20 hours', 'interno', false, 0, 1),
+      (7, 1, 'Gustavo Ramos', 'enviado', 'Super', 60, 560000, 60, interval '3 hours', 'interno', true, 500, 0),
+      (8, 1, 'Helena Prado', 'expirado', 'Alegria', 50, 450000, 30, interval '18 days', 'publico', false, 0, 1),
+      (9, 1, 'Igor Teixeira', 'visualizado', 'Encanto', 70, 780000, 75, interval '2 days', 'publico', false, 0, 3)
+    ) as x(numero, versao, nome, status, pacote, adultos, valor, dias, ha, canal, avulso, desconto_bp, aberturas)
+  loop
+    select id into v_lead from public.leads where empresa_id = demo and nome = r.nome;
+    v_itens := jsonb_build_array(jsonb_build_object('tipo', 'pacote', 'descricao', 'Pacote ' || r.pacote,
+      'quantidade', r.adultos, 'valorUnitarioCentavos', r.valor / r.adultos, 'subtotalCentavos', r.valor,
+      'detalhe', r.adultos || ' convidados equivalentes',
+      'referenciaId', (select id from public.pacotes where empresa_id = demo and nome = r.pacote)));
+    if r.numero = 6 and r.versao = 3 or r.numero = 9 then
+      v_itens := v_itens || jsonb_build_object('tipo', 'opcional', 'descricao', 'Mesa temática',
+        'quantidade', 1, 'valorUnitarioCentavos', 60000, 'subtotalCentavos', 60000, 'detalhe', 'Valor fixo',
+        'referenciaId', (select id from public.opcionais where empresa_id = demo and nome = 'Mesa temática'));
+    end if;
+    if r.avulso then
+      v_itens := v_itens || jsonb_build_object('tipo', 'avulso', 'descricao', 'Mesa de doces extra',
+        'quantidade', 1, 'valorUnitarioCentavos', 35000, 'subtotalCentavos', 35000, 'detalhe', '1 × R$ 350,00');
+    end if;
+    v_sub := (select sum((i ->> 'subtotalCentavos')::integer) from jsonb_array_elements(v_itens) i);
+    if r.desconto_bp > 0 then
+      v_itens := v_itens || jsonb_build_object('tipo', 'desconto', 'descricao', 'Desconto',
+        'quantidade', 1, 'valorUnitarioCentavos', -(v_sub * r.desconto_bp / 10000),
+        'subtotalCentavos', -(v_sub * r.desconto_bp / 10000), 'detalhe', '5% sobre o subtotal');
+    end if;
+    v_total := v_sub - v_sub * r.desconto_bp / 10000;
+
+    insert into public.orcamentos (empresa_id, lead_id, numero, versao, token, status, canal, origem,
+      rascunho, passo_atual, resultado, total_centavos, validade_ate, tipo_evento_id, data, turno_id,
+      espaco_id, convidados, pacote_id, conteudo, criado_por, observacoes, observacoes_internas,
+      desconto_motivo, aberturas, ultima_abertura_em, canal_envio, enviado_em, visualizado_em, criado_em)
+    values (demo, v_lead, r.numero, r.versao,
+      'seedEtapa5Orc' || r.numero || 'v' || r.versao || 'xxxxxxxxxxxxxxxxxxxxxxxxxx',
+      r.status::public.status_orcamento, r.canal::public.canal_orcamento,
+      (select origem from public.leads where id = v_lead),
+      jsonb_build_object('tipoEventoId', v_tipo, 'turnoId', v_turno, 'adultos', r.adultos,
+        'criancas', '[]'::jsonb, 'opcionais', '[]'::jsonb, 'horasExtras', 0,
+        'pacoteId', (select id from public.pacotes where empresa_id = demo and nome = r.pacote),
+        'data', (current_date + r.dias)::text),
+      6,
+      jsonb_build_object('versaoMotor', 1, 'ok', true, 'erros', '[]'::jsonb, 'avisos', '[]'::jsonb,
+        'convidadosEquivalentes', r.adultos, 'pessoasFisicas', r.adultos, 'linhas', v_itens,
+        'subtotalCentavos', v_sub, 'descontoCentavos', v_sub - v_total, 'totalCentavos', v_total,
+        'porConvidadoCentavos', v_total / r.adultos, 'sinalCentavos', v_total * 3 / 10,
+        'saldoCentavos', v_total - v_total * 3 / 10, 'parcelas', '[]'::jsonb),
+      v_total,
+      case when r.status = 'expirado' then current_date - 3 else (now() - r.ha)::date + 15 end,
+      v_tipo, current_date + r.dias, v_turno, v_espaco, r.adultos,
+      (select id from public.pacotes where empresa_id = demo and nome = r.pacote),
+      pg_temp.seed_conteudo(r.pacote, r.adultos, r.nome, current_date + r.dias, v_tipo),
+      case when r.canal = 'interno' then vendedor end,
+      case when r.avulso then 'Decoração tema safári inclusa.' end,
+      case when r.avulso then 'Cliente pediu desconto pelo WhatsApp.' end,
+      case when r.desconto_bp > 0 then 'Cliente indicado pela Patrícia.' end,
+      r.aberturas,
+      case when r.aberturas > 0 then now() - interval '1 hour' end,
+      case when r.avulso then 'whatsapp' end,
+      now() - r.ha,
+      case when r.aberturas > 0 then now() - r.ha + interval '1 hour' end,
+      now() - r.ha)
+    returning id into v_orc;
+
+    insert into public.orcamento_itens (empresa_id, orcamento_id, ordem, tipo, descricao, quantidade,
+      valor_unitario_centavos, subtotal_centavos, detalhe, referencia_id)
+    select demo, v_orc, (o.n - 1)::integer, (o.i ->> 'tipo')::public.tipo_item_orcamento,
+      o.i ->> 'descricao', (o.i ->> 'quantidade')::integer, (o.i ->> 'valorUnitarioCentavos')::integer,
+      (o.i ->> 'subtotalCentavos')::integer, o.i ->> 'detalhe', (o.i ->> 'referenciaId')::uuid
+    from jsonb_array_elements(v_itens) with ordinality as o(i, n);
+
+    -- linha do tempo
+    insert into public.atividades (empresa_id, lead_id, orcamento_id, tipo, dados, autor, usuario_id, criado_em)
+    select demo, v_lead, v_orc, a.tipo::public.tipo_atividade, a.dados, a.autor::public.autor_atividade,
+      a.usuario, a.quando
+    from (values
+      (case when r.versao > 1 then 'versao_criada'
+            when r.canal = 'interno' then 'orcamento_criado' else 'orcamento_concluido' end,
+       jsonb_build_object('numero', r.numero, 'versao', r.versao, 'total_centavos', v_total,
+         'data', current_date + r.dias),
+       case when r.canal = 'interno' then 'usuario' else 'cliente' end,
+       case when r.canal = 'interno' then vendedor end,
+       now() - r.ha)
+    ) as a(tipo, dados, autor, usuario, quando);
+    if r.versao = 1 then
+      insert into public.atividades (empresa_id, lead_id, tipo, dados, autor, usuario_id, criado_em)
+      values (demo, v_lead, 'lead_criado',
+        case when r.canal = 'interno' then jsonb_build_object('origem', 'whatsapp', 'canal', 'interno')
+             else jsonb_build_object('origem', 'link_direto') end,
+        case when r.canal = 'interno' then 'usuario' else 'cliente' end::public.autor_atividade,
+        case when r.canal = 'interno' then vendedor end,
+        now() - r.ha - interval '5 minutes');
+    end if;
+    if r.avulso then
+      insert into public.atividades (empresa_id, lead_id, orcamento_id, tipo, dados, autor, usuario_id, criado_em)
+      values (demo, v_lead, v_orc, 'proposta_enviada',
+        jsonb_build_object('canal', 'whatsapp', 'numero', r.numero, 'versao', r.versao),
+        'usuario', vendedor, now() - r.ha + interval '2 minutes');
+    end if;
+    insert into public.atividades (empresa_id, lead_id, orcamento_id, tipo, dados, autor, criado_em)
+    select demo, v_lead, v_orc, 'proposta_aberta',
+      jsonb_build_object('vez', g, 'numero', r.numero, 'versao', r.versao), 'cliente',
+      case when r.aberturas = 1 then now() - r.ha + interval '1 hour'
+           else now() - interval '2 days' + (g - 1) * interval '23 hours' end
+    from generate_series(1, r.aberturas) g;
+    if r.status = 'expirado' then
+      insert into public.atividades (empresa_id, lead_id, orcamento_id, tipo, dados, autor, criado_em)
+      values (demo, v_lead, v_orc, 'orcamento_expirado',
+        jsonb_build_object('numero', r.numero, 'versao', r.versao, 'validade_ate', current_date - 3),
+        'sistema', now() - interval '2 days');
+    end if;
+  end loop;
+end;
+$$;
