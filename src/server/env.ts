@@ -22,3 +22,18 @@ export function supabasePublico() {
 export function urlDoSite(): string | undefined {
   return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '') || undefined;
 }
+
+const SAL_DESENVOLVIMENTO = 'orkestra-dev-nao-use-em-producao';
+
+/**
+ * Sal do hash de IP do link público (`sha256(ip + IP_HASH_SALT)`; o IP nunca é salvo).
+ * Obrigatória em produção: sem ela o servidor falha ao subir (src/instrumentation.ts).
+ */
+export function ipHashSalt(): string {
+  const valor = process.env.IP_HASH_SALT;
+  if (valor) return valor;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Variável de ambiente ausente: IP_HASH_SALT. Veja .env.example.');
+  }
+  return SAL_DESENVOLVIMENTO;
+}

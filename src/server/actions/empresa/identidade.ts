@@ -1,7 +1,7 @@
 'use server';
 
 import { eq, sql } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { toE164 } from '@/domain/phone';
 import {
   caminhoImagemValido,
@@ -13,7 +13,7 @@ import {
 import { apagarArquivosMidia } from '@/server/catalogo/midia';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { acaoDoDono, auditar, diferencas, validar, type ResultadoAcao } from './comum';
+import { acaoDoDono, auditar, diferencas, tagDoBuffet, validar, type ResultadoAcao } from './comum';
 
 export async function salvarIdentidade(entrada: IdentidadeEntrada): Promise<ResultadoAcao> {
   return acaoDoDono(async (dono) => {
@@ -68,6 +68,8 @@ export async function alterarSlug(entrada: SlugEntrada): Promise<ResultadoAcao<{
         tx.execute<{ slug: string }>(sql`select public.alterar_slug(${v.dados.slug}) as slug`),
       );
       revalidatePath('/app/empresa');
+      // O slug antigo é invalidado pelo acaoDoDono; o novo também não pode ter cache velho.
+      revalidateTag(tagDoBuffet(linha!.slug));
       return {
         ok: true,
         mensagem: 'Link alterado. O link antigo continua funcionando por 12 meses.',

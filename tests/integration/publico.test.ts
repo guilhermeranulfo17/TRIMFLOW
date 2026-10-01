@@ -401,6 +401,26 @@ describe('proposta', () => {
     });
   });
 
+  it('o token de um buffet não serve na página de outro', async () => {
+    await emTransacao(sql, async (tx) => {
+      const c = await cenarioPublico(tx, IDS.empresaA);
+      const data = await dataDaqui(tx, 200);
+      const token = await orcamentoConcluido(tx, c, { data });
+      const outro = { ...c, slug: 'buffet-teste-b' };
+      await comoAnon(tx, async () => {
+        const [e] = await tx`select publico.estado_orcamento('buffet-teste-b', ${token}) as e`;
+        expect(e!.e).toBeNull();
+        const [ok] = await tx`select publico.estado_orcamento(${c.slug}, ${token}) as e`;
+        expect(ok!.e).toMatchObject({ status: 'enviado', passo_atual: 6 });
+        await esperarMensagem(
+          tx,
+          () => preReservar(tx, outro, token),
+          'PUBLICO_ORCAMENTO_NAO_ENCONTRADO',
+        );
+      });
+    });
+  });
+
   it('concluir de novo depois de enviado cria um orçamento novo e substitui o anterior', async () => {
     await emTransacao(sql, async (tx) => {
       const c = await cenarioPublico(tx, IDS.empresaA);
@@ -422,7 +442,7 @@ describe('proposta', () => {
       const data = await dataDaqui(tx, 200);
       const token = await orcamentoConcluido(tx, c, { data });
       await tx`update public.orcamentos set validade_ate = current_date - 1 where token = ${token}`;
-      const r = await comoAnon(tx, () => preReservar(tx, token));
+      const r = await comoAnon(tx, () => preReservar(tx, c, token));
       expect(r).toEqual({ ok: false, codigo: 'ORCAMENTO_EXPIRADO' });
       const [o] = await tx`select status from public.orcamentos where token = ${token}`;
       expect(o!.status).toBe('expirado');
@@ -437,7 +457,7 @@ describe('pré-reserva pelo link', () => {
       const c = await cenarioPublico(tx, IDS.empresaA);
       const data = await dataDaqui(tx, 200);
       const token = await orcamentoConcluido(tx, c, { data, whatsapp: '+5534990006666' });
-      const r = await comoAnon(tx, () => preReservar(tx, token));
+      const r = await comoAnon(tx, () => preReservar(tx, c, token));
       expect(r).toMatchObject({ ok: true, simulada: false, sinal_centavos: 150_000 });
       const [reserva] = await tx`select r.*, o.status as orc_status, l.status as lead_status,
           l.temperatura, l.nome as lead_nome
@@ -458,7 +478,7 @@ describe('pré-reserva pelo link', () => {
       });
       expect(reserva!.expira_em).not.toBeNull();
       // Duplo clique devolve a mesma, sem criar outra.
-      const de_novo = await comoAnon(tx, () => preReservar(tx, token));
+      const de_novo = await comoAnon(tx, () => preReservar(tx, c, token));
       expect(de_novo.ok).toBe(true);
       const total =
         await tx`select count(*)::int as n from public.reservas where espaco_id = ${c.espaco}`;
@@ -472,8 +492,8 @@ describe('pré-reserva pelo link', () => {
       const data = await dataDaqui(tx, 200);
       const t1 = await orcamentoConcluido(tx, c, { data, whatsapp: '+5534990007771' });
       const t2 = await orcamentoConcluido(tx, c, { data, whatsapp: '+5534990007772' });
-      await comoAnon(tx, () => preReservar(tx, t1));
-      const r = await comoAnon(tx, () => preReservar(tx, t2));
+      await comoAnon(tx, () => preReservar(tx, c, t1));
+      const r = await comoAnon(tx, () => preReservar(tx, c, t2));
       expect(r.ok).toBe(false);
       expect(r.codigo).toBe('SLOT_INDISPONIVEL');
       expect(r.sugestoes).toHaveLength(3);
@@ -490,9 +510,9 @@ describe('pré-reserva pelo link', () => {
       const d1 = await dataDaqui(tx, 200);
       const d2 = await dataDaqui(tx, 210);
       const t1 = await orcamentoConcluido(tx, c, { data: d1, whatsapp: '+5534990008888' });
-      await comoAnon(tx, () => preReservar(tx, t1));
+      await comoAnon(tx, () => preReservar(tx, c, t1));
       const t2 = await orcamentoConcluido(tx, c, { data: d2, whatsapp: '+5534990008888' });
-      await comoAnon(tx, () => preReservar(tx, t2));
+      await comoAnon(tx, () => preReservar(tx, c, t2));
       const reservas = await tx`select data::text, status, motivo_cancelamento
         from public.reservas where espaco_id = ${c.espaco} order by data`;
       expect(reservas).toEqual([
@@ -515,7 +535,7 @@ describe('pré-reserva pelo link', () => {
         'pre_reserva', 'Maria') as id`;
       await tx`reset role`;
       await tx`update public.reservas set lead_id = ${lead!.id} where id = ${m!.id}`;
-      await comoAnon(tx, () => preReservar(tx, t1));
+      await comoAnon(tx, () => preReservar(tx, c, t1));
       const [manual] = await tx`select status from public.reservas where id = ${m!.id}`;
       expect(manual!.status).toBe('ativa');
     });
@@ -529,7 +549,7 @@ describe('pré-reserva pelo link', () => {
         const t = await iniciar(tx, c, { data, teste: true });
         return concluir(tx, c, t, { data });
       });
-      const r = await comoAnon(tx, () => preReservar(tx, token));
+      const r = await comoAnon(tx, () => preReservar(tx, c, token));
       expect(r).toMatchObject({ ok: true, simulada: true });
       expect(await tx`select 1 from public.reservas where espaco_id = ${c.espaco}`).toEqual([]);
     });
@@ -540,7 +560,7 @@ describe('pré-reserva pelo link', () => {
       const c = await cenarioPublico(tx, IDS.empresaA);
       const data = await dataDaqui(tx, 200);
       const token = await orcamentoConcluido(tx, c, { data, whatsapp: '+5534990009999' });
-      await comoAnon(tx, () => preReservar(tx, token));
+      await comoAnon(tx, () => preReservar(tx, c, token));
       await tx`update public.reservas set expira_em = now() - interval '1 minute'
         where espaco_id = ${c.espaco}`;
       const livre = await comoAnon(
@@ -566,7 +586,7 @@ describe('status do lead sincronizado com a agenda', () => {
     const c = await cenarioPublico(tx, IDS.empresaA);
     const data = await dataDaqui(tx, 200);
     const token = await orcamentoConcluido(tx, c, { data, whatsapp });
-    await comoAnon(tx, () => preReservar(tx, token));
+    await comoAnon(tx, () => preReservar(tx, c, token));
     const [r] = await tx`select id, lead_id from public.reservas where espaco_id = ${c.espaco}`;
     return { reserva: r!.id as string, lead: r!.lead_id as string };
   }
@@ -662,7 +682,7 @@ describe('visita, atividade e funil', () => {
       await comoAnon(
         tx,
         () =>
-          tx`select publico.solicitar_visita(${token}, ${preferida}::date, 'tarde', 'Depois das 15h', 'ip')`,
+          tx`select publico.solicitar_visita(${c.slug}, ${token}, ${preferida}::date, 'tarde', 'Depois das 15h', 'ip')`,
       );
       const [l] = await tx`select l.status, l.temperatura, v.periodo from public.leads l
         join public.visitas v on v.lead_id = l.id where l.whatsapp_e164 = '+5534990011111'`;
@@ -676,10 +696,10 @@ describe('visita, atividade e funil', () => {
       const data = await dataDaqui(tx, 200);
       const token = await orcamentoConcluido(tx, c, { data });
       await comoAnon(tx, async () => {
-        await tx`select publico.registrar_atividade(${token}, 'whatsapp_clicado')`;
+        await tx`select publico.registrar_atividade(${c.slug}, ${token}, 'whatsapp_clicado')`;
         await esperarMensagem(
           tx,
-          () => tx`select publico.registrar_atividade(${token}, 'reserva_confirmada')`,
+          () => tx`select publico.registrar_atividade(${c.slug}, ${token}, 'reserva_confirmada')`,
           'PUBLICO_DADOS_INVALIDOS',
         );
       });
@@ -721,7 +741,7 @@ describe('concorrência no link público (duas conexões reais)', () => {
       const tentar = (conexao: postgres.Sql, token: string, segurar?: Promise<void>) =>
         conexao.begin(async (tx) => {
           await assumirAnon(tx);
-          const r = await preReservar(tx, token);
+          const r = await preReservar(tx, c, token);
           if (segurar) await segurar;
           return r;
         });

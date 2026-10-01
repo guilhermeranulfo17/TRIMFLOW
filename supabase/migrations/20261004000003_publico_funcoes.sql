@@ -136,8 +136,11 @@ begin
 end;
 $$;
 
-/** Orçamento pelo token (trava a linha). Erro se não existir ou se a empresa estiver suspensa. */
-create or replace function publico._orcamento(p_token text)
+/**
+ * Orçamento pelo token, só dentro do buffet do slug (trava a linha). Erro se não existir ou se
+ * a empresa estiver suspensa. O token de um buffet nunca abre nada na página de outro.
+ */
+create or replace function publico._orcamento(p_slug text, p_token text)
 returns public.orcamentos
 language plpgsql
 security definer
@@ -149,7 +152,10 @@ begin
   if p_token is null or p_token !~ '^[A-Za-z0-9_-]{32,}$' then
     raise exception 'PUBLICO_ORCAMENTO_NAO_ENCONTRADO' using errcode = 'no_data_found';
   end if;
-  select * into v_o from public.orcamentos o where o.token = p_token for update;
+  select o.* into v_o from public.orcamentos o
+  join public.empresas e on e.id = o.empresa_id
+  where o.token = p_token and e.slug = lower(btrim(coalesce(p_slug, '')))
+  for update of o;
   if v_o.id is null then
     raise exception 'PUBLICO_ORCAMENTO_NAO_ENCONTRADO' using errcode = 'no_data_found';
   end if;
@@ -407,6 +413,7 @@ $$;
 
 /** Guarda o rascunho e o passo (retomar no celular). Não mexe no resultado congelado. */
 create or replace function publico.atualizar_rascunho(
+  p_slug text,
   p_token text,
   p_rascunho jsonb,
   p_passo smallint,
@@ -424,7 +431,7 @@ as $$
 declare
   v_o public.orcamentos;
 begin
-  v_o := publico._orcamento(p_token);
+  v_o := publico._orcamento(p_slug, p_token);
   if v_o.status not in ('em_montagem', 'enviado', 'visualizado') then
     raise exception 'PUBLICO_ORCAMENTO_FECHADO' using errcode = 'check_violation';
   end if;
@@ -448,11 +455,32 @@ end;
 $$;
 
 /**
+ * Estado do orçamento em andamento (retomar o wizard depois de recarregar). Null se o token não
+ * existir neste buffet. Não devolve dados pessoais.
+ */
+create or replace function publico.estado_orcamento(p_slug text, p_token text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'status', o.status, 'passo_atual', o.passo_atual, 'rascunho', o.rascunho,
+    'eh_teste', o.eh_teste, 'numero', o.numero)
+  from public.orcamentos o
+  join public.empresas e on e.id = o.empresa_id
+  where p_token ~ '^[A-Za-z0-9_-]{32,}$' and o.token = p_token
+    and e.slug = lower(btrim(coalesce(p_slug, ''))) and e.plano <> 'suspenso';
+$$;
+
+/**
  * Conclui o orçamento com o resultado CALCULADO PELO SERVIDOR (calcularOrcamento) e o congela.
  * Em montagem: congela este. Já enviado/visualizado (o cliente voltou e mudou algo): cria um
  * orçamento novo, marca o anterior como substituído e devolve o token novo.
  */
 create or replace function publico.concluir_orcamento(
+  p_slug text,
   p_token text,
   p_resultado jsonb,
   p_itens jsonb,
@@ -476,7 +504,7 @@ declare
   v_token  text;
   v_numero integer;
 begin
-  v_o := publico._orcamento(p_token);
+  v_o := publico._orcamento(p_slug, p_token);
   if v_o.status not in ('em_montagem', 'enviado', 'visualizado') then
     raise exception 'PUBLICO_ORCAMENTO_FECHADO' using errcode = 'check_violation';
   end if;
@@ -645,7 +673,7 @@ $$;
  * Conflito → { ok: false, codigo: 'SLOT_INDISPONIVEL', sugestoes }. Modo teste: valida tudo e
  * não grava reserva (simulada = true).
  */
-create or replace function publico.pre_reservar(p_token text, p_ip_hash text)
+create or replace function publico.pre_reservar(p_slug text, p_token text, p_ip_hash text)
 returns jsonb
 language plpgsql
 security definer
@@ -661,7 +689,7 @@ declare
   v_id       uuid;
   v_anterior record;
 begin
-  v_o := publico._orcamento(p_token);
+  v_o := publico._orcamento(p_slug, p_token);
   select * into v_lead from public.leads l where l.id = v_o.lead_id;
   select * into v_regras from public.regras_comerciais r where r.empresa_id = v_o.empresa_id;
   v_hoje := publico._hoje(v_o.empresa_id);
@@ -747,7 +775,7 @@ $$;
 
 /** "Quero visitar": registra o pedido (a agenda de visitas fica para depois). */
 create or replace function publico.solicitar_visita(
-  p_token text, p_data_preferida date, p_periodo public.periodo_visita, p_observacoes text,
+  p_slug text, p_token text, p_data_preferida date, p_periodo public.periodo_visita, p_observacoes text,
   p_ip_hash text
 )
 returns void
@@ -759,7 +787,7 @@ declare
   v_o    public.orcamentos;
   v_wpp  text;
 begin
-  v_o := publico._orcamento(p_token);
+  v_o := publico._orcamento(p_slug, p_token);
   if v_o.status in ('em_montagem', 'substituido') then
     raise exception 'PUBLICO_ORCAMENTO_FECHADO' using errcode = 'check_violation';
   end if;
@@ -780,7 +808,7 @@ end;
 $$;
 
 /** Atividades que o cliente pode registrar (hoje só o clique no WhatsApp). */
-create or replace function publico.registrar_atividade(p_token text, p_tipo text)
+create or replace function publico.registrar_atividade(p_slug text, p_token text, p_tipo text)
 returns void
 language plpgsql
 security definer
@@ -792,7 +820,7 @@ begin
   if p_tipo is distinct from 'whatsapp_clicado' then
     raise exception 'PUBLICO_DADOS_INVALIDOS' using errcode = 'invalid_parameter_value';
   end if;
-  v_o := publico._orcamento(p_token);
+  v_o := publico._orcamento(p_slug, p_token);
   -- Sem inundar a linha do tempo: no máximo 10 cliques por orçamento por hora.
   if (select count(*) from public.atividades a
       where a.orcamento_id = v_o.id and a.tipo = 'whatsapp_clicado'

@@ -1,4 +1,5 @@
 import 'server-only';
+import { revalidateTag } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
 import type { z } from 'zod';
 import { idSchema } from '@/domain/validacao/comum';
@@ -6,6 +7,9 @@ import { AcessoNegadoError, exigirPerfil } from '@/server/auth/guards';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { auditoria } from '@/server/db/schema';
 import type { Tx } from '@/server/db/tenant';
+import { tagDoBuffet } from '@/server/publico/cache';
+
+export { tagDoBuffet };
 
 export type ResultadoAcao<T = undefined> =
   | { ok: true; mensagem: string; dados?: T }
@@ -68,7 +72,11 @@ export async function acaoDoDono<T>(
 ): Promise<ResultadoAcao<T>> {
   try {
     const dono = await exigirPerfil('dono');
-    return await fn(dono);
+    const resultado = await fn(dono);
+    // A página pública guarda vitrine e catálogo em cache (tag por slug): toda configuração
+    // salva invalida esse cache.
+    if (resultado.ok) revalidateTag(tagDoBuffet(dono.empresa.slug));
+    return resultado;
   } catch (erro) {
     unstable_rethrow(erro);
     if (erro instanceof AcessoNegadoError) {

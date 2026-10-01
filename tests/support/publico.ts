@@ -91,14 +91,14 @@ export async function concluir(
     },
   ];
   const [r] = await tx`select publico.concluir_orcamento(
-    ${token}, ${tx.json(resultado)}, ${tx.json(itens)}, ${total},
+    ${c.slug}, ${token}, ${tx.json(resultado)}, ${tx.json(itens)}, ${total},
     ${o.validade ?? (await dataDaqui(tx, 15))}::date, ${tx.json({ passo: 6 })},
     ${c.tipo}, ${o.data}::date, ${c.turno}, ${c.espaco}, 50) as token`;
   return r!.token as string;
 }
 
-export async function preReservar(tx: Tx, token: string, ip = 'ip-teste') {
-  const [r] = await tx`select publico.pre_reservar(${token}, ${ip}) as r`;
+export async function preReservar(tx: Tx, c: Cenario, token: string, ip = 'ip-teste') {
+  const [r] = await tx`select publico.pre_reservar(${c.slug}, ${token}, ${ip}) as r`;
   return r!.r as {
     ok: boolean;
     codigo?: string;
