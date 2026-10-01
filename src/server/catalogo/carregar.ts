@@ -19,17 +19,9 @@ import {
   turnos,
 } from '@/server/db/schema';
 import { comUsuario as comUsuarioPadrao, type Tx } from '@/server/db/tenant';
+import { montarContexto } from './montar-contexto';
 
 export type ComUsuario = <T>(usuarioId: string, fn: (tx: Tx) => Promise<T>) => Promise<T>;
-
-function agrupar<T, K extends string>(linhas: T[], chave: (l: T) => K): Map<K, T[]> {
-  const mapa = new Map<K, T[]>();
-  for (const l of linhas) {
-    const k = chave(l);
-    mapa.set(k, [...(mapa.get(k) ?? []), l]);
-  }
-  return mapa;
-}
 
 /**
  * Monta o ContextoPreco da empresa do usuário. Todas as leituras passam pelo RLS
@@ -74,108 +66,22 @@ export async function carregarContexto(
       tx.select().from(faixasDeslocamento).orderBy(asc(faixasDeslocamento.ateKm)),
     ]);
     if (!regras) return null;
-
-    const faixasPorPacote = agrupar(faixas, (f) => f.pacoteId);
-    const secoesPorPacote = agrupar(secoes, (s) => s.pacoteId);
-    const tiposPorPacote = agrupar(pacoteTipos, (v) => v.pacoteId);
-    const pacotesPorOpcional = agrupar(opcPacotes, (v) => v.opcionalId);
-    const tiposPorOpcional = agrupar(opcTipos, (v) => v.opcionalId);
-
-    return {
-      regras: {
-        validadeDias: regras.validadeDias,
-        antecedenciaMinDias: regras.antecedenciaMinDias,
-        sinalBp: regras.sinalBp,
-        parcelasMax: regras.parcelasMax,
-        prazoUltimaParcelaDias: regras.prazoUltimaParcelaDias,
-        modoExibicaoPreco: regras.modoExibicaoPreco,
-        ajusteIncide: regras.ajusteIncide,
-        deslocamentoModelo: regras.deslocamentoModelo,
-        deslocamentoKmGratis: regras.deslocamentoKmGratis,
-        deslocamentoValorKmCentavos: regras.deslocamentoValorKmCentavos,
-      },
-      tiposEvento: tipos.map((t) => ({ id: t.id, nome: t.nome, ativo: t.ativo })),
-      espacos: listaEspacos.map((e) => ({
-        id: e.id,
-        nome: e.nome,
-        capacidadeMax: e.capacidadeMax,
-        noLocalDoCliente: e.noLocalDoCliente,
-        ativo: e.ativo,
-      })),
-      turnos: listaTurnos.map((t) => ({
-        id: t.id,
-        nome: t.nome,
-        horaInicio: t.horaInicio.slice(0, 5),
-        duracaoMin: t.duracaoMin,
-        diasSemana: [...t.diasSemana].sort((a, b) => a - b),
-        ordem: t.ordem,
-        ativo: t.ativo,
-      })),
-      ajustesDia: ajustes.map((a) => ({
-        id: a.id,
-        tipo: a.tipo,
-        diaSemana: a.diaSemana,
-        turnoId: a.turnoId,
-        ajusteBp: a.ajusteBp,
-      })),
-      feriados: listaFeriados.map((f) => ({ data: f.data, nome: f.nome })),
-      faixasIdade: faixasIdadeDb.map((f) => ({
-        id: f.id,
-        rotulo: f.rotulo,
-        idadeMin: f.idadeMin,
-        idadeMax: f.idadeMax,
-        fatorBp: f.fatorBp,
-        pacoteId: f.pacoteId,
-        ordem: f.ordem,
-      })),
-      pacotes: listaPacotes.map((p) => ({
-        id: p.id,
-        nome: p.nome,
-        subtitulo: p.subtitulo,
-        destaque: p.destaque,
-        modeloPreco: p.modeloPreco,
-        precoPessoaCentavos: p.precoPessoaCentavos,
-        valorExcedenteCentavos: p.valorExcedenteCentavos,
-        minConvidados: p.minConvidados,
-        maxConvidados: p.maxConvidados,
-        duracaoInclusaMin: p.duracaoInclusaMin,
-        valorHoraExtraCentavos: p.valorHoraExtraCentavos,
-        ordem: p.ordem,
-        ativo: p.ativo,
-        faixasPreco: (faixasPorPacote.get(p.id) ?? []).map((f) => ({
-          ateConvidados: f.ateConvidados,
-          valorCentavos: f.valorCentavos,
-        })),
-        secoes: (secoesPorPacote.get(p.id) ?? []).map((s) => ({
-          nome: s.nome,
-          itens: s.itens,
-          ordem: s.ordem,
-        })),
-        tiposEventoIds: (tiposPorPacote.get(p.id) ?? []).map((v) => v.tipoEventoId),
-      })),
-      opcionais: listaOpcionais.map((o) => {
-        const vinculos = pacotesPorOpcional.get(o.id) ?? [];
-        return {
-          id: o.id,
-          nome: o.nome,
-          descricao: o.descricao,
-          cobranca: o.cobranca,
-          precoCentavos: o.precoCentavos,
-          qtdMin: o.qtdMin,
-          qtdMax: o.qtdMax,
-          ordem: o.ordem,
-          ativo: o.ativo,
-          pacotesCompativeisIds: vinculos
-            .filter((v) => v.relacao === 'compativel')
-            .map((v) => v.pacoteId),
-          pacotesInclusoIds: vinculos.filter((v) => v.relacao === 'incluso').map((v) => v.pacoteId),
-          tiposEventoIds: (tiposPorOpcional.get(o.id) ?? []).map((v) => v.tipoEventoId),
-        };
-      }),
-      faixasDeslocamento: deslocamento.map((d) => ({
-        ateKm: d.ateKm,
-        valorCentavos: d.valorCentavos,
-      })),
-    };
+    return montarContexto({
+      regras,
+      tiposEvento: tipos,
+      espacos: listaEspacos,
+      turnos: listaTurnos,
+      ajustesDia: ajustes,
+      feriados: listaFeriados,
+      faixasIdade: faixasIdadeDb,
+      pacotes: listaPacotes,
+      faixasPreco: faixas,
+      secoesCardapio: secoes,
+      pacoteTiposEvento: pacoteTipos,
+      opcionais: listaOpcionais,
+      opcionalPacotes: opcPacotes,
+      opcionalTiposEvento: opcTipos,
+      faixasDeslocamento: deslocamento,
+    });
   });
 }

@@ -1,7 +1,16 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { criarDb } from '@/server/db/client';
-import { empresas, usuarios } from '@/server/db/schema';
+import {
+  atividades,
+  empresas,
+  funilEventos,
+  leads,
+  orcamentoItens,
+  orcamentos,
+  usuarios,
+  visitas,
+} from '@/server/db/schema';
 import { criarComUsuario } from '@/server/db/tenant';
 import { IDS, urlBancoTeste } from '../support/db';
 
@@ -28,5 +37,14 @@ describe('comUsuario (Drizzle com RLS no servidor)', () => {
     );
     expect(u).toMatchObject({ perfil: 'vendedor', empresaId: IDS.empresaA, ativo: true });
     expect(u?.limiteDescontoPct).toBe('5.00');
+  });
+
+  it('espelho dos leads (Etapa 4) bate com o banco', async () => {
+    // select * com todas as colunas do espelho: falha se alguma não existir no banco.
+    await comUsuario(IDS.donoA, async (tx) => {
+      for (const tabela of [leads, orcamentos, orcamentoItens, atividades, visitas, funilEventos]) {
+        await tx.select().from(tabela).limit(1);
+      }
+    });
   });
 });

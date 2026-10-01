@@ -23,6 +23,7 @@ export default async function setup() {
         drop schema if exists public cascade;
         drop schema if exists auth cascade;
         drop schema if exists extensions cascade;
+        drop schema if exists publico cascade;
         create schema public;
       `);
       const migrations = readdirSync(join(raiz, 'supabase', 'migrations'))

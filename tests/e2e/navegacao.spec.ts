@@ -1,7 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { entrar, SENHA_SEED, semRolagemHorizontal } from './helpers';
 
-const AREAS = [
+type Area = {
+  rotulo: string;
+  url: RegExp;
+  titulo: string;
+  vazio?: string;
+  botao?: string;
+  lista?: string;
+};
+
+const AREAS: Area[] = [
   // A agenda do Buffet Demo já tem eventos (seed): confere o botão principal em vez do vazio.
   { rotulo: 'Agenda', url: /\/app\/agenda$/, titulo: 'Agenda', botao: 'Registrar evento' },
   {
@@ -16,7 +25,8 @@ const AREAS = [
     titulo: 'Minha empresa',
     vazio: 'Identidade do buffet',
   },
-  { rotulo: 'Leads', url: /\/app\/leads$/, titulo: 'Leads', vazio: 'Sua caixa de leads' },
+  // Os leads do Buffet Demo vêm do seed (Etapa 4): confere a lista.
+  { rotulo: 'Leads', url: /\/app\/leads$/, titulo: 'Leads', lista: 'lista-leads' },
 ];
 
 test('navega pelas 4 áreas sem rolagem horizontal', async ({ page }) => {
@@ -30,10 +40,12 @@ test('navega pelas 4 áreas sem rolagem horizontal', async ({ page }) => {
     await nav.getByRole('link', { name: area.rotulo }).click();
     await expect(page).toHaveURL(area.url);
     await expect(page.getByRole('heading', { name: area.titulo, level: 1 })).toBeVisible();
-    if ('vazio' in area) {
+    if (area.vazio) {
       await expect(page.getByRole('heading', { name: area.vazio })).toBeVisible();
+    } else if (area.lista) {
+      await expect(page.getByTestId(area.lista)).toBeVisible();
     } else {
-      await expect(page.getByRole('button', { name: area.botao })).toBeVisible();
+      await expect(page.getByRole('button', { name: area.botao! })).toBeVisible();
     }
     await expect(nav.getByRole('link', { name: area.rotulo })).toHaveAttribute(
       'aria-current',

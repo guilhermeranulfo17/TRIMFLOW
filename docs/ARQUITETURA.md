@@ -53,8 +53,7 @@ limite_desconto_pct, ativo`). `empresa_id` não é editável.
   navegador protegem o servidor. Um bug de "esqueci o `where empresa_id`" vira zero linhas, não
   vazamento.
 - **Acesso administrativo** (ignora RLS) fica isolado em `src/server/db/admin.ts`, com
-  `import 'server-only'`. Hoje há um único uso: `buscarEmpresaPublicaPorSlug`, que seleciona
-  **só** `nome` e `slug` para a página pública.
+  `import 'server-only'`. Desde a Etapa 4 a página pública não o usa mais (ver seção 26).
 - A **service role key não é usada** na Etapa 0. Nada sensível tem prefixo `NEXT_PUBLIC_`.
   Uma regra do ESLint impede componentes de importarem `@/server/db/*`.
 
@@ -396,3 +395,95 @@ início + duração + intervalo entre eventos)`. `regras_comerciais.intervalo_en
 - Aviso no topo das pré-reservas que vencem em 12h. Vendedor reserva, confirma e cancela, mas
   não bloqueia.
 - O simulador mostra o estado do slot escolhido, com a mesma função `disponibilidade`.
+
+# Etapa 4: link público, wizard de orçamento e leads
+
+## 26. Acesso público: schema `publico` + `comAnon`
+
+- Toda leitura e escrita do link público passa por funções do schema **`publico`**
+  (`security definer`, `search_path` vazio, `execute` só para `anon`). O schema **não** é
+  exposto na API do Supabase (fica fora de `[api] schemas`), então ninguém chama essas funções
+  com a anon key: só o nosso servidor, por conexão direta, numa transação com `role anon`
+  (`comAnon` em `src/server/db/anon.ts`). `anon` continua sem privilégio em nenhuma tabela
+  (teste de integração percorre todas).
+- Mesmo só sendo alcançáveis pelo servidor, as funções revalidam tudo: empresa existe, plano
+  não suspenso, estado e validade do orçamento, limites. Toda função com token exige também o
+  slug: o token de um buffet não abre nada na página de outro.
+- **Modelo de confiança do preço:** `concluir_orcamento` congela o resultado que o servidor
+  calculou com `calcularOrcamento`. O navegador manda só escolhas (o schema Zod descarta preço,
+  desconto, total e "hoje"); desconto é sempre zero e o limite de desconto, zero.
+- `server/db/admin.ts` deixou de ser usado pela página pública (`publico.buffet` e
+  `publico.slug_atual` substituem as leituras de nome/slug).
+- `catalogo_publico` do plano virou desnecessário: `contexto_preco` devolve o catálogo ativo
+  ao servidor, que monta o `ContextoPreco` com o **mesmo mapper do painel**
+  (`server/catalogo/montar-contexto.ts`) e, a partir dele, a vitrine sem preço
+  (`domain/publico/vitrine.ts`). Teste: contexto público = contexto do painel (só ativos).
+
+## 27. Leads, orçamentos e status
+
+- Tabelas novas (`leads`, `orcamentos`, `orcamento_itens`, `atividades`, `visitas`,
+  `funil_eventos`) com FK composta por empresa, RLS só de leitura para usuários ativos e
+  nenhuma escrita direta. `reservas.lead_id/orcamento_id` ganharam FK.
+- Lead único por `(empresa, eh_teste, whatsapp)`: o dono testando com o próprio número não
+  colide com um cliente real. Lead existente: o nome **não** é sobrescrito (o digitado vai para
+  a atividade "voltou") e a resposta é sempre um token novo, igual para lead novo ou antigo.
+- Número do orçamento sequencial por empresa, sob `pg_advisory_xact_lock` próprio. Token: 2 ×
+  `gen_random_uuid()` em base64url (~244 bits, sem depender de `pgcrypto`).
+- Concluir de novo um orçamento já enviado (o cliente voltou e mudou algo) cria um orçamento
+  novo e marca o anterior como `substituido`: a URL de uma proposta nunca muda de conteúdo.
+- **Status do lead:** regra única em `public._lead_transicao` com espelho em
+  `domain/publico/status-lead.ts` e teste de equivalência em todas as combinações. As funções da
+  agenda (`confirmar`, `cancelar`, `vencer_pre_reservas`, `marcar_realizadas`) mantêm assinatura
+  e comportamento e só sincronizam o lead quando a reserva tem `lead_id`. `abandonar_leads`
+  (pg_cron, 15 min) marca "abandonou" o lead `novo` sem atividade há 24h.
+- `criar_reserva` virou um wrapper de `_criar_reserva_core` (mesma assinatura), usado também
+  por `publico.pre_reservar`.
+
+## 28. Pré-reserva pelo link
+
+- Trava da agenda por empresa, revalidação de plano, validade, antecedência e slot. Conflito →
+  `SLOT_INDISPONIVEL` com até 3 sugestões (mesmo turno e espaço, nos 60 dias seguintes). Tocar
+  numa sugestão refaz o orçamento com a nova data (o preço pode mudar com o dia).
+- Uma pré-reserva ativa por lead: a anterior **vinda do link** é cancelada ("cliente escolheu
+  outra data"); reservas manuais do dono nunca são tocadas (o WhatsApp não é verificado).
+- Duplo clique devolve a mesma pré-reserva. Modo teste valida tudo e não grava (`simulada`).
+
+## 29. Antiabuso e privacidade
+
+- Limites por janela de 1h em `publico.tentativas` (só hashes): iniciar 10/IP, 5/WhatsApp,
+  300/empresa; pré-reserva e visita 5/IP, 3/WhatsApp, 60/empresa; funil 400/IP (excesso é
+  ignorado em silêncio). `LIMITE_EXCEDIDO` → "Muitas tentativas. Tente de novo em alguns minutos."
+- IP nunca salvo: `sha256(ip + IP_HASH_SALT)`; WhatsApp nos limites também só como hash.
+  `IP_HASH_SALT` obrigatória em produção (`src/instrumentation.ts` falha ao subir).
+- No passo do WhatsApp: honeypot invisível e tempo mínimo de 2,5 s medido por um instante
+  assinado (HMAC) pelo servidor. Robô não cria lead.
+- Logs só com códigos; nunca nome, WhatsApp ou IP.
+- **Modo teste** = usuário logado da própria empresa abrindo o link (sessão no servidor, nunca
+  parâmetro). Lead e orçamento `eh_teste`, funil não conta, pré-reserva simulada.
+
+## 30. Modo de exibição de preço
+
+- Antes do WhatsApp o navegador recebe só a vitrine (nunca faixas, preço por pessoa, fatores
+  ou ajustes): `exato` → "a partir de" geral e por pacote; `faixa` → só o "a partir de" geral;
+  `apos_contato` → nenhum valor. Depois do WhatsApp, a prévia traz o total de cada pacote, os
+  extras e o resultado completo. Testado no domínio e na integração.
+
+## 31. Telas públicas e desempenho
+
+- `/b/[slug]` é Server Component quase sem JS (acordeão com `<details>`), identidade do buffet
+  com contraste AA garantido (`domain/publico/cor.ts`), estados de suspenso e pendências, OG
+  image com `next/og`, headers de segurança em `/b/**` e `noindex` no wizard e na proposta.
+  `preferredRegion = 'gru1'` (banco em sa-east-1).
+- Wizard: um componente por passo carregado sob demanda, `?passo=` no histórico (voltar
+  funciona), progresso em `localStorage` (só escolhas) e no servidor depois do WhatsApp; o
+  cookie `httpOnly` com o token permite retomar após recarregar. Calendário próprio sobre
+  `domain/agenda/calendario`.
+- Cache: só o catálogo (contexto + vitrine) fica em `unstable_cache` com a tag `buffet:{slug}`,
+  invalidada por toda action de configuração (`acaoDoDono`) e pela troca de slug. A identidade
+  do buffet não fica em cache (a suspensão vale na hora); disponibilidade e preço nunca.
+- `loading.tsx` só no wizard e na proposta: na página do buffet o streaming transformaria o 404
+  e o 308 em 200.
+- First Load JS: `/b/[slug]` 113 kB (102 kB são o JS compartilhado do Next/React, então a meta
+  de 100 kB não é alcançável sem trocar de framework); wizard 150 kB; proposta 149 kB.
+- Espaço "no local do cliente": o preço público sai **sem deslocamento**, com aviso; CEP/km
+  ficam para depois.

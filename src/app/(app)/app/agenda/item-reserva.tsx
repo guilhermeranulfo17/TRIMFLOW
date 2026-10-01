@@ -48,8 +48,16 @@ export function ItemReserva({
     <div className="bg-muted/40 space-y-2 rounded-md border p-3" data-testid="item-reserva">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold break-words">{reserva.clienteNome}</p>
-        <SeloEstado estado={pre ? 'pre_reservado' : 'reservado'} />
+        <span className="flex items-center gap-1.5">
+          {reserva.veioDoLink && <SeloLink />}
+          <SeloEstado estado={pre ? 'pre_reservado' : 'reservado'} />
+        </span>
       </div>
+      {reserva.veioDoLink && reserva.leadNome && (
+        <p className="text-muted-foreground -mt-1 text-sm">
+          Lead: <span className="text-foreground font-medium">{reserva.leadNome}</span>
+        </p>
+      )}
       <dl className="text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
         {pre && reserva.expiraEm && (
           <div className="col-span-2 font-medium text-amber-800">
@@ -181,5 +189,17 @@ export function ItemReserva({
         </div>
       )}
     </div>
+  );
+}
+
+/** Reserva pedida pelo próprio cliente no link público. */
+export function SeloLink() {
+  return (
+    <span
+      className="bg-accent text-accent-foreground rounded-full px-2 py-0.5 text-xs font-semibold"
+      data-testid="selo-link"
+    >
+      Veio do link
+    </span>
   );
 }

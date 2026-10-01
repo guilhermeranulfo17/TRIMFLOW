@@ -51,7 +51,9 @@ export function NovoVendedor() {
   const e = form.formState.errors;
 
   const fechar = (v: boolean) => {
-    if (salvando) return;
+    // Enquanto cria, não fecha. Depois de criado, fecha sempre: a transição continua "pendente"
+    // até o router.refresh terminar, e num servidor lento o Concluir parecia não funcionar.
+    if (salvando && !criado) return;
     setAberto(v);
     if (!v) {
       setCriado(null);

@@ -112,3 +112,4 @@ export type Segmento = (typeof segmentoEmpresa.enumValues)[number];
 // Catálogo e regras comerciais (Etapa 1).
 export * from './schema-catalogo';
 export * from './schema-agenda';
+export * from './schema-leads';

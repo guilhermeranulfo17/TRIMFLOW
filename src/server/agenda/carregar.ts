@@ -2,7 +2,7 @@ import 'server-only';
 import { and, asc, between, eq, gt, isNotNull, lte, or, sql } from 'drizzle-orm';
 import type { EstadoSlot, StatusReserva, TipoReserva } from '@/domain/agenda';
 import type { UsuarioAtual } from '@/server/auth/sessao';
-import { bloqueios, espacos, reservas, tiposEvento, turnos } from '@/server/db/schema';
+import { bloqueios, espacos, leads, reservas, tiposEvento, turnos } from '@/server/db/schema';
 import { comUsuario, type Tx } from '@/server/db/tenant';
 
 /*
@@ -51,6 +51,9 @@ export type ReservaAgenda = {
   sinalCentavos: number | null;
   sinalPagoEm: string | null;
   observacoes: string | null;
+  /** veio do link público (pré-reserva pelo cliente) */
+  veioDoLink: boolean;
+  leadNome: string | null;
 };
 
 export type BloqueioAgenda = {
@@ -158,12 +161,14 @@ async function reservasTx(tx: Tx, filtro: ReturnType<typeof and>): Promise<Reser
     .select({
       r: reservas,
       tipoEventoNome: tiposEvento.nome,
+      leadNome: leads.nome,
     })
     .from(reservas)
     .leftJoin(tiposEvento, eq(tiposEvento.id, reservas.tipoEventoId))
+    .leftJoin(leads, eq(leads.id, reservas.leadId))
     .where(and(ocupando(), filtro))
     .orderBy(asc(reservas.inicio));
-  return linhas.map(({ r, tipoEventoNome }) => ({
+  return linhas.map(({ r, tipoEventoNome, leadNome }) => ({
     id: r.id,
     data: r.data,
     turnoId: r.turnoId,
@@ -180,6 +185,8 @@ async function reservasTx(tx: Tx, filtro: ReturnType<typeof and>): Promise<Reser
     sinalCentavos: r.sinalCentavos,
     sinalPagoEm: r.sinalPagoEm,
     observacoes: r.observacoes,
+    veioDoLink: r.origem === 'link_publico',
+    leadNome,
   }));
 }
 

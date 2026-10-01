@@ -1,4 +1,4 @@
-# Próximos passos (anotados durante as Etapas 0 a 3)
+# Próximos passos (anotados durante as Etapas 0 a 4)
 
 Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi implementado.
 
@@ -30,21 +30,27 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   simultaneidade real se algum buffet em domicílio precisar.
 - Relatório/histórico de reservas canceladas, vencidas e realizadas na tela.
 
-## Etapa 4: Link público
+## Depois da Etapa 4 (pendências percebidas)
 
-- Página pública só com wizard quando não houver pendências (`pendenciasDoLinkPublico`: pacote
-  com preço, tipo de festa, turno e espaço ativos).
-- Mostrar logo, capa, cor da marca e "sobre" (colunas da Etapa 2).
-- Plano `suspenso`: página pública mostra só o WhatsApp do buffet, sem wizard.
-- Leitura pública do catálogo por função `security definer` específica (hoje `anon` não lê nada),
-  expondo só o necessário para o wizard.
-- Usar `aPartirDe` no modo de exibição "faixa" e `turnosDoDia`/`pacotesDisponiveis` nos passos.
-- **Disponibilidade pública:** wrapper `security definer` por slug sobre `_disponibilidade`,
-  com `grant execute` para `anon`, expondo só estado e vagas (nunca cliente). Pré-reserva pelo
-  link usa `criar_reserva` com `origem = 'link_publico'` (via função própria para `anon`).
-- Preencher `reservas.lead_id` quando a tabela de leads existir (e criar a FK).
+- **Deslocamento no link público:** hoje o espaço "no local do cliente" sai sem deslocamento
+  (aviso na tela). Calcular por CEP/km quando houver geocodificação.
+- **Verificar o WhatsApp** do cliente (código pelo WhatsApp, Etapa 7): hoje qualquer pessoa pode
+  informar o número de outra; mitigado (nada do lead antigo é devolvido, limites por número).
+- **Trial vencido** não bloqueia a página pública (só `plano = 'suspenso'`); entra com a cobrança.
+  Quando a cobrança mudar o plano, nada a fazer no cache (a identidade do buffet não é cacheada).
+- Agenda de visitas (confirmar, remarcar) e lembrete; hoje a visita é só um pedido no lead.
+- Captcha se os limites e o honeypot não bastarem; QR code do link; domínio próprio do buffet.
+- Exportar e apagar os dados de um lead a pedido (LGPD, Etapa 9). Revisão jurídica dos textos
+  de privacidade e termos (hoje modelos).
+- Painel de métricas do funil (`funil_eventos`) em Números.
+- Bundle do painel de Leads (194 kB) carrega `libphonenumber-js/max` pelo `formatPhoneBR`.
+- Fotos de pacote na página pública usam `<img>`/`next/image` sem otimizador (como na Etapa 2).
 
 ## Etapa 5: Proposta
+
+- Proposta completa: PDF, versões (`orcamentos.versao`), rastreio de visualização detalhado,
+  "+ Orçamento" pelo painel (canal interno) e edição pelo vendedor.
+- Ações sobre o lead (status manual, anotações, tarefas, motivo de perda): Etapa 6.
 
 - **Pacotes, opcionais, turnos, espaços e tipos de festa usados em propostas passam a ser
   desativados, não excluídos** (hoje a
