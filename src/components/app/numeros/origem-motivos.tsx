@@ -18,13 +18,13 @@ export function PorOrigem({ linhas }: { linhas: LinhaOrigem[] }) {
         <p className="text-muted-foreground text-sm">Nenhum lead no período.</p>
       ) : (
         <div className="-mx-1 overflow-x-auto">
-          <table className="w-full min-w-[22rem] text-left text-sm">
+          <table className="w-full text-left text-xs sm:text-sm">
             <thead className="text-muted-foreground">
               <tr>
                 <th className="px-1 py-1 font-medium">Origem</th>
                 <th className="px-1 py-1 text-right font-medium">Leads</th>
                 <th className="px-1 py-1 text-right font-medium">Reservas</th>
-                <th className="px-1 py-1 text-right font-medium">Conversão</th>
+                <th className="px-1 py-1 text-right font-medium">Conv.</th>
                 <th className="px-1 py-1 text-right font-medium">Valor</th>
               </tr>
             </thead>

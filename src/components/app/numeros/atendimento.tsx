@@ -27,7 +27,7 @@ export function Atendimento({
       </p>
       {porVendedor.length > 0 && (
         <div className="-mx-1 overflow-x-auto">
-          <table className="w-full min-w-[20rem] text-left text-sm">
+          <table className="w-full text-left text-xs sm:text-sm">
             <thead className="text-muted-foreground">
               <tr>
                 <th className="px-1 py-1 font-medium">Responsável</th>

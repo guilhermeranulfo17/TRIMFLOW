@@ -151,7 +151,7 @@ export function DatasLivres({
                   <p className="font-semibold capitalize">
                     {DIAS_EXTENSO[new Date(`${d.data}T12:00:00Z`).getUTCDay()]} {formatData(d.data)}
                   </p>
-                  <p className="text-muted-foreground truncate text-sm">{turnos.join(', ')}</p>
+                  <p className="text-muted-foreground text-sm">{turnos.join(', ')}</p>
                 </div>
                 <BotaoCopiar
                   texto={texto}

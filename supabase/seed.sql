@@ -869,8 +869,9 @@ $$;
 -- Onboarding e Números (Etapa 8). Datas relativas a hoje. Idempotente: os estados do
 -- onboarding são reaplicados; o volume de Números só é gravado uma vez (marcador: lead
 -- "+5534998000001").
---   Buffet Demo: onboarding concluído, link testado (falta "link na bio" e foto em pacote no
---     checklist), 90 dias de visitas ao link por várias origens (inclusive QR code), ~70 leads
+--   Buffet Demo: onboarding concluído, link testado e "sobre" preenchido (no checklist faltam
+--     logo, capa, foto em pacote, avisos no celular e "link na bio": 76%), 90 dias de visitas
+--     ao link por várias origens (inclusive QR code), ~70 leads
 --     espalhados com perdas por motivos variados, reservas confirmadas com valor, pedidos de
 --     visita/pré-reserva com tempo de atendimento.
 --   Buffet Teste B: onboarding parado no passo 3 (faixa no topo do painel).
@@ -901,7 +902,8 @@ begin
   set onboarding_passo = 5,
       onboarding_iniciado_em = coalesce(onboarding_iniciado_em, criado_em),
       onboarding_concluido_em = coalesce(onboarding_concluido_em, criado_em + interval '9 minutes'),
-      link_testado_em = coalesce(link_testado_em, now() - interval '20 days')
+      link_testado_em = coalesce(link_testado_em, now() - interval '20 days'),
+      sobre = coalesce(sobre, 'Festas infantis com brinquedão, monitores e cardápio feito na hora.')
   where id = demo;
   update public.empresas
   set onboarding_passo = 3, onboarding_iniciado_em = coalesce(onboarding_iniciado_em, now() - interval '1 day'),

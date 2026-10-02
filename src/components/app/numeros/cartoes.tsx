@@ -22,7 +22,7 @@ function Cartoes({ cartoes }: { cartoes: Cartao[] }) {
         >
           <p className="text-muted-foreground text-sm">{c.titulo}</p>
           <p
-            className="truncate text-2xl font-light tracking-tight tabular-nums sm:text-3xl"
+            className="text-xl font-light tracking-tight break-words tabular-nums sm:text-3xl"
             data-testid={`${c.testid}-valor`}
           >
             {c.valor}

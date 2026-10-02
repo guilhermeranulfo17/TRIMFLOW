@@ -114,6 +114,20 @@ export function PassoPrecos({
     return r.ok;
   }
 
+  if (pacotes.length === 0) {
+    return (
+      <div className="bg-card rounded-card flex flex-col gap-3 border p-4" data-testid="sem-pacotes">
+        <p>Seu catálogo ainda não tem pacotes.</p>
+        <a
+          href="/app/comecar?passo=1"
+          className="bg-primary text-primary-foreground rounded-control inline-flex min-h-11 items-center justify-center px-4 font-semibold"
+        >
+          Carregar o catálogo de exemplo
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <p className="text-muted-foreground">
