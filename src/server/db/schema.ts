@@ -119,3 +119,4 @@ export type Segmento = (typeof segmentoEmpresa.enumValues)[number];
 export * from './schema-catalogo';
 export * from './schema-agenda';
 export * from './schema-leads';
+export * from './schema-avisos';

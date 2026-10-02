@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Clock, Pencil, Trash2, UserCheck } from 'lucide-react';
+import { Check, Clock, Pencil, Sparkles, Trash2, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { Folha } from '@/components/app/agenda/folha';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { OPCOES_ADIAR, type OpcaoAdiar } from '@/domain/leads/adiar';
+import type { SituacaoMensagem } from '@/domain/leads/mensagens';
 import { cn } from '@/lib/utils';
 import {
   adiarTarefa,
@@ -95,6 +96,8 @@ export type TarefaVista = {
   mensagemSugerida: string | null;
   responsavelNome: string | null;
   lead?: { id: string; nome: string; telefone: string };
+  /** criada pelo follow-up automático (Etapa 7) */
+  automatica?: { situacao: SituacaoMensagem; motivo: string } | null;
 };
 
 export function AdiarTarefa({
@@ -187,6 +190,15 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
         {feita && <Check className="size-5" aria-hidden />}
       </button>
       <div className="min-w-0 flex-1">
+        {tarefa.automatica && (
+          <span
+            className="bg-primary/10 text-primary mb-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+            data-testid="selo-automatica"
+          >
+            <Sparkles className="size-3" aria-hidden />
+            Automática · {tarefa.automatica.motivo}
+          </span>
+        )}
         <p
           className={cn('font-semibold break-words', feita && 'text-muted-foreground line-through')}
         >
@@ -216,11 +228,12 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
               <Clock aria-hidden />
               Adiar
             </Button>
-            {tarefa.mensagemSugerida && (
+            {(tarefa.mensagemSugerida || tarefa.automatica) && (
               <BotaoWhatsApp
                 leadId={leadId}
                 tarefaId={tarefa.id}
                 textoInicial={tarefa.mensagemSugerida}
+                situacaoInicial={tarefa.automatica?.situacao}
                 rotulo="Enviar no WhatsApp"
                 className="min-h-9 text-xs"
               />

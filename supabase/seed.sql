@@ -789,3 +789,78 @@ begin
   from public.notas n where n.empresa_id = demo;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Avisos e follow-up automático (Etapa 7) no Buffet Demo. Idempotente (chaves fixas "seed7:").
+--   avisos lidos e não lidos de todos os tipos (dona e vendedor), preferências dos dois
+--   (o vendedor com silêncio 23:00–08:00), "segundo toque" desligado e tarefas automáticas
+--   abertas e canceladas.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  demo     constant uuid := '11111111-1111-4111-8111-111111111111';
+  dona     constant uuid := '1a000000-0000-4000-8000-000000000001';
+  vendedor constant uuid := '1a000000-0000-4000-8000-000000000002';
+  hoje     date := (now() at time zone 'America/Sao_Paulo')::date;
+begin
+  if not exists (select 1 from public.empresas where id = demo) then
+    return;
+  end if;
+
+  insert into public.preferencias_avisos (usuario_id, empresa_id, canais, silencio_inicio, silencio_fim,
+    receber_de_vendedores)
+  values
+    (dona, demo, '{"cliente_esquentou": ["push"]}'::jsonb, '22:00', '07:00', false),
+    (vendedor, demo, '{"orcamentos_sem_acao": []}'::jsonb, '23:00', '08:00', false)
+  on conflict (usuario_id) do nothing;
+
+  update public.regras_follow_up set ligada = false
+  where empresa_id = demo and regra = 'segundo_toque' and ligada;
+
+  insert into public.avisos (empresa_id, usuario_id, tipo, lead_id, dados, chave, criado_em, lido_em)
+  select demo, a.usuario, a.tipo::public.tipo_aviso, l.id, a.dados, a.chave, now() - a.ha,
+    case when a.lido then now() - a.ha + interval '10 minutes' end
+  from (values
+    ('seed7:pre_reserva_pedida', dona, 'pre_reserva_pedida', 'Patrícia Lima',
+      jsonb_build_object('lead_nome', 'Patrícia Lima', 'tipo_evento', 'Aniversário infantil',
+        'data', (hoje + 45)::text, 'turno', 'Noite', 'convidados', 70, 'total_centavos', 560000,
+        'expira_em', now() + interval '37 hours'), interval '11 hours', false),
+    ('seed7:visita_pedida', vendedor, 'visita_pedida', 'Tiago Almeida',
+      jsonb_build_object('lead_nome', 'Tiago Almeida', 'data_preferida', (hoje + 2)::text,
+        'periodo', 'tarde', 'total_centavos', 410000), interval '3 hours', false),
+    ('seed7:pre_reserva_vencendo', dona, 'pre_reserva_vencendo', 'Patrícia Lima',
+      jsonb_build_object('lead_nome', 'Patrícia Lima', 'expira_em', now() + interval '37 hours'),
+      interval '1 day', true),
+    ('seed7:orcamentos_sem_acao', dona, 'orcamentos_sem_acao', null,
+      jsonb_build_object('quantidade', 3, 'total_centavos', 1840000), interval '5 hours', true),
+    ('seed7:cliente_parou', dona, 'cliente_parou', 'Beatriz Nunes',
+      jsonb_build_object('lead_nome', 'Beatriz Nunes', 'passo', 4), interval '2 hours', false),
+    ('seed7:cliente_esquentou', vendedor, 'cliente_esquentou', 'Sabrina Costa',
+      jsonb_build_object('lead_nome', 'Sabrina Costa', 'aberturas', 3), interval '90 minutes', false),
+    ('seed7:resumo_diario:dona', dona, 'resumo_diario', null,
+      jsonb_build_object('novos_ontem', 2, 'pre_reservas_hoje', 1, 'visitas_hoje', 1, 'tarefas_hoje', 2,
+        'atrasadas', 1), interval '20 hours', true),
+    ('seed7:resumo_diario:vendedor', vendedor, 'resumo_diario', null,
+      jsonb_build_object('novos_ontem', 0, 'pre_reservas_hoje', 0, 'visitas_hoje', 1, 'tarefas_hoje', 1,
+        'atrasadas', 1), interval '20 hours', true)
+  ) as a(chave, usuario, tipo, lead_nome, dados, ha, lido)
+  left join public.leads l on l.empresa_id = demo and l.nome = a.lead_nome
+  on conflict (chave) do nothing;
+
+  -- tarefas automáticas: abertas (Igor: proposta sem resposta; Isabela: quente sem contato) e
+  -- uma cancelada (Fernanda: o vendedor falou com ela antes)
+  insert into public.tarefas (empresa_id, lead_id, titulo, responsavel_id, vence_em, origem, regra,
+    mensagem_dados, criado_em, cancelada_em)
+  select demo, l.id, public._follow_up_titulo(t.regra, l.nome, null, 'America/Sao_Paulo'),
+    coalesce(l.responsavel_id, dona), now() - t.ha, 'regra', t.regra,
+    jsonb_build_object('regra', t.regra, 'proposta_aberta', t.aberta), now() - t.ha,
+    case when t.cancelada then now() - t.ha + interval '3 hours' end
+  from (values
+    ('Igor Teixeira', 'sem_resposta_24h', true, interval '2 hours', false),
+    ('Isabela Freitas', 'quente_sem_contato', true, interval '40 minutes', false),
+    ('Fernanda Castro', 'sem_resposta_24h', false, interval '2 days', true)
+  ) as t(nome, regra, aberta, ha, cancelada)
+  join public.leads l on l.empresa_id = demo and l.nome = t.nome
+  where not exists (select 1 from public.tarefas x where x.lead_id = l.id and x.regra = t.regra and x.origem = 'regra');
+end;
+$$;

@@ -355,6 +355,8 @@ export const tarefas = pgTable(
     /** chave da regra (Etapa 7) ou "proximo_contato" */
     regra: text('regra'),
     mensagemSugerida: text('mensagem_sugerida'),
+    /** tarefa automática (Etapa 7): {regra, proposta_aberta, visita_em} para montar a mensagem */
+    mensagemDados: jsonb('mensagem_dados').$type<Record<string, unknown>>(),
     criadoPor: uuid('criado_por').references(() => usuarios.id, { onDelete: 'set null' }),
     criadoEm: instante('criado_em').notNull().defaultNow(),
     atualizadoEm: instante('atualizado_em').notNull().defaultNow(),

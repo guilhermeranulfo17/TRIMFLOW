@@ -5,6 +5,8 @@ import { formatPhoneBR } from '@/domain/phone';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { leads, tarefas, usuarios } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
+import { automaticaDaTarefa } from './automatica';
+import type { SituacaoMensagem } from '@/domain/leads/mensagens';
 
 /*
  * Tela "Tarefas": as do usuário (e as sem responsável) da empresa, pelo RLS. Atrasadas, hoje,
@@ -18,6 +20,7 @@ export type TarefaDaTela = {
   venceEm: string;
   feitaEm: string | null;
   mensagemSugerida: string | null;
+  automatica: { situacao: SituacaoMensagem; motivo: string } | null;
   lead: { id: string; nome: string; telefone: string; whatsappE164: string };
   responsavelNome: string | null;
 };
@@ -78,6 +81,7 @@ export async function carregarTarefas(usuario: UsuarioAtual): Promise<TelaTarefa
     venceEm: (r.t.venceEfetivo ?? r.t.venceEm).toISOString(),
     feitaEm: r.t.feitaEm?.toISOString() ?? null,
     mensagemSugerida: r.t.mensagemSugerida,
+    automatica: automaticaDaTarefa(r.t.origem, r.t.regra, r.t.mensagemDados),
     lead: {
       id: r.t.leadId,
       nome: r.leadNome,

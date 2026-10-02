@@ -108,7 +108,10 @@ jobs:
             echo "E2E_STORAGE=1"
             echo "IP_HASH_SALT=sal-do-ci-orkestra"
             echo "MAILPIT_URL=${MAILPIT_URL:-${INBUCKET_URL:-http://127.0.0.1:54324}}"
+            echo "CRON_SECRET=segredo-cron-do-ci"
           } >> "$GITHUB_ENV"
+          # Chaves VAPID descartáveis, geradas a cada execução (push nos E2E).
+          node scripts/vapid.mjs >> "$GITHUB_ENV"
 
       - name: Recriar o banco do zero (pnpm db:reset)
         run: pnpm db:reset

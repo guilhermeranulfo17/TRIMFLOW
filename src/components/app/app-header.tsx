@@ -1,11 +1,14 @@
+import { SinoAvisos } from './avisos/sino';
 import { Logo } from './logo';
 import { UserMenu } from './user-menu';
 
 export function AppHeader({
   nomeBuffet,
   usuario,
+  naoLidos,
 }: {
   nomeBuffet: string;
+  naoLidos: number;
   usuario: { nome: string; email: string; perfil: 'dono' | 'vendedor' };
 }) {
   return (
@@ -16,7 +19,10 @@ export function AppHeader({
           {nomeBuffet}
         </p>
       </div>
-      <UserMenu {...usuario} />
+      <div className="flex items-center gap-1">
+        <SinoAvisos inicial={naoLidos} />
+        <UserMenu {...usuario} />
+      </div>
     </header>
   );
 }
