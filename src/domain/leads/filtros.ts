@@ -19,6 +19,7 @@ export const ORIGENS_LEAD: OrigemLead[] = [
   'link_direto',
   'interno',
   'outro',
+  'qrcode',
 ];
 
 export const ATALHOS_CAIXA = [
