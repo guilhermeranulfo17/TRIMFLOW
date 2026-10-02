@@ -107,10 +107,11 @@ test.describe('link público', () => {
     const card = page.getByTestId('card-lead').filter({ hasText: 'Fernanda Cliente' });
     await expect(card).toContainText('Pré-reservado');
     await card.getByRole('link', { name: 'Fernanda Cliente' }).click();
+    await expect(page).toHaveURL(/\/app\/leads\/[0-9a-f-]{36}$/);
     const tempo = page.getByTestId('linha-do-tempo');
     await expect(tempo).toContainText('Pediu pré-reserva');
     await expect(tempo).toContainText('Pediu orçamento pelo link');
-    await expect(page.getByRole('dialog')).toContainText('veio de Instagram');
+    await expect(page.getByTestId('detalhe-lead')).toContainText('Veio de Instagram');
 
     // Agenda: a pré-reserva veio do link.
     await page.goto(`/app/agenda?mes=${data.slice(0, 7)}`);
@@ -238,7 +239,8 @@ test.describe('leads no desktop', () => {
     await page.getByLabel('Senha', { exact: true }).fill('demo12345');
     await page.getByRole('button', { name: 'Entrar' }).click();
     await expect(page).toHaveURL(/\/app\/leads$/);
-    await page.getByRole('link', { name: 'Pré-reservados' }).click();
+    await page.getByTestId('hoje-pre_reservas').click();
+    await expect(page).toHaveURL(/ver=pre_reservas/);
     const card = page.getByTestId('card-lead').filter({ hasText: 'Patrícia Lima' });
     await expect(card).toContainText('R$ 5.600,00');
     await card.getByRole('link', { name: 'Patrícia Lima' }).click();

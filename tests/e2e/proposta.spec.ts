@@ -155,11 +155,13 @@ test('cliente abre a proposta duas vezes e o lead fica quente', async ({ page, b
   await cliente.reload();
   await expect(cliente.getByTestId('total-proposta')).toBeVisible();
 
-  await page.goto('/app/leads?filtro=andamento');
+  await page.goto(`/app/leads?q=${encodeURIComponent(nome)}`);
   const card = page.getByTestId('card-lead').filter({ hasText: nome });
+  await expect(card.getByTestId('motivo')).toContainText('Abriu a proposta 2x');
   await card.getByRole('link', { name: nome }).click();
-  const dialogo = page.getByRole('dialog');
-  await expect(dialogo).toContainText('Quente');
+  const detalhe = page.getByTestId('detalhe-lead');
+  await expect(detalhe.getByRole('heading', { level: 1 })).toHaveText(nome);
+  await expect(detalhe).toContainText('Quente');
   await expect(page.getByTestId('linha-do-tempo')).toContainText('Abriu a proposta');
   await expect(page.getByTestId('orcamento-lead').first()).toContainText('Visualizado 2×');
 });
