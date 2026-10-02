@@ -1,6 +1,6 @@
 /**
- * Espelho Drizzle dos leads e orçamentos do link público (Etapa 4).
- * Fonte da verdade: supabase/migrations/20261004000001..4. Mantenha em sincronia.
+ * Espelho Drizzle dos leads, orçamentos, notas e tarefas (Etapas 4 a 6).
+ * Fonte da verdade: supabase/migrations. Mantenha em sincronia.
  * Escrita SÓ pelas funções SQL (schema publico e agenda): o painel só lê estas tabelas.
  */
 import { sql } from 'drizzle-orm';
@@ -77,7 +77,30 @@ export const tipoAtividade = pgEnum('tipo_atividade', [
   'versao_criada',
   'orcamento_expirado',
   'orcamento_criado',
+  // Etapa 6
+  'contato_registrado',
+  'nota',
+  'tarefa_criada',
+  'tarefa_feita',
+  'responsavel_alterado',
+  'perdido',
+  'reaberto',
+  'visita_confirmada',
+  'visita_realizada',
+  'visita_cancelada',
+  'mensagem_copiada',
 ]);
+export const motivoPerda = pgEnum('motivo_perda', [
+  'preco',
+  'data_indisponivel',
+  'concorrente',
+  'desistiu',
+  'sem_resposta',
+  'fora_da_area',
+  'outro',
+]);
+export const origemTarefa = pgEnum('origem_tarefa', ['manual', 'regra']);
+export const canalContato = pgEnum('canal_contato', ['whatsapp', 'ligacao', 'presencial']);
 export const autorAtividade = pgEnum('autor_atividade', ['cliente', 'usuario', 'sistema']);
 export const periodoVisita = pgEnum('periodo_visita', ['manha', 'tarde', 'noite']);
 export const statusVisita = pgEnum('status_visita', [
@@ -113,10 +136,24 @@ export const leads = pgTable(
     ultimaAtividadeEm: instante('ultima_atividade_em').notNull().defaultNow(),
     proximoContatoEm: instante('proximo_contato_em'),
     motivoPerda: text('motivo_perda'),
+    // Etapa 6
+    responsavelId: uuid('responsavel_id'),
+    motivoPerdaCodigo: motivoPerda('motivo_perda_codigo'),
+    perdidoEm: instante('perdido_em'),
+    statusAntesDePerder: statusLead('status_antes_de_perder'),
+    primeiroContatoEm: instante('primeiro_contato_em'),
+    ultimaAcaoVendedorEm: instante('ultima_acao_vendedor_em'),
     criadoEm: instante('criado_em').notNull().defaultNow(),
     atualizadoEm: instante('atualizado_em').notNull().defaultNow(),
   },
-  (t) => [unique().on(t.id, t.empresaId), unique().on(t.empresaId, t.ehTeste, t.whatsappE164)],
+  (t) => [
+    unique().on(t.id, t.empresaId),
+    unique().on(t.empresaId, t.ehTeste, t.whatsappE164),
+    foreignKey({
+      columns: [t.responsavelId, t.empresaId],
+      foreignColumns: [usuarios.id, usuarios.empresaId],
+    }),
+  ],
 );
 
 export const orcamentos = pgTable(
@@ -241,6 +278,14 @@ export const visitas = pgTable(
     periodo: periodoVisita('periodo').notNull(),
     observacoes: text('observacoes'),
     status: statusVisita('status').notNull().default('solicitada'),
+    // Etapa 6
+    dataHora: instante('data_hora'),
+    confirmadaPor: uuid('confirmada_por').references(() => usuarios.id, { onDelete: 'set null' }),
+    confirmadaEm: instante('confirmada_em'),
+    realizadaEm: instante('realizada_em'),
+    canceladaEm: instante('cancelada_em'),
+    motivoCancelamento: text('motivo_cancelamento'),
+    criadoPor: uuid('criado_por').references(() => usuarios.id, { onDelete: 'set null' }),
     criadoEm: instante('criado_em').notNull().defaultNow(),
     atualizadoEm: instante('atualizado_em').notNull().defaultNow(),
   },
@@ -269,3 +314,61 @@ export type Orcamento = typeof orcamentos.$inferSelect;
 export type OrcamentoItem = typeof orcamentoItens.$inferSelect;
 export type Atividade = typeof atividades.$inferSelect;
 export type Visita = typeof visitas.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// Etapa 6 · notas e tarefas (escrita só pelas funções SQL)
+// ---------------------------------------------------------------------------
+export const notas = pgTable(
+  'notas',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    empresaId: empresaId(),
+    leadId: uuid('lead_id').notNull(),
+    autorId: uuid('autor_id').references(() => usuarios.id, { onDelete: 'set null' }),
+    texto: text('texto').notNull(),
+    criadoEm: instante('criado_em').notNull().defaultNow(),
+    editadoEm: instante('editado_em'),
+  },
+  (t) => [
+    foreignKey({ columns: [t.leadId, t.empresaId], foreignColumns: [leads.id, leads.empresaId] }),
+  ],
+);
+
+export const tarefas = pgTable(
+  'tarefas',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    empresaId: empresaId(),
+    leadId: uuid('lead_id').notNull(),
+    orcamentoId: uuid('orcamento_id'),
+    titulo: text('titulo').notNull(),
+    descricao: text('descricao'),
+    responsavelId: uuid('responsavel_id'),
+    venceEm: instante('vence_em').notNull(),
+    adiadaPara: instante('adiada_para'),
+    /** coalesce(adiada_para, vence_em) (coluna gerada) */
+    venceEfetivo: instante('vence_efetivo').generatedAlwaysAs(sql`coalesce(adiada_para, vence_em)`),
+    feitaEm: instante('feita_em'),
+    feitaPor: uuid('feita_por').references(() => usuarios.id, { onDelete: 'set null' }),
+    canceladaEm: instante('cancelada_em'),
+    origem: origemTarefa('origem').notNull().default('manual'),
+    /** chave da regra (Etapa 7) ou "proximo_contato" */
+    regra: text('regra'),
+    mensagemSugerida: text('mensagem_sugerida'),
+    criadoPor: uuid('criado_por').references(() => usuarios.id, { onDelete: 'set null' }),
+    criadoEm: instante('criado_em').notNull().defaultNow(),
+    atualizadoEm: instante('atualizado_em').notNull().defaultNow(),
+  },
+  (t) => [
+    unique().on(t.id, t.empresaId),
+    foreignKey({ columns: [t.leadId, t.empresaId], foreignColumns: [leads.id, leads.empresaId] }),
+    foreignKey({
+      columns: [t.orcamentoId, t.empresaId],
+      foreignColumns: [orcamentos.id, orcamentos.empresaId],
+    }),
+    foreignKey({
+      columns: [t.responsavelId, t.empresaId],
+      foreignColumns: [usuarios.id, usuarios.empresaId],
+    }),
+  ],
+);
