@@ -29,8 +29,9 @@ Não adicione dependências fora dessa lista sem perguntar.
 src/
   app/
     (auth)/          login, cadastro, recuperar-senha, nova-senha
-    (app)/app/       área logada: leads, agenda (lista/calendário/painel do dia), numeros, empresa,
-                     orcamentos (novo, [id]/editar, [id]/pdf)
+    (app)/app/       área logada: leads (caixa) e leads/[id] (detalhe com ações), tarefas, agenda
+                     (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
+                     [id]/editar, [id]/pdf)
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, usuarios, plano, simulador, proposta-exemplo
     auth/            rotas técnicas: confirm (link do e-mail), sair
@@ -43,6 +44,7 @@ src/
       form/          Secao (salvar por seção), Campo, FormInline, erros do servidor
       empresa/       peças de Minha empresa (listas, cards do catálogo, faixas de idade…)
       orcamento/     "+ Orçamento" (formulário, calendário da agenda, saídas, orçamentos do lead)
+      leads/         caixa (topo Hoje, filtros, cartões), ações do lead, tarefas, mensagem pronta
     orcamento/       peças compartilhadas do wizard e do orçamento interno (contador)
     proposta/        proposta na web (desenha o ModeloProposta)
     auth/            peças dos formulários de autenticação
@@ -53,7 +55,9 @@ src/
     preco/           motor de preço (calcularOrcamento, disponibilidade, aPartirDe, parcelas)
     publico/         link público: passos, prévia por modo de preço, vitrine, cor, WhatsApp,
                      status do lead (= regra do SQL)
-    leads/           exibição de leads (filtros, linha do tempo)
+    leads/           caixa e ações: prioridade (grupo e motivo, = regra do SQL), filtros da URL,
+                     mensagens prontas, motivos de perda, adiar, temperatura por inatividade,
+                     linha do tempo
     proposta/        modelo único da proposta (web e PDF), conteúdo congelado, abertura,
                      diferenças entre versões, validade, temperatura (= regra do SQL), arquivo,
                      festa de exemplo
@@ -61,14 +65,15 @@ src/
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario), anon (comAnon),
                      admin (sem RLS)
-    actions/         server actions (auth, simulador, empresa/* da configuração)
+    actions/         server actions (auth, simulador, leads, agenda, orcamentos, empresa/*)
     catalogo/        carregar (ContextoPreco via RLS), gravar-modelo, aplicar-modelo
     auth/            cliente Supabase do servidor, sessão, guards, redirecionamento,
                      admin-supabase (Admin API com service role, só servidor)
     usuarios/        criar/desativar vendedor (dependências injetadas)
     agenda/          leituras da agenda (disponibilidade, reservas, bloqueios) e erros
     publico/         leituras do link público (cache por slug), hash de IP, modo teste
-    leads/           leituras de Leads (orçamentos agrupados por número, com versões)
+    leads/           leituras da caixa (caixa_leads, resumo_hoje) e do detalhe do lead, erros
+    tarefas/         leituras da tela de Tarefas
     proposta/        carregador da proposta (público e painel), versão a gravar, PDF, fontes,
                      proposta de exemplo
     orcamentos/      leituras do orçamento interno (base de preço, lead por WhatsApp, edição)
@@ -120,10 +125,21 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   Funções com token também exigem o slug. O navegador manda só escolhas; preço, "hoje",
   desconto (zero) e modo teste (sessão) são do servidor. Antes do WhatsApp o navegador nunca
   recebe tabela de preço. IP só como `sha256(ip + IP_HASH_SALT)`; nada pessoal em logs.
-- **Leads e orçamentos** só são escritos pelas funções `publico.*`, da agenda e do orçamento
-  interno (`salvar_orcamento_interno`, `pre_reservar_orcamento`, `marcar_orcamento_enviado`). A regra de
-  status do lead existe no SQL (`_lead_transicao`) e em `domain/publico/status-lead`, com teste
-  de equivalência: mudou uma, mude a outra.
+- **Leads e orçamentos** só são escritos pelas funções `publico.*`, da agenda, do orçamento
+  interno (`salvar_orcamento_interno`, `pre_reservar_orcamento`, `marcar_orcamento_enviado`) e
+  das ações do lead (`registrar_contato`, `marcar_perdido`, `reabrir_lead`…). A regra de
+  status do lead existe no SQL (`_lead_transicao`, `_lead_status_reaberto`) e em
+  `domain/publico/status-lead`, com teste de equivalência: mudou uma, mude a outra.
+- **Notas, tarefas e visitas** só são escritas pelas funções da Etapa 6 (`adicionar_nota`,
+  `criar_tarefa`, `adiar_tarefa`, `confirmar_visita`…), que travam o lead e gravam auditoria.
+  Tarefa automática (Etapa 7) usa `origem = 'regra'` e `regra`: o índice
+  `tarefas_regra_aberta_idx` permite só uma aberta por regra em cada lead. Quando lead e agenda
+  são travados juntos, a ordem é sempre agenda → lead.
+- **Caixa de leads:** grupo e ordem existem no SQL (`_lead_grupo`, `_lead_ordem`) e em
+  `domain/leads/prioridade`; temperatura por inatividade em `_temperatura_inatividade` e
+  `domain/leads/temperatura`. Testes de equivalência: mudou uma, mude a outra. Componente
+  cliente de Leads importa módulos específicos de `domain/leads` (nunca o índice) e nunca
+  `domain/phone`: o telefone chega formatado do servidor.
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
   `SUPABASE_SERVICE_ROLE_KEY` só é lida em `server/auth/admin-supabase.ts` (`server-only`); o
   ESLint impede importá-lo em componentes, `lib`, páginas e middleware.
@@ -168,6 +184,7 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 | `pnpm db:reset`                                | Recria o banco local do zero: migrations + seed         |
 | `pnpm db:migrate`                              | Aplica migrations pendentes no banco local              |
 | `pnpm db:seed`                                 | Roda `supabase/seed.sql` (idempotente)                  |
+| `pnpm db:seed:volume`                          | Empresa com 5.000 leads para medir a caixa (só local)   |
 
 ## Como rodar localmente
 
@@ -181,9 +198,11 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 
 Contas do seed (senha `demo12345`): `dono@demo.local` (dono) e `vendedor@demo.local` (vendedor)
 do **Buffet Demo** (com o catálogo do modelo infantil), e `dono@testeb.local` do **Buffet Teste B**
-(catálogo vazio). O Buffet Demo tem 9 leads em estados diferentes (seed), entre eles um
-orçamento com 3 versões, um interno com desconto e avulso, uma proposta vencida e um lead
-quente por aberturas. Página pública:
+(catálogo vazio). O Buffet Demo tem 25 leads em estados diferentes (seed), entre eles um
+orçamento com 3 versões, um interno com desconto e avulso, uma proposta vencida, um lead
+quente por aberturas, perdidos com motivos, visita confirmada para hoje, pedido de visita,
+tarefas atrasadas, de hoje e futuras, e notas. `pnpm db:seed:volume` cria o **Buffet Volume**
+(`dono@volume.local`, 5.000 leads) para o `explain analyze` da caixa. Página pública:
 http://localhost:3000/b/buffet-demo (logado como dono, abre em modo teste). E-mails locais (recuperação de senha): http://127.0.0.1:54324.
 
 Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
@@ -191,7 +210,7 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 4 (PRs #1 a #5) na `main`.
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 5 (PRs #1 a #6) na `main`.
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região

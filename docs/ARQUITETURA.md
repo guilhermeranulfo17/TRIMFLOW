@@ -611,3 +611,111 @@ eh_usuario_empresa, ip_hash)`. Usuário logado da própria empresa (sessão, com
   só formato no banco) e endereço; abertura por tipo de festa com botões de variáveis e prévia;
   política de alteração de convidados nas Regras; "Ver minha proposta" monta a proposta e o PDF
   em memória com uma festa de exemplo (`domain/proposta/exemplo.ts`), sem gravar nada.
+
+# Etapa 6: caixa de leads, ações do vendedor e tarefas
+
+## 39. Caixa priorizada
+
+- `/app/leads` é a tela inicial: topo **Hoje** (pré-reservas, visitas, tarefas de hoje,
+  atrasadas e novos sem contato; tocar filtra a lista, tocar de novo tira o filtro) e a lista
+  ordenada por prioridade, com "Carregar mais" por cursor.
+- **Grupos** (`public._lead_grupo`, espelho em `domain/leads/prioridade.ts`, teste de
+  equivalência com mais de mil combinações e um teste que compara a ordem da consulta com
+  `ordenarCaixa`):
+  1. pré-reserva ativa (a que vence primeiro no topo);
+  2. visita pedida e ainda não confirmada, ou confirmada para hoje ou amanhã;
+  3. tarefa do usuário atrasada ou de hoje;
+  4. quente (mais recente primeiro);
+  5. novo sem nenhum contato (quem espera há mais tempo primeiro);
+  6. em andamento com próximo contato vencido;
+  7. demais abertos, por última atividade;
+  8. reservado, realizado, perdido e cancelado (fora da caixa padrão; aparecem filtrando).
+- "Hoje" e "amanhã" são do fuso da empresa. O **motivo** legível do cartão ("Pré-reserva vence
+  em 5h", "Pediu visita", "Tarefa atrasada", "Abriu a proposta 3x", "Esperando há 2 dias",
+  "Próximo contato vencido") sai de `motivoPrioridade`, no servidor.
+- **Decisão:** o grupo é calculado no SQL porque a ordenação e a paginação acontecem no banco
+  (keyset `(grupo, ordem, id)`, sem `offset`). `public.caixa_leads(filtros, cursor, limite)` é
+  `security invoker` (o RLS vale) e devolve tudo de uma vez por página: grupo, ordem, total da
+  versão vigente, resumo da festa, pré-reserva, próxima tarefa do usuário, próxima visita e
+  responsável. `public.resumo_hoje()` dá os contadores; o badge de **Leads** na navegação é o
+  número de leads nos grupos 1 e 2.
+- **Filtros na URL** (`domain/leads/filtros.ts`): `ver` (atalho do topo), `q` (nome ou
+  telefone, com ou sem máscara: 4 ou mais dígitos buscam no E.164), `status`, `temp`, `origem`,
+  `resp` (`meus`, `sem` ou o id), `de`/`ate` (data da festa), `atrasadas`, `teste`. Celular:
+  sheet com "Aplicar"; desktop: painel que aplica na hora. Voltar do navegador volta o filtro.
+- O detalhe é uma página (`/app/leads/[id]`), para os avisos da Etapa 7 abrirem direto; o
+  formato antigo `?lead=` redireciona.
+
+## 40. Ações do lead
+
+- Todas por funções `security definer` com auditoria e códigos estáveis (`server/leads/erros.ts`
+  traduz): `registrar_contato`, `atualizar_dados_lead` (o WhatsApp não muda),
+  `atribuir_responsavel`, notas, tarefas, visitas, `marcar_perdido`, `reabrir_lead` e
+  `registrar_mensagem`. O vendedor pode tudo nos leads da empresa (sem carteira por enquanto).
+- **Responsável automático:** a primeira ação de um usuário (contato, nota, tarefa, visita,
+  mensagem) num lead sem responsável o torna responsável. Abrir o lead não conta. O dono atribui
+  a qualquer usuário ativo; o vendedor só assume para si (`LEAD_SO_ASSUMIR`).
+- Qualquer ação do vendedor preenche `primeiro_contato_em` e `ultima_acao_vendedor_em`; o
+  status muda de **novo** para **em andamento** só com `registrar_contato` (ou visita
+  confirmada).
+- **Perdido** (motivo obrigatório: preço, data indisponível, fechou com outro buffet, desistiu
+  da festa, parou de responder, fora da área ou outro com texto): aceito a partir de novo, em andamento, abandonou, frio e
+  pré-reservado; reservado devolve `LEAD_RESERVADO_NAO_PERDE`.
+  - **Decisão (perdido com pré-reserva):** a pré-reserva é cancelada na mesma transação
+    ("Lead marcado como perdido") e a data fica livre na Agenda. A trava é a mesma da Agenda,
+    sempre na ordem agenda → lead; se um vendedor marca perdido enquanto outro confirma o sinal,
+    um vence e o outro recebe erro claro (teste de concorrência).
+  - Ao perder, reservar ou realizar, as tarefas abertas do lead são canceladas
+    (`_lead_aplicar_evento`, então vale também para a Agenda).
+- **Decisão (reabrir):** volta ao status de antes (`status_antes_de_perder`), exceto
+  pré-reservado, que volta como **em andamento**: a pré-reserva foi cancelada e a data pode já
+  estar ocupada. Regra em `_lead_status_reaberto` e `statusAoReabrir`, com equivalência.
+- **Notas:** só a equipe vê; o autor edita ou apaga em até 24h, o dono apaga qualquer uma. A
+  atividade `nota` guarda o `nota_id` e sai junto quando a nota é apagada.
+- **Visitas:** o pedido do link é confirmado com dia e hora (`confirmar_visita`), ou o vendedor
+  agenda direto (`agendar_visita`); remarcar, cancelar com motivo e marcar realizada. Visita
+  confirmada deixa o lead quente.
+- **Temperatura por inatividade:** lead aberto sem atividade há 7 dias vira frio
+  (`_temperatura_inatividade`, espelho em `domain/leads/temperatura.ts`), pelo job
+  `esfriar_leads` (pg_cron, 04:20 de Brasília).
+- Detalhe no celular: barra fixa embaixo (WhatsApp, Registrar contato, + Tarefa e ⋯); cada
+  formulário abre num sheet de um nível só. Concluir tarefa e registrar contato são otimistas.
+
+## 41. Tarefas
+
+- Tabela `tarefas` (só leitura para `authenticated`; escrita por `criar_tarefa`,
+  `concluir_tarefa`, `adiar_tarefa`, `reabrir_tarefa`, `cancelar_tarefa` e
+  `definir_proximo_contato`). `vence_efetivo = coalesce(adiada_para, vence_em)` (coluna gerada).
+- `origem` (`manual` ou `regra`) e `regra` preparam a Etapa 7: o índice único parcial
+  `tarefas_regra_aberta_idx (lead_id, regra) where regra is not null and aberta` garante no
+  máximo uma tarefa aberta por regra em cada lead. "Próximo contato" usa a regra
+  `proximo_contato`, então marcar de novo atualiza a mesma tarefa em vez de duplicar.
+- Datas: atalhos ("amanhã 9h", "em 3 dias", "próxima semana") e data com hora interpretados no
+  servidor, no fuso da empresa (`domain/leads/adiar.ts`, 9h como padrão); o SQL só confere que
+  é futuro.
+- `/app/tarefas`: atrasadas, hoje, próximos 7 dias e feitas recentemente; concluir, adiar e
+  abrir o lead. Tarefa com mensagem sugerida tem "Enviar no WhatsApp".
+
+## 42. Mensagens prontas
+
+- `domain/leads/mensagens.ts`: cinco situações (primeiro contato, proposta aberta sem resposta,
+  pré-reserva vencendo, confirmar visita, reativar lead frio) e `situacaoDoMomento`, que escolhe
+  a do momento. Variável que falta sai do texto (nunca "undefined"). A data da festa só entra
+  na reativação se ainda estiver livre (o servidor confere a disponibilidade).
+- O botão WhatsApp abre um sheet com o texto editável; nada é enviado sozinho. "Abrir WhatsApp"
+  leva para `wa.me/<E.164 sem +>?text=` e grava `mensagem_copiada` na linha do tempo.
+
+## 43. Desempenho da caixa
+
+- Medido com `pnpm db:seed:volume` (5.000 leads numa empresa, com orçamentos, tarefas,
+  visitas e reservas proporcionais), `explain analyze` no Postgres local:
+  - `caixa_leads` padrão: ~35–42 ms; com filtros (busca, status, atalho): 19–25 ms;
+  - `resumo_hoje`: ~12 ms.
+- O que fez a diferença (a primeira versão passava de 130 ms): parâmetros num CTE
+  `materialized`, agregados por lead com `empresa_id` escalar, nomes (responsável, tipo de festa,
+  turno) só depois do `limit`, e `_lead_grupo`/`_lead_ordem` sem `set search_path` para o
+  planner poder fazer inline.
+- Bundle: nenhum componente cliente de Leads ou Tarefas importa `domain/phone`
+  (`libphonenumber-js/max`) nem o índice `domain/leads`; o telefone chega formatado do
+  servidor. First Load JS: `/app/leads` 152 kB (era 198 kB), `/app/leads/[id]` 183 kB,
+  `/app/tarefas` 175 kB.
