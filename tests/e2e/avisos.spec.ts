@@ -184,9 +184,12 @@ test('Minha conta: ativar push neste aparelho, mudar o silêncio e enviar aviso 
 }) => {
   await context.grantPermissions(['notifications']);
   // O Chromium do teste não fala com o serviço de push do Google: a inscrição é simulada
-  // (o service worker de verdade é registrado).
+  // (o service worker de verdade é registrado). O headless do CI responde "denied" à permissão
+  // mesmo com grantPermissions, então a permissão também é simulada.
   const endpoint = `https://push.exemplo.test/e2e/${Math.random().toString(36).slice(2)}`;
   await context.addInitScript((ep) => {
+    Object.defineProperty(Notification, 'permission', { get: () => 'granted' });
+    Notification.requestPermission = async () => 'granted';
     // guarda a inscrição no localStorage para sobreviver ao recarregar, como no navegador real
     const CHAVE = 'e2e-push';
     const fazer = () => ({
