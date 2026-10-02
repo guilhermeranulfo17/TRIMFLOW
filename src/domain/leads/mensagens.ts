@@ -1,7 +1,6 @@
 import { formatInTimeZone } from 'date-fns-tz';
-import { FUSO_PADRAO, hojeNoFuso, somarDias } from '../dates';
+import { dataPorExtenso, FUSO_PADRAO, hojeNoFuso, somarDias } from '../dates';
 import { formatBRL } from '../money';
-import { dataPorExtenso } from '../proposta/conteudo';
 import type { StatusLead, TemperaturaLead } from '../publico/status-lead';
 
 /*
@@ -64,7 +63,7 @@ function quandoVisita(d: Date, agora: Date, fuso: string): string {
 function prazoTexto(expira: Date, agora: Date, fuso: string): string {
   const horas = Math.floor((expira.getTime() - agora.getTime()) / 3_600_000);
   if (horas < 1) return 'em menos de 1 hora';
-  if (horas < 24) return `em ${horas} ${horas === 1 ? 'hora' : 'horas'}`;
+  if (horas < 48) return `em ${horas} ${horas === 1 ? 'hora' : 'horas'}`;
   return `${quandoVisita(expira, agora, fuso)}`;
 }
 

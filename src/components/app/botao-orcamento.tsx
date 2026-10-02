@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
  */
 export function BotaoOrcamento() {
   const caminho = usePathname();
-  if (caminho.startsWith('/app/orcamentos')) return null;
+  // Some nas telas de orçamento (resumo fixo) e no lead (barra de ações com "Novo orçamento").
+  if (caminho.startsWith('/app/orcamentos') || /^\/app\/leads\/[^/]+/.test(caminho)) return null;
   return (
     <div className="fixed right-4 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 md:right-8 md:bottom-8">
       <Button asChild size="lg" className="shadow-lg">

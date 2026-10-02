@@ -26,6 +26,8 @@ import { idValido, NAO_ENCONTRADO, validar, type ResultadoAcao } from './empresa
 
 function revalidar() {
   revalidatePath('/app/agenda');
+  // confirmar ou cancelar pelo lead e pela Agenda dá o mesmo resultado (e a caixa muda)
+  revalidatePath('/app/leads', 'layout');
 }
 
 export async function criarReserva(

@@ -127,7 +127,7 @@ export function SaidasOrcamento({
 
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <Button asChild variant="ghost" className="flex-1">
-          <Link href={`/app/leads?lead=${salvo.leadId}`}>Ver no lead</Link>
+          <Link href={`/app/leads/${salvo.leadId}`}>Ver no lead</Link>
         </Button>
         <Button asChild variant="ghost" className="flex-1">
           <a href="/app/orcamentos/novo">

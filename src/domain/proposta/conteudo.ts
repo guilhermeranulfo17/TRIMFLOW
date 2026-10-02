@@ -1,4 +1,4 @@
-import { diaDaSemana, formatData } from '../dates';
+import { dataPorExtenso, formatData } from '../dates';
 import { formatBRL } from '../money';
 import { formatBp } from '../percent';
 import { formatPhoneBR } from '../phone';
@@ -181,26 +181,7 @@ export type ModeloProposta = {
   validade: EstadoValidade;
 };
 
-const MESES = [
-  'janeiro',
-  'fevereiro',
-  'março',
-  'abril',
-  'maio',
-  'junho',
-  'julho',
-  'agosto',
-  'setembro',
-  'outubro',
-  'novembro',
-  'dezembro',
-];
-
-/** "sábado, 14 de novembro de 2026" */
-export function dataPorExtenso(data: string): string {
-  const [ano, mes, dia] = data.split('-').map(Number) as [number, number, number];
-  return `${diaDaSemana(data)}, ${dia} de ${MESES[mes - 1]} de ${ano}`;
-}
+export { dataPorExtenso };
 
 function duracaoTexto(min: number): string | null {
   if (min <= 0) return null;

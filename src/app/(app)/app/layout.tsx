@@ -6,11 +6,16 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ProvedorToast } from '@/components/app/toast';
 import { exigirSessao } from '@/server/auth/sessao';
 import { carregarPendencias } from '@/server/catalogo/pendencias';
+import { resumoHoje } from '@/server/leads/carregar';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const usuario = await exigirSessao();
-  const pendencias = await carregarPendencias(usuario.id);
-  const badges = { '/app/empresa': pendencias.length };
+  const [pendencias, hoje] = await Promise.all([
+    carregarPendencias(usuario.id),
+    resumoHoje(usuario),
+  ]);
+  // Leads: pré-reservas e visitas que pedem ação (grupos 1 e 2 da caixa)
+  const badges = { '/app/empresa': pendencias.length, '/app/leads': hoje.pedemAcao };
 
   return (
     <TooltipProvider delayDuration={150}>
