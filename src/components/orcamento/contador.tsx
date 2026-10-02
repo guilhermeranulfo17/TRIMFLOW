@@ -67,7 +67,7 @@ export function classeOpcao(selecionado: boolean, desabilitado = false): string 
   return [
     'flex w-full min-h-14 items-center gap-3 rounded-card border-2 p-4 text-left transition-colors',
     'focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
-    selecionado ? 'border-primary bg-accent' : 'border-border bg-white hover:border-ring/60',
+    selecionado ? 'border-primary bg-accent' : 'border-border bg-card hover:border-ring/60',
     desabilitado ? 'cursor-not-allowed opacity-60 hover:border-border' : '',
   ].join(' ');
 }

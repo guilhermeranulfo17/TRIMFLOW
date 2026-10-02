@@ -98,7 +98,7 @@ export function OrcamentosDoLead({ grupos }: { grupos: GrupoOrcamento[] }) {
             </div>
             <p className="text-muted-foreground">{resumoDaFesta(v)}</p>
             {v.diferencas.length > 0 && (
-              <ul className="mt-1 text-xs text-violet-900" aria-label="O que mudou nesta versão">
+              <ul className="mt-1 text-xs text-violet-300" aria-label="O que mudou nesta versão">
                 {v.diferencas.map((d) => (
                   <li key={d}>{d}</li>
                 ))}

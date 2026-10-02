@@ -75,7 +75,7 @@ export default async function LeadPage({ params }: Props) {
           <SeloStatus status={lead.status} />
           <Temperatura temperatura={lead.temperatura} />
           {lead.ehTeste && (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+            <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs font-semibold text-amber-300">
               Teste
             </span>
           )}
@@ -108,7 +108,10 @@ export default async function LeadPage({ params }: Props) {
           ehDono={usuario.perfil === 'dono'}
         />
         {lead.perda && (
-          <p className="rounded-control bg-rose-50 p-3 text-sm text-rose-950" data-testid="perda">
+          <p
+            className="rounded-control border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-100"
+            data-testid="perda"
+          >
             Perdido{lead.perda.em ? ` em ${formatData(lead.perda.em, fuso)}` : ''}:{' '}
             <strong>{lead.perda.rotulo}</strong>
             {lead.perda.detalhe ? ` (${lead.perda.detalhe})` : ''}. Use ⋯ → Reabrir se o cliente

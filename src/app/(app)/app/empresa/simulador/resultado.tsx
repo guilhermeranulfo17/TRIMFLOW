@@ -69,7 +69,7 @@ export function ResultadoSimulacao({
                 {resultado.avisos.map((a, i) => (
                   <li
                     key={i}
-                    className="rounded-control flex gap-2 border border-amber-500/40 bg-amber-500/10 p-2.5 text-amber-800 dark:text-amber-200"
+                    className="rounded-control flex gap-2 border border-amber-500/40 bg-amber-500/10 p-2.5 text-amber-200"
                   >
                     <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                     <span>

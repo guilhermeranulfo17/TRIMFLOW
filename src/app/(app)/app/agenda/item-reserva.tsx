@@ -70,7 +70,7 @@ export function ItemReserva({
       )}
       <dl className="text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
         {pre && reserva.expiraEm && (
-          <div className="col-span-2 font-medium text-amber-800">
+          <div className="col-span-2 font-medium text-amber-300">
             {prazoRestante(new Date(reserva.expiraEm), agora)}
           </div>
         )}
