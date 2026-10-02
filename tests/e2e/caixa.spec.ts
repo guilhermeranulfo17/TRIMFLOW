@@ -42,15 +42,25 @@ async function visitante(browser: Browser): Promise<Page> {
 async function leadNovoPeloLink(browser: Browser, nome: string, whatsapp: string) {
   const cliente = await visitante(browser);
   await cliente.goto(`/b/${SLUG}/orcamento`);
-  await cliente.getByRole('radio', { name: 'Aniversário infantil' }).click();
+  // um toque antes da hidratação se perde com os testes em paralelo: repete até marcar
+  const tipo = cliente.getByRole('radio', { name: 'Aniversário infantil' });
+  await expect(async () => {
+    await tipo.click();
+    await expect(tipo).toHaveAttribute('aria-checked', 'true', { timeout: 1_000 });
+  }).toPass();
   await cliente.getByRole('button', { name: 'Continuar' }).click();
   await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 2 de 6/);
   await cliente.getByRole('button', { name: 'Próximo mês' }).click();
   await cliente.locator('[data-testid^="data-"]:not([disabled])').nth(5).click();
   await cliente.locator('[data-testid="turno"]:not([disabled])').first().click();
   await cliente.getByRole('spinbutton', { name: 'Adultos' }).fill('40');
-  await cliente.getByRole('button', { name: 'Continuar' }).click();
-  await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 3 de 6/);
+  // espera a prévia do servidor (sem motivo de bloqueio e com o preço) antes de continuar
+  await expect(cliente.getByTestId('motivo')).toHaveText('');
+  await expect(cliente.getByTestId('preco-resumo')).toContainText('R$');
+  await expect(async () => {
+    await cliente.getByRole('button', { name: 'Continuar' }).click();
+    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 3 de 6/, { timeout: 2_000 });
+  }).toPass();
   await cliente.getByLabel('Seu nome').fill(nome);
   await cliente.getByLabel('Seu WhatsApp').fill(whatsapp);
   await cliente.getByRole('checkbox').check();
@@ -111,14 +121,18 @@ test.describe('no desktop', () => {
   }) => {
     await entrar(page, 'vendedor@demo.local', SENHA_SEED);
     const nome = unico('Sílvia Sinal');
-    await orcamentoInterno(page, { whatsapp: whatsappNovo(), nome, mesesAFrente: 10 });
+    // cada execução confirma uma reserva: sorteia o mês (nenhum outro teste usa 13 a 18)
+    const mesesAFrente = 13 + Math.floor(Math.random() * 6);
+    await orcamentoInterno(page, { whatsapp: whatsappNovo(), nome, mesesAFrente });
     await page.getByRole('button', { name: 'Pré-reservar a data' }).click();
     await expect(page.getByText(/Pré-reservado até/)).toBeVisible();
 
     await page.goto('/app/leads');
     await expect(page.getByTestId('topo-hoje')).toBeVisible();
-    await page.getByTestId('hoje-pre_reservas').click();
-    await expect(page).toHaveURL(/\/app\/leads\?ver=pre_reservas$/);
+    await expect(async () => {
+      await page.getByTestId('hoje-pre_reservas').click();
+      await expect(page).toHaveURL(/\/app\/leads\?ver=pre_reservas$/, { timeout: 2_000 });
+    }).toPass();
     await expect(page.getByTestId('hoje-pre_reservas')).toHaveAttribute('aria-current', 'true');
     const card = page.getByTestId('card-lead').filter({ hasText: nome });
     // a pré-reserva recém-criada é a que vence por último: pode estar numa página seguinte
@@ -375,9 +389,11 @@ test('filtros e busca ficam na URL e voltar do navegador mantém os filtros', as
 
   // Busca por telefone com máscara, somada ao filtro
   const busca = page.getByRole('searchbox', { name: 'Buscar lead' });
-  await busca.fill('(34) 99111-4409');
-  await busca.press('Enter');
-  await expect(page).toHaveURL(/q=%2834%29\+99111-4409/);
+  await expect(async () => {
+    await busca.fill('(34) 99111-4409');
+    await busca.press('Enter');
+    await expect(page).toHaveURL(/q=%2834%29\+99111-4409/, { timeout: 2_000 });
+  }).toPass();
   await expect(page).toHaveURL(/status=perdido/);
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Camila Duarte');
@@ -399,7 +415,9 @@ test('filtros e busca ficam na URL e voltar do navegador mantém os filtros', as
   await expect(page.getByRole('button', { name: 'Filtros (1 ligados)' })).toBeVisible();
 
   // Limpar volta para a caixa padrão (sem fechados)
-  await page.getByTestId('filtros-ativos').getByRole('button', { name: 'Limpar' }).click();
-  await expect(page).toHaveURL(/\/app\/leads$/);
+  await expect(async () => {
+    await page.getByTestId('filtros-ativos').getByRole('button', { name: 'Limpar' }).click();
+    await expect(page).toHaveURL(/\/app\/leads$/, { timeout: 2_000 });
+  }).toPass();
   await expect(page.getByTestId('card-lead').filter({ hasText: 'Camila Duarte' })).toHaveCount(0);
 });
