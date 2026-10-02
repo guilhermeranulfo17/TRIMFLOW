@@ -2,6 +2,7 @@
 
 import { sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
+import { after } from 'next/server';
 import { limitesDoMes } from '@/domain/agenda';
 import { hojeNoFuso } from '@/domain/dates';
 import { celularBRParaE164 } from '@/domain/phone';
@@ -27,6 +28,7 @@ import {
   type EscolhasEntrada,
   type VisitaEntrada,
 } from '@/domain/validacao/publico';
+import { processarAvisosSemFalhar } from '@/server/avisos/processar';
 import { comAnon } from '@/server/db/anon';
 import { prepararVersao, type DadosVersao } from '@/server/proposta/versao';
 import { carregarBuffet, carregarContextoPublico } from '@/server/publico/carregar';
@@ -399,6 +401,8 @@ export async function preReservar(
     );
     const r = linha!.r;
     if (r.ok) {
+      // o aviso nasceu na mesma transação; envia push/WhatsApp logo depois da resposta
+      if (!r.simulada) after(processarAvisosSemFalhar);
       return {
         ok: true,
         dados: {
@@ -448,6 +452,7 @@ export async function pedirVisita(
         ${v.data.dataPreferida}::date, ${v.data.periodo}::public.periodo_visita,
         ${v.data.observacoes ?? null}, ${ipHash})`),
     );
+    after(processarAvisosSemFalhar);
     return { ok: true, dados: undefined };
   } catch (erro) {
     return falha(erro, 'visita');

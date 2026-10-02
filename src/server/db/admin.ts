@@ -34,3 +34,28 @@ export async function buscarSlugAtualPorAntigo(slug: string): Promise<string | n
   );
   return linha?.atual ?? null;
 }
+
+/**
+ * Fila de avisos (Etapa 7): roda sem usuário logado (pg_cron → /api/avisos/processar ou
+ * after() da ação). Só as duas funções da fila, que devolvem o mínimo para enviar (texto do
+ * aviso, destino do canal) e gravam o resultado.
+ */
+export async function reservarEntregasAvisos<T extends Record<string, unknown>>(
+  limite: number,
+): Promise<T[]> {
+  const linhas = await obterDb().execute(sql`select * from public.reservar_entregas(${limite})`);
+  return [...linhas] as unknown as T[];
+}
+
+export async function concluirEntregaAviso(
+  entregaId: string,
+  resultado: 'enviado' | 'erro' | 'ignorado',
+  erro: string | null,
+  endpointsInvalidos: string[],
+): Promise<void> {
+  // endpoints como jsonb: array de parâmetros não é seguro no template do Drizzle
+  await obterDb().execute(
+    sql`select public.concluir_entrega(${entregaId}, ${resultado}, ${erro},
+      array(select jsonb_array_elements_text(${JSON.stringify(endpointsInvalidos)}::jsonb)))`,
+  );
+}

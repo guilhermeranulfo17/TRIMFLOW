@@ -11,6 +11,8 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: { default: 'Orkestra', template: '%s · Orkestra' },
   description: 'Orçamento self-service para buffets de festas.',
+  // painel instalável (PWA): no iPhone, o push só funciona com o app na tela inicial
+  appleWebApp: { capable: true, title: 'Orkestra', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport: Viewport = {
