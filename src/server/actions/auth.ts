@@ -3,6 +3,7 @@
 import { sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { modeloDoSegmento } from '@/domain/modelos';
 import { celularBRParaE164 } from '@/domain/phone';
 import { slugBaseDaEmpresa } from '@/domain/slug';
 import {
@@ -17,6 +18,7 @@ import { cadastroSchema, type CadastroInput } from '@/domain/validacao/cadastro'
 import { criarAuthAdmin } from '@/server/auth/admin-supabase';
 import { destinoSeguro, precisaTrocarSenha } from '@/server/auth/redirecionamento';
 import { criarClienteSupabase } from '@/server/auth/supabase-server';
+import { gravarModelo } from '@/server/catalogo/gravar-modelo';
 import { auditoria } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { urlDoSite } from '@/server/env';
@@ -51,7 +53,7 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
     email: dados.email,
     password: dados.senha,
     options: {
-      emailRedirectTo: `${await origemDoSite()}/auth/confirm?next=/app/leads`,
+      emailRedirectTo: `${await origemDoSite()}/auth/confirm?next=/app/comecar`,
       data: {
         nome: dados.nome,
         nome_buffet: dados.nomeBuffet,
@@ -70,7 +72,25 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
       mensagem: 'Conta criada! Enviamos um link de confirmação para o seu e-mail.',
     };
   }
-  redirect('/app/leads');
+  if (data.user) await aplicarModeloDoCadastro(data.user.id, dados.segmento);
+  redirect('/app/comecar');
+}
+
+/**
+ * A conta nasce com o catálogo do modelo do segmento (preços de exemplo, NÃO confirmados: fora
+ * do link até o dono confirmar no passo 3). Idempotente (gravarModelo nunca sobrescreve e tem
+ * trava por empresa). Se falhar, o cadastro segue: o passo 1 oferece carregar o modelo.
+ */
+async function aplicarModeloDoCadastro(usuarioId: string, segmento: CadastroInput['segmento']) {
+  try {
+    const [linha] = (await comUsuario(usuarioId, (tx) =>
+      tx.execute(sql`select empresa_id from public.usuarios where id = ${usuarioId}`),
+    )) as unknown as { empresa_id: string }[];
+    if (!linha) return;
+    await gravarModelo(comUsuario, usuarioId, linha.empresa_id, modeloDoSegmento(segmento));
+  } catch {
+    console.error('[cadastro] modelo do segmento não aplicado');
+  }
 }
 
 export async function entrar(input: LoginInput, next?: string | null): Promise<ResultadoAcao> {
