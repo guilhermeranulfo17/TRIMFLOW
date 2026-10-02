@@ -1,6 +1,6 @@
 /**
- * Regra de status do lead. ESPELHO de public._lead_transicao (migration 20261004000002), com
- * teste de equivalência: mudou uma, mude a outra.
+ * Regra de status do lead. ESPELHO de public._lead_transicao (última versão: migration
+ * 20261006000002), com teste de equivalência: mudou uma, mude a outra.
  */
 export type StatusLead =
   | 'novo'
@@ -31,7 +31,19 @@ export type EventoLead =
   | 'versao_criada'
   | 'orcamento_expirado'
   | 'proposta_aberta'
-  | 'proposta_enviada';
+  | 'proposta_enviada'
+  // Etapa 6: ações do vendedor
+  | 'contato_registrado'
+  | 'visita_confirmada'
+  | 'perdido'
+  | 'reaberto'
+  | 'nota'
+  | 'tarefa_criada'
+  | 'tarefa_feita'
+  | 'responsavel_alterado'
+  | 'visita_realizada'
+  | 'visita_cancelada'
+  | 'mensagem_copiada';
 
 export const STATUS_LEAD: StatusLead[] = [
   'novo',
@@ -64,7 +76,29 @@ export const EVENTOS_LEAD: EventoLead[] = [
   'orcamento_expirado',
   'proposta_aberta',
   'proposta_enviada',
+  'contato_registrado',
+  'visita_confirmada',
+  'perdido',
+  'reaberto',
+  'nota',
+  'tarefa_criada',
+  'tarefa_feita',
+  'responsavel_alterado',
+  'visita_realizada',
+  'visita_cancelada',
+  'mensagem_copiada',
 ];
+
+/** Status em que o lead ainda está em negociação (aparecem na caixa padrão). */
+export const STATUS_ABERTOS: StatusLead[] = [
+  'novo',
+  'em_andamento',
+  'abandonou',
+  'frio',
+  'pre_reservado',
+];
+/** De onde o vendedor pode marcar perdido (reservado não: cancele a reserva na Agenda). */
+export const PODE_PERDER: StatusLead[] = STATUS_ABERTOS;
 
 const VOLTA_PARA_ANDAMENTO: StatusLead[] = [
   'abandonou',
@@ -100,13 +134,24 @@ function proximoStatus(s: StatusLead, evento: EventoLead): StatusLead {
       return s === 'novo' ? 'abandonou' : s;
     case 'orcamento_expirado':
       return s === 'em_andamento' ? 'frio' : s;
+    case 'contato_registrado':
+    case 'visita_confirmada':
+      return s === 'novo' || s === 'abandonou' || s === 'frio' ? 'em_andamento' : s;
+    case 'perdido':
+      return 'perdido';
     default:
       return s;
   }
 }
 
 function proximaTemperatura(t: TemperaturaLead, evento: EventoLead): TemperaturaLead {
-  if (evento === 'pre_reserva_pedida' || evento === 'visita_pedida') return 'quente';
+  if (
+    evento === 'pre_reserva_pedida' ||
+    evento === 'visita_pedida' ||
+    evento === 'visita_confirmada'
+  ) {
+    return 'quente';
+  }
   if (
     (evento === 'orcamento_concluido' ||
       evento === 'orcamento_criado' ||
@@ -126,6 +171,17 @@ export function transicaoLead(
     status: proximoStatus(atual.status, evento),
     temperatura: proximaTemperatura(atual.temperatura, evento),
   };
+}
+
+/**
+ * Reabrir um perdido: volta ao status de antes. Pré-reservado volta como em andamento (a
+ * pré-reserva foi cancelada ao perder). ESPELHO de public._lead_status_reaberto.
+ */
+export function statusAoReabrir(antes: StatusLead | null): StatusLead {
+  if (antes === 'novo' || antes === 'em_andamento' || antes === 'abandonou' || antes === 'frio') {
+    return antes;
+  }
+  return 'em_andamento';
 }
 
 export const ROTULO_STATUS_LEAD: Record<StatusLead, string> = {

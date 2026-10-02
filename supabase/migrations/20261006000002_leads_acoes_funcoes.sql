@@ -1020,7 +1020,8 @@ returns table (
   responsavel_id uuid, responsavel_nome text, criado_em timestamptz,
   ultima_atividade_em timestamptz, primeiro_contato_em timestamptz,
   proximo_contato_em timestamptz, grupo integer, ordem double precision,
-  pre_reserva_expira_em timestamptz, visita_pedida boolean, visita_proxima timestamptz,
+  pre_reserva_expira_em timestamptz, visita_pedida boolean, visita_pedida_em timestamptz,
+  visita_proxima timestamptz,
   tarefa_vence timestamptz, tarefa_titulo text, tem_atrasada boolean, aberturas integer,
   orcamento_id uuid, orcamento_numero integer, orcamento_token text, total_centavos integer,
   evento_data date, evento_tipo text, evento_turno text, evento_convidados integer
@@ -1119,7 +1120,7 @@ as $$
   )
   select f.id, f.nome, f.whatsapp_e164, f.email, f.status, f.temperatura, f.origem, f.eh_teste,
     f.responsavel_id, u.nome, f.criado_em, f.ultima_atividade_em, f.primeiro_contato_em,
-    f.proximo_contato_em, f.g, f.ord, f.expira, coalesce(f.pedida, false), f.proxima, f.t_vence,
+    f.proximo_contato_em, f.g, f.ord, f.expira, coalesce(f.pedida, false), f.pedida_em, f.proxima, f.t_vence,
     f.t_titulo, coalesce(f.t_atrasada, false), coalesce(f.o_aberturas, 0), f.o_id, f.o_numero,
     f.o_token, f.o_total, f.o_data, te.nome, tu.nome, f.o_convidados
   from filtrado f

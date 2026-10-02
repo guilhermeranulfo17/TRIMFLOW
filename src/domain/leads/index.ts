@@ -1,6 +1,14 @@
-import { formatData } from '../dates';
+import { formatData, formatDataHora } from '../dates';
 import { formatBRL } from '../money';
 import { ROTULO_STATUS_LEAD, type StatusLead } from '../publico/status-lead';
+import { ROTULO_SITUACAO, type SituacaoMensagem } from './mensagens';
+import { rotuloMotivoPerda } from './motivos-perda';
+
+const CANAL_CONTATO: Record<string, string> = {
+  whatsapp: 'pelo WhatsApp',
+  ligacao: 'por ligação',
+  presencial: 'pessoalmente',
+};
 
 /** Filtros da lista de leads (chips). */
 export const FILTROS_LEAD = [
@@ -131,6 +139,52 @@ export function descreverAtividade(
       const depois = ROTULO_STATUS_LEAD[dados.status_depois as StatusLead];
       return depois ? `Status mudou para ${depois}` : 'Status alterado';
     }
+    // Etapa 6: ações do vendedor
+    case 'contato_registrado': {
+      const canal = CANAL_CONTATO[String(dados.canal)] ?? '';
+      const resumo = typeof dados.resumo === 'string' && dados.resumo ? `: ${dados.resumo}` : '';
+      return `${equipe} falou com o cliente${canal ? ` ${canal}` : ''}${resumo}`;
+    }
+    case 'nota':
+      return `${equipe} anotou${typeof dados.trecho === 'string' ? `: ${dados.trecho}` : ''}`;
+    case 'tarefa_criada':
+      return typeof dados.titulo === 'string'
+        ? `${equipe} criou a tarefa "${dados.titulo}"`
+        : `${equipe} criou uma tarefa`;
+    case 'tarefa_feita':
+      return typeof dados.titulo === 'string'
+        ? `${equipe} concluiu "${dados.titulo}"`
+        : `${equipe} concluiu uma tarefa`;
+    case 'responsavel_alterado': {
+      const para = typeof dados.para_nome === 'string' ? dados.para_nome : null;
+      if (para && quem && para === quem) return `${quem} assumiu o lead`;
+      return para ? `${equipe} passou o lead para ${para}` : `${equipe} mudou o responsável`;
+    }
+    case 'perdido': {
+      const motivo = rotuloMotivoPerda(dados.motivo as string);
+      const detalhe =
+        typeof dados.detalhe === 'string' && dados.detalhe ? ` (${dados.detalhe})` : '';
+      return `${equipe} marcou como perdido${motivo ? `: ${motivo}` : ''}${detalhe}`;
+    }
+    case 'reaberto':
+      return `${equipe} reabriu o lead`;
+    case 'visita_confirmada': {
+      const quando =
+        typeof dados.data_hora === 'string' ? ` para ${formatDataHora(dados.data_hora)}` : '';
+      return dados.remarcada
+        ? `${equipe} remarcou a visita${quando}`
+        : `${equipe} confirmou a visita${quando}`;
+    }
+    case 'visita_realizada':
+      return 'Visita realizada';
+    case 'visita_cancelada': {
+      const motivo = typeof dados.motivo === 'string' && dados.motivo ? `: ${dados.motivo}` : '';
+      return `${equipe} cancelou a visita${motivo}`;
+    }
+    case 'mensagem_copiada': {
+      const situacao = ROTULO_SITUACAO[dados.situacao as SituacaoMensagem];
+      return `${equipe} abriu o WhatsApp com a mensagem${situacao ? ` "${situacao}"` : ''}`;
+    }
     default:
       return 'Atividade';
   }
@@ -148,3 +202,10 @@ export const COR_STATUS_LEAD: Record<StatusLead, string> = {
   cancelado: 'bg-rose-100 text-rose-900',
   realizado: 'bg-emerald-50 text-emerald-800',
 };
+
+export * from './adiar';
+export * from './filtros';
+export * from './mensagens';
+export * from './motivos-perda';
+export * from './prioridade';
+export * from './temperatura';

@@ -1,5 +1,6 @@
 import type postgres from 'postgres';
 import { afterAll, describe, expect, it } from 'vitest';
+import { ordenarCaixa } from '@/domain/leads';
 import { assumirUsuario, conectar, emTransacao, esperarErroSql, IDS } from '../support/db';
 import { criarEmpresaTemporaria, removerEmpresa } from '../support/empresa-temporaria';
 import {
@@ -666,6 +667,66 @@ describe('caixa e resumo', () => {
         () => tx`select id from public.caixa_leads(${tx.json({ busca: digitos })}, null, 100)`,
       );
       expect(busca.map((l) => l.id)).toEqual([novo.lead.id]);
+    });
+  });
+
+  it('a ordem da consulta bate com a função pura (tabela de casos)', async () => {
+    await emTransacao(sql, async (tx) => {
+      const c = await cenarioPublico(tx, IDS.empresaA);
+      const casos: { status: string; temperatura: string; ha: string }[] = [
+        { status: 'em_andamento', temperatura: 'quente', ha: '1 hour' },
+        { status: 'em_andamento', temperatura: 'quente', ha: '3 hours' },
+        { status: 'novo', temperatura: 'frio', ha: '2 days' },
+        { status: 'novo', temperatura: 'frio', ha: '5 hours' },
+        { status: 'abandonou', temperatura: 'frio', ha: '1 day' },
+        { status: 'frio', temperatura: 'frio', ha: '9 days' },
+        { status: 'em_andamento', temperatura: 'morno', ha: '30 minutes' },
+      ];
+      for (const [i, caso] of casos.entries()) {
+        const { lead: l, token } = await novoLead(tx, c, { concluir: i % 2 === 0, dias: 160 + i });
+        await tx`update public.leads set status = ${caso.status}, temperatura = ${caso.temperatura},
+          ultima_atividade_em = now() - ${caso.ha}::interval, criado_em = now() - ${caso.ha}::interval
+          where id = ${l.id}`;
+        if (i === 6) await comoAnon(tx, () => preReservar(tx, c, token));
+      }
+      const { lead: comTarefa } = await novoLead(tx, c, { concluir: true, dias: 170 });
+      await como(
+        tx,
+        IDS.vendedorA,
+        () => tx`select public.criar_tarefa(${comTarefa.id}, 'Ligar', now() - interval '2 hours')`,
+      );
+      const { lead: comProximo } = await novoLead(tx, c, { concluir: true, dias: 171 });
+      await como(
+        tx,
+        IDS.vendedorA,
+        () => tx`select public.registrar_contato(${comProximo.id}, 'whatsapp', null)`,
+      );
+      await tx`update public.leads set proximo_contato_em = now() - interval '1 hour',
+        temperatura = 'morno' where id = ${comProximo.id}`;
+
+      const [agoraBanco] = await tx`select now() as agora`;
+      const linhas = await como(
+        tx,
+        IDS.vendedorA,
+        () => tx`select * from public.caixa_leads('{}', null, 100)`,
+      );
+      const entrada = linhas.map((r) => ({
+        id: r.id as string,
+        status: r.status,
+        temperatura: r.temperatura,
+        preReservaExpiraEm: r.pre_reserva_expira_em,
+        visitaPedida: r.visita_pedida,
+        visitaPedidaEm: r.visita_pedida_em,
+        visitaProxima: r.visita_proxima,
+        tarefaVence: r.tarefa_vence,
+        primeiroContatoEm: r.primeiro_contato_em,
+        proximoContatoEm: r.proximo_contato_em,
+        criadoEm: r.criado_em,
+        ultimaAtividadeEm: r.ultima_atividade_em,
+      }));
+      const esperado = ordenarCaixa(entrada, agoraBanco!.agora as Date, 'America/Sao_Paulo');
+      expect(linhas.map((r) => [r.id, r.grupo])).toEqual(esperado.map((e) => [e.id, e.grupo]));
+      expect(new Set(linhas.map((r) => r.grupo)).size).toBeGreaterThanOrEqual(5);
     });
   });
 

@@ -1,6 +1,13 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { temperaturaPorAberturas } from '@/domain/proposta';
-import { EVENTOS_LEAD, STATUS_LEAD, TEMPERATURAS, transicaoLead } from '@/domain/publico';
+import { grupoDoLead, limitesDoDia, ordemNoGrupo, temperaturaPorInatividade } from '@/domain/leads';
+import {
+  EVENTOS_LEAD,
+  STATUS_LEAD,
+  statusAoReabrir,
+  TEMPERATURAS,
+  transicaoLead,
+} from '@/domain/publico';
 import { conectar } from '../support/db';
 
 /*
@@ -56,5 +63,108 @@ describe('equivalência da temperatura por aberturas: domínio × SQL', () => {
         });
       }
     }
+  });
+});
+
+describe('equivalência da Etapa 6: domínio × SQL', () => {
+  it('reabrir um perdido', async () => {
+    for (const antes of STATUS_LEAD) {
+      const [r] =
+        await sql`select public._lead_status_reaberto(${antes}::public.status_lead)::text as s`;
+      expect({ antes, s: r!.s }).toEqual({ antes, s: statusAoReabrir(antes) });
+    }
+  });
+
+  it('temperatura por inatividade (7 dias)', async () => {
+    const agora = new Date('2026-10-02T13:00:00Z');
+    for (const status of STATUS_LEAD) {
+      for (const atual of TEMPERATURAS) {
+        for (const horas of [0, 24, 167, 168, 169, 400]) {
+          const ultima = new Date(agora.getTime() - horas * 3_600_000);
+          const [r] = await sql`select public._temperatura_inatividade(
+            ${status}::public.status_lead, ${atual}::public.temperatura_lead,
+            ${ultima.toISOString()}::timestamptz, ${agora.toISOString()}::timestamptz)::text as t`;
+          expect({ status, atual, horas, t: r!.t }).toEqual({
+            status,
+            atual,
+            horas,
+            t: temperaturaPorInatividade(status, atual, ultima, agora),
+          });
+        }
+      }
+    }
+  });
+
+  it('grupo e ordem da caixa em todas as combinações de sinais', async () => {
+    const agora = new Date('2026-10-02T13:00:00Z');
+    const limites = limitesDoDia(agora, 'America/Sao_Paulo');
+    const h = (x: number | null) => (x === null ? null : new Date(agora.getTime() + x * 3_600_000));
+    let casos = 0;
+    for (const status of STATUS_LEAD) {
+      for (const temperatura of TEMPERATURAS) {
+        for (const pre of [null, -1, 5]) {
+          for (const [visitaPedida, visitaProxima] of [
+            [false, null],
+            [true, null],
+            [false, 20],
+            [false, 60],
+          ] as const) {
+            for (const tarefa of [null, -2, 6, 30]) {
+              for (const [primeiro, proximo] of [
+                [null, null],
+                [-10, -1],
+                [-10, 4],
+              ] as const) {
+                const e = {
+                  status,
+                  temperatura,
+                  preReservaExpiraEm: h(pre),
+                  visitaPedida,
+                  visitaPedidaEm: visitaPedida ? h(-30) : null,
+                  visitaProxima: h(visitaProxima),
+                  tarefaVence: h(tarefa),
+                  primeiroContatoEm: h(primeiro),
+                  proximoContatoEm: h(proximo),
+                  criadoEm: h(-100)!,
+                  ultimaAtividadeEm: h(-7)!,
+                };
+                const [r] = await sql`select g, public._lead_ordem(g,
+                    ${e.preReservaExpiraEm}::timestamptz,
+                    coalesce(${e.visitaPedidaEm}::timestamptz, ${e.visitaProxima}::timestamptz),
+                    ${e.tarefaVence}::timestamptz, ${e.proximoContatoEm}::timestamptz,
+                    ${e.criadoEm}::timestamptz, ${e.ultimaAtividadeEm}::timestamptz) as o
+                  from public._lead_grupo(${status}::public.status_lead,
+                    ${temperatura}::public.temperatura_lead, ${e.preReservaExpiraEm}::timestamptz,
+                    ${visitaPedida}, ${e.visitaProxima}::timestamptz, ${e.tarefaVence}::timestamptz,
+                    ${e.primeiroContatoEm}::timestamptz, ${e.proximoContatoEm}::timestamptz,
+                    ${agora}::timestamptz, ${limites.fimHoje}::timestamptz,
+                    ${limites.fimAmanha}::timestamptz) as g`;
+                const g = grupoDoLead(e, agora, limites);
+                expect({
+                  status,
+                  temperatura,
+                  pre,
+                  visitaPedida,
+                  visitaProxima,
+                  tarefa,
+                  g: r!.g,
+                }).toEqual({
+                  status,
+                  temperatura,
+                  pre,
+                  visitaPedida,
+                  visitaProxima,
+                  tarefa,
+                  g,
+                });
+                expect(Number(r!.o)).toBeCloseTo(ordemNoGrupo(g, e), 3);
+                casos++;
+              }
+            }
+          }
+        }
+      }
+    }
+    expect(casos).toBeGreaterThan(1000);
   });
 });
