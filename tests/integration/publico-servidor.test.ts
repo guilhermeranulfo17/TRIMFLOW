@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { MODELOS } from '@/domain/modelos';
 import type { ContextoPreco } from '@/domain/preco';
-import { montarPrevia, montarVitrine, somenteAtivos } from '@/domain/publico';
+import { montarPrevia, montarVitrine, pendenciasDoContexto, somenteAtivos } from '@/domain/publico';
 import { carregarContexto } from '@/server/catalogo/carregar';
 import { gravarModelo } from '@/server/catalogo/gravar-modelo';
 import { criarComAnon } from '@/server/db/anon';
@@ -9,7 +9,11 @@ import { criarDb } from '@/server/db/client';
 import { criarComUsuario } from '@/server/db/tenant';
 import { lerBuffet, lerContextoPublico, lerSlugAtual } from '@/server/publico/carregar';
 import { conectar, IDS, urlBancoTeste } from '../support/db';
-import { criarEmpresaTemporaria, removerEmpresa } from '../support/empresa-temporaria';
+import {
+  confirmarPrecosDoModelo,
+  criarEmpresaTemporaria,
+  removerEmpresa,
+} from '../support/empresa-temporaria';
 
 const sql = conectar();
 const { db, sql: sqlDrizzle } = criarDb(urlBancoTeste(), { max: 4 });
@@ -54,6 +58,7 @@ describe('contexto do link público', () => {
       expect((await gravarModelo(comUsuario, e.donoId, e.empresaId, MODELOS.infantil)).ok).toBe(
         true,
       );
+      await confirmarPrecosDoModelo(sql, e.empresaId);
       await sql`update public.pacotes set ativo = false
         where id = (select id from public.pacotes where empresa_id = ${e.empresaId} order by ordem limit 1)`;
       await sql`update public.opcionais set ativo = false
@@ -66,6 +71,32 @@ describe('contexto do link público', () => {
       const painel = await carregarContexto(e.donoId, comUsuario);
       expect(publico!.ctx.pacotes.length).toBe(painel!.pacotes.length - 1);
       expect(normalizar(publico!.ctx)).toEqual(normalizar(somenteAtivos(painel!)));
+    } finally {
+      await removerEmpresa(sql, e);
+    }
+  });
+
+  it('preço de exemplo do modelo (não confirmado) fica fora do link até o dono confirmar', async () => {
+    const e = await criarEmpresaTemporaria(sql, 'infantil');
+    try {
+      await gravarModelo(comUsuario, e.donoId, e.empresaId, MODELOS.infantil);
+      const [{ slug }] =
+        (await sql`select slug from public.empresas where id = ${e.empresaId}`) as [
+          { slug: string },
+        ];
+      const antes = await lerContextoPublico(slug, comAnon);
+      expect(antes!.ctx.pacotes).toEqual([]);
+      expect(antes!.ctx.opcionais).toEqual([]);
+      expect(pendenciasDoContexto(antes!.ctx).map((p) => p.codigo)).toEqual([
+        'SEM_PACOTE_COM_PRECO',
+      ]);
+      // o dono confirma um pacote: só ele aparece
+      await sql`update public.pacotes set preco_confirmado_em = now()
+        where id = (select id from public.pacotes where empresa_id = ${e.empresaId} order by ordem limit 1)`;
+      const depois = await lerContextoPublico(slug, comAnon);
+      expect(depois!.ctx.pacotes).toHaveLength(1);
+      expect(depois!.ctx.pacotes[0]!.faixasPreco.length).toBeGreaterThan(0);
+      expect(pendenciasDoContexto(depois!.ctx)).toEqual([]);
     } finally {
       await removerEmpresa(sql, e);
     }
@@ -101,6 +132,7 @@ describe('modo de exibição de preço (nada vaza para o navegador)', () => {
     const e = await criarEmpresaTemporaria(sql, 'infantil');
     try {
       await gravarModelo(comUsuario, e.donoId, e.empresaId, MODELOS.infantil);
+      await confirmarPrecosDoModelo(sql, e.empresaId);
       const [{ slug }] =
         (await sql`select slug from public.empresas where id = ${e.empresaId}`) as [
           { slug: string },

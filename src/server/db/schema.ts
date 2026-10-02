@@ -13,6 +13,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  smallint,
   text,
   timestamp,
   uuid,
@@ -50,6 +51,12 @@ export const empresas = pgTable('empresas', {
   cnpj: text('cnpj'),
   endereco: text('endereco'),
   rodapeOrkestra: boolean('rodape_orkestra').notNull().default(true),
+  /** Etapa 8: passo atual do onboarding (1 a 5) e marcos do checklist. */
+  onboardingPasso: smallint('onboarding_passo').notNull().default(1),
+  onboardingIniciadoEm: timestamp('onboarding_iniciado_em', { withTimezone: true }),
+  onboardingConcluidoEm: timestamp('onboarding_concluido_em', { withTimezone: true }),
+  linkNaBioEm: timestamp('link_na_bio_em', { withTimezone: true }),
+  linkTestadoEm: timestamp('link_testado_em', { withTimezone: true }),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 });
@@ -82,6 +89,7 @@ export const usuarios = pgTable(
       .notNull()
       .default('0'),
     ativo: boolean('ativo').notNull().default(true),
+    checklistDispensadoEm: timestamp('checklist_dispensado_em', { withTimezone: true }),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },

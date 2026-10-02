@@ -18,6 +18,8 @@ export function pendenciasDoContexto(ctx: ContextoPreco): Pendencia[] {
       precoPessoaCentavos: p.precoPessoaCentavos,
       valorExcedenteCentavos: p.valorExcedenteCentavos,
       quantidadeFaixas: p.faixasPreco.length,
+      // publico.contexto_preco só devolve pacotes com preço confirmado
+      precoConfirmado: true,
     })),
     tiposEvento: ctx.tiposEvento,
     turnos: ctx.turnos,
