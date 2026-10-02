@@ -2,7 +2,14 @@ import type { DataCivil, Id } from '../preco';
 
 /** Origem do lead (mesmo enum do banco). */
 export type OrigemLead =
-  'instagram' | 'google' | 'indicacao' | 'whatsapp' | 'link_direto' | 'interno' | 'outro';
+  | 'instagram'
+  | 'google'
+  | 'indicacao'
+  | 'whatsapp'
+  | 'link_direto'
+  | 'interno'
+  | 'outro'
+  | 'qrcode';
 
 export type ModoPreco = 'exato' | 'faixa' | 'apos_contato';
 

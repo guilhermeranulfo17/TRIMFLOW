@@ -34,3 +34,12 @@ export async function removerEmpresa(sql: postgres.Sql, e: EmpresaTemporaria): P
   await sql`delete from public.empresas where id = ${e.empresaId}`;
   await sql`delete from auth.users where id in ${sql([e.donoId, e.vendedorId])}`;
 }
+
+/**
+ * Confirma os preços do catálogo (o que o dono faz no passo 3 do onboarding). O modelo grava
+ * com preço de exemplo, que fica fora do link público até a confirmação (Etapa 8).
+ */
+export async function confirmarPrecosDoModelo(sql: postgres.Sql, empresaId: string) {
+  await sql`update public.pacotes set preco_confirmado_em = now() where empresa_id = ${empresaId}`;
+  await sql`update public.opcionais set preco_confirmado_em = now() where empresa_id = ${empresaId}`;
+}

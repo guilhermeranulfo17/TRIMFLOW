@@ -1,6 +1,13 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { noBanco, zerarLimites } from './banco';
-import { cadastrar, emailUnico, entrar, semRolagemHorizontal, SENHA_SEED } from './helpers';
+import {
+  cadastrar,
+  confirmarPrecosNoOnboarding,
+  emailUnico,
+  entrar,
+  semRolagemHorizontal,
+  SENHA_SEED,
+} from './helpers';
 
 /*
  * Etapa 7: avisos e follow-up automático, no celular (375x812).
@@ -41,10 +48,8 @@ async function empresaComModelo(page: Page, buffet: string) {
     buffet,
     segmento: 'Buffet infantil',
   });
-  await expect(page).toHaveURL(/\/app\/leads$/);
-  await page.goto('/app/empresa/catalogo');
-  await page.getByRole('button', { name: 'Carregar modelo de exemplo' }).click();
-  await expect(page.getByTestId('card-pacote').first()).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/comecar$/);
+  await confirmarPrecosNoOnboarding(page);
 }
 
 /** Orçamento interno salvo (lead "Em andamento" com proposta). */
@@ -216,6 +221,7 @@ test('Minha conta: ativar push neste aparelho, mudar o silêncio e enviar aviso 
   }, endpoint);
 
   await empresaComModelo(page, unico('Buffet Push'));
+  await page.goto('/app/leads'); // o onboarding termina numa tela sem menu
   await page.getByRole('button', { name: /Menu do usuário/ }).click();
   await page.getByRole('menuitem', { name: /Minha conta: avisos/ }).click();
   await expect(page).toHaveURL(/\/app\/conta\/avisos$/);

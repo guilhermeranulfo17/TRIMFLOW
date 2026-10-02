@@ -1,5 +1,6 @@
 /**
- * O que falta para o link público funcionar: ao menos um pacote ativo com preço, um tipo de
+ * O que falta para o link público funcionar: ao menos um pacote ativo com preço CONFIRMADO pelo
+ * dono (Etapa 8: preço de exemplo do modelo não conta), um tipo de
  * festa ativo (o motor exige o tipo), um turno ativo e um espaço ativo. Alimenta os badges do
  * menu Minha empresa.
  */
@@ -11,6 +12,8 @@ export type ResumoCatalogo = {
     precoPessoaCentavos: number | null;
     valorExcedenteCentavos: number | null;
     quantidadeFaixas: number;
+    /** O dono confirmou o preço (preco_confirmado_em preenchido). */
+    precoConfirmado: boolean;
   }[];
   tiposEvento: { ativo: boolean }[];
   turnos: { ativo: boolean }[];
@@ -27,6 +30,7 @@ export type Pendencia = {
 };
 
 export function pacoteTemPreco(p: ResumoCatalogo['pacotes'][number]): boolean {
+  if (!p.precoConfirmado) return false;
   return p.modeloPreco === 'por_pessoa'
     ? p.precoPessoaCentavos !== null
     : p.quantidadeFaixas > 0 && p.valorExcedenteCentavos !== null;
@@ -38,7 +42,7 @@ export function pendenciasDoLinkPublico(resumo: ResumoCatalogo): Pendencia[] {
     pendencias.push({
       codigo: 'SEM_PACOTE_COM_PRECO',
       mensagem:
-        'Nenhum pacote ativo com preço. Sem pacote, o cliente não consegue montar o orçamento.',
+        'Nenhum pacote ativo com preço confirmado. Sem pacote, o cliente não consegue montar o orçamento.',
       secao: 'catalogo',
     });
   }

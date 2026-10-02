@@ -20,6 +20,8 @@ Documento de referência do produto: "Orkestra: Estrutura Lógica do Sistema". D
   → PNG), fonte Manrope TTF no repositório (OFL)
 - Avisos: `web-push` (VAPID) para o push do PWA; WhatsApp pela Cloud API oficial da Meta com
   `fetch` (sem SDK; proibido API não oficial)
+- QR code do link: `uqr` (sem dependências, só no servidor); PNG pelo `sharp`, PDF pelo
+  `@react-pdf/renderer`. Gráficos de Números em SVG próprio (sem biblioteca de gráficos)
 - pnpm, Node 22 (`.nvmrc`)
 - Deploy: Vercel (app) + Supabase Cloud (banco). CI: GitHub Actions
 
@@ -31,12 +33,14 @@ Não adicione dependências fora dessa lista sem perguntar.
 src/
   app/
     (auth)/          login, cadastro, recuperar-senha, nova-senha
+    (onboarding)/app/comecar/  onboarding guiado em 5 passos (tela cheia, sem menu)
     (app)/app/       área logada: leads (caixa) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
-                     [id]/editar, [id]/pdf), avisos (histórico), conta/avisos (Minha conta)
+                     [id]/editar, [id]/pdf), avisos (histórico), conta/avisos (Minha conta),
+                     numeros (Números)
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, follow-up, usuarios, plano, simulador,
-                     proposta-exemplo
+                     proposta-exemplo, link (divulgação + qr: PNG e PDF)
     api/avisos/      processar (POST, Bearer CRON_SECRET) e contagem (GET, sino)
     manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)
     auth/            rotas técnicas: confirm (link do e-mail), sair
@@ -51,6 +55,9 @@ src/
       orcamento/     "+ Orçamento" (formulário, calendário da agenda, saídas, orçamentos do lead)
       leads/         caixa (topo Hoje, filtros, cartões), ações do lead, tarefas, mensagem pronta
       avisos/        sino, preferências, push neste aparelho, WhatsApp, aviso de teste
+      onboarding/    faixa, checklist, "Fiz" da bio e os passos de /app/comecar (comecar/)
+      divulgacao/    link com Copiar, textos prontos, QR (prévia + downloads)
+      numeros/       cartões, funil, origem, perdas, atendimento, ocupação (SVG próprio)
     orcamento/       peças compartilhadas do wizard e do orçamento interno (contador)
     proposta/        proposta na web (desenha o ModeloProposta)
     auth/            peças dos formulários de autenticação
@@ -71,6 +78,9 @@ src/
     avisos/          textos (painel, push e variáveis do WhatsApp), silêncio, canais, destinatário,
                      agrupamento (= regras do SQL)
     follow-up/       as 8 regras de tarefa automática (avaliarRegra = _follow_up_avaliar), títulos
+    onboarding/      passos, checklist (percentual), preços do passo 3 (faixas proporcionais)
+    divulgacao/      textos prontos (bio, WhatsApp Business, post, status) com a origem certa
+    numeros/         período, métricas, funil, ocupação e datas livres (= funções SQL de Números)
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario), anon (comAnon),
                      admin (sem RLS)
@@ -88,6 +98,9 @@ src/
     orcamentos/      leituras do orçamento interno (base de preço, lead por WhatsApp, edição)
     avisos/          processador da fila, canais (push, whatsapp) com dependências injetadas,
                      leituras (sino, histórico, preferências, regras de follow-up)
+    onboarding/      estado do onboarding, resumo do modelo, preços, agenda rápida, checklist
+    numeros/         public.numeros e numeros_ocupacao (cache por empresa e período)
+    divulgacao/      QR code (SVG, PNG, PDF A4)
     env.ts, erros.ts
   lib/               utilitários de UI (cn)
   middleware.ts      sessão + proteção de /app/**
@@ -153,6 +166,17 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   Silêncio, canais, destinatários e follow-up existem no SQL e em `domain/avisos` e
   `domain/follow-up`, com teste de equivalência: mudou uma, mude a outra. Nenhuma mensagem
   automática ao cliente final. Logs da fila só com ids e códigos.
+- **Preço confirmado (Etapa 8):** pacote e opcional só vão ao link com
+  `preco_confirmado_em` preenchido (`publico.contexto_preco` e `pendenciasDoLinkPublico`). Um
+  trigger confirma sempre que um preço é gravado, menos na gravação do modelo (`gravarModelo`
+  liga `orkestra.modelo = 1` na transação). Preço de exemplo nunca é público sem o dono digitar.
+- **Onboarding e checklist:** o cadastro já aplica o modelo do segmento e leva a `/app/comecar`;
+  passo salvo em `empresas.onboarding_passo` (`avancar_onboarding`, passar do 3 exige preço
+  confirmado). Checklist calculado do estado real (`domain/onboarding/checklist`), dispensável
+  por usuário.
+- **Números:** métricas em `public.numeros`/`numeros_ocupacao` e em `domain/numeros`, com teste
+  de equivalência numa tabela de casos: mudou uma, mude a outra. Leads únicos, nunca lead de
+  teste, datas civis no fuso da empresa. Vendedor vê só os próprios leads.
 - **Notas, tarefas e visitas** só são escritas pelas funções da Etapa 6 (`adicionar_nota`,
   `criar_tarefa`, `adiar_tarefa`, `confirmar_visita`…), que travam o lead e gravam auditoria.
   Tarefa automática (Etapa 7) usa `origem = 'regra'` e `regra`: o índice
@@ -227,7 +251,10 @@ orçamento com 3 versões, um interno com desconto e avulso, uma proposta vencid
 quente por aberturas, perdidos com motivos, visita confirmada para hoje, pedido de visita,
 tarefas atrasadas, de hoje e futuras, e notas; desde a Etapa 7, avisos lidos e não lidos de
 todos os tipos, preferências (o vendedor com silêncio 23:00–08:00), a regra "segundo toque"
-desligada e tarefas automáticas abertas e uma cancelada. `pnpm db:seed:volume` cria o **Buffet Volume**
+desligada e tarefas automáticas abertas e uma cancelada; desde a Etapa 8, onboarding concluído,
+90 dias de visitas ao link (várias origens, inclusive QR code) e ~70 leads extras com perdas,
+reservas e tempos de atendimento (Números cheia); o **Buffet Teste B** fica com o onboarding
+parado no passo 3. `pnpm db:seed:volume` cria o **Buffet Volume**
 (`dono@volume.local`, 5.000 leads) para o `explain analyze` da caixa. Página pública:
 http://localhost:3000/b/buffet-demo (logado como dono, abre em modo teste). E-mails locais (recuperação de senha): http://127.0.0.1:54324.
 
@@ -236,7 +263,7 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 6 e o visual escuro (PRs #1 a #8)
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 7 e o visual escuro (PRs #1 a #9)
   na `main`.
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.

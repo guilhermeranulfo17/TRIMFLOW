@@ -33,6 +33,7 @@ function exigirId(mapa: Map<string, string>, chave: string): string {
  * Grava um modelo de segmento na empresa do usuário, em UMA transação, com o RLS valendo
  * (só dono consegue inserir). Nunca sobrescreve: se já existir qualquer pacote, não grava nada.
  * Um advisory lock por empresa impede dois cliques simultâneos de duplicarem o catálogo.
+ * Pacotes e opcionais nascem com preço NÃO confirmado (fora do link até o dono confirmar).
  */
 export async function gravarModelo(
   comUsuario: ComUsuario,
@@ -42,6 +43,9 @@ export async function gravarModelo(
 ): Promise<ResultadoGravacaoModelo> {
   return comUsuario(usuarioId, async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`catalogo:${empresaId}`}))`);
+    // Preço do modelo é exemplo: não confirma (o trigger _confirmar_preco respeita esta flag,
+    // que vale só nesta transação). O dono confirma no onboarding ou ao salvar o preço.
+    await tx.execute(sql`select set_config('orkestra.modelo', '1', true)`);
     const [existentes] = await tx.select({ n: count() }).from(pacotes);
     if ((existentes?.n ?? 0) > 0) return { ok: false, motivo: 'ja_tem_catalogo' } as const;
 

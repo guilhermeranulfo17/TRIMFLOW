@@ -184,6 +184,8 @@ export const pacotes = pgTable(
     fotos: jsonb('fotos').$type<string[]>().notNull().default([]),
     ordem: integer('ordem').notNull().default(0),
     ativo: boolean('ativo').notNull().default(true),
+    /** Nulo = preço de exemplo do modelo, fora do link (Etapa 8). */
+    precoConfirmadoEm: timestamp('preco_confirmado_em', { withTimezone: true }),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },
@@ -287,6 +289,8 @@ export const opcionais = pgTable(
     qtdMax: integer('qtd_max'),
     ordem: integer('ordem').notNull().default(0),
     ativo: boolean('ativo').notNull().default(true),
+    /** Nulo = preço de exemplo do modelo, fora do link (Etapa 8). */
+    precoConfirmadoEm: timestamp('preco_confirmado_em', { withTimezone: true }),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },

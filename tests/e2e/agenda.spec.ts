@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { cadastrar, emailUnico, entrar, SENHA_SEED, semRolagemHorizontal } from './helpers';
+import {
+  cadastrar,
+  confirmarPrecosNoOnboarding,
+  emailUnico,
+  entrar,
+  SENHA_SEED,
+  semRolagemHorizontal,
+} from './helpers';
 
 /*
  * Agenda (Etapa 3), no celular. Os fluxos do dono rodam numa empresa nova com o modelo de
@@ -23,10 +30,8 @@ async function empresaComModelo(page: Page, buffet: string) {
     buffet,
     segmento: 'Buffet infantil',
   });
-  await expect(page).toHaveURL(/\/app\/leads$/);
-  await page.goto('/app/empresa/catalogo');
-  await page.getByRole('button', { name: 'Carregar modelo de exemplo' }).click();
-  await expect(page.getByTestId('card-pacote').first()).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/comecar$/);
+  await confirmarPrecosNoOnboarding(page);
   await page.goto('/app/agenda');
 }
 

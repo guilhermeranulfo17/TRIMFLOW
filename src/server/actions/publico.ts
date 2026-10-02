@@ -1,7 +1,7 @@
 'use server';
 
 import { sql } from 'drizzle-orm';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { after } from 'next/server';
 import { limitesDoMes } from '@/domain/agenda';
 import { hojeNoFuso } from '@/domain/dates';
@@ -16,6 +16,7 @@ import {
   type Previa,
   type Sugestao,
 } from '@/domain/publico';
+import { ehRobo } from '@/domain/publico/robo';
 import { slugValido } from '@/domain/slug';
 import {
   contatoSchema,
@@ -478,6 +479,8 @@ export async function registrarFunil(
 ): Promise<void> {
   const f = funilSchema.safeParse(entrada);
   if (!slugValido(slug) || !f.success) return;
+  // visita de robô (buscador, prévia de link) não conta
+  if (f.data.evento === 'pagina_vista' && ehRobo((await headers()).get('user-agent'))) return;
   try {
     const [teste, ipHash] = await Promise.all([ehModoTeste(slug), hashIpDoVisitante()]);
     await comAnon((tx) =>

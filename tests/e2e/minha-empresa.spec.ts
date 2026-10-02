@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { cadastrar, emailUnico, sair, semRolagemHorizontal } from './helpers';
+import { cadastrar, emailUnico, esvaziarCatalogo, sair, semRolagemHorizontal } from './helpers';
 
 /*
  * Minha empresa (Etapa 2). Cada teste cadastra uma empresa nova: os fluxos alteram a
@@ -9,15 +9,18 @@ import { cadastrar, emailUnico, sair, semRolagemHorizontal } from './helpers';
 const SENHA = 'senha-forte-123';
 
 async function novaEmpresa(page: Page, buffet: string) {
+  const email = emailUnico('empresa');
   await cadastrar(page, {
     nome: 'Dona Teste',
-    email: emailUnico('empresa'),
+    email,
     whatsapp: '34991355450',
     senha: SENHA,
     buffet,
     segmento: 'Buffet infantil',
   });
-  await expect(page).toHaveURL(/\/app\/leads$/);
+  await expect(page).toHaveURL(/\/app\/comecar$/);
+  // estes testes montam o catálogo do zero
+  await esvaziarCatalogo(email);
 }
 
 async function esperarToast(page: Page, texto: string) {

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ChecklistPainel } from '@/components/app/onboarding/checklist-painel';
 import { eq } from 'drizzle-orm';
 import { exigirSessao } from '@/server/auth/sessao';
 import { empresas } from '@/server/db/schema';
@@ -21,6 +22,7 @@ export default async function IdentidadePage() {
 
   return (
     <div className="space-y-6">
+      <ChecklistPainel usuario={usuario} aberto />
       <FormIdentidade
         somenteLeitura={somenteLeitura}
         inicial={{

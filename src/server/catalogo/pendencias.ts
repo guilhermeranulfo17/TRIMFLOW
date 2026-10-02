@@ -16,6 +16,7 @@ export const carregarPendencias = cache(async (usuarioId: string): Promise<Pende
           modeloPreco: pacotes.modeloPreco,
           precoPessoaCentavos: pacotes.precoPessoaCentavos,
           valorExcedenteCentavos: pacotes.valorExcedenteCentavos,
+          precoConfirmadoEm: pacotes.precoConfirmadoEm,
         })
         .from(pacotes),
       tx
@@ -32,9 +33,10 @@ export const carregarPendencias = cache(async (usuarioId: string): Promise<Pende
     ]);
     const faixasPorPacote = new Map(qtdFaixas.map((f) => [f.pacoteId, f.n]));
     return pendenciasDoLinkPublico({
-      pacotes: listaPacotes.map((p) => ({
+      pacotes: listaPacotes.map(({ precoConfirmadoEm, ...p }) => ({
         ...p,
         quantidadeFaixas: faixasPorPacote.get(p.id) ?? 0,
+        precoConfirmado: precoConfirmadoEm !== null,
       })),
       tiposEvento: listaTipos,
       turnos: listaTurnos,

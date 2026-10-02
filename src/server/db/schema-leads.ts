@@ -29,6 +29,7 @@ export const origemLead = pgEnum('origem_lead', [
   'link_direto',
   'interno',
   'outro',
+  'qrcode',
 ]);
 export const statusLead = pgEnum('status_lead', [
   'novo',
@@ -109,7 +110,12 @@ export const statusVisita = pgEnum('status_visita', [
   'realizada',
   'cancelada',
 ]);
-export const eventoFunil = pgEnum('evento_funil', ['passo_visto', 'passo_concluido', 'abandono']);
+export const eventoFunil = pgEnum('evento_funil', [
+  'passo_visto',
+  'passo_concluido',
+  'abandono',
+  'pagina_vista',
+]);
 
 const instante = (nome: string) => timestamp(nome, { withTimezone: true });
 const empresaId = () =>

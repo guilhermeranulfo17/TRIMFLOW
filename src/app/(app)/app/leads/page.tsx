@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { EmptyState } from '@/components/app/empty-state';
+import { ChecklistPainel } from '@/components/app/onboarding/checklist-painel';
 import { FiltrosCaixa } from '@/components/app/leads/filtros-caixa';
 import { ListaCaixa } from '@/components/app/leads/lista-caixa';
 import { TopoHoje } from '@/components/app/leads/topo-hoje';
@@ -51,6 +52,7 @@ export default async function LeadsPage({ searchParams }: Props) {
           )}
         </Link>
       </div>
+      <ChecklistPainel usuario={usuario} />
       <TopoHoje resumo={resumo} filtros={filtros} />
       <FiltrosCaixa filtros={filtros} usuarios={usuarios} />
       {vazioTotal ? (

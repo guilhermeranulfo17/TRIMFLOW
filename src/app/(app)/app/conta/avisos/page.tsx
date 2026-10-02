@@ -3,9 +3,11 @@ import { PreferenciasAvisos } from '@/components/app/avisos/preferencias';
 import { PushAparelho } from '@/components/app/avisos/push-aparelho';
 import { TesteAviso } from '@/components/app/avisos/teste-aviso';
 import { WhatsappAvisos } from '@/components/app/avisos/whatsapp-avisos';
+import { ReativarChecklist } from '@/components/app/onboarding/reativar-checklist';
 import { TituloPagina } from '@/components/app/titulo-pagina';
 import { exigirSessao } from '@/server/auth/sessao';
 import { carregarPreferencias } from '@/server/avisos/carregar';
+import { carregarChecklist } from '@/server/onboarding/carregar';
 import { configVapid, configWhatsapp } from '@/server/env';
 
 export const metadata: Metadata = { title: 'Avisos' };
@@ -37,7 +39,10 @@ function Bloco({
 /** Minha conta → Avisos: cada usuário escolhe onde e quando quer ser avisado. */
 export default async function ContaAvisosPage() {
   const usuario = await exigirSessao();
-  const p = await carregarPreferencias(usuario);
+  const [p, checklist] = await Promise.all([
+    carregarPreferencias(usuario),
+    carregarChecklist(usuario),
+  ]);
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <TituloPagina>Avisos</TituloPagina>
@@ -82,6 +87,13 @@ export default async function ContaAvisosPage() {
         descricao="Sai em todos os canais ligados, sem esperar o silêncio."
       >
         <TesteAviso />
+      </Bloco>
+      <Bloco
+        id="conta-checklist"
+        titulo="Checklist do link"
+        descricao={`O checklist "Seu link está ${checklist.percentual}% pronto" aparece no topo da caixa de leads.`}
+      >
+        <ReativarChecklist dispensado={checklist.dispensado} />
       </Bloco>
     </div>
   );

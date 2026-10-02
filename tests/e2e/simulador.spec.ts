@@ -1,17 +1,27 @@
 import { expect, test } from '@playwright/test';
-import { cadastrar, emailUnico, entrar, SENHA_SEED, semRolagemHorizontal } from './helpers';
+import {
+  cadastrar,
+  emailUnico,
+  entrar,
+  esvaziarCatalogo,
+  SENHA_SEED,
+  semRolagemHorizontal,
+} from './helpers';
 
 test.describe('simulador de preço', () => {
   test('dono sem catálogo carrega o modelo de exemplo e simula', async ({ page }) => {
+    const email = emailUnico('simulador');
     await cadastrar(page, {
       nome: 'Carla Dias',
-      email: emailUnico('simulador'),
+      email,
       whatsapp: '34991355450',
       senha: 'senha-forte-123',
       buffet: 'Buffet Simulado',
       segmento: 'Buffet infantil',
     });
-    await expect(page).toHaveURL(/\/app\/leads$/);
+    await expect(page).toHaveURL(/\/app\/comecar$/);
+    // conta antiga sem catálogo (o cadastro novo já traz o modelo)
+    await esvaziarCatalogo(email);
 
     await page.goto('/app/empresa/catalogo');
     await page.getByRole('link', { name: 'Testar preços' }).click();

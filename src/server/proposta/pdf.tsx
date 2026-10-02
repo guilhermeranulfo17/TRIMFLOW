@@ -308,7 +308,7 @@ export function DocumentoProposta({
 }
 
 /** Logo do Storage (WEBP) → PNG para o PDF. Falhou ou demorou: o PDF sai sem logo. */
-async function logoEmPng(url: string | null): Promise<Buffer | null> {
+export async function logoEmPng(url: string | null): Promise<Buffer | null> {
   if (!url) return null;
   try {
     const resposta = await fetch(url, { signal: AbortSignal.timeout(2500) });

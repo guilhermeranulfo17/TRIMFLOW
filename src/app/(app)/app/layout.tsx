@@ -1,4 +1,5 @@
 import { AppHeader } from '@/components/app/app-header';
+import { FaixaOnboarding } from '@/components/app/onboarding/faixa-onboarding';
 import { BottomNav } from '@/components/app/bottom-nav';
 import { BotaoOrcamento } from '@/components/app/botao-orcamento';
 import { Sidebar } from '@/components/app/sidebar';
@@ -8,13 +9,15 @@ import { exigirSessao } from '@/server/auth/sessao';
 import { carregarPendencias } from '@/server/catalogo/pendencias';
 import { contarNaoLidos } from '@/server/avisos/carregar';
 import { resumoHoje } from '@/server/leads/carregar';
+import { carregarEstadoOnboarding } from '@/server/onboarding/carregar';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const usuario = await exigirSessao();
-  const [pendencias, hoje, naoLidos] = await Promise.all([
+  const [pendencias, hoje, naoLidos, onboarding] = await Promise.all([
     carregarPendencias(usuario.id),
     resumoHoje(usuario),
     contarNaoLidos(usuario),
+    usuario.perfil === 'dono' ? carregarEstadoOnboarding(usuario) : null,
   ]);
   // Leads: pré-reservas e visitas que pedem ação (grupos 1 e 2 da caixa)
   const badges = { '/app/empresa': pendencias.length, '/app/leads': hoje.pedemAcao };
@@ -26,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex min-h-dvh" data-painel>
           <Sidebar badges={badges} />
           <div className="flex min-w-0 flex-1 flex-col">
+            {onboarding && !onboarding.concluido && <FaixaOnboarding passo={onboarding.passo} />}
             <AppHeader
               nomeBuffet={usuario.empresa.nome}
               naoLidos={naoLidos}

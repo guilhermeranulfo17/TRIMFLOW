@@ -45,6 +45,7 @@ describe('pendências do link público', () => {
         precoPessoaCentavos: 100,
         valorExcedenteCentavos: null,
         quantidadeFaixas: 0,
+        precoConfirmado: true,
       },
     ],
     tiposEvento: [{ ativo: true }],
@@ -84,6 +85,7 @@ describe('pendências do link público', () => {
           precoPessoaCentavos: 100,
           valorExcedenteCentavos: null,
           quantidadeFaixas: 0,
+          precoConfirmado: true,
         },
         {
           ativo: true,
@@ -91,6 +93,7 @@ describe('pendências do link público', () => {
           precoPessoaCentavos: null,
           valorExcedenteCentavos: 100,
           quantidadeFaixas: 0,
+          precoConfirmado: true,
         },
       ],
     });
@@ -115,7 +118,16 @@ describe('pendências do link público', () => {
         precoPessoaCentavos: null,
         valorExcedenteCentavos: 100,
         quantidadeFaixas: 2,
+        precoConfirmado: true,
       }),
     ).toBe(true);
+  });
+
+  it('pacote com preço de exemplo (não confirmado) não conta: o link fica pendente', () => {
+    const exemplo = { ...completo.pacotes[0]!, precoConfirmado: false };
+    expect(pacoteTemPreco(exemplo)).toBe(false);
+    expect(
+      pendenciasDoLinkPublico({ ...completo, pacotes: [exemplo] }).map((p) => p.codigo),
+    ).toEqual(['SEM_PACOTE_COM_PRECO']);
   });
 });
