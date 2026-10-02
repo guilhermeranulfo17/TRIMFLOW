@@ -131,20 +131,22 @@ create or replace function public._lead_ordem(
   p_grupo integer, p_pre_expira timestamptz, p_visita_ref timestamptz, p_tarefa_vence timestamptz,
   p_proximo_contato timestamptz, p_criado timestamptz, p_ultima_atividade timestamptz
 )
-returns double precision
+returns bigint
 language sql
 immutable
 -- sem SET search_path: assim o planner embute a função em caixa_leads (só expressões e
--- tipos qualificados, nenhuma tabela)
+-- tipos qualificados, nenhuma tabela).
+-- Microssegundos inteiros (bigint), não float: o cursor da paginação volta do navegador e um
+-- float pode ser arredondado no caminho (extra_float_digits), pulando ou repetindo leads.
 as $$
-  select case p_grupo
+  select (case p_grupo
     when 1 then extract(epoch from p_pre_expira)          -- vence primeiro no topo
     when 2 then extract(epoch from p_visita_ref)          -- pedido mais antigo / visita mais próxima
     when 3 then extract(epoch from p_tarefa_vence)        -- mais atrasada primeiro
     when 5 then extract(epoch from p_criado)              -- quem espera há mais tempo
     when 6 then extract(epoch from p_proximo_contato)     -- mais vencido primeiro
     else -extract(epoch from p_ultima_atividade)          -- quente e demais: mais recente primeiro
-  end::double precision;
+  end * 1000000)::bigint;
 $$;
 
 -- ---------------------------------------------------------------------------
@@ -1011,7 +1013,7 @@ $$;
 -- ('meus' | 'sem' | uuid), evento_de / evento_ate (data da festa da versão vigente),
 -- atrasadas (bool), busca (nome ou telefone), teste (bool: inclui leads de teste),
 -- atalho ('pre_reservas' | 'visitas' | 'tarefas_hoje' | 'atrasadas' | 'novos').
--- Sem filtro de status: só os abertos (grupo 1 a 7). Cursor: {"g": grupo, "o": ordem, "id": uuid}.
+-- Sem filtro de status: só os abertos (grupo 1 a 7). Cursor: {"g": grupo, "o": ordem (texto, bigint), "id": uuid}.
 -- ---------------------------------------------------------------------------
 create or replace function public.caixa_leads(
   p_filtros jsonb default '{}'::jsonb, p_cursor jsonb default null, p_limite integer default 30
@@ -1021,7 +1023,7 @@ returns table (
   temperatura public.temperatura_lead, origem public.origem_lead, eh_teste boolean,
   responsavel_id uuid, responsavel_nome text, criado_em timestamptz,
   ultima_atividade_em timestamptz, primeiro_contato_em timestamptz,
-  proximo_contato_em timestamptz, grupo integer, ordem double precision,
+  proximo_contato_em timestamptz, grupo integer, ordem bigint,
   pre_reserva_expira_em timestamptz, visita_pedida boolean, visita_pedida_em timestamptz,
   visita_proxima timestamptz,
   tarefa_vence timestamptz, tarefa_titulo text, tem_atrasada boolean, aberturas integer,
@@ -1140,7 +1142,7 @@ as $$
   pagina as (
     select f.* from filtrado f
     where p_cursor is null
-       or (f.g, f.ord, f.id) > ((p_cursor ->> 'g')::integer, (p_cursor ->> 'o')::double precision,
+       or (f.g, f.ord, f.id) > ((p_cursor ->> 'g')::integer, (p_cursor ->> 'o')::bigint,
                                 (p_cursor ->> 'id')::uuid)
     order by f.g, f.ord, f.id
     limit greatest(1, least(coalesce(p_limite, 30), 100))

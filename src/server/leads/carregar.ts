@@ -49,6 +49,7 @@ import { urlDoSite } from '@/server/env';
  */
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ORDEM = /^-?\d{1,19}$/;
 
 function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/);
@@ -77,7 +78,8 @@ export function resumoFestaCartao(f: {
 // ---------------------------------------------------------------------------
 // Caixa
 // ---------------------------------------------------------------------------
-export type CursorCaixa = { g: number; o: number; id: string } | null;
+/** `o` é a chave de ordem em microssegundos (bigint do banco), como texto: nada de float. */
+export type CursorCaixa = { g: number; o: string; id: string } | null;
 
 export type CartaoLead = {
   id: string;
@@ -113,7 +115,8 @@ type LinhaCaixa = {
   primeiro_contato_em: Date | null;
   proximo_contato_em: Date | null;
   grupo: number;
-  ordem: number;
+  /** bigint: o postgres.js entrega como texto */
+  ordem: string;
   pre_reserva_expira_em: Date | null;
   visita_pedida: boolean;
   visita_pedida_em: Date | null;
@@ -139,7 +142,7 @@ export async function listarCaixa(
   limite = 30,
 ): Promise<PaginaCaixa> {
   const cursorValido =
-    cursor && Number.isFinite(cursor.g) && Number.isFinite(cursor.o) && UUID.test(cursor.id)
+    cursor && Number.isInteger(cursor.g) && ORDEM.test(cursor.o) && UUID.test(cursor.id)
       ? cursor
       : null;
   const linhas = await comUsuario(usuario.id, (tx) =>
@@ -200,7 +203,7 @@ export async function listarCaixa(
     cartoes,
     cursor:
       linhas.length > limite && ultimo
-        ? { g: ultimo.grupo, o: Number(ultimo.ordem), id: ultimo.id }
+        ? { g: ultimo.grupo, o: String(ultimo.ordem), id: ultimo.id }
         : null,
   };
 }

@@ -63,23 +63,23 @@ export function grupoDoLead(e: EntradaPrioridade, agora: Date, l: LimitesDia): G
   return 7;
 }
 
-const seg = (d: Date | null | undefined) => (d ? d.getTime() / 1000 : Number.NaN);
+const micro = (d: Date | null | undefined) => (d ? d.getTime() * 1000 : Number.NaN);
 
-/** Chave crescente dentro do grupo (em segundos, como o extract(epoch) do SQL). */
+/** Chave crescente dentro do grupo, em microssegundos (o SQL devolve bigint). */
 export function ordemNoGrupo(g: GrupoPrioridade, e: EntradaPrioridade): number {
   switch (g) {
     case 1:
-      return seg(e.preReservaExpiraEm);
+      return micro(e.preReservaExpiraEm);
     case 2:
-      return seg(e.visitaPedidaEm ?? e.visitaProxima);
+      return micro(e.visitaPedidaEm ?? e.visitaProxima);
     case 3:
-      return seg(e.tarefaVence);
+      return micro(e.tarefaVence);
     case 5:
-      return seg(e.criadoEm);
+      return micro(e.criadoEm);
     case 6:
-      return seg(e.proximoContatoEm);
+      return micro(e.proximoContatoEm);
     default:
-      return -seg(e.ultimaAtividadeEm);
+      return -micro(e.ultimaAtividadeEm);
   }
 }
 

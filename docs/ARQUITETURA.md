@@ -634,7 +634,9 @@ eh_usuario_empresa, ip_hash)`. Usuário logado da própria empresa (sessão, com
   em 5h", "Pediu visita", "Tarefa atrasada", "Abriu a proposta 3x", "Esperando há 2 dias",
   "Próximo contato vencido") sai de `motivoPrioridade`, no servidor.
 - **Decisão:** o grupo é calculado no SQL porque a ordenação e a paginação acontecem no banco
-  (keyset `(grupo, ordem, id)`, sem `offset`). `public.caixa_leads(filtros, cursor, limite)` é
+  (keyset `(grupo, ordem, id)`, sem `offset`). A ordem é `bigint` em microssegundos e viaja
+  como texto no cursor: com float, o arredondamento na volta (`extra_float_digits`) pulava ou
+  repetia leads entre páginas. `public.caixa_leads(filtros, cursor, limite)` é
   `security invoker` (o RLS vale) e devolve tudo de uma vez por página: grupo, ordem, total da
   versão vigente, resumo da festa, pré-reserva, próxima tarefa do usuário, próxima visita e
   responsável. `public.resumo_hoje()` dá os contadores; o badge de **Leads** na navegação é o

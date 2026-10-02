@@ -732,13 +732,15 @@ describe('caixa e resumo', () => {
 
   it('paginação por cursor não repete nem pula', async () => {
     await emTransacao(sql, async (tx) => {
+      // a chave do cursor é inteira: não depende de como o servidor formata float
+      await tx`set local extra_float_digits = 0`;
       const todos = await como(
         tx,
         IDS.vendedorA,
         () => tx`select id, grupo, ordem from public.caixa_leads('{}', null, 100)`,
       );
       const paginas: string[] = [];
-      let cursor: { g: number; o: number; id: string } | null = null;
+      let cursor: { g: number; o: string; id: string } | null = null;
       for (let i = 0; i < 50; i++) {
         const pagina = await como(
           tx,
@@ -751,7 +753,7 @@ describe('caixa e resumo', () => {
         const ultimo = pagina.at(-1)!;
         cursor = {
           g: ultimo.grupo as number,
-          o: ultimo.ordem as number,
+          o: ultimo.ordem as string,
           id: ultimo.id as string,
         };
       }

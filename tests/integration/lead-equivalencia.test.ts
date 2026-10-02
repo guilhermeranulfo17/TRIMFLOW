@@ -157,7 +157,7 @@ describe('equivalência da Etapa 6: domínio × SQL', () => {
                   tarefa,
                   g,
                 });
-                expect(Number(r!.o)).toBeCloseTo(ordemNoGrupo(g, e), 3);
+                expect(Number(r!.o)).toBe(ordemNoGrupo(g, e));
                 casos++;
               }
             }

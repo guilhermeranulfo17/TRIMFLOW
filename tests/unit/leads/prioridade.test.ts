@@ -100,8 +100,8 @@ describe('ordem dentro do grupo', () => {
   });
 
   it('ordem em segundos, como o extract(epoch) do SQL', () => {
-    expect(ordemNoGrupo(1, lead({ preReservaExpiraEm: h(1) }))).toBe(h(1).getTime() / 1000);
-    expect(ordemNoGrupo(7, lead({}))).toBe(-h(-5).getTime() / 1000);
+    expect(ordemNoGrupo(1, lead({ preReservaExpiraEm: h(1) }))).toBe(h(1).getTime() * 1000);
+    expect(ordemNoGrupo(7, lead({}))).toBe(-h(-5).getTime() * 1000);
   });
 });
 
