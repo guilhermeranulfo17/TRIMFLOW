@@ -16,7 +16,17 @@ export const SITUACOES_MENSAGEM = [
   'confirmacao_visita',
   'reativar_frio',
 ] as const;
-export type SituacaoMensagem = (typeof SITUACOES_MENSAGEM)[number];
+/** Situações só das tarefas automáticas (Etapa 7); não aparecem no seletor do WhatsApp. */
+export const SITUACOES_AUTOMATICAS = [
+  'proposta_nao_aberta',
+  'segundo_toque',
+  'proposta_vencendo',
+  'ultimo_contato',
+  'pos_visita',
+  'chamar_quente',
+] as const;
+export type SituacaoMensagem =
+  (typeof SITUACOES_MENSAGEM)[number] | (typeof SITUACOES_AUTOMATICAS)[number];
 
 export const ROTULO_SITUACAO: Record<SituacaoMensagem, string> = {
   primeiro_contato: 'Primeiro contato',
@@ -24,6 +34,12 @@ export const ROTULO_SITUACAO: Record<SituacaoMensagem, string> = {
   pre_reserva_vencendo: 'Pré-reserva vencendo',
   confirmacao_visita: 'Confirmar visita',
   reativar_frio: 'Reativar lead frio',
+  proposta_nao_aberta: 'Proposta não aberta',
+  segundo_toque: 'Segundo toque',
+  proposta_vencendo: 'Proposta vencendo',
+  ultimo_contato: 'Último contato',
+  pos_visita: 'Depois da visita',
+  chamar_quente: 'Lead quente',
 };
 
 export type DadosMensagem = {
@@ -40,6 +56,8 @@ export type DadosMensagem = {
   visitaEm?: Date | null;
   /** a data da festa ainda está livre na agenda (o servidor confere) */
   dataAindaLivre?: boolean;
+  /** validade da proposta (yyyy-MM-dd) */
+  validadeAte?: string | null;
   fuso?: string;
   agora?: Date;
 };
@@ -137,6 +155,53 @@ export function montarMensagem(situacao: SituacaoMensagem, d: DadosMensagem): st
         ola,
         `Ainda está planejando ${festa ?? 'a sua festa'}?`,
         `Temos datas boas nos próximos meses aqui no ${d.buffet}. Posso te mandar uma proposta atualizada?`,
+      );
+    case 'proposta_nao_aberta':
+      return juntar(
+        ola,
+        souEu,
+        `Te mandei a proposta${festa ? ` para ${festa}` : ''}${data ? ` do dia ${data}` : ''}. Conseguiu dar uma olhada?`,
+        link,
+      );
+    case 'segundo_toque':
+      // Escassez real: só cita a data se ela ainda estiver livre na agenda.
+      return juntar(
+        ola,
+        data && d.dataAindaLivre
+          ? `Ainda temos o dia ${data} livre aqui no ${d.buffet}, mas essa época sai rápido.`
+          : `Passando para saber se você ainda está planejando ${festa ?? 'a sua festa'}.`,
+        'Posso te ajudar a fechar ou tirar alguma dúvida?',
+        link,
+      );
+    case 'proposta_vencendo':
+      return juntar(
+        ola,
+        d.validadeAte
+          ? `Sua proposta do ${d.buffet} vale até ${dataPorExtenso(d.validadeAte).toLowerCase()}.`
+          : `Sua proposta do ${d.buffet} está para vencer.`,
+        'Depois disso os valores podem mudar. Quer garantir a data?',
+        link,
+      );
+    case 'ultimo_contato':
+      return juntar(
+        ola,
+        `Sua proposta do ${d.buffet} venceu, mas posso atualizar os valores para você${data ? ` e ver se o dia ${data} ainda está livre` : ''}.`,
+        'É só me responder por aqui.',
+      );
+    case 'pos_visita':
+      return juntar(
+        ola,
+        `Obrigado pela visita ao ${d.buffet}! O que você achou do espaço?`,
+        data
+          ? `Se quiser, já faço a pré-reserva do dia ${data} para você.`
+          : 'Se quiser, já faço a pré-reserva da sua data.',
+      );
+    case 'chamar_quente':
+      return juntar(
+        ola,
+        souEu,
+        `Vi que você está olhando a proposta${data ? ` para o dia ${data}` : ''}. Quer que eu tire alguma dúvida ou já segure a data?`,
+        link,
       );
   }
 }

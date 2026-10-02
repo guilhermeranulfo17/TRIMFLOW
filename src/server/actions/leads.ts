@@ -386,7 +386,7 @@ export async function prepararMensagem(
     const d = await dadosDaMensagem(usuario, leadId);
     if (!d) return { ok: false, erro: NAO_ENCONTRADO };
     const escolhida =
-      situacao && SITUACOES_MENSAGEM.includes(situacao) ? situacao : situacaoDoMomento(d.momento);
+      situacao && (SITUACOES_MENSAGEM as readonly string[]).includes(situacao) ? situacao : situacaoDoMomento(d.momento);
     return {
       ok: true,
       mensagem: '',
@@ -406,7 +406,7 @@ export async function registrarMensagem(
   tarefaId?: string | null,
 ): Promise<void> {
   await acaoDoLead(async (usuario) => {
-    if (!idValido(leadId) || !SITUACOES_MENSAGEM.includes(situacao)) {
+    if (!idValido(leadId) || !(SITUACOES_MENSAGEM as readonly string[]).includes(situacao)) {
       return { ok: false, erro: NAO_ENCONTRADO };
     }
     await chamar(
