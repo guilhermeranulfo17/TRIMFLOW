@@ -13,13 +13,14 @@ import { Iniciais, SeloStatus, Temperatura } from './indicadores';
 import { BotaoWhatsApp } from './mensagem-pronta';
 import { BotaoRegistrarContato } from './registrar-contato';
 
+/** Ponto colorido do motivo: a cor diz por que o lead está nessa posição da caixa. */
 const COR_GRUPO: Record<number, string> = {
-  1: 'border-l-amber-500',
-  2: 'border-l-violet-500',
-  3: 'border-l-rose-500',
-  4: 'border-l-orange-400',
-  5: 'border-l-sky-500',
-  6: 'border-l-zinc-400',
+  1: 'bg-amber-400',
+  2: 'bg-violet-400',
+  3: 'bg-rose-400',
+  4: 'bg-orange-400',
+  5: 'bg-sky-400',
+  6: 'bg-zinc-400',
 };
 
 function Cartao({ lead }: { lead: CartaoLead }) {
@@ -32,10 +33,7 @@ function Cartao({ lead }: { lead: CartaoLead }) {
   const motivo = registrado ? 'Contato registrado agora' : lead.motivo;
   return (
     <li
-      className={cn(
-        'bg-card rounded-card relative border border-l-4 p-3',
-        COR_GRUPO[lead.grupo] ?? 'border-l-transparent',
-      )}
+      className="bg-card rounded-card hover:bg-accent/60 relative p-4 transition-colors"
       data-testid="card-lead"
       data-grupo={lead.grupo}
     >
@@ -50,30 +48,36 @@ function Cartao({ lead }: { lead: CartaoLead }) {
             </Link>
             <SeloStatus status={status} />
             {lead.ehTeste && (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+              <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs font-semibold text-amber-300">
                 Teste
               </span>
             )}
           </div>
-          <p className="mt-0.5 flex items-center gap-2 text-sm font-semibold" data-testid="motivo">
+          <p className="mt-1 flex items-center gap-2 text-sm font-semibold" data-testid="motivo">
+            <span
+              className={cn('size-2 shrink-0 rounded-full', COR_GRUPO[lead.grupo] ?? 'bg-border')}
+              aria-hidden
+            />
             <Temperatura temperatura={lead.temperatura} comTexto={false} />
             {motivo}
             {lead.temAtrasada && lead.grupo !== 3 && (
-              <AlarmClock className="size-3.5 text-rose-600" aria-label="Tem tarefa atrasada" />
+              <AlarmClock className="size-3.5 text-rose-400" aria-label="Tem tarefa atrasada" />
             )}
           </p>
           {lead.festa && <p className="text-muted-foreground mt-0.5 text-sm">{lead.festa}</p>}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           {lead.totalCentavos != null && (
-            <span className="text-sm font-bold tabular-nums">{formatBRL(lead.totalCentavos)}</span>
+            <span className="text-base font-light tracking-tight tabular-nums">
+              {formatBRL(lead.totalCentavos)}
+            </span>
           )}
           {lead.responsavel && (
             <Iniciais nome={lead.responsavel.nome} iniciais={lead.responsavel.iniciais} />
           )}
         </div>
       </div>
-      <div className="relative z-10 mt-2 grid grid-cols-2 gap-2">
+      <div className="relative z-10 mt-3 grid grid-cols-2 gap-2">
         <BotaoWhatsApp leadId={lead.id} />
         <BotaoRegistrarContato
           leadId={lead.id}

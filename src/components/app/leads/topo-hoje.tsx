@@ -21,31 +21,46 @@ const ITENS: {
 export function TopoHoje({ resumo, filtros }: { resumo: ResumoHoje; filtros: FiltrosCaixa }) {
   return (
     <nav aria-label="Hoje" className="-mx-4 overflow-x-auto px-4 pb-1" data-testid="topo-hoje">
-      <ul className="flex gap-2 md:grid md:grid-cols-5">
+      <ul className="flex gap-3 py-1 md:grid md:grid-cols-5">
         {ITENS.map(({ atalho, rotulo, chave, Icone }) => {
           const ativo = filtros.atalho === atalho;
           const qs = filtrosParaUrl({ ...filtros, atalho: ativo ? undefined : atalho });
           const n = resumo[chave];
+          // como os blocos da referência: um verde-limão, um claro e o resto grafite
+          const tom =
+            atalho === 'pre_reservas' ? 'lima' : atalho === 'visitas' ? 'claro' : 'grafite';
           return (
             <li key={atalho} className="shrink-0">
               <Link
                 href={`/app/leads${qs ? `?${qs}` : ''}`}
                 aria-current={ativo ? 'true' : undefined}
                 className={cn(
-                  'rounded-card flex min-h-16 min-w-32 flex-col justify-between gap-1 border p-3 transition-colors',
-                  ativo ? 'border-primary bg-accent' : 'bg-card hover:bg-accent',
-                  atalho === 'atrasadas' && n > 0 && !ativo && 'border-rose-300',
+                  'rounded-card flex min-h-24 min-w-34 flex-col justify-between gap-3 p-4 transition-[box-shadow,filter] hover:brightness-110',
+                  tom === 'lima' && 'bg-primary text-primary-foreground',
+                  tom === 'claro' && 'bg-destaque text-destaque-foreground',
+                  tom === 'grafite' && 'bg-card',
+                  ativo && 'ring-foreground ring-offset-background ring-2 ring-offset-2',
+                  tom === 'grafite' &&
+                    atalho === 'atrasadas' &&
+                    n > 0 &&
+                    !ativo &&
+                    'ring-1 ring-rose-400/50',
                 )}
                 data-testid={`hoje-${atalho}`}
               >
-                <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold">
+                <span
+                  className={cn(
+                    'flex items-center gap-1.5 text-xs font-semibold',
+                    tom === 'grafite' ? 'text-muted-foreground' : 'opacity-70',
+                  )}
+                >
                   <Icone className="size-3.5" aria-hidden />
                   {rotulo}
                 </span>
                 <span
                   className={cn(
-                    'text-2xl leading-none font-extrabold tabular-nums',
-                    atalho === 'atrasadas' && n > 0 && 'text-rose-700',
+                    'text-4xl leading-none font-light tracking-tight tabular-nums',
+                    atalho === 'atrasadas' && n > 0 && 'text-rose-400',
                   )}
                 >
                   {n}

@@ -1,15 +1,20 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
+/* dark: vale dentro de .dark e em todo o painel (inclusive diálogos e menus, que abrem no body) */
+@custom-variant dark (&:where(.dark, .dark *, :root:has([data-painel]) *));
 
 /*
  * Tokens da identidade Orkestra.
- * Cores em hex para bater 1:1 com o guia visual; tema escuro preparado em .dark (sem toggle ainda).
+ * Claro: link público, login e cadastro. Escuro: o painel (área logada), ativado pelo
+ * [data-painel] do layout; como fica no :root, diálogos, menus e toasts (portais no body)
+ * também ficam escuros. .tema-claro volta ao claro num trecho (ex.: prévia da proposta).
  */
-:root {
+:root,
+.tema-claro {
   --radius-card: 12px;
   --radius-control: 10px;
+  --radius-botao: 10px;
 
   --background: #fafafc;
   --foreground: #16141f;
@@ -43,41 +48,60 @@
 
   --sidebar: #ffffff;
   --sidebar-foreground: #16141f;
+
+  /* cartão claro de destaque (no claro, igual ao cartão) */
+  --destaque: #ffffff;
+  --destaque-foreground: #16141f;
 }
 
-.dark {
-  --background: #120f1a;
-  --foreground: #f3f1fa;
+/* Painel: preto, cartões grafite bem arredondados, verde-limão como destaque, botões em pílula */
+.dark,
+:root:has([data-painel]) {
+  color-scheme: dark;
+  --radius-card: 22px;
+  --radius-control: 14px;
+  --radius-botao: 9999px;
 
-  --card: #1a1625;
-  --card-foreground: #f3f1fa;
-  --popover: #1a1625;
-  --popover-foreground: #f3f1fa;
+  --background: #0c0c0c;
+  --foreground: #f4f4f2;
 
-  --primary: #8f73e0;
-  --primary-hover: #a58ee8;
-  --primary-foreground: #ffffff;
+  --card: #1a1a1a;
+  --card-foreground: #f4f4f2;
+  --popover: #1f1f1f;
+  --popover-foreground: #f4f4f2;
 
-  --secondary: #262036;
-  --secondary-foreground: #ddd5f7;
+  --primary: #3ee42e;
+  --primary-hover: #5cec4f;
+  --primary-foreground: #0c0c0c;
 
-  --muted: #231e31;
-  --muted-foreground: #a7a1b8;
+  --secondary: #2a2a2a;
+  --secondary-foreground: #f4f4f2;
 
-  --accent: #2a2340;
-  --accent-foreground: #ddd5f7;
+  --muted: #232323;
+  --muted-foreground: #a0a09c;
 
-  --destructive: #ef5b67;
+  --accent: #2a2a2a;
+  --accent-foreground: #f4f4f2;
+
+  --destructive: #e5484d;
   --destructive-foreground: #ffffff;
 
-  --success: #3cc28d;
+  --success: #3ee42e;
 
-  --border: #2c2640;
-  --input: #3a3350;
-  --ring: #8f73e0;
+  --border: #2c2c2c;
+  --input: #3a3a3a;
+  --ring: #3ee42e;
 
-  --sidebar: #1a1625;
-  --sidebar-foreground: #f3f1fa;
+  --sidebar: #141414;
+  --sidebar-foreground: #f4f4f2;
+
+  --destaque: #f4f4f2;
+  --destaque-foreground: #0c0c0c;
+}
+
+.tema-claro {
+  color-scheme: light;
+  color: var(--foreground);
 }
 
 @theme inline {
@@ -106,9 +130,12 @@
   --color-ring: var(--ring);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-destaque: var(--destaque);
+  --color-destaque-foreground: var(--destaque-foreground);
 
   --radius-card: var(--radius-card);
   --radius-control: var(--radius-control);
+  --radius-botao: var(--radius-botao);
 }
 
 @layer base {

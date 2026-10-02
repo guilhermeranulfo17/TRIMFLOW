@@ -65,7 +65,7 @@ export function BotaoWhatsApp({
         type="button"
         onClick={() => setAberto(true)}
         className={cn(
-          'rounded-control inline-flex min-h-11 items-center justify-center gap-1.5 bg-[#1F8F4E] px-3 text-sm font-semibold text-white hover:bg-[#187540]',
+          'bg-primary text-primary-foreground hover:bg-primary-hover inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold',
           className,
         )}
       >
@@ -124,7 +124,7 @@ export function BotaoWhatsApp({
               if (situacao) void registrarMensagem(leadId, situacao, tarefaId ?? null);
               setAberto(false);
             }}
-            className="rounded-control inline-flex min-h-12 items-center justify-center gap-2 bg-[#1F8F4E] px-4 font-bold text-white hover:bg-[#187540] aria-disabled:opacity-50"
+            className="bg-primary text-primary-foreground hover:bg-primary-hover inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-4 font-bold aria-disabled:opacity-50"
             data-testid="abrir-whatsapp"
           >
             <IconeWhatsApp />

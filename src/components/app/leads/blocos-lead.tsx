@@ -181,7 +181,7 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
         aria-label={feita ? `Concluída: ${tarefa.titulo}` : `Concluir: ${tarefa.titulo}`}
         className={cn(
           'grid size-11 shrink-0 place-items-center rounded-full border-2',
-          feita ? 'border-emerald-600 bg-emerald-600 text-white' : 'hover:bg-accent',
+          feita ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent',
         )}
       >
         {feita && <Check className="size-5" aria-hidden />}
@@ -195,7 +195,7 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
         <p
           className={cn(
             'text-sm',
-            tarefa.atrasada && !feita ? 'font-semibold text-rose-700' : 'text-muted-foreground',
+            tarefa.atrasada && !feita ? 'font-semibold text-rose-400' : 'text-muted-foreground',
           )}
         >
           {tarefa.atrasada && !feita ? 'Atrasada · ' : ''}
@@ -205,7 +205,7 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
         {tarefa.lead && (
           <Link
             href={`/app/leads/${tarefa.lead.id}`}
-            className="text-primary text-sm font-semibold underline-offset-2 hover:underline"
+            className="text-muted-foreground hover:text-foreground text-sm font-semibold underline underline-offset-2"
           >
             {tarefa.lead.nome} · {tarefa.lead.telefone}
           </Link>

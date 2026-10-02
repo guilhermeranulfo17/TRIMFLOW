@@ -111,6 +111,10 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - **Termos fixos do produto:** Lead, Orçamento, Proposta, Pré-reserva, Reserva, Pacote,
   Opcional, Turno, Espaço.
 - **ids:** sempre uuid. Nunca expor ids sequenciais.
+- **Visual do painel:** só escuro (tokens em `globals.css`, ligados por `data-painel`; ver
+  `docs/ARQUITETURA.md` §44). Use os tokens (`bg-card`, `bg-primary`, `bg-destaque`…) e, para
+  estados, tons translúcidos (`bg-amber-400/10 text-amber-300`); nada de fundos claros fixos
+  (`bg-white`, `bg-*-50`). Link público, proposta e login continuam claros.
 
 ## Multiempresa e segurança
 

@@ -56,7 +56,7 @@ export function SaidasOrcamento({
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4" data-testid="saidas-orcamento">
       <div className="bg-card rounded-card border p-5 text-center">
-        <CircleCheck className="mx-auto size-10 text-emerald-600" aria-hidden />
+        <CircleCheck className="text-primary mx-auto size-10" aria-hidden />
         <h2 className="mt-2 text-xl font-extrabold">
           Orçamento nº {numeroProposta(salvo.numero)}
           {salvo.versao > 1 ? ` · versão ${salvo.versao}` : ''} salvo
@@ -81,7 +81,7 @@ export function SaidasOrcamento({
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => void marcarOrcamentoEnviado(salvo.id, 'whatsapp')}
-          className="rounded-control inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#1F8F4E] px-4 font-bold text-white hover:bg-[#187540]"
+          className="bg-primary text-primary-foreground hover:bg-primary-hover inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-4 font-bold"
         >
           <IconeWhatsApp />
           Enviar pelo WhatsApp
@@ -102,7 +102,7 @@ export function SaidasOrcamento({
       </a>
       {reservadoAte ? (
         <p
-          className="rounded-control bg-emerald-50 p-3 text-center text-sm font-semibold text-emerald-900"
+          className="rounded-control bg-primary/10 text-primary p-3 text-center text-sm font-semibold"
           role="status"
         >
           Pré-reservado até {formatDataHora(reservadoAte, fuso)}. Está na Agenda.

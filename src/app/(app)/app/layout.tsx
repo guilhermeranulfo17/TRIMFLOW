@@ -20,7 +20,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <TooltipProvider delayDuration={150}>
       <ProvedorToast>
-        <div className="flex min-h-dvh">
+        {/* data-painel liga o tema escuro do painel (globals.css) */}
+        <div className="flex min-h-dvh" data-painel>
           <Sidebar badges={badges} />
           <div className="flex min-w-0 flex-1 flex-col">
             <AppHeader

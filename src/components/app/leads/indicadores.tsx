@@ -25,9 +25,9 @@ export function SeloStatus({ status, className }: { status: StatusLead; classNam
 }
 
 const TEMP = {
-  quente: { Icone: Flame, cor: 'text-rose-600' },
-  morno: { Icone: Thermometer, cor: 'text-amber-600' },
-  frio: { Icone: Snowflake, cor: 'text-sky-600' },
+  quente: { Icone: Flame, cor: 'text-rose-400' },
+  morno: { Icone: Thermometer, cor: 'text-amber-300' },
+  frio: { Icone: Snowflake, cor: 'text-sky-300' },
 } as const;
 
 /** Temperatura com ícone, cor e texto (o texto também serve aos leitores de tela). */
@@ -51,7 +51,7 @@ export function Temperatura({
 export function Iniciais({ nome, iniciais }: { nome: string; iniciais: string }) {
   return (
     <span
-      className="bg-accent text-primary grid size-7 shrink-0 place-items-center rounded-full text-[11px] font-bold"
+      className="bg-primary text-primary-foreground grid size-7 shrink-0 place-items-center rounded-full text-[11px] font-bold"
       title={`Responsável: ${nome}`}
     >
       <span aria-hidden>{iniciais}</span>

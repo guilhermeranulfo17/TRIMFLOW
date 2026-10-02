@@ -32,10 +32,10 @@ export function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="rounded-control hover:bg-muted focus-visible:ring-ring/50 flex h-11 items-center gap-2 px-1.5 outline-none focus-visible:ring-[3px]"
+        className="hover:bg-accent focus-visible:ring-ring/50 flex h-11 items-center gap-2 rounded-full py-1 pr-3 pl-1 outline-none focus-visible:ring-[3px]"
         aria-label={`Menu do usuário ${nome}`}
       >
-        <span className="bg-secondary text-secondary-foreground grid size-8 place-items-center rounded-full text-xs font-bold">
+        <span className="bg-secondary text-secondary-foreground ring-primary grid size-9 place-items-center rounded-full text-xs font-bold ring-2">
           {iniciais(nome)}
         </span>
         <span className="hidden max-w-40 truncate text-sm font-medium sm:block">{nome}</span>

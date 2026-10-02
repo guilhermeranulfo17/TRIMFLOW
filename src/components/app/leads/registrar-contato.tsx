@@ -55,7 +55,7 @@ export function BotaoRegistrarContato({
         type="button"
         onClick={() => setAberto(true)}
         className={cn(
-          'rounded-control hover:bg-accent inline-flex min-h-11 items-center justify-center gap-1.5 border px-3 text-sm font-semibold',
+          'bg-accent hover:bg-input inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold',
           className,
         )}
       >

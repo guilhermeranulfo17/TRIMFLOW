@@ -43,7 +43,7 @@ export default async function PropostaExemploPage() {
         </a>
       </div>
       <div
-        className="rounded-card mx-auto max-w-2xl overflow-hidden border bg-white p-4 shadow-sm"
+        className="tema-claro bg-background rounded-card mx-auto max-w-2xl overflow-hidden border p-4 shadow-sm"
         style={estiloDaMarca(exemplo.buffet.corMarca)}
         data-tema="claro"
         data-testid="proposta-exemplo"

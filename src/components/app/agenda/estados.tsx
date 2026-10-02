@@ -5,37 +5,37 @@ import { cn } from '@/lib/utils';
 export const ESTADOS: Record<EstadoSlot, { rotulo: string; ponto: string; selo: string }> = {
   livre: {
     rotulo: 'Livre',
-    ponto: 'bg-emerald-500',
-    selo: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    ponto: 'bg-primary',
+    selo: 'bg-primary/10 text-primary border-primary/30',
   },
   pre_reservado: {
     rotulo: 'Pré-reservado',
-    ponto: 'bg-amber-500',
-    selo: 'bg-amber-50 text-amber-900 border-amber-200',
+    ponto: 'bg-amber-400',
+    selo: 'bg-amber-400/10 text-amber-300 border-amber-400/30',
   },
   reservado: {
     rotulo: 'Reservado',
-    ponto: 'bg-violet-600',
-    selo: 'bg-violet-50 text-violet-900 border-violet-200',
+    ponto: 'bg-violet-400',
+    selo: 'bg-violet-400/10 text-violet-300 border-violet-400/30',
   },
   lotado: {
     rotulo: 'Lotado',
-    ponto: 'bg-violet-600',
-    selo: 'bg-violet-50 text-violet-900 border-violet-200',
+    ponto: 'bg-violet-400',
+    selo: 'bg-violet-400/10 text-violet-300 border-violet-400/30',
   },
   bloqueado: {
     rotulo: 'Bloqueado',
-    ponto: 'bg-slate-500',
-    selo: 'bg-slate-100 text-slate-800 border-slate-300',
+    ponto: 'bg-zinc-500',
+    selo: 'bg-zinc-500/15 text-zinc-300 border-zinc-500/40',
   },
 };
 
 export const RESUMOS: Record<ResumoDia, { rotulo: string; fundo: string }> = {
   sem_turno: { rotulo: 'Sem turno', fundo: 'bg-muted/40 text-muted-foreground' },
   livre: { rotulo: 'Livre', fundo: 'bg-card' },
-  parcial: { rotulo: 'Parcialmente ocupado', fundo: 'bg-amber-50/60' },
-  cheio: { rotulo: 'Cheio', fundo: 'bg-violet-50' },
-  bloqueado: { rotulo: 'Bloqueado', fundo: 'bg-slate-100' },
+  parcial: { rotulo: 'Parcialmente ocupado', fundo: 'bg-amber-400/10' },
+  cheio: { rotulo: 'Cheio', fundo: 'bg-violet-400/15' },
+  bloqueado: { rotulo: 'Bloqueado', fundo: 'bg-zinc-500/20' },
 };
 
 export function SeloEstado({
