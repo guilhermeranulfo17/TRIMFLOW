@@ -1,6 +1,11 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { noBanco, zerarLimites } from './banco';
-import { cadastrar, emailUnico, semRolagemHorizontal } from './helpers';
+import {
+  cadastrar,
+  confirmarPrecosNoOnboarding,
+  emailUnico,
+  semRolagemHorizontal,
+} from './helpers';
 
 /*
  * Link público (Etapa 4), no celular. Cada teste cria uma empresa nova com o modelo de exemplo
@@ -21,10 +26,8 @@ async function empresaComModelo(page: Page, buffet: string): Promise<string> {
     buffet,
     segmento: 'Buffet infantil',
   });
-  await expect(page).toHaveURL(/\/app\/leads$/);
-  await page.goto('/app/empresa/catalogo');
-  await page.getByRole('button', { name: 'Carregar modelo de exemplo' }).click();
-  await expect(page.getByTestId('card-pacote').first()).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/comecar$/);
+  await confirmarPrecosNoOnboarding(page);
   await page.goto('/app/empresa/link');
   const link = await page.getByTestId('link-principal').innerText();
   return link.split('/b/')[1]!;
@@ -187,7 +190,8 @@ test.describe('link público', () => {
       buffet: 'Buffet Link Pendente',
       segmento: 'Buffet infantil',
     });
-    await expect(page).toHaveURL(/\/app\/leads$/);
+    // conta nova: o catálogo do modelo veio com preços de exemplo, ainda não confirmados
+    await expect(page).toHaveURL(/\/app\/comecar$/);
     await page.goto('/app/empresa/link');
     const slug = (await page.getByTestId('link-principal').innerText()).split('/b/')[1]!;
     const cliente = await visitante(browser);

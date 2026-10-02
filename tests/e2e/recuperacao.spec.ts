@@ -46,7 +46,8 @@ test('recuperar senha por e-mail e entrar com a nova senha', async ({ page }) =>
     buffet: 'Buffet Recupera',
     segmento: 'Buffet em domicílio',
   });
-  await expect(page).toHaveURL(/\/app\/leads$/);
+  await expect(page).toHaveURL(/\/app\/comecar$/);
+  await page.goto('/app/leads');
   await sair(page);
 
   await page.goto('/recuperar-senha');

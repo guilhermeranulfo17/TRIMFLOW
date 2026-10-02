@@ -2,12 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { UploadImagem } from '@/components/app/campos';
+import { UploadImagem } from '@/components/app/campos/upload-imagem';
 import { classeCampo } from '@/components/app/form/estilos';
 import { useToast } from '@/components/app/toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { UFS, type IdentidadeEntrada } from '@/domain/validacao/empresa';
+import { UFS } from '@/domain/uf';
+import type { IdentidadeEntrada } from '@/domain/validacao/empresa';
 import { urlPublicaMidia } from '@/lib/midia';
 import { salvarIdentidade, salvarImagemEmpresa } from '@/server/actions/empresa/identidade';
 import { RodapePasso } from './navegacao';

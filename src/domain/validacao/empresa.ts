@@ -4,35 +4,9 @@ import { toE164 } from '../phone';
 import { SLUG_MAX, SLUG_MIN, SLUG_REGEX } from '../slug';
 import { nomeCurto, textoOpcional } from './comum';
 
-export const UFS = [
-  'AC',
-  'AL',
-  'AP',
-  'AM',
-  'BA',
-  'CE',
-  'DF',
-  'ES',
-  'GO',
-  'MA',
-  'MT',
-  'MS',
-  'MG',
-  'PA',
-  'PB',
-  'PR',
-  'PE',
-  'PI',
-  'RJ',
-  'RN',
-  'RS',
-  'RO',
-  'RR',
-  'SC',
-  'SP',
-  'SE',
-  'TO',
-] as const;
+import { UFS } from '../uf';
+
+export { UFS };
 
 /** Fusos oferecidos na interface (todos do Brasil). O banco aceita qualquer fuso válido. */
 export const FUSOS_BR = [

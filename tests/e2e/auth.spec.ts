@@ -54,9 +54,13 @@ test.describe('cadastro', () => {
       buffet: 'Buffet Alegria & Cia',
       segmento: 'Buffet infantil',
     });
-    await expect(page).toHaveURL(/\/app\/leads$/);
+    // a conta nasce com o modelo do segmento e cai no onboarding
+    await expect(page).toHaveURL(/\/app\/comecar$/);
+    await expect(page.getByTestId('passo-onboarding')).toHaveText('Passo 1 de 5');
+    await page.goto('/app/leads');
     await expect(page.getByTestId('nome-buffet')).toHaveText('Buffet Alegria & Cia');
     await expect(page.getByRole('heading', { name: 'Leads', level: 1 })).toBeVisible();
+    await expect(page.getByTestId('faixa-onboarding')).toContainText('passo 1 de 5');
 
     // Logado não volta para o login
     await page.goto('/login');

@@ -2,7 +2,7 @@
 
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { CampoDinheiro } from '@/components/app/campos';
+import { CampoDinheiro } from '@/components/app/campos/campo-dinheiro';
 import { useToast } from '@/components/app/toast';
 import { formatBRL } from '@/domain/money';
 import { faixasProporcionais, type FaixaPreco } from '@/domain/onboarding/precos';

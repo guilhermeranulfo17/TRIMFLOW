@@ -864,3 +864,153 @@ begin
   where not exists (select 1 from public.tarefas x where x.lead_id = l.id and x.regra = t.regra and x.origem = 'regra');
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Onboarding e Números (Etapa 8). Datas relativas a hoje. Idempotente: os estados do
+-- onboarding são reaplicados; o volume de Números só é gravado uma vez (marcador: lead
+-- "+5534998000001").
+--   Buffet Demo: onboarding concluído, link testado (falta "link na bio" e foto em pacote no
+--     checklist), 90 dias de visitas ao link por várias origens (inclusive QR code), ~70 leads
+--     espalhados com perdas por motivos variados, reservas confirmadas com valor, pedidos de
+--     visita/pré-reserva com tempo de atendimento.
+--   Buffet Teste B: onboarding parado no passo 3 (faixa no topo do painel).
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  demo     constant uuid := '11111111-1111-4111-8111-111111111111';
+  testeb   constant uuid := '22222222-2222-4222-8222-222222222222';
+  dona     constant uuid := '1a000000-0000-4000-8000-000000000001';
+  vendedor constant uuid := '1a000000-0000-4000-8000-000000000002';
+  origens  constant public.origem_lead[] :=
+    array['instagram', 'instagram', 'whatsapp', 'google', 'qrcode', 'link_direto', 'indicacao', 'instagram']::public.origem_lead[];
+  motivos  constant public.motivo_perda[] :=
+    array['preco', 'preco', 'data_indisponivel', 'concorrente', 'sem_resposta', 'desistiu', 'fora_da_area']::public.motivo_perda[];
+  v_espaco uuid;
+  v_turnos uuid[];
+  v_lead   uuid;
+  v_orc    uuid;
+  v_numero integer;
+  v_criado timestamptz;
+  v_status public.status_lead;
+  i        integer;
+  d        integer;
+  s        integer;
+  v_sessao uuid;
+begin
+  update public.empresas
+  set onboarding_passo = 5,
+      onboarding_iniciado_em = coalesce(onboarding_iniciado_em, criado_em),
+      onboarding_concluido_em = coalesce(onboarding_concluido_em, criado_em + interval '9 minutes'),
+      link_testado_em = coalesce(link_testado_em, now() - interval '20 days')
+  where id = demo;
+  update public.empresas
+  set onboarding_passo = 3, onboarding_iniciado_em = coalesce(onboarding_iniciado_em, now() - interval '1 day'),
+      onboarding_concluido_em = null
+  where id = testeb;
+
+  if exists (select 1 from public.leads where empresa_id = demo and whatsapp_e164 = '+5534998000001') then
+    return;
+  end if;
+
+  select id into v_espaco from public.espacos where empresa_id = demo order by ordem limit 1;
+  select array_agg(id order by ordem) into v_turnos from public.turnos where empresa_id = demo;
+  select coalesce(max(numero), 0) into v_numero from public.orcamentos where empresa_id = demo;
+
+  -- visitas ao link: 90 dias, 6 a 14 sessões por dia, cada uma com a sua origem
+  for d in 0..89 loop
+    for s in 1..(6 + (d * 7) % 9) loop
+      v_sessao := md5('seed8:sessao:' || d || ':' || s)::uuid;
+      v_criado := now() - d * interval '1 day' - (s * 47 % 600) * interval '1 minute';
+      insert into public.funil_eventos (empresa_id, sessao, passo, evento, origem, criado_em)
+      values (demo, v_sessao, 0, 'pagina_vista', origens[1 + (d + s) % 8], v_criado);
+      if (d + s) % 10 < 4 then -- ~40% começam o orçamento
+        insert into public.funil_eventos (empresa_id, sessao, passo, evento, origem, criado_em)
+        values (demo, v_sessao, 1, 'passo_concluido', origens[1 + (d + s) % 8], v_criado + interval '1 minute'),
+               (demo, v_sessao, 2, 'passo_visto', origens[1 + (d + s) % 8], v_criado + interval '1 minute');
+        if (d + s) % 10 < 2 then
+          insert into public.funil_eventos (empresa_id, sessao, passo, evento, origem, criado_em)
+          values (demo, v_sessao, 3, 'passo_visto', origens[1 + (d + s) % 8], v_criado + interval '3 minutes');
+        end if;
+      end if;
+    end loop;
+  end loop;
+
+  -- ~70 leads espalhados em 90 dias
+  for i in 1..70 loop
+    v_criado := now() - ((i * 37) % 89 + 1) * interval '1 day' - (i * 13 % 600) * interval '1 minute';
+    v_status := case
+      when i % 7 = 0 then 'reservado'
+      when i % 7 = 1 then 'perdido'
+      when i % 7 = 2 then 'em_andamento'
+      when i % 7 = 3 then 'abandonou'
+      when i % 7 = 4 then 'frio'
+      when i % 7 = 5 then 'perdido'
+      else 'em_andamento' end;
+    insert into public.leads (empresa_id, nome, whatsapp_e164, origem, status, temperatura, ultimo_passo,
+      responsavel_id, criado_em, ultima_atividade_em, perdido_em, motivo_perda_codigo, status_antes_de_perder,
+      primeiro_contato_em, consentimento_em, consentimento_versao)
+    values (demo,
+      (array['Ana', 'Bruna', 'Caio', 'Débora', 'Elisa', 'Fábio', 'Gabi', 'Heitor', 'Iara', 'Júlio'])[1 + i % 10]
+        || ' ' || (array['Lima', 'Souza', 'Rocha', 'Prado', 'Melo', 'Dias', 'Pires'])[1 + i % 7] || ' ' || i,
+      '+5534998' || lpad(i::text, 6, '0'),
+      case when i % 11 = 0 then 'interno' else origens[1 + i % 8] end,
+      v_status,
+      (case when i % 5 = 0 then 'quente' when i % 3 = 0 then 'morno' else 'frio' end)::public.temperatura_lead,
+      case when i % 4 = 0 then 3 else 6 end,
+      case when i % 3 = 0 then vendedor when i % 3 = 1 then dona end,
+      v_criado, v_criado + interval '1 day',
+      case when v_status = 'perdido' then v_criado + ((i % 9) + 2) * interval '1 day' end,
+      case when v_status = 'perdido' then motivos[1 + i % 7] end,
+      case when v_status = 'perdido' then 'em_andamento'::public.status_lead end,
+      case when i % 4 <> 3 then v_criado + ((i * 17) % 300 + 5) * interval '1 minute' end,
+      v_criado, 'v1')
+    returning id into v_lead;
+
+    -- orçamento concluído (os leads do passo 6), com o total na versão vigente
+    if i % 4 <> 0 then
+      v_numero := v_numero + 1;
+      insert into public.orcamentos (empresa_id, lead_id, numero, token, status, canal, origem, resultado,
+        total_centavos, validade_ate, enviado_em, criado_em, passo_atual)
+      values (demo, v_lead, v_numero, 'seedEtapa8' || md5(v_lead::text),
+        (case when i % 9 = 4 then 'expirado' else 'visualizado' end)::public.status_orcamento,
+        (case when i % 11 = 0 then 'interno' else 'publico' end)::public.canal_orcamento,
+        case when i % 11 = 0 then 'interno' else origens[1 + i % 8] end,
+        '{}'::jsonb, 380000 + (i * 7919 % 40) * 10000,
+        (v_criado + interval '10 days')::date, v_criado + interval '20 minutes', v_criado + interval '10 minutes', 6)
+      returning id into v_orc;
+    end if;
+
+    -- pedido de pré-reserva ou visita pelo cliente, e a primeira ação do vendedor depois
+    if i % 3 <> 2 then
+      insert into public.atividades (empresa_id, lead_id, tipo, autor, criado_em, dados)
+      values (demo, v_lead, case when i % 2 = 0 then 'pre_reserva_pedida' else 'visita_pedida' end::public.tipo_atividade,
+        'cliente', v_criado + interval '30 minutes', '{}'::jsonb);
+      insert into public.avisos (empresa_id, usuario_id, tipo, lead_id, chave, criado_em, agendado_para, lido_em, dados)
+      values (demo, coalesce(case when i % 3 = 0 then vendedor end, dona),
+        case when i % 2 = 0 then 'pre_reserva_pedida' else 'visita_pedida' end::public.tipo_aviso, v_lead,
+        'seed8:aviso:' || i, v_criado + interval '30 minutes', v_criado + interval '31 minutes',
+        v_criado + interval '1 hour', jsonb_build_object('lead_nome', 'Lead ' || i))
+      on conflict (chave) do nothing;
+      if i % 4 <> 3 then
+        insert into public.atividades (empresa_id, lead_id, tipo, autor, usuario_id, criado_em, dados)
+        values (demo, v_lead, 'contato_registrado', 'usuario',
+          coalesce(case when i % 3 = 0 then vendedor end, dona),
+          v_criado + interval '30 minutes' + ((i * 23) % 240 + 4) * interval '1 minute',
+          jsonb_build_object('canal', 'whatsapp'));
+      end if;
+    end if;
+
+    -- reservado: reserva confirmada (evento já realizado ou nas próximas semanas, em datas espaçadas)
+    if v_status = 'reservado' then
+      insert into public.reservas (empresa_id, espaco_id, turno_id, data, inicio, fim, tipo, status, origem,
+        cliente_nome, valor_total_centavos, sinal_centavos, lead_id, orcamento_id, criado_em, confirmada_em, confirmada_por)
+      values (demo, v_espaco, v_turnos[1 + i % array_length(v_turnos, 1)],
+        (current_date + (i * 3 % 50) + 32)::date,
+        ((current_date + (i * 3 % 50) + 32)::timestamp + interval '15 hours') at time zone 'America/Sao_Paulo',
+        ((current_date + (i * 3 % 50) + 32)::timestamp + interval '19 hours') at time zone 'America/Sao_Paulo',
+        'confirmada', 'ativa', 'orcamento', 'Cliente ' || i, 380000 + (i * 7919 % 40) * 10000, 120000,
+        v_lead, v_orc, v_criado + interval '1 day', v_criado + interval '3 days', dona);
+    end if;
+  end loop;
+end;
+$$;
