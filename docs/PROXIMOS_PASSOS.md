@@ -1,4 +1,4 @@
-# Próximos passos (anotados durante as Etapas 0 a 6)
+# Próximos passos (anotados durante as Etapas 0 a 7)
 
 Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi implementado.
 
@@ -48,8 +48,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 ## Depois da Etapa 5 (pendências percebidas)
 
 - ~~**Etapa 6:** caixa de leads com prioridade, perdido com motivo, notas e tarefas~~ (feito).
-- **Etapa 7:** avisos por WhatsApp (proposta aberta, pré-reserva vencendo) e follow-up
-  automático da proposta não aberta.
+- ~~**Etapa 7:** avisos por WhatsApp (proposta aberta, pré-reserva vencendo) e follow-up
+  automático da proposta não aberta~~ (feito).
 - Assinatura eletrônica, contrato, cobrança e Pix do sinal; envio da proposta por e-mail.
 - Remover "feito com Orkestra" no plano superior (`empresas.rodape_orkestra` já existe, fixo
   em true).
@@ -65,11 +65,11 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 
 ## Depois da Etapa 6 (pendências percebidas)
 
-- **Etapa 7 (regras automáticas):** criar tarefas com `origem = 'regra'` e `regra` preenchida
+- ~~**Etapa 7 (regras automáticas):**~~ (feito) criar tarefas com `origem = 'regra'` e `regra` preenchida
   (proposta não aberta em 24h, pré-reserva vencendo, visita amanhã, lead quente sem contato). O
   índice `tarefas_regra_aberta_idx` já impede duplicar: basta um insert com
   `on conflict do nothing` numa função `security definer` chamada por um job.
-- **Etapa 7 (avisos):** notificação para o responsável (push/WhatsApp) com link direto para
+- ~~**Etapa 7 (avisos):**~~ (feito) notificação para o responsável (push/WhatsApp) com link direto para
   `/app/leads/[id]`; hoje o vendedor só vê pela caixa e pelo badge.
 - **Permissão por carteira:** hoje todo vendedor vê e age em todos os leads da empresa. Avaliar
   "vendedor só vê os seus e os sem responsável" (mudança de RLS e de `caixa_leads`).
@@ -84,6 +84,26 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Caixa com mais de ~20 mil leads por empresa: se o `explain` passar de 150 ms, materializar a
   chave de ordem em colunas do lead mantidas pelas funções.
 - Relatório de motivos de perda em Números.
+
+## Depois da Etapa 7 (pendências percebidas)
+
+- **Números:** funil, conversão, motivos de perda e origem dos leads, usando
+  `funil_eventos`, `atividades` e `avisos` (tempo entre o aviso e o primeiro contato).
+- Verificar o WhatsApp do **cliente** por código (o canal oficial já existe; precisa de um
+  modelo de autenticação aprovado na Meta).
+- Mensagem automática ao cliente final (lembrete de visita, pré-reserva vencendo): hoje
+  proibido por decisão de produto; exigiria opt-in explícito do cliente e modelos próprios.
+- Webhook de status da Meta (entregue/lida) para mostrar "lido no WhatsApp" e desligar números
+  inválidos; hoje só o erro do envio é gravado.
+- Avisos por e-mail (resumo semanal) quando houver SMTP próprio (Etapa 9).
+- Limpeza periódica: avisos com mais de 90 dias e entregas `enviado`/`ignorado` antigas
+  (hoje a tela mostra 30 dias e nada é apagado).
+- Regras de follow-up personalizadas (texto e prazo livres) e mensagens prontas editáveis.
+- Push no desktop com mais de um navegador por usuário funciona, mas a tela não permite dar
+  nome ao aparelho.
+- Silêncio por dia da semana (fim de semana inteiro, por exemplo).
+- Desfazer "cancelada" de uma tarefa automática pela tela (hoje ela renasce sozinha só se a
+  situação voltar a pedir, com outra base).
 
 ## Etapa 9: Produção
 

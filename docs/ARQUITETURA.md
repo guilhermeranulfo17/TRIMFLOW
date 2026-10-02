@@ -740,3 +740,102 @@ eh_usuario_empresa, ip_hash)`. Usuário logado da própria empresa (sessão, com
   claro do mesmo tom (`text-amber-300`), nunca os fundos claros (`bg-*-50`/`100`).
 - Destaques da referência: topo "Hoje" com um bloco verde-limão (pré-reservas), um claro
   (visitas, `bg-destaque`) e os demais grafite; item ativo da navegação em pílula clara.
+
+# Avisos e follow-up (Etapa 7)
+
+## 45. Fila de avisos (outbox no banco)
+
+- **Tabelas:** `avisos` (o que aparece no painel: um por usuário e evento, `chave` única para
+  idempotência, `agrupados`, `agendado_para`, `lido_em`) e `avisos_entregas` (uma por canal
+  externo: `push` ou `whatsapp`; `status` `pendente` → `enviando` → `enviado`/`falhou`/
+  `ignorado`, `tentativas`, `proximo_envio_em`, `bloqueado_ate`, `erro_codigo`). Mais
+  `push_inscricoes`, `preferencias_avisos` (uma linha por usuário, criada sob demanda) e
+  `regras_follow_up`. Leitura por RLS só do próprio usuário (regras: a empresa); nenhuma escrita
+  direta: tudo por funções `security definer`.
+- **Nascimento na mesma transação do evento.** Decisão: em vez de redefinir
+  `_lead_aplicar_evento` (risco de regressão nas Etapas 4 a 6), dois triggers novos:
+  `atividades_avisos` (after insert em `atividades`: `pre_reserva_pedida` e `visita_pedida`
+  com `autor = 'cliente'`, e a reavaliação das tarefas automáticas do lead) e `leads_esquentou`
+  (lead que vira quente por reabrir a proposta). Pré-reserva feita pelo vendedor não avisa.
+  Transação desfeita = aviso desfeito.
+- `_aviso_criar(empresa, usuário, tipo, lead, dados, chave, silencio)`: ignora lead de teste;
+  `chave` repetida não cria nada; **agrupa** (mesmo tipo, lead e usuário em 10 min soma
+  `agrupados` e atualiza os dados); calcula o silêncio; cria a entrega `push` só se o usuário
+  tem aparelho inscrito e a `whatsapp` só com `whatsapp_ativo`.
+- **Destinatários** (`_aviso_destinatarios`, espelho em `domain/avisos/destinatario`): o
+  responsável do lead; sem responsável, os donos ativos; e os donos que ligaram "receber também
+  os avisos dos leads com vendedor".
+- **Silêncio** (padrão 22:00–07:00, por usuário, no fuso da empresa, com virada de dia;
+  `_aviso_agendar` = `domain/avisos/silencio`): o painel mostra na hora; push e WhatsApp ficam
+  com `proximo_envio_em` no fim do silêncio. Resumo diário e aviso de teste não esperam.
+- **Avisos por tempo** (`gerar_avisos_tempo`, a cada 5 min): pré-reserva vencendo (12 h antes),
+  orçamentos sem ação (blocos de 2 h, 9h–18h, segunda a sábado, chave por bloco), cliente parou
+  (passo ≥ 3, parado há 30 min) e resumo diário às 8h (não sai zerado). Idempotentes pela
+  `chave`.
+- **Envio fora de transação.** `reservar_entregas(limite)` (só `service_role`): solta as
+  `enviando` com aluguel vencido, marca `ignorado`/`RESOLVIDO` o que deixou de valer
+  (`_aviso_ainda_vale`: a pré-reserva não está mais ativa, a visita já foi tratada), e pega as
+  vencidas com `for update skip locked`, marcando `enviando` com `bloqueado_ate = now() + 2 min`.
+  O servidor envia e chama `concluir_entrega`: sucesso = `enviado`; erro = nova tentativa em 1,
+  5, 15 e 60 min e `falhou` na 5ª; canal sem configuração = `ignorado` (`CANAL_DESLIGADO`);
+  endpoint de push 404/410 apaga a inscrição. Dois processadores ao mesmo tempo nunca pegam a
+  mesma entrega.
+- **Quem processa:** `POST /api/avisos/processar` com `Authorization: Bearer CRON_SECRET`
+  (comparação em tempo constante; 401 sem ele), chamada pelo `after()` das ações do link público
+  (pré-reserva e visita) e a cada minuto pelo `pg_cron` + `pg_net`
+  (`chamar_processador_avisos`, que lê a URL e o segredo do **Vault** e só chama se houver
+  entrega vencida). Decisão: o job é sempre agendado e não faz nada sem os segredos; cadastrar
+  no Vault depois do merge já liga a fila (`docs/AVISOS_CONFIGURACAO.md`). Sem `pg_cron`/`pg_net`
+  (CI, Postgres puro), a migration só avisa.
+- Logs da fila só com ids, canais e códigos de erro; nunca nome, telefone ou texto do aviso.
+
+## 46. Canais
+
+- `src/server/avisos/canais/`: interface `Canal { nome, configurado(), enviar() }`, com as
+  dependências injetadas (testes com HTTP falso).
+  - **Painel:** sempre ligado; é a fonte da verdade. Sino no cabeçalho (contador por
+    `GET /api/avisos/contagem` a cada 20 s e ao voltar para a aba), `/app/avisos` (30 dias).
+  - **Push (PWA):** `web-push` com VAPID; `public/sw.js` mostra a notificação e abre/foca o
+    lead; `app/manifest.ts` e ícones em `public/icones`. No iPhone só funciona com o app
+    instalado na tela de início (iOS 16.4+): a tela explica o passo a passo.
+  - **WhatsApp (Meta Cloud API):** `fetch` para `graph.facebook.com/v21.0/{phone_id}/messages`
+    com modelo aprovado (`pt_BR`, utilidade) e botão de URL; só para a equipe, com número E.164
+    e aceite gravados. Erro vira `META_<código>`/`HTTP_<status>`. Textos em
+    `docs/WHATSAPP_MODELOS.md`. Desligado sem `WHATSAPP_TOKEN` e `WHATSAPP_PHONE_NUMBER_ID`.
+- Canais por tipo: padrão em `domain/avisos/canais` (= `_aviso_canais`): pré-reserva, visita,
+  pré-reserva vencendo, resumo e teste no push e no WhatsApp; orçamentos sem ação só no push;
+  cliente parou e esquentou só no painel (o usuário liga o push em Minha conta). Os mesmos
+  textos e variáveis no painel, no push e no WhatsApp (`domain/avisos/textos`).
+- Variável de ambiente que falta desliga o canal com um aviso no log (`instrumentation.ts`);
+  o site nunca cai por isso. `pnpm vapid:gerar` gera as chaves.
+
+## 47. Follow-up automático
+
+- Oito regras (`domain/follow-up/regras` = `_follow_up_avaliar`, teste de equivalência com
+  2.400 casos sorteados): proposta sem resposta em 24 h, segundo toque, proposta vencendo,
+  proposta vencida (nasce desligada), pré-reserva vencendo, visita amanhã, pós-visita e lead
+  quente sem contato. Cada regra tem `aplica` (a situação ainda pede a tarefa), `base` (o fato
+  que abre a regra) e `quando` (a partir de quando nasce). Resultado: `criar`, `cancelar` ou
+  `nada`; cria no máximo uma vez por base.
+- `regras_follow_up` (uma linha por empresa e regra, criada por trigger na empresa e por
+  backfill): liga/desliga e prazo dentro de limites (`salvar_regra_follow_up`, só o dono).
+- `gerar_tarefas_automaticas` (a cada 15 min): monta os fatos do lead (`_follow_up_fatos`) e
+  insere com `origem = 'regra'` e `on conflict … do nothing` no índice
+  `tarefas_regra_aberta_idx` (uma aberta por regra em cada lead), mais a atividade
+  `tarefa_criada {automatica: true}`. **Cancelamento automático:** a cada atividade do lead
+  (trigger) e no job, a tarefa aberta cuja regra deu `cancelar` ganha `cancelada_em`.
+- A tarefa guarda a situação da mensagem pronta e as variáveis em `tarefas.mensagem_dados`
+  (coluna nova, nullable); o texto é montado pelo domínio na leitura (sem duplicar texto no
+  SQL). Na tela: selo "Automática" com o motivo e "Enviar no WhatsApp" com a mensagem pronta.
+- Lead de teste nunca gera aviso nem tarefa.
+- Desempenho (seed de volume, 5.000 leads, Postgres local): `gerar_tarefas_automaticas` ~1 s
+  por rodada (5,5 s na primeira, que cria 1.449 tarefas); `gerar_avisos_tempo` ~0,3 s. Rodam
+  no `pg_cron`, fora de qualquer requisição. Se crescer muito, avaliar só os leads com fatos
+  mudados desde a última rodada.
+
+## 48. Telas da Etapa 7
+
+- Sino no cabeçalho (celular e desktop), `/app/avisos`, **Minha conta → Avisos**
+  (`/app/conta/avisos`: canais por tipo, silêncio, ativar push neste aparelho, passos do
+  iPhone, WhatsApp com número e aceite, "Enviar aviso de teste" com o resultado por canal) e
+  **Minha empresa → Follow-up** (só o dono edita). Tema escuro, 375 px primeiro, alvos ≥ 44 px.

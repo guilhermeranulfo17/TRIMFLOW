@@ -18,6 +18,8 @@ Documento de referência do produto: "Orkestra: Estrutura Lógica do Sistema". D
 - Vitest (unit + integração) e Playwright (E2E)
 - PDF da proposta: `@react-pdf/renderer` (servidor, sem navegador headless) e `sharp` (logo WEBP
   → PNG), fonte Manrope TTF no repositório (OFL)
+- Avisos: `web-push` (VAPID) para o push do PWA; WhatsApp pela Cloud API oficial da Meta com
+  `fetch` (sem SDK; proibido API não oficial)
 - pnpm, Node 22 (`.nvmrc`)
 - Deploy: Vercel (app) + Supabase Cloud (banco). CI: GitHub Actions
 
@@ -31,9 +33,12 @@ src/
     (auth)/          login, cadastro, recuperar-senha, nova-senha
     (app)/app/       área logada: leads (caixa) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
-                     [id]/editar, [id]/pdf)
+                     [id]/editar, [id]/pdf), avisos (histórico), conta/avisos (Minha conta)
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
-                     opcionais/[id]), regras, usuarios, plano, simulador, proposta-exemplo
+                     opcionais/[id]), regras, follow-up, usuarios, plano, simulador,
+                     proposta-exemplo
+    api/avisos/      processar (POST, Bearer CRON_SECRET) e contagem (GET, sino)
+    manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)
     auth/            rotas técnicas: confirm (link do e-mail), sair
     b/[slug]/        página pública do buffet, orcamento (wizard), proposta/[token] (+ /pdf)
     (legal)/         privacidade e termos
@@ -45,6 +50,7 @@ src/
       empresa/       peças de Minha empresa (listas, cards do catálogo, faixas de idade…)
       orcamento/     "+ Orçamento" (formulário, calendário da agenda, saídas, orçamentos do lead)
       leads/         caixa (topo Hoje, filtros, cartões), ações do lead, tarefas, mensagem pronta
+      avisos/        sino, preferências, push neste aparelho, WhatsApp, aviso de teste
     orcamento/       peças compartilhadas do wizard e do orçamento interno (contador)
     proposta/        proposta na web (desenha o ModeloProposta)
     auth/            peças dos formulários de autenticação
@@ -62,6 +68,9 @@ src/
                      diferenças entre versões, validade, temperatura (= regra do SQL), arquivo,
                      festa de exemplo
     modelos/         modelos de segmento (infantil, eventos, domicilio) validados com Zod
+    avisos/          textos (painel, push e variáveis do WhatsApp), silêncio, canais, destinatário,
+                     agrupamento (= regras do SQL)
+    follow-up/       as 8 regras de tarefa automática (avaliarRegra = _follow_up_avaliar), títulos
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario), anon (comAnon),
                      admin (sem RLS)
@@ -77,6 +86,8 @@ src/
     proposta/        carregador da proposta (público e painel), versão a gravar, PDF, fontes,
                      proposta de exemplo
     orcamentos/      leituras do orçamento interno (base de preço, lead por WhatsApp, edição)
+    avisos/          processador da fila, canais (push, whatsapp) com dependências injetadas,
+                     leituras (sino, histórico, preferências, regras de follow-up)
     env.ts, erros.ts
   lib/               utilitários de UI (cn)
   middleware.ts      sessão + proteção de /app/**
@@ -134,6 +145,14 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   das ações do lead (`registrar_contato`, `marcar_perdido`, `reabrir_lead`…). A regra de
   status do lead existe no SQL (`_lead_transicao`, `_lead_status_reaberto`) e em
   `domain/publico/status-lead`, com teste de equivalência: mudou uma, mude a outra.
+- **Avisos (Etapa 7):** nascem no banco, na transação do evento (triggers `atividades_avisos` e
+  `leads_esquentou`, jobs `gerar_avisos_tempo`), sempre por `_aviso_criar` (chave única,
+  agrupamento de 10 min, silêncio, lead de teste ignorado). Envio **fora** de transação:
+  `reservar_entregas` (skip locked, aluguel de 2 min) → canal → `concluir_entrega` (1/5/15/60
+  min, `falhou` na 5ª), só pelo `server/avisos/processar` (rota com `CRON_SECRET` e `after()`).
+  Silêncio, canais, destinatários e follow-up existem no SQL e em `domain/avisos` e
+  `domain/follow-up`, com teste de equivalência: mudou uma, mude a outra. Nenhuma mensagem
+  automática ao cliente final. Logs da fila só com ids e códigos.
 - **Notas, tarefas e visitas** só são escritas pelas funções da Etapa 6 (`adicionar_nota`,
   `criar_tarefa`, `adiar_tarefa`, `confirmar_visita`…), que travam o lead e gravam auditoria.
   Tarefa automática (Etapa 7) usa `origem = 'regra'` e `regra`: o índice
@@ -189,6 +208,7 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 | `pnpm db:migrate`                              | Aplica migrations pendentes no banco local              |
 | `pnpm db:seed`                                 | Roda `supabase/seed.sql` (idempotente)                  |
 | `pnpm db:seed:volume`                          | Empresa com 5.000 leads para medir a caixa (só local)   |
+| `pnpm vapid:gerar`                             | Gera o par de chaves VAPID do push (para a Vercel)      |
 
 ## Como rodar localmente
 
@@ -205,7 +225,9 @@ do **Buffet Demo** (com o catálogo do modelo infantil), e `dono@testeb.local` d
 (catálogo vazio). O Buffet Demo tem 25 leads em estados diferentes (seed), entre eles um
 orçamento com 3 versões, um interno com desconto e avulso, uma proposta vencida, um lead
 quente por aberturas, perdidos com motivos, visita confirmada para hoje, pedido de visita,
-tarefas atrasadas, de hoje e futuras, e notas. `pnpm db:seed:volume` cria o **Buffet Volume**
+tarefas atrasadas, de hoje e futuras, e notas; desde a Etapa 7, avisos lidos e não lidos de
+todos os tipos, preferências (o vendedor com silêncio 23:00–08:00), a regra "segundo toque"
+desligada e tarefas automáticas abertas e uma cancelada. `pnpm db:seed:volume` cria o **Buffet Volume**
 (`dono@volume.local`, 5.000 leads) para o `explain analyze` da caixa. Página pública:
 http://localhost:3000/b/buffet-demo (logado como dono, abre em modo teste). E-mails locais (recuperação de senha): http://127.0.0.1:54324.
 
@@ -214,7 +236,8 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 5 (PRs #1 a #6) na `main`.
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 6 e o visual escuro (PRs #1 a #8)
+  na `main`.
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região
@@ -227,7 +250,12 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 - **Variáveis na Vercel:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
   `NEXT_PUBLIC_SITE_URL`, `DATABASE_URL`, desde a Etapa 2 `SUPABASE_SERVICE_ROLE_KEY`
   (secreta; sem ela, criar vendedor não funciona) e, desde a Etapa 4, `IP_HASH_SALT`
-  (secreta; obrigatória: sem ela o servidor não sobe).
+  (secreta; obrigatória: sem ela o servidor não sobe). Desde a Etapa 7: `CRON_SECRET`
+  (secreta), `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (secreta), `VAPID_SUBJECT`,
+  `WHATSAPP_TOKEN` (secreta) e `WHATSAPP_PHONE_NUMBER_ID`; faltar alguma só desliga o canal,
+  com aviso no log. URL do site e o mesmo `CRON_SECRET` também no **Supabase Vault**
+  (`orkestra_site_url`, `orkestra_cron_secret`) para o `pg_cron` chamar a fila: ver
+  `docs/AVISOS_CONFIGURACAO.md`. Modelos do WhatsApp: `docs/WHATSAPP_MODELOS.md`.
   - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
