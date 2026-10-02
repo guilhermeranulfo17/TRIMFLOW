@@ -67,8 +67,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 
 - **Etapa 7 (regras automáticas):** criar tarefas com `origem = 'regra'` e `regra` preenchida
   (proposta não aberta em 24h, pré-reserva vencendo, visita amanhã, lead quente sem contato). O
-  índice `tarefas_regra_aberta_idx` já impede duplicar: basta um insert com `on conflict do
-  nothing` numa função `security definer` chamada por um job.
+  índice `tarefas_regra_aberta_idx` já impede duplicar: basta um insert com
+  `on conflict do nothing` numa função `security definer` chamada por um job.
 - **Etapa 7 (avisos):** notificação para o responsável (push/WhatsApp) com link direto para
   `/app/leads/[id]`; hoje o vendedor só vê pela caixa e pelo badge.
 - **Permissão por carteira:** hoje todo vendedor vê e age em todos os leads da empresa. Avaliar
