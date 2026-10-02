@@ -130,6 +130,13 @@ export function somarMeses(data: DataCivil, meses: number): DataCivil {
   return paraDataCivil(alvo);
 }
 
+/** Dias corridos de `de` até `ate` (negativo se `ate` vem antes). */
+export function diasEntre(de: DataCivil, ate: DataCivil): number {
+  const [a1, m1, d1] = exigirDataCivil(de);
+  const [a2, m2, d2] = exigirDataCivil(ate);
+  return Math.round((Date.UTC(a2, m2 - 1, d2) - Date.UTC(a1, m1 - 1, d1)) / 86_400_000);
+}
+
 /** Negativo se a < b, 0 se iguais, positivo se a > b. */
 export function compararDatas(a: DataCivil, b: DataCivil): number {
   exigirDataCivil(a);

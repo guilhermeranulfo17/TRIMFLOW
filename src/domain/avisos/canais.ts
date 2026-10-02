@@ -11,15 +11,34 @@ export const TIPOS_AVISO = [
   'cliente_esquentou',
   'resumo_diario',
   'teste',
+  'teste_acabando',
+  'fatura_criada',
+  'pagamento_confirmado',
+  'pagamento_falhou',
+  'carencia',
+  'conta_suspensa',
 ] as const;
 export type TipoAviso = (typeof TIPOS_AVISO)[number];
+
+/** Avisos de cobrança (Etapa 9A): só para o dono, push sempre ligado, não configuráveis. */
+export const TIPOS_COBRANCA = [
+  'teste_acabando',
+  'fatura_criada',
+  'pagamento_confirmado',
+  'pagamento_falhou',
+  'carencia',
+  'conta_suspensa',
+] as const satisfies readonly TipoAviso[];
+
+export const ehAvisoCobranca = (tipo: TipoAviso): boolean =>
+  (TIPOS_COBRANCA as readonly TipoAviso[]).includes(tipo);
 
 export const CANAIS_EXTERNOS = ['push', 'whatsapp'] as const;
 export type CanalExterno = (typeof CANAIS_EXTERNOS)[number];
 export type CanalAviso = 'painel' | CanalExterno;
 
-/** Tipos que aparecem em Minha conta → Avisos (teste não é configurável). */
-export const TIPOS_CONFIGURAVEIS = TIPOS_AVISO.filter((t) => t !== 'teste');
+/** Tipos que aparecem em Minha conta → Avisos (teste e cobrança não são configuráveis). */
+export const TIPOS_CONFIGURAVEIS = TIPOS_AVISO.filter((t) => t !== 'teste' && !ehAvisoCobranca(t));
 
 export const CANAIS_PADRAO: Record<TipoAviso, CanalExterno[]> = {
   pre_reserva_pedida: ['push', 'whatsapp'],
@@ -30,6 +49,12 @@ export const CANAIS_PADRAO: Record<TipoAviso, CanalExterno[]> = {
   cliente_esquentou: [],
   resumo_diario: ['push', 'whatsapp'],
   teste: ['push', 'whatsapp'],
+  teste_acabando: ['push'],
+  fatura_criada: ['push'],
+  pagamento_confirmado: ['push'],
+  pagamento_falhou: ['push'],
+  carencia: ['push'],
+  conta_suspensa: ['push'],
 };
 
 export const ROTULO_TIPO_AVISO: Record<TipoAviso, string> = {
@@ -41,6 +66,12 @@ export const ROTULO_TIPO_AVISO: Record<TipoAviso, string> = {
   cliente_esquentou: 'Cliente esquentou',
   resumo_diario: 'Resumo do dia (8h)',
   teste: 'Aviso de teste',
+  teste_acabando: 'Teste grátis acabando',
+  fatura_criada: 'Fatura criada',
+  pagamento_confirmado: 'Pagamento confirmado',
+  pagamento_falhou: 'Pagamento não identificado',
+  carencia: 'Pagamento em atraso',
+  conta_suspensa: 'Conta suspensa',
 };
 
 /** Só estes tipos têm modelo aprovado no WhatsApp (docs/WHATSAPP_MODELOS.md). */
@@ -61,7 +92,7 @@ export function canaisDoTipo(
   tipo: TipoAviso,
   preferencias: Partial<Record<string, unknown>> | null | undefined,
 ): CanalExterno[] {
-  const salvo = tipo === 'teste' ? undefined : preferencias?.[tipo];
+  const salvo = tipo === 'teste' || ehAvisoCobranca(tipo) ? undefined : preferencias?.[tipo];
   const escolhidos = Array.isArray(salvo) ? salvo : CANAIS_PADRAO[tipo];
   const disponiveis = canaisDisponiveis(tipo);
   return CANAIS_EXTERNOS.filter((c) => escolhidos.includes(c) && disponiveis.includes(c));
