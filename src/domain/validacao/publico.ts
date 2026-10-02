@@ -63,6 +63,6 @@ export type VisitaEntrada = z.input<typeof visitaSchema>;
 export const funilSchema = z.object({
   sessao: z.uuid(),
   passo: z.number().int().min(0).max(6),
-  evento: z.enum(['passo_visto', 'passo_concluido', 'abandono']),
+  evento: z.enum(['pagina_vista', 'passo_visto', 'passo_concluido', 'abandono']),
   origem: z.string().max(40).optional(),
 });

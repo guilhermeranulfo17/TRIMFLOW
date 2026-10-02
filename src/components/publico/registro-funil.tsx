@@ -18,10 +18,10 @@ export function sessaoDoFunil(): string {
   }
 }
 
-/** Registra que a página do buffet foi vista (passo 0 do funil). */
+/** Registra a visita à página do buffet (passo 0 do funil; Números conta as sessões). */
 export function RegistroFunil({ slug, origem }: { slug: string; origem?: string }) {
   useEffect(() => {
-    void registrarFunil(slug, { sessao: sessaoDoFunil(), passo: 0, evento: 'passo_visto', origem });
+    void registrarFunil(slug, { sessao: sessaoDoFunil(), passo: 0, evento: 'pagina_vista', origem });
   }, [slug, origem]);
   return null;
 }

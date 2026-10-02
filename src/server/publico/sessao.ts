@@ -1,6 +1,8 @@
 import 'server-only';
+import { sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { usuarioAtual } from '@/server/auth/sessao';
+import { comUsuario } from '@/server/db/tenant';
 
 /** Cookie com o token do orçamento em andamento (retomar o wizard). Um por buffet. */
 export function cookieDoOrcamento(slug: string): string {
@@ -32,5 +34,19 @@ export async function ehModoTeste(slug: string): Promise<boolean> {
   } catch {
     // Sessão quebrada ou senha temporária: o visitante segue como cliente comum.
     return false;
+  }
+}
+
+/**
+ * Checklist "testar o link como cliente": registra a primeira vez que alguém da empresa abre o
+ * link em modo teste. Nunca atrapalha a página.
+ */
+export async function marcarLinkTestado(): Promise<void> {
+  try {
+    const usuario = await usuarioAtual();
+    if (!usuario) return;
+    await comUsuario(usuario.id, (tx) => tx.execute(sql`select public.marcar_link_testado()`));
+  } catch {
+    // métrica do checklist: falhar aqui não muda nada para quem testa
   }
 }

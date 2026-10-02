@@ -18,7 +18,7 @@ import { RegistroFunil } from '@/components/publico/registro-funil';
 import { RodapePublico } from '@/components/publico/rodape';
 import { urlPublicaMidia } from '@/lib/midia';
 import { carregarBuffet, carregarVitrine } from '@/server/publico/carregar';
-import { ehModoTeste } from '@/server/publico/sessao';
+import { ehModoTeste, marcarLinkTestado } from '@/server/publico/sessao';
 import { exigirBuffet } from './buscar';
 
 type Props = {
@@ -56,6 +56,7 @@ export default async function PaginaPublicaBuffet({ params, searchParams }: Prop
     buffet.suspenso ? null : vitrineDoSlug(slug),
     ehModoTeste(slug),
   ]);
+  if (modoTeste) await marcarLinkTestado();
   const pendente = !dados || pendenciasDoContexto(dados.contexto.ctx).length > 0;
   const vitrine = dados?.vitrine;
 
