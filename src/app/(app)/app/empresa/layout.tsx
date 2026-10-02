@@ -21,6 +21,7 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
     { href: '/app/empresa/regras', rotulo: 'Preços e regras' },
     { href: '/app/empresa/link', rotulo: 'Link e divulgação' },
     { href: '/app/empresa/proposta-exemplo', rotulo: 'Ver minha proposta' },
+    { href: '/app/empresa/follow-up', rotulo: 'Follow-up' },
     ...(dono
       ? [
           { href: '/app/empresa/usuarios', rotulo: 'Usuários' },

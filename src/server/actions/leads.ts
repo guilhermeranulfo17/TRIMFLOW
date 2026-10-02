@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { interpretarQuando, quandoAdiar, type FiltrosCaixa } from '@/domain/leads';
 import {
   montarMensagem,
+  SITUACOES_AUTOMATICAS,
   SITUACOES_MENSAGEM,
   situacaoDoMomento,
   type SituacaoMensagem,
@@ -370,6 +371,11 @@ export async function marcarVisitaRealizada(
 // ---------------------------------------------------------------------------
 // Mensagem pronta (o vendedor vê, edita e abre o WhatsApp; nada é enviado sozinho)
 // ---------------------------------------------------------------------------
+/** Situações do seletor e as das tarefas automáticas (Etapa 7). */
+const situacaoValida = (s: string): s is SituacaoMensagem =>
+  (SITUACOES_MENSAGEM as readonly string[]).includes(s) ||
+  (SITUACOES_AUTOMATICAS as readonly string[]).includes(s);
+
 export type MensagemPronta = {
   situacao: SituacaoMensagem;
   texto: string;
@@ -386,7 +392,7 @@ export async function prepararMensagem(
     const d = await dadosDaMensagem(usuario, leadId);
     if (!d) return { ok: false, erro: NAO_ENCONTRADO };
     const escolhida =
-      situacao && (SITUACOES_MENSAGEM as readonly string[]).includes(situacao) ? situacao : situacaoDoMomento(d.momento);
+      situacao && situacaoValida(situacao) ? situacao : situacaoDoMomento(d.momento);
     return {
       ok: true,
       mensagem: '',
@@ -406,7 +412,7 @@ export async function registrarMensagem(
   tarefaId?: string | null,
 ): Promise<void> {
   await acaoDoLead(async (usuario) => {
-    if (!idValido(leadId) || !(SITUACOES_MENSAGEM as readonly string[]).includes(situacao)) {
+    if (!idValido(leadId) || !situacaoValida(situacao)) {
       return { ok: false, erro: NAO_ENCONTRADO };
     }
     await chamar(

@@ -44,6 +44,7 @@ function Secao({
               feita: feitas,
               mensagemSugerida: t.mensagemSugerida,
               responsavelNome: null,
+              automatica: t.automatica,
               lead: { id: t.lead.id, nome: t.lead.nome, telefone: t.lead.telefone },
             }}
           />

@@ -1,4 +1,5 @@
 import 'server-only';
+import type { SituacaoMensagem } from '@/domain/leads/mensagens';
 import { and, asc, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import { diaDaSemana, formatData, hojeNoFuso } from '@/domain/dates';
 import {
@@ -39,6 +40,7 @@ import {
   visitas,
 } from '@/server/db/schema';
 import { comUsuario, type Tx } from '@/server/db/tenant';
+import { automaticaDaTarefa } from '@/server/tarefas/automatica';
 import { urlDoSite } from '@/server/env';
 
 /*
@@ -274,6 +276,8 @@ export type TarefaDoLead = {
   responsavelNome: string | null;
   mensagemSugerida: string | null;
   regra: string | null;
+  /** tarefa automática (Etapa 7): situação da mensagem pronta e o motivo do selo */
+  automatica: { situacao: SituacaoMensagem; motivo: string } | null;
 };
 
 export type VisitaDoLead = {
@@ -539,6 +543,7 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
         responsavelNome,
         mensagemSugerida: t.mensagemSugerida,
         regra: t.regra,
+        automatica: automaticaDaTarefa(t.origem, t.regra, t.mensagemDados),
       };
     }),
     notas: listaNotas.map(({ n, autorNome }) => {
@@ -650,6 +655,7 @@ export async function dadosDaMensagem(
       sinalCentavos: resultado?.sinalCentavos ?? null,
       visitaEm: visita?.dataHora ?? null,
       dataAindaLivre,
+      validadeAte: orc?.validadeAte ?? null,
       fuso: usuario.empresa.fuso,
     },
   };

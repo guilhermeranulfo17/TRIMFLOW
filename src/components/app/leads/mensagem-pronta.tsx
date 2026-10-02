@@ -24,6 +24,7 @@ export function BotaoWhatsApp({
   textoInicial,
   className,
   rotulo = 'WhatsApp',
+  situacaoInicial,
 }: {
   leadId: string;
   tarefaId?: string;
@@ -31,6 +32,8 @@ export function BotaoWhatsApp({
   textoInicial?: string | null;
   className?: string;
   rotulo?: string;
+  /** situação da tarefa automática (mensagem pronta da regra) */
+  situacaoInicial?: SituacaoMensagem;
 }) {
   const toast = useToast();
   const [aberto, setAberto] = useState(false);
@@ -53,7 +56,7 @@ export function BotaoWhatsApp({
   }
 
   useEffect(() => {
-    if (aberto && !numero) void carregar();
+    if (aberto && !numero) void carregar(situacaoInicial);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- carrega só ao abrir
   }, [aberto]);
 

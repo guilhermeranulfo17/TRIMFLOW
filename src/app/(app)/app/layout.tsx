@@ -6,13 +6,15 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ProvedorToast } from '@/components/app/toast';
 import { exigirSessao } from '@/server/auth/sessao';
 import { carregarPendencias } from '@/server/catalogo/pendencias';
+import { contarNaoLidos } from '@/server/avisos/carregar';
 import { resumoHoje } from '@/server/leads/carregar';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const usuario = await exigirSessao();
-  const [pendencias, hoje] = await Promise.all([
+  const [pendencias, hoje, naoLidos] = await Promise.all([
     carregarPendencias(usuario.id),
     resumoHoje(usuario),
+    contarNaoLidos(usuario),
   ]);
   // Leads: pré-reservas e visitas que pedem ação (grupos 1 e 2 da caixa)
   const badges = { '/app/empresa': pendencias.length, '/app/leads': hoje.pedemAcao };
@@ -26,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex min-w-0 flex-1 flex-col">
             <AppHeader
               nomeBuffet={usuario.empresa.nome}
+              naoLidos={naoLidos}
               usuario={{ nome: usuario.nome, email: usuario.email, perfil: usuario.perfil }}
             />
             <main className="flex-1 px-4 pt-6 pb-40 md:px-8 md:pb-28">{children}</main>

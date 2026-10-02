@@ -161,6 +161,7 @@ export default async function LeadPage({ params }: Props) {
                   feita: false,
                   mensagemSugerida: t.mensagemSugerida,
                   responsavelNome: t.responsavelNome,
+                  automatica: t.automatica,
                 }}
               />
             ))}

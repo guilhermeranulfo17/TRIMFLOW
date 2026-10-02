@@ -1,6 +1,7 @@
 'use client';
 
-import { ChevronDown, LogOut } from 'lucide-react';
+import { Bell, ChevronDown, LogOut } from 'lucide-react';
+import Link from 'next/link';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +49,12 @@ export function UserMenu({
           <p className="text-muted-foreground mt-1 text-xs">{ROTULO_PERFIL[perfil]}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/app/conta/avisos" className="cursor-pointer">
+            <Bell aria-hidden />
+            Minha conta: avisos
+          </Link>
+        </DropdownMenuItem>
         <form action={sair}>
           <DropdownMenuItem asChild>
             <button type="submit" className="w-full cursor-pointer">

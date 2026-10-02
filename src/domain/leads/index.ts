@@ -148,6 +148,11 @@ export function descreverAtividade(
     case 'nota':
       return `${equipe} anotou${typeof dados.trecho === 'string' ? `: ${dados.trecho}` : ''}`;
     case 'tarefa_criada':
+      if (dados.automatica === true) {
+        return typeof dados.titulo === 'string'
+          ? `Tarefa automática: "${dados.titulo}"`
+          : 'Tarefa automática criada';
+      }
       return typeof dados.titulo === 'string'
         ? `${equipe} criou a tarefa "${dados.titulo}"`
         : `${equipe} criou uma tarefa`;
