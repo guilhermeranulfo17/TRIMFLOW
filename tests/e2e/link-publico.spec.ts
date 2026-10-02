@@ -239,8 +239,11 @@ test.describe('leads no desktop', () => {
     await page.getByLabel('Senha', { exact: true }).fill('demo12345');
     await page.getByRole('button', { name: 'Entrar' }).click();
     await expect(page).toHaveURL(/\/app\/leads$/);
-    await page.getByTestId('hoje-pre_reservas').click();
-    await expect(page).toHaveURL(/ver=pre_reservas/);
+    // logo depois do login a navegação do próprio login ainda pode estar terminando
+    await expect(async () => {
+      await page.getByTestId('hoje-pre_reservas').click();
+      await expect(page).toHaveURL(/ver=pre_reservas/, { timeout: 2_000 });
+    }).toPass();
     const card = page.getByTestId('card-lead').filter({ hasText: 'Patrícia Lima' });
     await expect(card).toContainText('R$ 5.600,00');
     await card.getByRole('link', { name: 'Patrícia Lima' }).click();
