@@ -721,3 +721,22 @@ eh_usuario_empresa, ip_hash)`. Usuário logado da própria empresa (sessão, com
   (`libphonenumber-js/max`) nem o índice `domain/leads`; o telefone chega formatado do
   servidor. First Load JS: `/app/leads` 152 kB (era 198 kB), `/app/leads/[id]` 183 kB,
   `/app/tarefas` 175 kB.
+
+# Visual do painel
+
+## 44. Tema escuro do painel
+
+- Só a área logada é escura: preto, cartões grafite bem arredondados (22px), verde-limão
+  (`--primary: #3ee42e`, texto preto por cima) como destaque, botões em pílula
+  (`--radius-botao`) e números grandes e finos. Link público, proposta, login e cadastro
+  continuam claros (o link público usa a cor do buffet).
+- **Como liga:** o layout do painel marca `data-painel`, e `globals.css` redefine os tokens em
+  `:root:has([data-painel])`. Por estar no `:root`, diálogos, sheets, menus e toasts (portais
+  no `body`) também ficam escuros, sem piscar (vem pronto do servidor). A variante `dark:` do
+  Tailwind vale no painel inteiro.
+- `.tema-claro` volta aos tokens claros num trecho (prévia da proposta em Minha empresa: a
+  proposta é um documento do cliente e aparece como ele vai ver).
+- Cores de estado no escuro: fundo translúcido do tom (`bg-amber-400/10`, `/15`) com texto
+  claro do mesmo tom (`text-amber-300`), nunca os fundos claros (`bg-*-50`/`100`).
+- Destaques da referência: topo "Hoje" com um bloco verde-limão (pré-reservas), um claro
+  (visitas, `bg-destaque`) e os demais grafite; item ativo da navegação em pílula clara.
