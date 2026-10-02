@@ -136,3 +136,24 @@ export function compararDatas(a: DataCivil, b: DataCivil): number {
   exigirDataCivil(b);
   return a < b ? -1 : a > b ? 1 : 0;
 }
+
+const MESES_EXTENSO = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+];
+
+/** "sábado, 14 de novembro de 2026" */
+export function dataPorExtenso(data: string): string {
+  const [ano, mes, dia] = data.split('-').map(Number) as [number, number, number];
+  return `${diaDaSemana(data)}, ${dia} de ${MESES_EXTENSO[mes - 1]} de ${ano}`;
+}

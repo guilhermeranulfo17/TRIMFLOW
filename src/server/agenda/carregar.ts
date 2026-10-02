@@ -1,4 +1,5 @@
 import 'server-only';
+import { formatPhoneBR } from '@/domain/phone';
 import { and, asc, between, eq, gt, isNotNull, lte, or, sql } from 'drizzle-orm';
 import type { EstadoSlot, StatusReserva, TipoReserva } from '@/domain/agenda';
 import type { UsuarioAtual } from '@/server/auth/sessao';
@@ -45,6 +46,8 @@ export type ReservaAgenda = {
   expiraEm: string | null;
   clienteNome: string;
   clienteWhatsapp: string | null;
+  /** WhatsApp já formatado (o navegador não carrega a biblioteca de telefone) */
+  clienteTelefone: string | null;
   tipoEventoNome: string | null;
   convidados: number | null;
   valorTotalCentavos: number | null;
@@ -54,6 +57,8 @@ export type ReservaAgenda = {
   /** veio do link público (pré-reserva pelo cliente) */
   veioDoLink: boolean;
   leadNome: string | null;
+  /** lead ligado à reserva (abre o detalhe do lead) */
+  leadId: string | null;
 };
 
 export type BloqueioAgenda = {
@@ -179,6 +184,7 @@ async function reservasTx(tx: Tx, filtro: ReturnType<typeof and>): Promise<Reser
     expiraEm: r.expiraEm?.toISOString() ?? null,
     clienteNome: r.clienteNome,
     clienteWhatsapp: r.clienteWhatsappE164,
+    clienteTelefone: r.clienteWhatsappE164 ? formatPhoneBR(r.clienteWhatsappE164) : null,
     tipoEventoNome,
     convidados: r.convidados,
     valorTotalCentavos: r.valorTotalCentavos,
@@ -187,6 +193,7 @@ async function reservasTx(tx: Tx, filtro: ReturnType<typeof and>): Promise<Reser
     observacoes: r.observacoes,
     veioDoLink: r.origem === 'link_publico',
     leadNome,
+    leadId: r.leadId,
   }));
 }
 
@@ -202,6 +209,14 @@ async function bloqueiosTx(tx: Tx, de: string, ate: string): Promise<BloqueioAge
     .from(bloqueios)
     .where(between(bloqueios.data, de, ate))
     .orderBy(asc(bloqueios.data));
+}
+
+/** Reserva ou pré-reserva que ocupa a agenda hoje, ligada ao lead (detalhe do lead). */
+export async function reservasAtivasDoLead(
+  usuario: UsuarioAtual,
+  leadId: string,
+): Promise<ReservaAgenda[]> {
+  return comUsuario(usuario.id, (tx) => reservasTx(tx, eq(reservas.leadId, leadId)));
 }
 
 /** Reservas e bloqueios de um período (lista do celular). */

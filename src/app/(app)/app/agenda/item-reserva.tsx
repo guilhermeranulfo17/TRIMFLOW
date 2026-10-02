@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { SeloEstado } from '@/components/app/agenda/estados';
-import { CampoDinheiro } from '@/components/app/campos';
+import Link from 'next/link';
+import { CampoDinheiro } from '@/components/app/campos/campo-dinheiro';
 import { useToast } from '@/components/app/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { prazoRestante } from '@/domain/agenda';
 import { formatData } from '@/domain/dates';
 import { formatBRL } from '@/domain/money';
-import { formatPhoneBR } from '@/domain/phone';
 import { cancelarReserva, confirmarReserva, estenderPreReserva } from '@/server/actions/agenda';
 import type { ReservaAgenda } from '@/server/agenda/carregar';
 
@@ -20,11 +20,14 @@ export function ItemReserva({
   hoje,
   agora,
   onAlterado,
+  mostrarLead = true,
 }: {
   reserva: ReservaAgenda;
   hoje: string;
   agora: Date;
   onAlterado: () => void;
+  /** na Agenda, leva ao detalhe do lead ligado à reserva */
+  mostrarLead?: boolean;
 }) {
   const toast = useToast();
   const [modo, setModo] = useState<'confirmar' | 'cancelar' | 'estender' | null>(null);
@@ -53,9 +56,16 @@ export function ItemReserva({
           <SeloEstado estado={pre ? 'pre_reservado' : 'reservado'} />
         </span>
       </div>
-      {reserva.veioDoLink && reserva.leadNome && (
+      {mostrarLead && reserva.leadId && (
         <p className="text-muted-foreground -mt-1 text-sm">
-          Lead: <span className="text-foreground font-medium">{reserva.leadNome}</span>
+          Lead:{' '}
+          <Link
+            href={`/app/leads/${reserva.leadId}`}
+            className="text-primary font-semibold underline-offset-2 hover:underline"
+            data-testid="abrir-lead"
+          >
+            {reserva.leadNome ?? 'Abrir lead'}
+          </Link>
         </p>
       )}
       <dl className="text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
@@ -72,7 +82,7 @@ export function ItemReserva({
               target="_blank"
               rel="noopener noreferrer"
             >
-              {formatPhoneBR(reserva.clienteWhatsapp)}
+              {reserva.clienteTelefone ?? reserva.clienteWhatsapp}
             </a>
           </div>
         )}

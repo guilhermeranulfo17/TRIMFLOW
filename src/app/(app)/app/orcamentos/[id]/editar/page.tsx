@@ -32,7 +32,7 @@ export default async function EditarOrcamentoPage({ params }: Props) {
         A versão {o.versao} continua guardada no lead. Ao salvar, o link antigo passa a mostrar esta
         nova versão.{' '}
         <Link
-          href={`/app/leads?lead=${o.cliente.leadId}`}
+          href={`/app/leads/${o.cliente.leadId}`}
           className="text-primary font-semibold underline-offset-2 hover:underline"
         >
           Voltar ao lead

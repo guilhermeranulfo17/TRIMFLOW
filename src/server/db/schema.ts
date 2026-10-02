@@ -8,6 +8,7 @@ import {
   boolean,
   char,
   index,
+  unique,
   jsonb,
   numeric,
   pgEnum,
@@ -84,7 +85,7 @@ export const usuarios = pgTable(
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },
-  (t) => [index('usuarios_empresa_id_idx').on(t.empresaId)],
+  (t) => [index('usuarios_empresa_id_idx').on(t.empresaId), unique().on(t.id, t.empresaId)],
 );
 
 export const auditoria = pgTable(

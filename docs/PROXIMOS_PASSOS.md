@@ -1,4 +1,4 @@
-# Próximos passos (anotados durante as Etapas 0 a 4)
+# Próximos passos (anotados durante as Etapas 0 a 6)
 
 Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi implementado.
 
@@ -47,8 +47,7 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 
 ## Depois da Etapa 5 (pendências percebidas)
 
-- **Etapa 6:** caixa de leads com prioridade, perdido com motivo, notas e tarefas; status
-  manual do lead.
+- ~~**Etapa 6:** caixa de leads com prioridade, perdido com motivo, notas e tarefas~~ (feito).
 - **Etapa 7:** avisos por WhatsApp (proposta aberta, pré-reserva vencendo) e follow-up
   automático da proposta não aberta.
 - Assinatura eletrônica, contrato, cobrança e Pix do sinal; envio da proposta por e-mail.
@@ -59,10 +58,32 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   item.
 - Cache do logo convertido para PNG (hoje o PDF baixa e converte a cada geração; ~100 ms).
 - Fontes do PDF por buffet (hoje Manrope para todos).
-- Bundles do painel que ainda carregam `libphonenumber-js/max` no navegador (Leads, Minha
-  empresa, Usuários) pelo `formatPhoneBR`/`CampoTelefone`: usar só a máscara no cliente, como
-  no "+ Orçamento".
+- Bundles do painel que ainda carregam `libphonenumber-js/max` no navegador (Agenda, Minha
+  empresa, Usuários; Leads e Tarefas não, desde a Etapa 6) pelo `formatPhoneBR` ou
+  `CampoTelefone`: usar só a máscara no cliente, como no "+ Orçamento".
 - Seed: os orçamentos fictícios usam totais aproximados (não recalculados pelo motor).
+
+## Depois da Etapa 6 (pendências percebidas)
+
+- **Etapa 7 (regras automáticas):** criar tarefas com `origem = 'regra'` e `regra` preenchida
+  (proposta não aberta em 24h, pré-reserva vencendo, visita amanhã, lead quente sem contato). O
+  índice `tarefas_regra_aberta_idx` já impede duplicar: basta um insert com
+  `on conflict do nothing` numa função `security definer` chamada por um job.
+- **Etapa 7 (avisos):** notificação para o responsável (push/WhatsApp) com link direto para
+  `/app/leads/[id]`; hoje o vendedor só vê pela caixa e pelo badge.
+- **Permissão por carteira:** hoje todo vendedor vê e age em todos os leads da empresa. Avaliar
+  "vendedor só vê os seus e os sem responsável" (mudança de RLS e de `caixa_leads`).
+- Tarefas sem lead (lembretes gerais) e tarefas atribuídas a outra pessoa pela tela (a função
+  aceita `responsavel`, a tela cria sempre para quem está logado).
+- Desfazer "marcar perdido" com a pré-reserva de volta (hoje reabrir não recria a pré-reserva:
+  a data pode já estar ocupada).
+- Mensagens prontas editáveis por empresa (hoje os textos são fixos em `domain/leads/mensagens`)
+  e mais situações (pós-festa, aniversário do ano seguinte).
+- Busca por nome sem acento ("patricia" acha "Patrícia"): exige `unaccent` ou coluna
+  normalizada; `pg_trgm` não está em todas as instâncias.
+- Caixa com mais de ~20 mil leads por empresa: se o `explain` passar de 150 ms, materializar a
+  chave de ordem em colunas do lead mantidas pelas funções.
+- Relatório de motivos de perda em Números.
 
 ## Etapa 9: Produção
 

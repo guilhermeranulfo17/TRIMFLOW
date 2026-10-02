@@ -1,6 +1,7 @@
 'use server';
 
 import { sql } from 'drizzle-orm';
+import type { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
 import { traduzirErroAgenda } from '@/domain/agenda';
@@ -48,6 +49,12 @@ const MENSAGENS: Record<string, string> = {
   ORCAMENTO_TESTE: 'Orçamento de teste não pode ser pré-reservado.',
   PUBLICO_DADOS_INVALIDOS: 'Confira os dados do orçamento.',
 };
+
+function camposDoZod(erro: z.ZodError): Record<string, string> {
+  const campos: Record<string, string> = {};
+  for (const issue of erro.issues) campos[issue.path.join('.')] ??= issue.message;
+  return campos;
+}
 
 function mensagemDoErro(erro: unknown): string {
   const e = erro as { message?: string; cause?: { message?: string } } | null;
@@ -97,7 +104,8 @@ export async function previaInterna(
   return acao(async () => {
     const usuario = await exigirSessao();
     const r = previaInternaSchema.safeParse(entrada);
-    if (!r.success) return { ok: false, erro: 'Confira os campos do orçamento.' };
+    // Nunca a mensagem genérica: devolve os campos e a tela destaca cada um.
+    if (!r.success) return { ok: false, erro: '', campos: camposDoZod(r.error) };
     const base = await carregarBaseInterna(usuario);
     if (!base) return { ok: false, erro: 'Não foi possível carregar seu catálogo.' };
     return {
@@ -124,9 +132,7 @@ export async function salvarOrcamentoInterno(
     const usuario = await exigirSessao();
     const r = orcamentoInternoSchema.safeParse(entrada);
     if (!r.success) {
-      const campos: Record<string, string> = {};
-      for (const issue of r.error.issues) campos[issue.path.join('.')] ??= issue.message;
-      return { ok: false, erro: 'Confira os campos destacados.', campos };
+      return { ok: false, erro: 'Confira os campos destacados.', campos: camposDoZod(r.error) };
     }
     const o = r.data;
     const whatsapp = celularBRParaE164(o.cliente.whatsapp);

@@ -93,6 +93,32 @@ test('dono cria orçamento interno com desconto e avulso, envia e o cliente vê 
   expect(await semRolagemHorizontal(cliente)).toBe(true);
 });
 
+test('item avulso em branco não apaga o total e, ao salvar, destaca o campo', async ({ page }) => {
+  await entrar(page, 'dono@demo.local', SENHA_SEED);
+  await montarOrcamento(page, {
+    whatsapp: whatsappNovo(),
+    nome: unico('Avulso Vazio'),
+    mesesAFrente: 9,
+  });
+  const total = page.getByTestId('total-interno');
+  await expect(total).toContainText('R$');
+  await page.getByRole('button', { name: 'Item avulso' }).click();
+  await page.waitForTimeout(800); // nova prévia do servidor
+  await expect(total).toContainText('R$');
+  await expect(page.getByText('Confira os campos do orçamento.')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Salvar orçamento' }).click();
+  const descricao = page.getByLabel('Descrição do item 1');
+  await expect(descricao).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByText('Descreva o item ou remova a linha.')).toBeVisible();
+  await expect(descricao).toBeInViewport();
+
+  await descricao.fill('Mesa de doces extra');
+  await page.getByLabel('Valor unitário do item 1').fill('200,00');
+  await page.waitForTimeout(800);
+  await salvar(page);
+});
+
 test('cliente baixa o PDF da proposta', async ({ browser }) => {
   const cliente = await visitante(browser);
   // proposta do seed (nº 0009, Igor Teixeira)
@@ -129,11 +155,13 @@ test('cliente abre a proposta duas vezes e o lead fica quente', async ({ page, b
   await cliente.reload();
   await expect(cliente.getByTestId('total-proposta')).toBeVisible();
 
-  await page.goto('/app/leads?filtro=andamento');
+  await page.goto(`/app/leads?q=${encodeURIComponent(nome)}`);
   const card = page.getByTestId('card-lead').filter({ hasText: nome });
+  await expect(card.getByTestId('motivo')).toContainText('Abriu a proposta 2x');
   await card.getByRole('link', { name: nome }).click();
-  const dialogo = page.getByRole('dialog');
-  await expect(dialogo).toContainText('Quente');
+  const detalhe = page.getByTestId('detalhe-lead');
+  await expect(detalhe.getByRole('heading', { level: 1 })).toHaveText(nome);
+  await expect(detalhe).toContainText('Quente');
   await expect(page.getByTestId('linha-do-tempo')).toContainText('Abriu a proposta');
   await expect(page.getByTestId('orcamento-lead').first()).toContainText('Visualizado 2×');
 });

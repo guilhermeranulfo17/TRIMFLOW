@@ -52,6 +52,12 @@ export type PropsFormOrcamento = {
   chaveRascunho: string;
 };
 
+const CAMPOS_COM_LUGAR = [
+  /^cliente\.(whatsapp|nome)$/,
+  /^ajustes\.(descontoMotivo|observacoes|observacoesInternas)$/,
+  /^ajustes\.avulsos\.\d+\.descricao$/,
+];
+
 const CHAVE = (k: string) => `orkestra:orcamento:${k}`;
 
 function lerRascunho(chave: string): Rascunho | null {
@@ -118,7 +124,9 @@ export function FormOrcamento(props: PropsFormOrcamento) {
   );
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [campos, setCampos] = useState<Record<string, string>>({});
+  const [camposSalvar, setCamposSalvar] = useState<Record<string, string>>({});
+  const [camposPrevia, setCamposPrevia] = useState<Record<string, string>>({});
+  const campos = { ...camposPrevia, ...camposSalvar };
   const [salvo, setSalvo] = useState<OrcamentoSalvo | null>(null);
   const [recuperado, setRecuperado] = useState(false);
   const [resumoAberto, setResumoAberto] = useState(false);
@@ -172,7 +180,12 @@ export function FormOrcamento(props: PropsFormOrcamento) {
         if (r.ok) {
           setPrevia(r.dados);
           setErroPrevia(null);
-        } else setErroPrevia(r.erro);
+          setCamposPrevia({});
+        } else {
+          // Com campos, a tela destaca cada um; a frase só aparece se não houver campo.
+          setCamposPrevia(r.campos ?? {});
+          setErroPrevia(r.campos && Object.keys(r.campos).length ? null : r.erro || null);
+        }
       });
     }, 250);
     return () => clearTimeout(t);
@@ -240,12 +253,16 @@ export function FormOrcamento(props: PropsFormOrcamento) {
   const foraAntecedencia = !!resultado?.avisos.some((a) => a.codigo === 'ANTECEDENCIA_MINIMA');
   const erroDesconto = resultado?.erros.find((e) => e.campo === 'desconto')?.mensagem;
   const outrosErros = resultado?.erros.filter((e) => e.campo !== 'desconto') ?? [];
+  // Erros de campos que não têm lugar próprio na tela aparecem no bloco de erros.
+  const camposSemLugar = Object.entries(campos).filter(
+    ([chave]) => !CAMPOS_COM_LUGAR.some((r) => r.test(chave)),
+  );
   const pronto = !!resultado?.ok && (!foraAntecedencia || ajustes.foraAntecedencia);
 
   async function salvar() {
     setSalvando(true);
     setErro(null);
-    setCampos({});
+    setCamposSalvar({});
     const r = await salvarOrcamentoInterno({
       ...(orcamento ? { orcamentoId: orcamento.id } : {}),
       cliente: { ...cliente, origem: cliente.origem as never },
@@ -255,7 +272,13 @@ export function FormOrcamento(props: PropsFormOrcamento) {
     setSalvando(false);
     if (!r.ok) {
       setErro(r.erro);
-      setCampos(r.campos ?? {});
+      setCamposSalvar(r.campos ?? {});
+      // Leva até o primeiro campo com erro.
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>('form [aria-invalid="true"]');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el?.focus({ preventScroll: true });
+      });
       return;
     }
     gravarRascunho(chaveRascunho, null);
@@ -608,14 +631,33 @@ export function FormOrcamento(props: PropsFormOrcamento) {
                 });
               return (
                 <li key={i} className="rounded-control grid grid-cols-6 gap-2 border p-3">
-                  <Input
-                    aria-label={`Descrição do item ${i + 1}`}
-                    placeholder="Ex.: Mesa de doces extra"
-                    className="col-span-6"
-                    value={item.descricao}
-                    maxLength={120}
-                    onChange={(e) => mudar({ descricao: e.target.value })}
-                  />
+                  <div className="col-span-6">
+                    <Input
+                      aria-label={`Descrição do item ${i + 1}`}
+                      placeholder="Ex.: Mesa de doces extra"
+                      value={item.descricao}
+                      maxLength={120}
+                      aria-invalid={!!campos[`ajustes.avulsos.${i}.descricao`] || undefined}
+                      aria-describedby={
+                        campos[`ajustes.avulsos.${i}.descricao`] ? `avulso-erro-${i}` : undefined
+                      }
+                      onChange={(e) => {
+                        setCamposSalvar(
+                          ({ [`ajustes.avulsos.${i}.descricao`]: _, ...resto }) => resto,
+                        );
+                        mudar({ descricao: e.target.value });
+                      }}
+                    />
+                    {campos[`ajustes.avulsos.${i}.descricao`] && (
+                      <p
+                        id={`avulso-erro-${i}`}
+                        role="alert"
+                        className="text-destructive mt-1 text-xs"
+                      >
+                        {campos[`ajustes.avulsos.${i}.descricao`]}
+                      </p>
+                    )}
+                  </div>
                   <Input
                     aria-label={`Quantidade do item ${i + 1}`}
                     type="number"
@@ -793,10 +835,13 @@ export function FormOrcamento(props: PropsFormOrcamento) {
         </div>
       )}
 
-      {(erro || erroPrevia || outrosErros.length > 0) && (
+      {(erro || erroPrevia || outrosErros.length > 0 || camposSemLugar.length > 0) && (
         <div role="alert" className="text-destructive flex flex-col gap-1 text-sm font-semibold">
           {erro && <p>{erro}</p>}
           {erroPrevia && <p>{erroPrevia}</p>}
+          {camposSemLugar.map(([chave, msg]) => (
+            <p key={chave}>{msg}</p>
+          ))}
           {outrosErros.map((e) => (
             <p key={e.codigo}>{e.mensagem}</p>
           ))}
