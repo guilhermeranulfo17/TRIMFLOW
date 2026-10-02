@@ -116,7 +116,10 @@ export function PassoPrecos({
 
   if (pacotes.length === 0) {
     return (
-      <div className="bg-card rounded-card flex flex-col gap-3 border p-4" data-testid="sem-pacotes">
+      <div
+        className="bg-card rounded-card flex flex-col gap-3 border p-4"
+        data-testid="sem-pacotes"
+      >
         <p>Seu catálogo ainda não tem pacotes.</p>
         <a
           href="/app/comecar?passo=1"

@@ -839,3 +839,128 @@ eh_usuario_empresa, ip_hash)`. Usuário logado da própria empresa (sessão, com
   (`/app/conta/avisos`: canais por tipo, silêncio, ativar push neste aparelho, passos do
   iPhone, WhatsApp com número e aceite, "Enviar aviso de teste" com o resultado por canal) e
   **Minha empresa → Follow-up** (só o dono edita). Tema escuro, 375 px primeiro, alvos ≥ 44 px.
+
+# Onboarding guiado e Números (Etapa 8)
+
+## 49. Onboarding
+
+- **Cadastro com o modelo:** depois do `signUp` (com sessão), `cadastrar` chama `gravarModelo`
+  com o modelo do segmento. Ele já era idempotente (trava por empresa e "já tem catálogo"), então
+  dois cliques ou um retry não duplicam. Se falhar, o cadastro segue e o passo 1 oferece
+  "Carregar meu catálogo de exemplo" (cobre também a confirmação de e-mail ligada e contas antigas
+  vazias). O botão do simulador continua existindo.
+- **`/app/comecar`** (grupo `(onboarding)`, tela cheia sem menu, tema escuro):
+  1. resumo do modelo;
+  2. identidade (pode pular; reusa `salvarIdentidade` e o upload do logo);
+  3. preços;
+  4. espaços e turnos (reusa `salvarEspaco`/`salvarTurno`);
+  5. pronto (link, Copiar, Testar como cliente, QR e textos).
+- **Progresso no servidor:** `empresas.onboarding_passo` (1–5), `onboarding_iniciado_em` (primeira
+  visita) e `onboarding_concluido_em` (passo 5). Escrita só por `avancar_onboarding`, que
+  recusa passar do passo 3 sem pacote com preço confirmado (`ONBOARDING_SEM_PRECO`; o domínio
+  espelha em `podeIrPara`). Voltar não "desconclui". Conclusão auditada com início e fim.
+- **Faixa** "Termine de configurar seu link (passo X de 5)" no layout do painel, só para o dono,
+  enquanto `onboarding_concluido_em` for nulo.
+- **Migração:** empresas com pacote já ficaram concluídas; as demais veem a faixa.
+- **Tempo medido no E2E:** cadastro até o passo 5 em 6–9 s digitando só os preços.
+
+## 50. Preço confirmado
+
+- `pacotes.preco_confirmado_em` e `opcionais.preco_confirmado_em` (nullable). Nulo = preço de
+  exemplo do modelo: fica fora do link (`publico.contexto_preco` filtra pacotes, faixas, seções,
+  faixas de idade de pacote e opcionais) e não resolve a pendência `SEM_PACOTE_COM_PRECO`
+  (`pacoteTemPreco` exige `precoConfirmado`).
+- **Decisão: confirmação por trigger.** `_confirmar_preco` (pacotes e opcionais) preenche a data
+  em todo insert e em todo update que muda um campo de preço (`preco_pessoa_centavos`,
+  `valor_excedente_centavos`, `modelo_preco`, `preco_centavos`, `cobranca`); mudar o nome não
+  confirma. `_faixa_confirma_pacote` confirma o pacote quando uma faixa muda. Assim "preço salvo
+  pelo dono em qualquer tela" vale sem mexer nas telas, inclusive no código da Etapa 7 durante o
+  deploy. A gravação do modelo desliga isso na própria transação
+  (`set_config('orkestra.modelo', '1', true)`).
+- **Passo 3:** o dono digita UM valor por pacote (1ª faixa ou valor por pessoa). As outras faixas
+  e o excedente saem na proporção do modelo (faixas arredondadas a R$ 10, excedente a R$ 1;
+  `domain/onboarding/precos`) e ficam visíveis para conferir e ajustar. Os campos nascem vazios,
+  com "Exemplo: R$ …". `confirmar_precos` grava em lote, valida (faixas crescentes, valor > 0) e
+  audita antes/depois. Opcionais são opcionais nesse passo.
+- **Migração:** o que existia ganhou `now()`, para nenhum link no ar parar.
+
+## 51. Checklist
+
+- `domain/onboarding/checklist` calcula itens e percentual a partir de um `EstadoChecklist`
+  montado no servidor (`server/onboarding/carregar.ts`) com o estado real:
+  - **obrigatórios (peso 3):** pacote confirmado, tipo de festa, espaço e turno;
+  - **vender melhor (peso 1):** logo, capa, sobre, foto em pacote, cardápio em todos os ativos,
+    sinal/parcelas/formas, cancelamento e "não incluso", razão social e CNPJ, reserva manual na
+    agenda, link testado, link na bio, push ativo, e WhatsApp de avisos (só com o canal
+    configurado).
+- Percentual arredondado para baixo (100% só com tudo feito).
+- "Link testado" = primeira abertura do link em modo teste (`marcar_link_testado`, chamado pela
+  página pública). "Link na bio" é o único manual (`marcar_link_na_bio`, botão "Fiz").
+- Aparece no topo de Leads (recolhível) e em Minha empresa. Some com 100% ou quando o usuário
+  dispensa (`usuarios.checklist_dispensado_em`); reativa em Minha conta.
+
+## 52. Link e divulgação
+
+- Links por origem (`linkComOrigem`): Instagram, WhatsApp, Google, Indicação e **QR code** (valor
+  novo do enum `origem_lead`, em migration própria antes das funções que o usam).
+- `domain/divulgacao/textos`: bio, resposta automática e ausência do WhatsApp Business, post de
+  lançamento e status, cada um com o link na origem certa.
+- **QR:**
+  - `uqr` (sem dependências, só no servidor) gera a matriz (correção M, borda 2);
+  - SVG próprio para a prévia;
+  - PNG pelo `sharp`;
+  - cartaz A4 pelo `@react-pdf/renderer` (logo, nome, "Monte o orçamento da sua festa", QR de
+    12 cm e o link escrito).
+  - Rota `GET /app/empresa/link/qr?formato=png|pdf`, só logado, `attachment`.
+- **Visitas** (`pagina_vista`, valor novo do enum `evento_funil`):
+  - registradas pelo navegador depois de carregar `/b/[slug]`, com a sessão anônima que o wizard
+    já usava (sessionStorage, sem cookie de terceiros) e a origem normalizada;
+  - a action ignora user-agent de robô (`domain/publico/robo`), e o SQL ignora o modo teste
+    (usuário logado da empresa) e o excesso (limite `funil` de `publico.tentativas`);
+  - substitui o antigo `passo_visto` do passo 0.
+
+## 53. Números: definições exatas
+
+Regras gerais:
+
+- Tudo em `public.numeros(de, ate)` (período + anterior) e `public.numeros_ocupacao()`, espelhos
+  de `domain/numeros`. Teste de equivalência com 3 sementes × 4 períodos × dono/vendedor e 2
+  sementes de ocupação.
+- **Leads únicos**, nunca versões. **Lead de teste nunca entra.**
+- **Datas civis no fuso da empresa**, período inclusivo. O anterior tem o mesmo número de dias e
+  termina na véspera.
+- Até 366 dias.
+- **Vendedor:** só leads com `responsavel_id` dele (e as reservas desses leads), sem funil de
+  visitas.
+
+| Métrica                | Definição (e bordas)                                                                                                                                                                                                                                                                                                                                                                            |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Visitas                | sessões distintas com `pagina_vista` no período                                                                                                                                                                                                                                                                                                                                                 |
+| Início                 | sessões que concluíram um passo ≥ 1 ou viram um passo ≥ 2                                                                                                                                                                                                                                                                                                                                       |
+| Leads                  | leads criados no período (todas as origens; o funil usa só os do link, origem ≠ interno)                                                                                                                                                                                                                                                                                                        |
+| Completos              | leads do funil com passo 6 alcançado ou orçamento fora de `em_montagem` (inclui interno concluído)                                                                                                                                                                                                                                                                                              |
+| Pré-reservas e visitas | leads do funil com pelo menos uma atividade `pre_reserva_pedida`/`visita_pedida` (qualquer autor)                                                                                                                                                                                                                                                                                               |
+| Reservas               | **evento:** leads distintos com reserva `confirmada` ativa ou realizada cuja confirmação (`confirmada_em`, ou `criado_em` se já nasceu confirmada) cai no período. Reserva cancelada depois não conta. Lead perdido, reaberto e depois reservado conta.                                                                                                                                         |
+| Valor reservado        | soma dessas reservas: `valor_total_centavos`, senão o total da versão vigente, senão 0                                                                                                                                                                                                                                                                                                          |
+| Conversão              | **coorte:** entre os leads criados no período, reservados (status reservado/realizado) ÷ decididos (reservado, perdido, cancelado ou proposta vigente expirada). Sem decididos = "—". Em aberto não distorce.                                                                                                                                                                                   |
+| Em aberto              | foto de agora (não depende do período, sem comparação): soma do total da versão vigente dos leads em andamento, pré-reservados ou quentes ainda abertos                                                                                                                                                                                                                                         |
+| Tempo até a 1ª ação    | leads com a primeira pré-reserva/visita pedida **pelo cliente** no período: mediana de minutos até a primeira ação do vendedor depois dela (autor usuário, exceto troca de responsável: a mesma regra de `primeiro_contato_em`). Também do aviso (`avisos.agendado_para`, já depois do silêncio) até essa ação. Sem contato = conta em "sem contato", fora da mediana. Por responsável do lead. |
+| Motivos de perda       | leads hoje perdidos com `perdido_em` no período, por `motivo_perda_codigo`; reaberto sai                                                                                                                                                                                                                                                                                                        |
+| Por origem             | por origem do lead: leads e conversão (coorte), reservas e valor (evento); ordena por valor, leads e nome                                                                                                                                                                                                                                                                                       |
+| Ocupação               | hoje até a véspera de hoje + 3 meses. Slot = data × espaço ativo × turno ativo do dia da semana, com a capacidade (eventos simultâneos). Bloqueado sai. Ocupado = reservas ativas (confirmadas ou pré-reservas não vencidas) no mesmo dia, espaço e turno, até a capacidade. Aproximação: não olha sobreposição de horário entre turnos.                                                        |
+| Datas livres           | sábados e domingos de hoje + antecedência mínima até hoje + 60 dias com algum turno com vaga                                                                                                                                                                                                                                                                                                    |
+
+- **Mediana:** o valor do meio; com quantidade par, média dos dois do meio arredondada meio para
+  cima. Razões em bp, meio para cima. Variação em bp; anterior zero = "sem comparação".
+- **Desempenho:** consultas diretas, sem agregados.
+  - Seed de volume (5.000 leads), `explain analyze`: 90 dias 59 ms, 30 dias 37 ms, vendedor
+    16 ms, ocupação 5 ms.
+  - Teste de integração com 5.000 leads e 20.000 eventos de funil: 81 ms.
+  - Abaixo da meta de 300 ms, então `numeros_diarios` não foi criado. Fica anotado para quando
+    passar.
+- **Cache:** `unstable_cache` por empresa, usuário e período (tag `numeros:{empresa}`, 5 min).
+  Sem job de agregados, não há o que invalidar além do tempo.
+- **Tela:**
+  - 4 cartões (dono) ou 3 (vendedor), funil com a maior queda em texto, origem, perdas,
+    atendimento, ocupação (mapa dia × turno) e datas livres com "Copiar texto de promoção";
+  - SVG próprio, cada gráfico com `aria-label` e tabela.

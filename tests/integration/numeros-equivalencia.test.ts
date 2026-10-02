@@ -76,7 +76,14 @@ const STATUS_ORC = [
   'aceito',
   'expirado',
 ] as const;
-const MOTIVOS = ['preco', 'data_indisponivel', 'concorrente', 'desistiu', 'sem_resposta', 'fora_da_area'];
+const MOTIVOS = [
+  'preco',
+  'data_indisponivel',
+  'concorrente',
+  'desistiu',
+  'sem_resposta',
+  'fora_da_area',
+];
 
 const camel = (o: unknown): unknown =>
   Array.isArray(o)

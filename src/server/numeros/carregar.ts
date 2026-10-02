@@ -42,13 +42,20 @@ const camel = (o: unknown): unknown =>
     ? o.map(camel)
     : o && typeof o === 'object' && !(o instanceof Date)
       ? Object.fromEntries(
-          Object.entries(o).map(([k, v]) => [k.replace(/_(\w)/g, (_, c: string) => c.toUpperCase()), camel(v)]),
+          Object.entries(o).map(([k, v]) => [
+            k.replace(/_(\w)/g, (_, c: string) => c.toUpperCase()),
+            camel(v),
+          ]),
         )
       : o;
 
 export const tagNumeros = (empresaId: string) => `numeros:${empresaId}`;
 
-export function carregarNumeros(usuario: UsuarioAtual, de: string, ate: string): Promise<NumerosPeriodo> {
+export function carregarNumeros(
+  usuario: UsuarioAtual,
+  de: string,
+  ate: string,
+): Promise<NumerosPeriodo> {
   return unstable_cache(
     async () => {
       const [linha] = await comUsuario(usuario.id, (tx) =>
@@ -65,7 +72,9 @@ export function carregarOcupacao(usuario: UsuarioAtual): Promise<OcupacaoTela> {
   return unstable_cache(
     async () =>
       comUsuario(usuario.id, async (tx) => {
-        const [linha] = await tx.execute<{ o: unknown }>(sql`select public.numeros_ocupacao() as o`);
+        const [linha] = await tx.execute<{ o: unknown }>(
+          sql`select public.numeros_ocupacao() as o`,
+        );
         const turnos = (await tx.execute(
           sql`select id, nome from public.turnos where ativo order by ordem, hora_inicio`,
         )) as unknown as { id: string; nome: string }[];

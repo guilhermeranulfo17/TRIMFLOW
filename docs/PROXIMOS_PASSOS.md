@@ -1,4 +1,4 @@
-# Próximos passos (anotados durante as Etapas 0 a 7)
+# Próximos passos (anotados durante as Etapas 0 a 8)
 
 Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi implementado.
 
@@ -87,8 +87,7 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 
 ## Depois da Etapa 7 (pendências percebidas)
 
-- **Números:** funil, conversão, motivos de perda e origem dos leads, usando
-  `funil_eventos`, `atividades` e `avisos` (tempo entre o aviso e o primeiro contato).
+- ~~**Números:** funil, conversão, motivos de perda e origem dos leads~~ (feito na Etapa 8).
 - Verificar o WhatsApp do **cliente** por código (o canal oficial já existe; precisa de um
   modelo de autenticação aprovado na Meta).
 - Mensagem automática ao cliente final (lembrete de visita, pré-reserva vencendo): hoje
@@ -104,6 +103,20 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Silêncio por dia da semana (fim de semana inteiro, por exemplo).
 - Desfazer "cancelada" de uma tarefa automática pela tela (hoje ela renasce sozinha só se a
   situação voltar a pedir, com outra base).
+
+## Depois da Etapa 8 (pendências percebidas)
+
+- Agregados diários de Números (`numeros_diarios` + job) quando alguma empresa passar de ~20 mil
+  leads ou o `explain` passar de 300 ms (hoje 59 ms com 5.000).
+- "Em aberto" com histórico (foto diária) para comparar com o período anterior.
+- Exportar Números em Excel/CSV; metas de vendas; comparação entre buffets (fora do escopo).
+- Importar leads e reservas por planilha (o item "festas já fechadas" do checklist hoje é manual
+  na Agenda).
+- Onboarding: foto dos pacotes e upload da capa no próprio fluxo; vídeo curto de ajuda.
+- QR code com o logo no centro (exige correção H e teste de leitura); cartaz em outros tamanhos.
+- Visitas por campanha (`utm_*`) além da origem; deduplicar visitas da mesma pessoa em abas
+  diferentes (hoje cada aba é uma sessão).
+- Ocupação considerando a sobreposição de horário entre turnos (hoje por dia × turno × espaço).
 
 ## Etapa 9: Produção
 
