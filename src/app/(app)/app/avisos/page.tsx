@@ -38,7 +38,7 @@ export default async function AvisosPage() {
       ) : (
         <ul className="bg-card rounded-card divide-y" data-testid="historico-avisos">
           {avisos.map((a) => (
-            <li key={a.id}>
+            <li key={a.id} data-testid="item-aviso">
               <Link
                 href={a.caminho}
                 className={cn('hover:bg-accent/60 flex gap-3 p-4', !a.lido && 'bg-primary/5')}
