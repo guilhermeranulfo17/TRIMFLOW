@@ -109,7 +109,8 @@ create or replace function public._lead_grupo(
 returns integer
 language sql
 immutable
-set search_path = ''
+-- sem SET search_path: assim o planner embute a função em caixa_leads (só expressões e
+-- tipos qualificados, nenhuma tabela)
 as $$
   select case
     when p_status in ('reservado', 'realizado', 'perdido', 'cancelado') then 8
@@ -133,7 +134,8 @@ create or replace function public._lead_ordem(
 returns double precision
 language sql
 immutable
-set search_path = ''
+-- sem SET search_path: assim o planner embute a função em caixa_leads (só expressões e
+-- tipos qualificados, nenhuma tabela)
 as $$
   select case p_grupo
     when 1 then extract(epoch from p_pre_expira)          -- vence primeiro no topo
@@ -1031,7 +1033,8 @@ stable
 security invoker
 set search_path = ''
 as $$
-  with param as (
+  -- materialized: calculado uma vez (empresa_do_usuario() não é reavaliada por linha)
+  with param as materialized (
     select
       now() as agora,
       (date_trunc('day', now() at time zone e.fuso) + interval '1 day') at time zone e.fuso as fim_hoje,
@@ -1044,6 +1047,44 @@ as $$
     from public.empresas e
     where e.id = public.empresa_do_usuario()
   ),
+  -- Agregados por lead (uma varredura por tabela e hash join; mais barato que lateral por lead)
+  pr as (
+    select r.lead_id, min(r.expira_em) as expira
+    from public.reservas r
+    where r.empresa_id = (select empresa_id from param) and r.status = 'ativa'
+      and r.tipo = 'pre_reserva' and r.expira_em > now() and r.lead_id is not null
+    group by r.lead_id
+  ),
+  vi as (
+    select v.lead_id, bool_or(v.status = 'solicitada') as pedida,
+           min(v.criado_em) filter (where v.status = 'solicitada') as pedida_em,
+           min(v.data_hora) filter (where v.status = 'confirmada'
+                                    and v.data_hora >= now() - interval '3 hours') as proxima
+    from public.visitas v
+    where v.empresa_id = (select empresa_id from param) and v.status in ('solicitada', 'confirmada')
+    group by v.lead_id
+  ),
+  ta as (
+    select distinct on (t.lead_id) t.lead_id, t.vence_efetivo as vence, t.titulo
+    from public.tarefas t
+    where t.empresa_id = (select empresa_id from param) and t.feita_em is null
+      and t.cancelada_em is null and (t.responsavel_id = auth.uid() or t.responsavel_id is null)
+    order by t.lead_id, t.vence_efetivo
+  ),
+  at as (
+    select t.lead_id, true as tem
+    from public.tarefas t
+    where t.empresa_id = (select empresa_id from param) and t.feita_em is null
+      and t.cancelada_em is null and t.vence_efetivo < now()
+    group by t.lead_id
+  ),
+  o as (
+    select distinct on (o.lead_id) o.*
+    from public.orcamentos o
+    where o.empresa_id = (select empresa_id from param)
+      and o.status not in ('substituido', 'em_montagem')
+    order by o.lead_id, o.criado_em desc
+  ),
   base as (
     select l.*, pr.expira, vi.pedida, vi.pedida_em, vi.proxima, ta.vence as t_vence,
       ta.titulo as t_titulo, at.tem as t_atrasada, o.id as o_id, o.numero as o_numero,
@@ -1052,34 +1093,11 @@ as $$
       o.turno_id as o_turno, p.agora, p.fim_hoje, p.fim_amanha
     from param p
     join public.leads l on l.empresa_id = p.empresa_id
-    left join lateral (
-      select min(r.expira_em) as expira from public.reservas r
-      where r.lead_id = l.id and r.status = 'ativa' and r.tipo = 'pre_reserva' and r.expira_em > p.agora
-    ) pr on true
-    left join lateral (
-      select bool_or(v.status = 'solicitada') as pedida,
-             min(v.criado_em) filter (where v.status = 'solicitada') as pedida_em,
-             min(v.data_hora) filter (where v.status = 'confirmada'
-                                      and v.data_hora >= p.agora - interval '3 hours') as proxima
-      from public.visitas v where v.lead_id = l.id and v.status in ('solicitada', 'confirmada')
-    ) vi on true
-    left join lateral (
-      select t.vence_efetivo as vence, t.titulo from public.tarefas t
-      where t.lead_id = l.id and t.feita_em is null and t.cancelada_em is null
-        and (t.responsavel_id = p.eu or t.responsavel_id is null)
-      order by t.vence_efetivo limit 1
-    ) ta on true
-    left join lateral (
-      select true as tem from public.tarefas t
-      where t.lead_id = l.id and t.feita_em is null and t.cancelada_em is null
-        and t.vence_efetivo < p.agora
-      limit 1
-    ) at on true
-    left join lateral (
-      select o.* from public.orcamentos o
-      where o.lead_id = l.id and o.status not in ('substituido', 'em_montagem')
-      order by o.criado_em desc limit 1
-    ) o on true
+    left join pr on pr.lead_id = l.id
+    left join vi on vi.lead_id = l.id
+    left join ta on ta.lead_id = l.id
+    left join at on at.lead_id = l.id
+    left join o on o.lead_id = l.id
     where (coalesce((p.f ->> 'teste')::boolean, false) or not l.eh_teste)
       and (case when p.f ? 'status' then l.status::text in (select jsonb_array_elements_text(p.f -> 'status'))
                 else l.status not in ('reservado', 'realizado', 'perdido', 'cancelado') end)
@@ -1117,21 +1135,26 @@ as $$
              when 'atrasadas' then c.t_vence is not null and c.t_vence < c.agora
              when 'novos' then c.status = 'novo' and c.primeiro_contato_em is null
              else true end)
+  ),
+  -- primeiro ordena e corta a página; só então busca os nomes (responsável, tipo, turno)
+  pagina as (
+    select f.* from filtrado f
+    where p_cursor is null
+       or (f.g, f.ord, f.id) > ((p_cursor ->> 'g')::integer, (p_cursor ->> 'o')::double precision,
+                                (p_cursor ->> 'id')::uuid)
+    order by f.g, f.ord, f.id
+    limit greatest(1, least(coalesce(p_limite, 30), 100))
   )
   select f.id, f.nome, f.whatsapp_e164, f.email, f.status, f.temperatura, f.origem, f.eh_teste,
     f.responsavel_id, u.nome, f.criado_em, f.ultima_atividade_em, f.primeiro_contato_em,
     f.proximo_contato_em, f.g, f.ord, f.expira, coalesce(f.pedida, false), f.pedida_em, f.proxima, f.t_vence,
     f.t_titulo, coalesce(f.t_atrasada, false), coalesce(f.o_aberturas, 0), f.o_id, f.o_numero,
     f.o_token, f.o_total, f.o_data, te.nome, tu.nome, f.o_convidados
-  from filtrado f
+  from pagina f
   left join public.usuarios u on u.id = f.responsavel_id
   left join public.tipos_evento te on te.id = f.o_tipo
   left join public.turnos tu on tu.id = f.o_turno
-  where p_cursor is null
-     or (f.g, f.ord, f.id) > ((p_cursor ->> 'g')::integer, (p_cursor ->> 'o')::double precision,
-                              (p_cursor ->> 'id')::uuid)
-  order by f.g, f.ord, f.id
-  limit greatest(1, least(coalesce(p_limite, 30), 100));
+  order by f.g, f.ord, f.id;
 $$;
 
 /** Contadores do topo "Hoje" (da empresa; tarefas são as do usuário). */

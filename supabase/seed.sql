@@ -650,3 +650,142 @@ begin
   end loop;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Caixa de leads (Etapa 6) no Buffet Demo: completa ~25 leads cobrindo todos os grupos de
+-- prioridade e status. Idempotente: só grava se ainda não houver o lead "Lívia Moraes".
+--   perdidos (preço, concorrente, sem resposta, outro), visita confirmada hoje e pedido de visita,
+--   tarefas atrasadas, de hoje e futuras, notas, com e sem responsável, próximo contato vencido,
+--   quentes, novos esperando, frio parado, realizado e cancelado.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  demo     constant uuid := '11111111-1111-4111-8111-111111111111';
+  dona     constant uuid := '1a000000-0000-4000-8000-000000000001';
+  vendedor constant uuid := '1a000000-0000-4000-8000-000000000002';
+  hoje     date := (now() at time zone 'America/Sao_Paulo')::date;
+  v_lead   uuid;
+  r        record;
+begin
+  if exists (select 1 from public.leads where empresa_id = demo and nome = 'Lívia Moraes')
+     or not exists (select 1 from public.empresas where id = demo) then
+    return;
+  end if;
+
+  for r in
+    select * from (values
+      -- nome, whatsapp, origem, status, temperatura, ha, responsavel, motivo, detalhe, primeiro contato
+      ('Lívia Moraes', '+5534991114401', 'instagram', 'novo', 'frio', interval '30 minutes', null::uuid, null, null, false),
+      ('Otávio Ribeiro', '+5534991114402', 'google', 'novo', 'frio', interval '26 hours', null, null, null, false),
+      ('Sabrina Costa', '+5534991114403', 'indicacao', 'em_andamento', 'quente', interval '2 hours', vendedor, null, null, true),
+      ('Tiago Almeida', '+5534991114404', 'whatsapp', 'em_andamento', 'morno', interval '1 day', vendedor, null, null, true),
+      ('Vanessa Pires', '+5534991114405', 'instagram', 'em_andamento', 'morno', interval '3 days', dona, null, null, true),
+      ('Wesley Martins', '+5534991114406', 'link_direto', 'em_andamento', 'morno', interval '5 hours', vendedor, null, null, true),
+      ('Yasmin Rocha', '+5534991114407', 'google', 'em_andamento', 'morno', interval '6 hours', null, null, null, true),
+      ('Bruno Teixeira', '+5534991114408', 'instagram', 'frio', 'frio', interval '9 days', vendedor, null, null, true),
+      ('Camila Duarte', '+5534991114409', 'google', 'perdido', 'morno', interval '4 days', vendedor, 'preco', 'Achou acima do orçamento', true),
+      ('Diego Fernandes', '+5534991114410', 'indicacao', 'perdido', 'morno', interval '6 days', dona, 'concorrente', null, true),
+      ('Elaine Barros', '+5534991114411', 'instagram', 'perdido', 'frio', interval '12 days', vendedor, 'sem_resposta', null, true),
+      ('Fábio Nogueira', '+5534991114412', 'whatsapp', 'perdido', 'frio', interval '8 days', null, 'outro', 'Mudou de cidade', true),
+      ('Gabriela Lopes', '+5534991114413', 'link_direto', 'realizado', 'quente', interval '20 days', dona, null, null, true),
+      ('Henrique Sales', '+5534991114414', 'google', 'cancelado', 'morno', interval '15 days', vendedor, null, null, true),
+      ('Isabela Freitas', '+5534991114415', 'instagram', 'em_andamento', 'quente', interval '3 hours', vendedor, null, null, true),
+      ('João Pedro Lima', '+5534991114416', 'indicacao', 'abandonou', 'frio', interval '2 days', null, null, null, false)
+    ) as x(nome, whatsapp, origem, status, temperatura, ha, responsavel, motivo, detalhe, contato)
+  loop
+    insert into public.leads (empresa_id, nome, whatsapp_e164, origem, status, temperatura, ultimo_passo,
+      consentimento_em, consentimento_versao, consentimento_texto, ultima_atividade_em, criado_em,
+      responsavel_id, motivo_perda_codigo, motivo_perda, perdido_em, status_antes_de_perder,
+      primeiro_contato_em, ultima_acao_vendedor_em)
+    values (demo, r.nome, r.whatsapp, r.origem::public.origem_lead, r.status::public.status_lead,
+      r.temperatura::public.temperatura_lead, 6, now() - r.ha - interval '1 hour', '2026-10-v1',
+      'Autorizo o buffet a usar meu nome e WhatsApp para enviar este orçamento.', now() - r.ha,
+      now() - r.ha - interval '1 hour', r.responsavel, r.motivo::public.motivo_perda, r.detalhe,
+      case when r.status = 'perdido' then now() - r.ha end,
+      case when r.status = 'perdido' then 'em_andamento'::public.status_lead end,
+      case when r.contato then now() - r.ha - interval '30 minutes' end,
+      case when r.contato then now() - r.ha end)
+    on conflict do nothing
+    returning id into v_lead;
+    if v_lead is null then
+      continue;
+    end if;
+
+    insert into public.atividades (empresa_id, lead_id, tipo, dados, autor, criado_em)
+    values (demo, v_lead, 'lead_criado', jsonb_build_object('origem', r.origem), 'cliente',
+      now() - r.ha - interval '1 hour');
+    if r.contato then
+      insert into public.atividades (empresa_id, lead_id, tipo, dados, autor, usuario_id, criado_em)
+      values (demo, v_lead, 'contato_registrado', jsonb_build_object('canal', 'whatsapp'), 'usuario',
+        coalesce(r.responsavel, vendedor), now() - r.ha - interval '30 minutes');
+    end if;
+    if r.status = 'perdido' then
+      insert into public.atividades (empresa_id, lead_id, tipo, dados, autor, usuario_id, criado_em)
+      values (demo, v_lead, 'perdido', jsonb_build_object('motivo', r.motivo, 'detalhe', r.detalhe,
+        'status_antes', 'em_andamento', 'status_depois', 'perdido'),
+        'usuario', coalesce(r.responsavel, vendedor), now() - r.ha);
+    end if;
+  end loop;
+
+  -- visita confirmada para hoje às 15h (Sabrina) e pedido de visita do link (Tiago)
+  insert into public.visitas (empresa_id, lead_id, data_preferida, periodo, status, data_hora,
+    confirmada_por, confirmada_em, criado_por)
+  select demo, l.id, hoje, 'tarde', 'confirmada',
+    (hoje + time '15:00') at time zone 'America/Sao_Paulo', vendedor, now() - interval '1 day', vendedor
+  from public.leads l where l.empresa_id = demo and l.nome = 'Sabrina Costa';
+  insert into public.atividades (empresa_id, lead_id, tipo, dados, autor, usuario_id, criado_em)
+  select demo, l.id, 'visita_confirmada',
+    jsonb_build_object('data_hora', (hoje + time '15:00') at time zone 'America/Sao_Paulo'),
+    'usuario', vendedor, now() - interval '1 day'
+  from public.leads l where l.empresa_id = demo and l.nome = 'Sabrina Costa';
+  insert into public.visitas (empresa_id, lead_id, data_preferida, periodo, observacoes)
+  select demo, l.id, hoje + 2, 'manha', 'Quero levar meus pais.'
+  from public.leads l where l.empresa_id = demo and l.nome = 'Tiago Almeida';
+  insert into public.atividades (empresa_id, lead_id, tipo, dados, autor, criado_em)
+  select demo, l.id, 'visita_pedida', jsonb_build_object('data_preferida', hoje + 2, 'periodo', 'manha'),
+    'cliente', now() - interval '20 hours'
+  from public.leads l where l.empresa_id = demo and l.nome = 'Tiago Almeida';
+
+  -- tarefas: atrasada, de hoje, futuras e uma com mensagem sugerida
+  insert into public.tarefas (empresa_id, lead_id, titulo, responsavel_id, vence_em, origem,
+    mensagem_sugerida, criado_por, criado_em)
+  select demo, l.id, t.titulo, coalesce(l.responsavel_id, vendedor), t.vence, 'manual', t.msg,
+    coalesce(l.responsavel_id, vendedor), now() - interval '2 days'
+  from (values
+    ('Wesley Martins', 'Mandar fotos do salão decorado', now() - interval '3 hours', null::text),
+    ('Vanessa Pires', 'Ligar para fechar o cardápio', (hoje + time '17:30') at time zone 'America/Sao_Paulo', null),
+    ('Tiago Almeida', 'Enviar cardápio infantil em PDF', (hoje + 1 + time '09:00') at time zone 'America/Sao_Paulo',
+      'Oi, Tiago! Separei o cardápio infantil completo para você dar uma olhada. Posso te mandar por aqui?'),
+    ('Isabela Freitas', 'Confirmar número de convidados', (hoje + 3 + time '10:00') at time zone 'America/Sao_Paulo', null)
+  ) as t(nome, titulo, vence, msg)
+  join public.leads l on l.empresa_id = demo and l.nome = t.nome;
+  insert into public.atividades (empresa_id, lead_id, tipo, dados, autor, usuario_id, criado_em)
+  select demo, t.lead_id, 'tarefa_criada', jsonb_build_object('tarefa_id', t.id, 'titulo', t.titulo),
+    'usuario', t.criado_por, t.criado_em
+  from public.tarefas t
+  join public.leads l on l.id = t.lead_id
+  where t.empresa_id = demo and l.nome in ('Wesley Martins', 'Vanessa Pires', 'Tiago Almeida', 'Isabela Freitas');
+
+  -- próximo contato vencido (Yasmin: em andamento, sem responsável)
+  update public.leads set proximo_contato_em = now() - interval '2 hours'
+  where empresa_id = demo and nome = 'Yasmin Rocha';
+  insert into public.tarefas (empresa_id, lead_id, titulo, vence_em, origem, regra, criado_por, criado_em)
+  select demo, l.id, 'Falar com ' || l.nome, now() - interval '2 hours', 'manual', 'proximo_contato',
+    vendedor, now() - interval '1 day'
+  from public.leads l where l.empresa_id = demo and l.nome = 'Yasmin Rocha';
+
+  -- notas
+  insert into public.notas (empresa_id, lead_id, autor_id, texto, criado_em)
+  select demo, l.id, n.autor, n.texto, now() - n.ha
+  from (values
+    ('Sabrina Costa', vendedor, 'Festa de 7 anos do Theo. Tema dinossauros. Prefere sábado à tarde.', interval '1 day'),
+    ('Vanessa Pires', dona, 'Cliente antiga: fez a festa da filha mais velha com a gente em 2024.', interval '2 days'),
+    ('Camila Duarte', vendedor, 'Pediu 20% de desconto; ofereci 5%. Disse que vai pensar.', interval '5 days')
+  ) as n(nome, autor, texto, ha)
+  join public.leads l on l.empresa_id = demo and l.nome = n.nome;
+  insert into public.atividades (empresa_id, lead_id, tipo, dados, autor, usuario_id, criado_em)
+  select demo, n.lead_id, 'nota', jsonb_build_object('nota_id', n.id, 'trecho', left(n.texto, 140)),
+    'usuario', n.autor_id, n.criado_em
+  from public.notas n where n.empresa_id = demo;
+end;
+$$;
