@@ -13,12 +13,8 @@ type Area = {
 const AREAS: Area[] = [
   // A agenda do Buffet Demo já tem eventos (seed): confere o botão principal em vez do vazio.
   { rotulo: 'Agenda', url: /\/app\/agenda$/, titulo: 'Agenda', botao: 'Registrar evento' },
-  {
-    rotulo: 'Números',
-    url: /\/app\/numeros$/,
-    titulo: 'Números',
-    vazio: 'Seu link está trazendo reservas?',
-  },
+  // Números do Buffet Demo vêm do seed (Etapa 8): confere os cartões.
+  { rotulo: 'Números', url: /\/app\/numeros$/, titulo: 'Números', lista: 'cartoes-numeros' },
   {
     rotulo: 'Minha empresa',
     url: /\/app\/empresa$/,

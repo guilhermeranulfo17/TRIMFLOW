@@ -221,6 +221,7 @@ test('Minha conta: ativar push neste aparelho, mudar o silêncio e enviar aviso 
   }, endpoint);
 
   await empresaComModelo(page, unico('Buffet Push'));
+  await page.goto('/app/leads'); // o onboarding termina numa tela sem menu
   await page.getByRole('button', { name: /Menu do usuário/ }).click();
   await page.getByRole('menuitem', { name: /Minha conta: avisos/ }).click();
   await expect(page).toHaveURL(/\/app\/conta\/avisos$/);
