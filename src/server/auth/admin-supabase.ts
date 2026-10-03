@@ -93,3 +93,14 @@ export function criarAuthAdmin(): AuthAdmin {
     },
   };
 }
+
+/**
+ * Chave derivada da service role (HMAC-SHA256 com um rótulo), para assinar cookies do servidor
+ * (sessão de suporte) sem uma variável nova e sem a chave sair deste módulo.
+ */
+export async function chaveDerivada(rotulo: string): Promise<Buffer> {
+  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!chave) throw new AuthAdminNaoConfiguradoError();
+  const { createHmac } = await import('node:crypto');
+  return createHmac('sha256', chave).update(`orkestra:${rotulo}`).digest();
+}

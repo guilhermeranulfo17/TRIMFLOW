@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/app/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ProvedorToast } from '@/components/app/toast';
 import { FaixaContaPainel } from '@/components/app/plano/faixa-conta';
+import { FaixaSuporte } from '@/components/app/plano/faixa-suporte';
 import { faixaDaConta } from '@/domain/plano';
 import { exigirSessao } from '@/server/auth/sessao';
 import { carregarFaixaConta } from '@/server/cobranca/carregar';
@@ -41,6 +42,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex min-h-dvh" data-painel>
           <Sidebar badges={badges} />
           <div className="flex min-w-0 flex-1 flex-col">
+            {usuario.suporte && (
+              <FaixaSuporte buffet={usuario.empresa.nome} admin={usuario.suporte.admin} />
+            )}
             {faixa && <FaixaContaPainel faixa={faixa} />}
             {onboarding && !onboarding.concluido && <FaixaOnboarding passo={onboarding.passo} />}
             <AppHeader

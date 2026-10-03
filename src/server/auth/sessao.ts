@@ -5,6 +5,8 @@ import { cache } from 'react';
 import type { Situacao } from '@/domain/cobranca/situacao';
 import { empresas, usuarios, type Perfil } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
+import { sessaoSuporteValida } from '@/server/interno/suporte';
+import { contextoSuporte } from './contexto-suporte';
 import { precisaTrocarSenha } from './redirecionamento';
 import { criarClienteSupabase } from './supabase-server';
 
@@ -21,6 +23,8 @@ export type UsuarioAtual = {
     /** situação da conta (Etapa 9A): suspenso = painel somente leitura */
     situacao: Situacao;
   };
+  /** modo suporte (equipe Orkestra com consentimento do dono): mostra a faixa vermelha */
+  suporte: { admin: string } | null;
 };
 
 /**
@@ -36,7 +40,12 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
   // Redirect de server action não passa pelo middleware: a troca obrigatória vale aqui também.
   if (precisaTrocarSenha(user.app_metadata)) redirect('/nova-senha');
 
-  const [linha] = await comUsuario(user.id, (tx) =>
+  // Modo suporte: a sessão do admin age como o dono da empresa que consentiu (RLS igual).
+  const suporte = await sessaoSuporteValida(user);
+  const alvo = suporte?.donoId ?? user.id;
+  if (suporte) contextoSuporte().admin = suporte.adminEmail;
+
+  const [linha] = await comUsuario(alvo, (tx) =>
     tx
       .select({
         id: usuarios.id,
@@ -52,7 +61,7 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
       })
       .from(usuarios)
       .innerJoin(empresas, eq(empresas.id, usuarios.empresaId))
-      .where(eq(usuarios.id, user.id))
+      .where(eq(usuarios.id, alvo))
       .limit(1),
   );
   if (!linha?.ativo) return null;
@@ -69,6 +78,7 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
       fuso: linha.empresaFuso,
       situacao: linha.empresaSituacao,
     },
+    suporte: suporte ? { admin: suporte.adminEmail } : null,
   };
 });
 
