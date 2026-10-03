@@ -479,7 +479,7 @@ describe('follow-up automático', () => {
         tx,
         IDS.vendedorA,
         () => tx`select public.agendar_visita(${lead.id},
-          ((current_date + 1) + time '18:00') at time zone 'America/Sao_Paulo', null)`,
+          (((now() at time zone 'America/Sao_Paulo')::date + 1) + time '18:00') at time zone 'America/Sao_Paulo', null)`,
       );
       const [h] =
         await tx`select extract(hour from now() at time zone 'America/Sao_Paulo')::int as h`;
