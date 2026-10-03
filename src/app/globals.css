@@ -7,6 +7,8 @@
  *   cor do buffet por cima (components/publico/marca.ts);
  * - [data-acesso]: login, cadastro e afins, sempre no escuro da marca;
  * - [data-orkestra-claro]: termos e privacidade, no claro da marca;
+ * - [data-landing]: a landing (Etapa 9.6), no claro da marca com fundo off-white quente; as seções
+ *   escuras usam a classe .dark (tokens do escuro da marca só naquele trecho);
  * - [data-painel][data-tema]: o painel, no tema escolhido (cookie orkestra_tema: escuro, claro ou
  *   sistema; padrão escuro). O marcador fica no servidor: nada pisca.
  * Os blocos de tokens se repetem dentro do @media do "sistema": tests/unit/tema/contraste.test.ts
@@ -136,6 +138,7 @@
 
 /* Claro da marca: fundo gelo, cartão branco, botão limão com texto grafite, textos em verde escuro */
 :root:has([data-orkestra-claro]),
+:root:has([data-landing]),
 :root:has([data-painel][data-tema='claro']) {
   color-scheme: light;
   --radius-card: 22px;
@@ -184,6 +187,12 @@
   --sucesso: #166534;
   --info: #0369a1;
   --quente: #9a3412;
+}
+
+/* Landing (Etapa 9.6): o claro da marca com o fundo off-white da marca (#F7F6F2) */
+:root:has([data-landing]) {
+  --background: #f7f6f2;
+  --landing-fundo: #f7f6f2;
 }
 
 /* "Seguir o sistema": os mesmos blocos, escolhidos pelo aparelho */

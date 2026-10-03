@@ -100,3 +100,27 @@ describe('tokens do tema', () => {
     });
   }
 });
+
+describe('landing (Etapa 9.6): claro da marca sobre o off-white', () => {
+  const t = { ...TEMAS['claro da marca'], ...bloco(':root:has([data-landing]) {') };
+
+  it('o bloco só troca o fundo', () => {
+    expect(t.background).toBe('#f7f6f2');
+    expect(t['landing-fundo']).toBe('#f7f6f2');
+  });
+
+  it.each(TEXTO.filter(([, fundo]) => fundo === 'background'))(
+    'texto %s sobre %s ≥ 4,5:1',
+    (frente, fundo) => {
+      expect(contraste(t[frente]!, t[fundo]!)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it.each(ESTADOS)('estado %s sobre o fundo ≥ 4,5:1', (e) => {
+    expect(contraste(t[e]!, t.background!)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('anel de foco ≥ 3:1 sobre o fundo', () => {
+    expect(contraste(t.ring!, t.background!)).toBeGreaterThanOrEqual(3);
+  });
+});

@@ -1,8 +1,9 @@
 'use server';
 
 import { sql } from 'drizzle-orm';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
 import { modeloDoSegmento } from '@/domain/modelos';
 import { celularBRParaE164 } from '@/domain/phone';
 import { slugBaseDaEmpresa } from '@/domain/slug';
@@ -78,7 +79,10 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
       mensagem: 'Conta criada! Enviamos um link de confirmação para o seu e-mail.',
     };
   }
-  if (data.user) await aplicarModeloDoCadastro(data.user.id, dados.segmento);
+  if (data.user) {
+    await aplicarModeloDoCadastro(data.user.id, dados.segmento);
+    await registrarOrigem(data.user.id);
+  }
   redirect('/app/comecar');
 }
 
@@ -111,7 +115,29 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
     return { ok: false, erro: 'Não foi possível criar sua conta agora. Tente novamente.' };
   }
   await aplicarModeloDoCadastro(user.id, dados.segmento);
+  await registrarOrigem(user.id);
   redirect('/app/comecar');
+}
+
+/**
+ * Origem do cadastro (Etapa 9.6): utm_ e ref guardados pela landing no cookie, gravados uma vez
+ * na empresa. Falhar aqui nunca impede o cadastro (o log leva só o código do erro).
+ */
+async function registrarOrigem(usuarioId: string) {
+  try {
+    const loja = await cookies();
+    const origem = lerOrigemDoCookie(loja.get(COOKIE_ORIGEM)?.value);
+    if (!origem) return;
+    await comUsuario(usuarioId, (tx) =>
+      tx.execute(sql`select public.registrar_origem_cadastro(${JSON.stringify(origem)}::jsonb)`),
+    );
+    loja.delete(COOKIE_ORIGEM);
+  } catch (e) {
+    console.error(
+      '[cadastro] origem não registrada',
+      (e as { code?: string }).code ?? 'sem-codigo',
+    );
+  }
 }
 
 /**
