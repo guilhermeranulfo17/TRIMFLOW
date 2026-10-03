@@ -2,6 +2,7 @@ import 'server-only';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
+import type { Situacao } from '@/domain/cobranca/situacao';
 import { empresas, usuarios, type Perfil } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { precisaTrocarSenha } from './redirecionamento';
@@ -12,7 +13,14 @@ export type UsuarioAtual = {
   nome: string;
   email: string;
   perfil: Perfil;
-  empresa: { id: string; nome: string; slug: string; fuso: string };
+  empresa: {
+    id: string;
+    nome: string;
+    slug: string;
+    fuso: string;
+    /** situação da conta (Etapa 9A): suspenso = painel somente leitura */
+    situacao: Situacao;
+  };
 };
 
 /**
@@ -40,6 +48,7 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
         empresaNome: empresas.nome,
         empresaSlug: empresas.slug,
         empresaFuso: empresas.fuso,
+        empresaSituacao: empresas.plano,
       })
       .from(usuarios)
       .innerJoin(empresas, eq(empresas.id, usuarios.empresaId))
@@ -58,6 +67,7 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
       nome: linha.empresaNome,
       slug: linha.empresaSlug,
       fuso: linha.empresaFuso,
+      situacao: linha.empresaSituacao,
     },
   };
 });

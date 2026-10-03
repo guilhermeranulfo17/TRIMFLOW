@@ -5,6 +5,7 @@ import type { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
 import { traduzirErroAgenda } from '@/domain/agenda';
+import { mensagemErroConta } from '@/domain/cobranca/limites';
 import { celularBRParaE164 } from '@/domain/phone';
 import { montarPrevia, type Previa } from '@/domain/publico';
 import { linkWhatsApp, mensagemEnvioProposta } from '@/domain/publico/whatsapp';
@@ -61,6 +62,7 @@ function mensagemDoErro(erro: unknown): string {
   const codigo = e?.cause?.message ?? e?.message ?? '';
   return (
     MENSAGENS[codigo] ??
+    mensagemErroConta(codigo) ??
     traduzirErroAgenda(codigo) ??
     'Não foi possível salvar agora. Tente de novo.'
   );

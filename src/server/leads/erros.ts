@@ -1,6 +1,7 @@
 import 'server-only';
 import { unstable_rethrow } from 'next/navigation';
 import { traduzirErroAgenda } from '@/domain/agenda';
+import { mensagemErroConta } from '@/domain/cobranca/limites';
 import type { ResultadoAcao } from '@/server/actions/empresa/comum';
 import { exigirSessao, type UsuarioAtual } from '@/server/auth/sessao';
 
@@ -41,7 +42,12 @@ export const MENSAGEM_LEAD_PADRAO = 'Não foi possível salvar agora. Tente de n
 export function mensagemErroLead(erro: unknown): string {
   const e = (erro as { cause?: unknown })?.cause ?? erro;
   const codigo = (e as { message?: string } | null)?.message ?? '';
-  return MENSAGENS[codigo] ?? traduzirErroAgenda(codigo) ?? MENSAGEM_LEAD_PADRAO;
+  return (
+    MENSAGENS[codigo] ??
+    mensagemErroConta(codigo) ??
+    traduzirErroAgenda(codigo) ??
+    MENSAGEM_LEAD_PADRAO
+  );
 }
 
 export async function acaoDoLead<T>(

@@ -2,6 +2,7 @@
 
 import { CircleAlert, CircleCheck, X } from 'lucide-react';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { pedeIrAoPlano } from '@/domain/cobranca/limites';
 import { cn } from '@/lib/utils';
 
 type Toast = { id: number; tipo: 'sucesso' | 'erro'; mensagem: string };
@@ -51,7 +52,17 @@ export function ProvedorToast({ children }: { children: React.ReactNode }) {
                 className={cn('mt-0.5 size-4 shrink-0', t.tipo === 'sucesso' && 'text-success')}
                 aria-hidden
               />
-              <span className="flex-1">{t.mensagem}</span>
+              <span className="flex-1">
+                {t.mensagem}
+                {t.tipo === 'erro' && pedeIrAoPlano(t.mensagem) && (
+                  <a
+                    href="/app/empresa/plano"
+                    className="text-foreground mt-1 block font-semibold underline underline-offset-2"
+                  >
+                    Ver planos
+                  </a>
+                )}
+              </span>
               <button
                 type="button"
                 onClick={() => remover(t.id)}

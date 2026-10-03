@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   codigoPlanoVigente,
   itensDoPlano,
+  mensagemErroConta,
   mensagemLimite,
+  pedeIrAoPlano,
   planoVigente,
   podeAdicionarEspaco,
   podeAdicionarUsuario,
@@ -65,7 +67,14 @@ describe('limites', () => {
       'O plano Essencial permite até 2 usuários. Mude de plano para adicionar mais gente.',
     );
     expect(mensagemLimite('LIMITE_PLANO_ESPACOS', essencial)).toContain('1 espaço ativo');
-    expect(mensagemLimite('LIMITE_PLANO_USUARIOS')).toContain('Seu plano');
+    expect(mensagemLimite('LIMITE_PLANO_USUARIOS')).toContain('limite de usuários');
+    expect(mensagemLimite('LIMITE_PLANO_ESPACOS')).toContain('limite de espaços');
+    expect(mensagemErroConta('CONTA_SOMENTE_LEITURA')).toContain('somente leitura');
+    expect(mensagemErroConta('LIMITE_PLANO_FOLLOW_UP')).toContain('follow-up');
+    expect(mensagemErroConta('OUTRO')).toBeNull();
+    expect(mensagemErroConta(null)).toBeNull();
+    expect(pedeIrAoPlano(mensagemErroConta('LIMITE_PLANO_ESPACOS')!)).toBe(true);
+    expect(pedeIrAoPlano('Salvo.')).toBe(false);
     expect(mensagemLimite('LIMITE_PLANO_WHATSAPP')).toContain('Profissional');
     expect(mensagemLimite('LIMITE_PLANO_FOLLOW_UP')).toContain('follow-up');
     expect(itensDoPlano(essencial)).toContain('1 espaço');

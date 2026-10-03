@@ -60,18 +60,37 @@ const de = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : var
 
 /** Mensagem simples para cada limite (a tela mostra junto o botão "Mudar de plano"). */
 export function mensagemLimite(codigo: CodigoLimite, p?: RecursosPlano): string {
-  const nome = p ? `O plano ${p.nome}` : 'Seu plano';
   switch (codigo) {
     case 'LIMITE_PLANO_USUARIOS':
-      return `${nome} permite até ${p ? de(p.maxUsuarios, 'usuário', 'usuários') : 'este número de usuários'}. Mude de plano para adicionar mais gente.`;
+      return p
+        ? `O plano ${p.nome} permite até ${de(p.maxUsuarios, 'usuário', 'usuários')}. Mude de plano para adicionar mais gente.`
+        : 'Você chegou ao limite de usuários do seu plano. Mude de plano para adicionar mais gente.';
     case 'LIMITE_PLANO_ESPACOS':
-      return `${nome} permite ${p?.maxEspacos ? de(p.maxEspacos, 'espaço ativo', 'espaços ativos') : 'menos espaços'}. Mude de plano para ter mais espaços.`;
+      return p?.maxEspacos
+        ? `O plano ${p.nome} permite ${de(p.maxEspacos, 'espaço ativo', 'espaços ativos')}. Mude de plano para ter mais espaços.`
+        : 'Você chegou ao limite de espaços do seu plano. Mude de plano para ter mais espaços.';
     case 'LIMITE_PLANO_WHATSAPP':
-      return `Avisos por WhatsApp fazem parte do Profissional. Mude de plano para ligar.`;
+      return 'Avisos por WhatsApp fazem parte do Profissional. Mude de plano para ligar.';
     case 'LIMITE_PLANO_FOLLOW_UP':
-      return `O follow-up automático faz parte do Profissional. Mude de plano para ligar.`;
+      return 'O follow-up automático faz parte do Profissional. Mude de plano para ligar.';
   }
 }
+
+export const MENSAGEM_SOMENTE_LEITURA =
+  'Sua conta está suspensa e o painel está somente leitura. Assine ou pague em Minha empresa → Plano para voltar a editar.';
+
+/** Código de erro do banco ligado à conta (suspensa ou limite) → mensagem; senão null. */
+export function mensagemErroConta(codigo: string | null | undefined): string | null {
+  if (codigo === 'CONTA_SOMENTE_LEITURA') return MENSAGEM_SOMENTE_LEITURA;
+  if ((CODIGOS_LIMITE as readonly string[]).includes(codigo ?? '')) {
+    return mensagemLimite(codigo as CodigoLimite);
+  }
+  return null;
+}
+
+/** A mensagem pede uma mudança de plano/pagamento (o toast mostra o link para o Plano). */
+export const pedeIrAoPlano = (mensagem: string): boolean =>
+  /Mude de plano|somente leitura/.test(mensagem);
 
 /** Lista curta do que o plano inclui (tela de Plano e página de vendas). */
 export function itensDoPlano(p: RecursosPlano): string[] {
