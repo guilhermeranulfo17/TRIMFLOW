@@ -9,7 +9,7 @@ import { Sidebar } from './sidebar';
 
 /*
  * Peças da casca do painel que dependem do contexto (badges, sino, faixas). Entram por Suspense:
- * a casca e o esqueleto da tela aparecem na hora e estas chegam quando painel_contexto responde
+ * a casca aparece na hora e estas chegam quando painel_contexto responde
  * (uma ida, memoizada por requisição e dividida com a página).
  */
 
