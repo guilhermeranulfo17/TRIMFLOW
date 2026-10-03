@@ -52,6 +52,8 @@ const LIMITE: Record<string, number> = {
   numeros: 3,
   lead: 4,
   empresa: 3,
+  // Etapa 9.6: a landing lê os preços numa ida (anon, sem identidade de usuário)
+  landing: 2,
 };
 
 describe('idas ao banco por tela', () => {
@@ -131,5 +133,11 @@ describe('idas ao banco por tela', () => {
       comUsuario(u.id, (tx) => tx.select().from(empresas).where(eq(empresas.id, u.empresa.id))),
     );
     expect(n).toBeLessThanOrEqual(LIMITE.empresa!);
+  });
+
+  it('landing (preços da vitrine)', async () => {
+    const { carregarPrecosVitrine } = await import('@/server/marketing/carregar');
+    const n = await medir('landing', () => carregarPrecosVitrine());
+    expect(n).toBeLessThanOrEqual(LIMITE.landing!);
   });
 });

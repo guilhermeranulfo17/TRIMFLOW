@@ -14,6 +14,7 @@ import {
   normalizarCodigoCupom,
   precoDoCiclo,
   primeiroVencimento,
+  VALOR_IMPLANTACAO_CENTAVOS,
   validarCupom,
   valorDaAssinatura,
 } from '@/domain/cobranca/precos';
@@ -46,7 +47,7 @@ export type Resultado<T = undefined> =
 export const ERRO_ASAAS =
   'Não conseguimos falar com o sistema de pagamento agora. Tente de novo em alguns minutos.';
 
-export const VALOR_IMPLANTACAO_CENTAVOS = 49_700;
+export { VALOR_IMPLANTACAO_CENTAVOS };
 
 const agoraDe = (d: DepsCobranca) => (d.agora ?? (() => new Date()))();
 
