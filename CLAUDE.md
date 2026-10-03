@@ -180,7 +180,9 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   sino, faixas e onboarding vêm de `carregarContextoPainel` (`painel_contexto()`, uma ida,
   memoizado). Nunca passe `tx` para dentro de `unstable_cache` (o callback pode rodar depois, em
   outra conexão). Orçamento de idas no CI (`tests/integration/idas-banco.test.ts`): tela nova
-  ou loader novo entra lá.
+  ou loader novo entra lá. No painel, **nenhum `loading.tsx` nem `<Suspense>` em `page.tsx`**: a
+  tela às vezes não trocava depois de uma ação (§60, teste `sem-suspense-de-pagina`); Suspense só
+  no layout e retorno imediato pelo `PendenteLink`/`useTransition`.
 - `server/db/admin.ts` ignora RLS: só para casos revisados, expondo o mínimo, com
   `import 'server-only'`.
 - **Link público:** só pelas funções do schema `publico` (fora da API do Supabase, `execute` só

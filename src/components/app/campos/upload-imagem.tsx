@@ -2,7 +2,7 @@
 
 import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import Image from 'next/image';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   dimensoesRedimensionadas,
@@ -58,6 +58,10 @@ export function UploadImagem({
   const entrada = useRef<HTMLInputElement>(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string>();
+  // Até o React assumir a página, escolher um arquivo não dispara o onChange e a escolha se
+  // perdia sem aviso: o campo só fica ativo depois de montado.
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
 
   async function aoEscolher(arquivo: File | undefined) {
     if (!arquivo) return;
@@ -128,13 +132,14 @@ export function UploadImagem({
             accept="image/jpeg,image/png,image/webp"
             className="sr-only"
             aria-label={`Escolher ${rotulo}`}
+            disabled={!montado || enviando}
             onChange={(e) => aoEscolher(e.target.files?.[0])}
           />
           <Button
             type="button"
             variant="outline"
             size="sm"
-            disabled={enviando}
+            disabled={!montado || enviando}
             onClick={() => entrada.current?.click()}
           >
             <ImagePlus aria-hidden /> {urlAtual ? 'Trocar' : 'Enviar'} {rotulo.toLowerCase()}

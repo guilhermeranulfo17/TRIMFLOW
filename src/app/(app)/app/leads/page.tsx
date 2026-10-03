@@ -2,25 +2,13 @@ import { Inbox, ListTodo } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
 import { EmptyState } from '@/components/app/empty-state';
-import {
-  Bloco,
-  EsqueletoCartoes,
-  EsqueletoTela,
-  EsqueletoTitulo,
-} from '@/components/app/esqueleto';
 import { ChecklistPainel } from '@/components/app/onboarding/checklist-painel';
 import { FiltrosCaixa } from '@/components/app/leads/filtros-caixa';
 import { ListaCaixa } from '@/components/app/leads/lista-caixa';
 import { TopoHoje } from '@/components/app/leads/topo-hoje';
-import {
-  contarFiltros,
-  filtrosDaUrl,
-  filtrosParaUrl,
-  type FiltrosCaixa as Filtros,
-} from '@/domain/leads/filtros';
-import { exigirSessao, type UsuarioAtual } from '@/server/auth/sessao';
+import { contarFiltros, filtrosDaUrl, filtrosParaUrl } from '@/domain/leads/filtros';
+import { exigirSessao } from '@/server/auth/sessao';
 import { comUsuario } from '@/server/db/tenant';
 import { listarCaixa, resumoHoje, usuariosDaEmpresa } from '@/server/leads/carregar';
 import { carregarChecklist } from '@/server/onboarding/carregar';
@@ -41,31 +29,11 @@ export default async function LeadsPage({ searchParams }: Props) {
   }
   const usuario = await exigirSessao();
   const filtros = filtrosDaUrl(busca);
-  // Os dados entram por Suspense com a chave dos filtros: trocar filtro ou atalho mostra o
-  // esqueleto na hora (sem loading.tsx nesta rota: ver ARQUITETURA §60)
-  return (
-    <Suspense key={filtrosParaUrl(filtros)} fallback={<EsqueletoLeads />}>
-      <CaixaDeLeads usuario={usuario} filtros={filtros} />
-    </Suspense>
-  );
-}
-
-function EsqueletoLeads() {
-  return (
-    <EsqueletoTela rotulo="Carregando leads">
-      <EsqueletoTitulo />
-      <div className="flex gap-2 overflow-hidden">
-        <EsqueletoCartoes n={5} className="h-16 min-w-32" />
-      </div>
-      <Bloco className="rounded-control h-11" />
-      <EsqueletoCartoes n={5} className="h-32" />
-    </EsqueletoTela>
-  );
-}
-
-async function CaixaDeLeads({ usuario, filtros }: { usuario: UsuarioAtual; filtros: Filtros }) {
-  // tudo numa transação só (uma leva em pipeline). A página não usa o contexto do painel: ele
-  // fica no layout, atrás de Suspense (ARQUITETURA §60)
+  // Sem Suspense nem loading.tsx na página: depois de uma ação, o conteúdo dentro deles nem
+  // sempre era trocado pelo novo (ARQUITETURA §60). O retorno imediato fica no link clicado
+  // (PendenteLink) e nos filtros (transição).
+  // Tudo numa transação só (uma leva em pipeline). A página não usa o contexto do painel: ele
+  // fica no layout, atrás de Suspense.
   const [resumo, pagina, usuarios, checklist] = await comUsuario(usuario.id, (tx) =>
     Promise.all([
       resumoHoje(usuario, tx),
