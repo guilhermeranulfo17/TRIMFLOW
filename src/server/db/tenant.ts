@@ -1,29 +1,105 @@
 import 'server-only';
-import { sql } from 'drizzle-orm';
+import { PgDialect } from 'drizzle-orm/pg-core';
+import type { SQL } from 'drizzle-orm';
+import type postgres from 'postgres';
 import { contextoSuporte } from '@/server/auth/contexto-suporte';
-import { obterDb, type Db } from './client';
+import { obterDb, sqlDoDb, transacaoSobre, type Db, type Tx } from './client';
+import { inlineParametros, literal } from './inline';
 
-export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+export type { Tx };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Identidade da transação: `role authenticated` + claims do usuário, e (Etapa 9A) quem da
+ * equipe está no modo suporte. Tudo com `set_config(..., true)`: vale só até o fim da
+ * transação, e a conexão volta ao pool sem identidade nenhuma.
+ */
+export function preambuloUsuario(usuarioId: string, admin: string | null | undefined): string {
+  if (!UUID.test(usuarioId)) throw new Error('Identificador de usuário inválido.');
+  const claims = JSON.stringify({ sub: usuarioId.toLowerCase(), role: 'authenticated' });
+  return (
+    `select set_config('request.jwt.claims', ${literal(claims)}, true), ` +
+    `set_config('role', 'authenticated', true), ` +
+    `set_config('orkestra.suporte_admin', ${literal(admin ?? '')}, true)`
+  );
+}
+
+export const PREAMBULO_ANON =
+  `select set_config('request.jwt.claims', '{"role":"anon"}', true), ` +
+  `set_config('role', 'anon', true)`;
+
+/**
+ * Transação numa conexão reservada, com `BEGIN` e a identidade na MESMA ida ao banco. As
+ * consultas disparadas juntas (Promise.all) seguem em pipeline (parâmetros inline, ver
+ * ./inline). Erro = rollback; a conexão sempre volta ao pool.
+ */
+export async function emTransacaoReservada<T>(
+  base: postgres.Sql,
+  preambulo: string,
+  fn: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  const reservado = await base.reserve();
+  try {
+    await reservado.unsafe(`begin; ${preambulo}`);
+    try {
+      const r = await fn(transacaoSobre(reservado));
+      await reservado.unsafe('commit');
+      return r;
+    } catch (erro) {
+      await reservado.unsafe('rollback').catch(() => undefined);
+      throw erro;
+    }
+  } finally {
+    reservado.release();
+  }
+}
 
 /**
  * Executa `fn` numa transação com a identidade do usuário: `role authenticated` + claims do JWT.
  * Assim as policies de RLS valem também no servidor — é o padrão para toda query da área logada.
  */
 export function criarComUsuario(db: Db, o: { suporteAdmin?: () => string | null } = {}) {
+  const base = sqlDoDb(db);
   return async function comUsuario<T>(usuarioId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
-    return db.transaction(async (tx) => {
-      const claims = JSON.stringify({ sub: usuarioId, role: 'authenticated' });
-      // modo suporte (Etapa 9A): a auditoria da empresa marca quem da equipe fez
-      const admin = o.suporteAdmin?.() ?? '';
-      await tx.execute(
-        sql`select set_config('request.jwt.claims', ${claims}, true), set_config('role', 'authenticated', true),
-          set_config('orkestra.suporte_admin', ${admin}, true)`,
-      );
-      return fn(tx);
-    });
+    return emTransacaoReservada(base, preambuloUsuario(usuarioId, o.suporteAdmin?.()), fn);
   };
 }
 
 export function comUsuario<T>(usuarioId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
   return criarComUsuario(obterDb(), { suporteAdmin: () => contextoSuporte().admin })(usuarioId, fn);
+}
+
+const dialeto = new PgDialect();
+
+/** SQL do Drizzle → texto com os parâmetros inline (uma instrução). */
+export function textoDaConsulta(consulta: SQL): string {
+  const q = dialeto.sqlToQuery(consulta);
+  return inlineParametros(q.sql, q.params);
+}
+
+type Linhas = Record<string, unknown>[];
+
+/**
+ * Leituras de UMA ida ao banco: identidade + várias consultas numa mensagem só (protocolo
+ * simples = uma transação implícita; erro desfaz tudo e a identidade some ao fim). Devolve as
+ * linhas de cada consulta, na ordem. Só para leitura.
+ */
+export function criarLerComo(db: Db, o: { suporteAdmin?: () => string | null } = {}) {
+  const base = sqlDoDb(db);
+  return async function lerComo(usuarioId: string, consultas: SQL[]): Promise<Linhas[]> {
+    const texto = [
+      preambuloUsuario(usuarioId, o.suporteAdmin?.()),
+      ...consultas.map(textoDaConsulta),
+    ].join(';\n');
+    const resultado = (await base.unsafe(texto)) as unknown as Linhas[];
+    return resultado.slice(1).map((r) => [...r]);
+  };
+}
+
+export function lerComo(usuarioId: string, consultas: SQL[]): Promise<Linhas[]> {
+  return criarLerComo(obterDb(), { suporteAdmin: () => contextoSuporte().admin })(
+    usuarioId,
+    consultas,
+  );
 }
