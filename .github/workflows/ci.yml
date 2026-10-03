@@ -109,6 +109,13 @@ jobs:
             echo "IP_HASH_SALT=sal-do-ci-orkestra"
             echo "MAILPIT_URL=${MAILPIT_URL:-${INBUCKET_URL:-http://127.0.0.1:54324}}"
             echo "CRON_SECRET=segredo-cron-do-ci"
+            # Etapa 9A: cobrança contra a API falsa do Asaas (Playwright sobe em :4010) e a
+            # equipe do /interno criada pelo seed
+            echo "ASAAS_API_KEY=chave-falsa"
+            echo "ASAAS_AMBIENTE=sandbox"
+            echo "ASAAS_WEBHOOK_TOKEN=token-falso"
+            echo "ASAAS_API_URL=http://localhost:4010/v3"
+            echo "ORKESTRA_ADMINS=equipe@orkestra.local"
           } >> "$GITHUB_ENV"
           # Chaves VAPID descartáveis, geradas a cada execução (push nos E2E).
           node scripts/vapid.mjs >> "$GITHUB_ENV"

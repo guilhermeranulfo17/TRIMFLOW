@@ -2,6 +2,8 @@ import 'server-only';
 import { revalidateTag } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
 import type { z } from 'zod';
+import { MENSAGEM_SOMENTE_LEITURA, mensagemErroConta } from '@/domain/cobranca/limites';
+import { podeEscrever } from '@/domain/cobranca/situacao';
 import { idSchema } from '@/domain/validacao/comum';
 import { AcessoNegadoError, exigirPerfil } from '@/server/auth/guards';
 import type { UsuarioAtual } from '@/server/auth/sessao';
@@ -40,6 +42,12 @@ export function validar<S extends z.ZodType>(
   };
 }
 
+/** Mensagem crua do erro (os códigos de negócio das funções SQL, ex.: CONTA_SOMENTE_LEITURA). */
+function mensagemDoErroBanco(erro: unknown): string | undefined {
+  const e = erro as { message?: string; cause?: { message?: string } } | null;
+  return e?.cause?.message ?? e?.message;
+}
+
 function codigoPostgres(erro: unknown): string | undefined {
   const e = erro as { code?: string; cause?: { code?: string } } | null;
   return e?.code ?? e?.cause?.code;
@@ -47,6 +55,8 @@ function codigoPostgres(erro: unknown): string | undefined {
 
 /** Erro do banco → mensagem simples (nunca a mensagem técnica). */
 export function mensagemDeErroBanco(erro: unknown): string {
+  const conta = mensagemErroConta(mensagemDoErroBanco(erro));
+  if (conta) return conta;
   switch (codigoPostgres(erro)) {
     case '23505':
       return 'Já existe um cadastro com esses dados. Use outro nome ou valor.';
@@ -74,6 +84,9 @@ export async function acaoDoDono<T>(
 ): Promise<ResultadoAcao<T>> {
   try {
     const dono = await exigirPerfil('dono');
+    // conta suspensa: somente leitura (o banco recusa de novo; aqui a mensagem sai limpa e
+    // cobre também o que grava pela conexão administrativa, como criar vendedor)
+    if (!podeEscrever(dono.empresa.situacao)) return { ok: false, erro: MENSAGEM_SOMENTE_LEITURA };
     const resultado = await fn(dono);
     // A página pública guarda vitrine e catálogo em cache (tag por slug): toda configuração
     // salva invalida esse cache.

@@ -35,6 +35,13 @@ export const tipoAviso = pgEnum('tipo_aviso', [
   'cliente_esquentou',
   'resumo_diario',
   'teste',
+  // Etapa 9A: cobrança (só o dono)
+  'teste_acabando',
+  'fatura_criada',
+  'pagamento_confirmado',
+  'pagamento_falhou',
+  'carencia',
+  'conta_suspensa',
 ]);
 export const canalAviso = pgEnum('canal_aviso', ['painel', 'push', 'whatsapp']);
 export const statusEntrega = pgEnum('status_entrega', [

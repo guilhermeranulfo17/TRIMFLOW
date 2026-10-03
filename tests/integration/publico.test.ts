@@ -443,7 +443,7 @@ describe('proposta', () => {
       const c = await cenarioPublico(tx, IDS.empresaA);
       const data = await dataDaqui(tx, 200);
       const token = await orcamentoConcluido(tx, c, { data });
-      await tx`update public.orcamentos set validade_ate = current_date - 1 where token = ${token}`;
+      await tx`update public.orcamentos set validade_ate = (now() at time zone 'America/Sao_Paulo')::date - 1 where token = ${token}`;
       const r = await comoAnon(tx, () => preReservar(tx, c, token));
       expect(r).toEqual({ ok: false, codigo: 'ORCAMENTO_EXPIRADO' });
       const [o] = await tx`select status from public.orcamentos where token = ${token}`;

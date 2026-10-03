@@ -121,10 +121,16 @@ type JsonContexto = {
 export async function lerContextoPublico(
   slug: string,
   comAnon: ComAnon = comAnonPadrao,
+  o: { suspensa?: boolean } = {},
 ): Promise<ContextoPublico | null> {
   try {
+    // empresa suspensa: só a vitrine (contexto_vitrine); o wizard nunca usa esta variante
     const [linha] = await comAnon((tx) =>
-      tx.execute<{ c: unknown }>(sql`select publico.contexto_preco(${slug}) as c`),
+      tx.execute<{ c: unknown }>(
+        o.suspensa
+          ? sql`select publico.contexto_vitrine(${slug}) as c`
+          : sql`select publico.contexto_preco(${slug}) as c`,
+      ),
     );
     const j = camelizar<JsonContexto>(linha?.c);
     return {
@@ -182,11 +188,23 @@ export const carregarContextoPublico = cache(
   },
 );
 
-/** Vitrine (sem tabelas de preço) + "hoje" no fuso do buffet (nunca em cache). */
+/**
+ * Vitrine (sem tabelas de preço) + "hoje" no fuso do buffet (nunca em cache). Empresa suspensa
+ * (Etapa 9A): a página mostra só a vitrine e o WhatsApp, sem "Montar meu orçamento".
+ */
 export async function carregarVitrine(
   slug: string,
+  o: { suspensa?: boolean } = {},
 ): Promise<{ vitrine: VitrinePublica; contexto: ContextoPublico } | null> {
-  const contexto = await carregarContextoPublico(slug);
+  const contexto = o.suspensa
+    ? slugValido(slug)
+      ? await unstable_cache(
+          () => lerContextoPublico(slug, comAnonPadrao, { suspensa: true }),
+          ['publico-contexto-vitrine', slug],
+          OPCOES_CACHE(slug),
+        )()
+      : null
+    : await carregarContextoPublico(slug);
   if (!contexto) return null;
   const hoje = hojeNoFuso(contexto.fuso);
   return { vitrine: montarVitrine(contexto.ctx, contexto.extras, hoje), contexto };

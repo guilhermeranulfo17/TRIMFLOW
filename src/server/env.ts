@@ -67,3 +67,14 @@ export function configWhatsapp(): ConfigWhatsapp | null {
   if (!token || !phoneNumberId) return null;
   return { token, phoneNumberId };
 }
+
+/**
+ * E-mails da equipe Orkestra com acesso ao /interno (separados por vírgula). Além da lista, o
+ * /interno exige MFA (TOTP) na sessão. Vazia = ninguém entra.
+ */
+export function adminsOrkestra(): string[] {
+  return (process.env.ORKESTRA_ADMINS ?? '')
+    .split(/[,;\s]+/)
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}

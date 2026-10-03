@@ -964,3 +964,114 @@ Regras gerais:
   - 4 cartões (dono) ou 3 (vendedor), funil com a maior queda em texto, origem, perdas,
     atendimento, ocupação (mapa dia × turno) e datas livres com "Copiar texto de promoção";
   - SVG próprio, cada gráfico com `aria-label` e tabela.
+
+## 54. Cobrança: planos, cupons e Asaas (Etapa 9A)
+
+- **Planos** em `planos` (editáveis só pelo /interno): Essencial 14700/147000 (2 usuários,
+  1 espaço, sem WhatsApp nem follow-up, Números só cartões e funil) e Profissional 24700/247000
+  (5 usuários, espaços ilimitados, tudo). Anual = 10 mensalidades ("2 meses grátis"). O teste
+  usa o Profissional. Conta de cortesia (`empresas.isenta`) fica ativa sem assinatura; o
+  backfill marcou como cortesia quem já estava `ativo`.
+- **Cupom** = desconto fixo em centavos sobre o preço do ciclo, por `duracao_meses` a partir
+  do 1º vencimento (`cupom_ate`). Fundador: 15000 de desconto (R$ 97/mês), 12 meses, 10 vagas.
+  O uso é reservado na transação que grava a assinatura (`cobranca_reservar_cupom`, com trava);
+  pendente trocada devolve o uso. A reconciliação volta ao preço cheio quando o cupom acaba.
+- **Asaas** só por `fetch` (`server/cobranca/asaas.ts`), header `access_token`. Assinatura com
+  `billingType: UNDEFINED`: o pagador escolhe Pix, boleto ou cartão na fatura hospedada.
+  `externalReference` = id da empresa. Sem `ASAAS_*`, a cobrança fica desligada (tela mostra o
+  WhatsApp de vendas).
+- **1º vencimento** = hoje ou o fim do teste, o que vier depois (não perde dias de teste); se
+  uma assinatura cancelada ainda cobre o período, começa no dia seguinte a ela.
+- **Mudar de plano**: limites mudam na hora; o valor novo vale a partir da próxima fatura
+  (`PUT /subscriptions` com `updatePendingPayments`), sem pró-rata. O cupom só continua se
+  valer para o plano/ciclo novo.
+- **Cancelar**: motivo obrigatório (lista + texto), sem oferta de pausa. Apaga a assinatura no
+  Asaas; o acesso segue até `pago_ate` (situação `cancelado`).
+- **Escrita**: `assinaturas`, `cobrancas`, `empresas_cobranca`, `cupons_usos` só pela conexão
+  administrativa (`server/cobranca/fluxos`, com auditoria) e pelas funções SQL. O dono lê pelo
+  RLS; vendedor não lê nada de cobrança. `cupons`, `cobranca_eventos` e `auditoria_interna` não
+  têm policy (o painel não lê).
+
+## 55. Situação da conta (ciclo de vida)
+
+`empresas.plano` guarda a situação, mantida por `_atualizar_situacao` (webhook, reconciliação,
+/interno e o job `orkestra-situacoes` de hora em hora). Regra pura `situacaoConta`
+(`domain/cobranca/situacao`) = `public._situacao_conta`, com teste de equivalência (2.000
+casos, viradas de dia em vários fusos). Precedência:
+
+1. suspensão manual (/interno) → `suspenso`;
+2. cortesia → `ativo`;
+3. período pago cobre hoje (data civil no fuso) → `ativo` (ou `cancelado` se cancelada);
+4. assinatura ativa vencida: dia do vencimento ainda `ativo`; 1 a 7 dias de atraso →
+   `inadimplente`; 8º dia → `suspenso` (atraso conta do vencimento mais antigo em aberto, ou do
+   dia seguinte ao período pago);
+5. teste em andamento → `trial`; senão `suspenso`.
+
+- A assinatura que decide (`_assinatura_referencia`): ativa > cancelada ainda coberta >
+  pendente > cancelada mais recente.
+- `pago_ate` = maior (vencimento + 1 ciclo - 1 dia) entre as cobranças pagas;
+  `atrasada_desde` = menor vencimento entre as vencidas. Sempre recalculados das cobranças.
+- Avisos (só para o dono, push sempre, não configuráveis): teste acabando (3 dias e 1 dia),
+  fatura criada, pagamento confirmado, pagamento não identificado, carência e conta suspensa.
+- **Backfill da migration**: todo teste em andamento ou vencido ganhou 14 dias a partir da
+  data da migration, para o primeiro job não suspender contas reais.
+
+## 56. Eventos do Asaas: webhook e reconciliação
+
+- `POST /api/cobranca/asaas`: token no header `asaas-access-token` (tempo constante), corpo até
+  64 KB, JSON válido. O domínio normaliza o evento (`normalizarEvento`) e limpa o payload
+  (`limparPayload`: só ids, valores, datas e status; nada de nome, CPF ou e-mail).
+- `cobranca_registrar_evento` faz tudo numa transação: grava o evento (único pelo id do Asaas:
+  repetido = `duplicado`), trava a empresa (advisory lock), aplica o status com a regra
+  monotônica, recalcula a assinatura, cria o aviso e atualiza a situação. Falhou no meio =
+  nada gravado, a rota responde 500 e o Asaas reenvia. Evento desconhecido fica gravado como
+  `ignorado`.
+- **Status monotônico** (`proximoStatus` = `_cobranca_proximo_status`, equivalência na tabela
+  toda): pendente < vencida < confirmada < recebida < estornada; `cancelada` só sai de pendente
+  ou vencida e é final. Evento fora de ordem não regride.
+- **Reconciliação diária** (`orkestra-cobranca-reconciliar`, 04:10 em São Paulo, pg_net com o
+  `CRON_SECRET` do Vault → `/api/cobranca/reconciliar` com `after()`): lista as cobranças de
+  cada assinatura (não cancelada ou cancelada há menos de 40 dias) e as implantações em aberto
+  e grava como eventos sintéticos `reconc:{cobrança}:{status}` (idempotentes).
+- API falsa (`tests/support/asaas-fake.ts`) com os mesmos endpoints, página de fatura e envio
+  do webhook: usada como `fetch` injetado na integração e como servidor (:4010) no E2E.
+
+## 57. Limites do plano e conta somente leitura
+
+- **Limites** no servidor (mensagem com "Mudar de plano" e o link "Ver planos" no toast) e no
+  banco por trigger, que vale para qualquer caminho, inclusive o admin: usuários ativos,
+  espaços ativos, `whatsapp_ativo` e ligar regra de follow-up. Plano vigente:
+  `codigoPlanoVigente` = `_codigo_plano` (equivalência). Downgrade só bloqueia o novo; nada é
+  apagado. Tarefa automática de empresa sem follow-up (ou suspensa) é ignorada em silêncio
+  (trigger em `tarefas`); WhatsApp de avisos só sai com o recurso no plano.
+- **Somente leitura**: trigger `_exigir_escrita` em toda tabela de `public` com `empresa_id` (e
+  em `empresas`) recusa `CONTA_SOMENTE_LEITURA` quando há `auth.uid()` e a empresa está
+  suspensa. Jobs, webhook, servidor via admin e link público (anon) não são afetados. A GUC
+  `orkestra.permitir_escrita = '1'` libera casos revisados. Ficam livres: avisos (marcar lido),
+  preferências e push, consentimento do suporte, auditoria e tabelas de cobrança.
+  - Tabela nova com `empresa_id` precisa ligar o trigger na própria migration: o teste de
+    integração confere pelo catálogo, e outro teste exige que toda função de escrita concedida
+    a `authenticated` esteja classificada (bloqueada ou livre).
+  - `acaoDoDono` recusa antes (cobre o que grava pela conexão administrativa, como criar
+    vendedor). As ações da tela de Plano funcionam com a conta suspensa.
+- **Link público de conta suspensa**: só a vitrine (pacotes) + WhatsApp, por
+  `publico.contexto_vitrine`; wizard, proposta nova e escrita continuam recusados.
+- Empresa suspensa não recebe avisos de operação (só os de cobrança). Reservas existentes
+  continuam valendo.
+
+## 58. /interno e acesso de suporte
+
+- **/interno**: sessão do Supabase + e-mail em `ORKESTRA_ADMINS` + `aal2` (TOTP nativo do
+  Supabase Auth, cadastrado no primeiro acesso, pedido a cada login). Fora da lista: 404. Os
+  usuários da equipe são do Auth, sem empresa (criados no painel do Supabase). Leituras e ações
+  pela conexão administrativa, sem dados do cliente final (documento do pagador mascarado).
+  Toda ação grava em `auditoria_interna`.
+- **Suporte**: o dono permite por 7 dias (`permitir_suporte`, revogável). Sem consentimento
+  vigente, o botão "Entrar como esta empresa" não existe e o servidor recusa.
+  - Entrar grava o cookie `orkestra_suporte` (HMAC-SHA256 com chave derivada da service role,
+    `httpOnly`): empresa, dono, admin e validade (até 2 h, nunca além do consentimento).
+  - A cada request, `usuarioAtual` só aceita o cookie com a mesma sessão de admin (id, lista,
+    `aal2`) e o consentimento ainda vigente no banco. Aí age como o dono (RLS igual).
+  - `comUsuario` liga a GUC `orkestra.suporte_admin` e o trigger da auditoria acrescenta
+    `dados.suporte` em tudo o que for gravado. Faixa vermelha fixa no painel, com "Sair do
+    modo suporte".

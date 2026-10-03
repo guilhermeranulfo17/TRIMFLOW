@@ -21,7 +21,13 @@ import {
 import { authUsers } from 'drizzle-orm/supabase';
 
 export const segmentoEmpresa = pgEnum('segmento_empresa', ['infantil', 'eventos', 'domicilio']);
-export const planoEmpresa = pgEnum('plano_empresa', ['trial', 'ativo', 'suspenso']);
+export const planoEmpresa = pgEnum('plano_empresa', [
+  'trial',
+  'ativo',
+  'suspenso',
+  'inadimplente',
+  'cancelado',
+]);
 export const perfilUsuario = pgEnum('perfil_usuario', ['dono', 'vendedor']);
 
 const criadoEm = () => timestamp('criado_em', { withTimezone: true }).notNull().defaultNow();
@@ -57,6 +63,10 @@ export const empresas = pgTable('empresas', {
   onboardingConcluidoEm: timestamp('onboarding_concluido_em', { withTimezone: true }),
   linkNaBioEm: timestamp('link_na_bio_em', { withTimezone: true }),
   linkTestadoEm: timestamp('link_testado_em', { withTimezone: true }),
+  /** Etapa 9A: suspensão manual pelo /interno e conta de cortesia (ativa sem assinatura). */
+  suspensaManualEm: timestamp('suspensa_manual_em', { withTimezone: true }),
+  motivoSuspensao: text('motivo_suspensao'),
+  isenta: boolean('isenta').notNull().default(false),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 });
@@ -128,3 +138,4 @@ export * from './schema-catalogo';
 export * from './schema-agenda';
 export * from './schema-leads';
 export * from './schema-avisos';
+export * from './schema-cobranca';

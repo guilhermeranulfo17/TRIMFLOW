@@ -1,5 +1,6 @@
 import 'server-only';
 import { unstable_rethrow } from 'next/navigation';
+import { mensagemErroConta } from '@/domain/cobranca/limites';
 import { formatData } from '@/domain/dates';
 import { MENSAGEM_AGENDA_PADRAO, traduzirErroAgenda } from '@/domain/agenda';
 import { AcessoNegadoError, exigirPerfil } from '@/server/auth/guards';
@@ -11,6 +12,8 @@ import type { ResultadoAcao } from '@/server/actions/empresa/comum';
 export function mensagemErroAgenda(erro: unknown): string {
   const e = (erro as { cause?: unknown })?.cause ?? erro;
   const { message, detail } = (e ?? {}) as { message?: string; detail?: string };
+  const conta = mensagemErroConta(message);
+  if (conta) return conta;
   const traduzida = traduzirErroAgenda(message);
   if (traduzida && message === 'AGENDA_BLOQUEIO_COM_RESERVA' && detail) {
     return `Há reserva ou pré-reserva em ${formatData(detail)}. Cancele antes de bloquear.`;

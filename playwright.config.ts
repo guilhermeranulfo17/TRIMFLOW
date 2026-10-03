@@ -43,12 +43,29 @@ export default defineConfig({
       testMatch: /navegacao\.spec\.ts/,
     },
   ],
-  webServer: process.env.E2E_BASE_URL
-    ? undefined
-    : {
-        command: CI ? `pnpm start --port ${PORTA}` : `pnpm dev --port ${PORTA}`,
-        url: `${BASE_URL}/login`,
-        reuseExistingServer: !CI,
-        timeout: 180_000,
+  webServer: [
+    // API falsa do Asaas (Etapa 9A): o app aponta para ela com ASAAS_API_URL e ela devolve o
+    // webhook de pagamento para o app.
+    {
+      command: 'node --no-warnings tests/support/asaas-fake-servidor.mjs',
+      url: 'http://localhost:4010/saude',
+      reuseExistingServer: true,
+      timeout: 30_000,
+      env: {
+        APP_URL: BASE_URL,
+        ASAAS_API_KEY: process.env.ASAAS_API_KEY ?? 'chave-falsa',
+        ASAAS_WEBHOOK_TOKEN: process.env.ASAAS_WEBHOOK_TOKEN ?? 'token-falso',
       },
+    },
+    ...(process.env.E2E_BASE_URL
+      ? []
+      : [
+          {
+            command: CI ? `pnpm start --port ${PORTA}` : `pnpm dev --port ${PORTA}`,
+            url: `${BASE_URL}/login`,
+            reuseExistingServer: !CI,
+            timeout: 180_000,
+          },
+        ]),
+  ],
 });

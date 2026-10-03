@@ -11,6 +11,7 @@ import {
   pendenciasDoContexto,
   resumoCardapio,
 } from '@/domain/publico';
+import type { VitrinePublica } from '@/domain/publico/vitrine';
 import { BannerTeste } from '@/components/publico/banner-teste';
 import { IconeWhatsApp } from '@/components/publico/icone-whatsapp';
 import { BOTAO_PRINCIPAL, BOTAO_SECUNDARIO } from '@/components/publico/marca';
@@ -26,7 +27,9 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const vitrineDoSlug = cache(carregarVitrine);
+const vitrineDoSlug = cache((slug: string, suspensa: boolean) =>
+  carregarVitrine(slug, { suspensa }),
+);
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const buffet = await carregarBuffet((await params).slug);
@@ -53,7 +56,7 @@ export default async function PaginaPublicaBuffet({ params, searchParams }: Prop
   const busca = await searchParams;
   const buffet = await exigirBuffet(slug);
   const [dados, modoTeste] = await Promise.all([
-    buffet.suspenso ? null : vitrineDoSlug(slug),
+    vitrineDoSlug(slug, buffet.suspenso),
     ehModoTeste(slug),
   ]);
   if (modoTeste) await marcarLinkTestado();
@@ -154,153 +157,160 @@ export default async function PaginaPublicaBuffet({ params, searchParams }: Prop
               </a>
             )}
           </section>
-        ) : (
-          vitrine && (
-            <>
-              <RegistroFunil slug={slug} origem={origem} />
-              {vitrine.aPartirDeCentavos !== null && (
-                <p className="mx-4 mt-6 flex items-center justify-center gap-2 text-center text-base font-semibold">
-                  <Sparkles className="size-5 text-[var(--marca-destaque)]" aria-hidden />
-                  Festas a partir de {formatBRL(vitrine.aPartirDeCentavos)}
-                </p>
-              )}
+        ) : null}
+        {buffet.suspenso && vitrine && <ListaPacotes pacotes={vitrine.pacotes} />}
+        {buffet.suspenso || pendente
+          ? null
+          : vitrine && (
+              <>
+                <RegistroFunil slug={slug} origem={origem} />
+                {vitrine.aPartirDeCentavos !== null && (
+                  <p className="mx-4 mt-6 flex items-center justify-center gap-2 text-center text-base font-semibold">
+                    <Sparkles className="size-5 text-[var(--marca-destaque)]" aria-hidden />
+                    Festas a partir de {formatBRL(vitrine.aPartirDeCentavos)}
+                  </p>
+                )}
 
-              {vitrine.tiposEvento.length > 0 && (
-                <section className="mt-8 px-4" aria-labelledby="titulo-tipos">
-                  <h2 id="titulo-tipos" className="text-lg font-bold">
-                    Que festa você vai fazer?
-                  </h2>
-                  <ul className="mt-3 flex flex-wrap gap-2">
-                    {vitrine.tiposEvento.map((t) => {
-                      const p = new URLSearchParams(parametros);
-                      p.set('tipo', t.id);
-                      return (
-                        <li key={t.id}>
-                          <Link
-                            href={`/b/${slug}/orcamento?${p}`}
-                            className="bg-accent text-accent-foreground hover:border-ring inline-flex min-h-12 items-center rounded-full border border-transparent px-4 font-semibold"
-                          >
-                            {t.nome}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              )}
-
-              {vitrine.pacotes.length > 0 && (
-                <section className="mt-8 px-4" aria-labelledby="titulo-pacotes">
-                  <h2 id="titulo-pacotes" className="text-lg font-bold">
-                    Pacotes
-                  </h2>
-                  <div className="mt-3 flex flex-col gap-3">
-                    {vitrine.pacotes.map((p) => {
-                      const foto = urlPublicaMidia(p.fotos[0]);
-                      const cardapio = resumoCardapio(p.secoes);
-                      return (
-                        <details
-                          key={p.id}
-                          className="group rounded-card border bg-white open:shadow-sm"
-                          data-testid="pacote-publico"
-                        >
-                          <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
-                            {foto && (
-                              <span className="rounded-control relative size-14 shrink-0 overflow-hidden">
-                                <Image
-                                  src={foto}
-                                  alt=""
-                                  fill
-                                  sizes="56px"
-                                  unoptimized
-                                  className="object-cover"
-                                />
-                              </span>
-                            )}
-                            <span className="min-w-0 flex-1">
-                              <span className="flex items-center gap-2 font-bold">
-                                {p.nome}
-                                {p.destaque && (
-                                  <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
-                                    Mais pedido
-                                  </span>
-                                )}
-                              </span>
-                              {p.subtitulo && (
-                                <span className="text-muted-foreground block text-sm">
-                                  {p.subtitulo}
-                                </span>
-                              )}
-                              {p.aPartirDeCentavos !== null && (
-                                <span className="block text-sm font-semibold text-[var(--marca-destaque)]">
-                                  a partir de {formatBRL(p.aPartirDeCentavos)}
-                                </span>
-                              )}
-                            </span>
-                            <span
-                              aria-hidden
-                              className="text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none"
+                {vitrine.tiposEvento.length > 0 && (
+                  <section className="mt-8 px-4" aria-labelledby="titulo-tipos">
+                    <h2 id="titulo-tipos" className="text-lg font-bold">
+                      Que festa você vai fazer?
+                    </h2>
+                    <ul className="mt-3 flex flex-wrap gap-2">
+                      {vitrine.tiposEvento.map((t) => {
+                        const p = new URLSearchParams(parametros);
+                        p.set('tipo', t.id);
+                        return (
+                          <li key={t.id}>
+                            <Link
+                              href={`/b/${slug}/orcamento?${p}`}
+                              className="bg-accent text-accent-foreground hover:border-ring inline-flex min-h-12 items-center rounded-full border border-transparent px-4 font-semibold"
                             >
-                              ▾
-                            </span>
-                          </summary>
-                          <div className="border-t px-4 pt-3 pb-4 text-sm">
-                            <ul className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                              <li className="flex items-center gap-1">
-                                <Users className="size-4" aria-hidden />
-                                {p.maxConvidados
-                                  ? `${p.minConvidados} a ${p.maxConvidados} convidados`
-                                  : `a partir de ${p.minConvidados} convidados`}
-                              </li>
-                              <li className="flex items-center gap-1">
-                                <Clock className="size-4" aria-hidden />
-                                {duracao(p.duracaoInclusaMin)} de festa
-                              </li>
-                            </ul>
-                            {p.descricao && (
-                              <p className="mt-3 whitespace-pre-line">{p.descricao}</p>
-                            )}
-                            {cardapio && <p className="mt-3 font-semibold">{cardapio}</p>}
-                            {p.secoes.map((s) =>
-                              s.itens.length > 0 ? (
-                                <div key={s.nome} className="mt-2">
-                                  <h3 className="font-semibold">{s.nome}</h3>
-                                  <p className="text-muted-foreground">{s.itens.join(', ')}</p>
-                                </div>
-                              ) : null,
-                            )}
-                          </div>
-                        </details>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
+                              {t.nome}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                )}
 
-              <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-                <div className="mx-auto flex max-w-2xl gap-2">
-                  <Link href={linkOrcamento} className={`${BOTAO_PRINCIPAL} flex-1`}>
-                    <CalendarDays className="size-5" aria-hidden />
-                    Montar meu orçamento
-                  </Link>
-                  {whatsapp && (
-                    <a
-                      href={whatsapp}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${BOTAO_SECUNDARIO} px-4`}
-                      aria-label="Falar no WhatsApp"
-                    >
-                      <IconeWhatsApp />
-                    </a>
-                  )}
+                <ListaPacotes pacotes={vitrine.pacotes} />
+
+                <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+                  <div className="mx-auto flex max-w-2xl gap-2">
+                    <Link href={linkOrcamento} className={`${BOTAO_PRINCIPAL} flex-1`}>
+                      <CalendarDays className="size-5" aria-hidden />
+                      Montar meu orçamento
+                    </Link>
+                    {whatsapp && (
+                      <a
+                        href={whatsapp}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${BOTAO_SECUNDARIO} px-4`}
+                        aria-label="Falar no WhatsApp"
+                      >
+                        <IconeWhatsApp />
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </>
-          )
-        )}
+              </>
+            )}
       </main>
       <RodapePublico comEspaco={!buffet.suspenso && !pendente} />
+    </>
+  );
+}
+
+/** Pacotes da vitrine (abrem para mostrar convidados, duração e cardápio). */
+function ListaPacotes({ pacotes }: { pacotes: VitrinePublica['pacotes'] }) {
+  return (
+    <>
+      {pacotes.length > 0 && (
+        <section className="mt-8 px-4" aria-labelledby="titulo-pacotes">
+          <h2 id="titulo-pacotes" className="text-lg font-bold">
+            Pacotes
+          </h2>
+          <div className="mt-3 flex flex-col gap-3">
+            {pacotes.map((p) => {
+              const foto = urlPublicaMidia(p.fotos[0]);
+              const cardapio = resumoCardapio(p.secoes);
+              return (
+                <details
+                  key={p.id}
+                  className="group rounded-card border bg-white open:shadow-sm"
+                  data-testid="pacote-publico"
+                >
+                  <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
+                    {foto && (
+                      <span className="rounded-control relative size-14 shrink-0 overflow-hidden">
+                        <Image
+                          src={foto}
+                          alt=""
+                          fill
+                          sizes="56px"
+                          unoptimized
+                          className="object-cover"
+                        />
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2 font-bold">
+                        {p.nome}
+                        {p.destaque && (
+                          <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                            Mais pedido
+                          </span>
+                        )}
+                      </span>
+                      {p.subtitulo && (
+                        <span className="text-muted-foreground block text-sm">{p.subtitulo}</span>
+                      )}
+                      {p.aPartirDeCentavos !== null && (
+                        <span className="block text-sm font-semibold text-[var(--marca-destaque)]">
+                          a partir de {formatBRL(p.aPartirDeCentavos)}
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      aria-hidden
+                      className="text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none"
+                    >
+                      ▾
+                    </span>
+                  </summary>
+                  <div className="border-t px-4 pt-3 pb-4 text-sm">
+                    <ul className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                      <li className="flex items-center gap-1">
+                        <Users className="size-4" aria-hidden />
+                        {p.maxConvidados
+                          ? `${p.minConvidados} a ${p.maxConvidados} convidados`
+                          : `a partir de ${p.minConvidados} convidados`}
+                      </li>
+                      <li className="flex items-center gap-1">
+                        <Clock className="size-4" aria-hidden />
+                        {duracao(p.duracaoInclusaMin)} de festa
+                      </li>
+                    </ul>
+                    {p.descricao && <p className="mt-3 whitespace-pre-line">{p.descricao}</p>}
+                    {cardapio && <p className="mt-3 font-semibold">{cardapio}</p>}
+                    {p.secoes.map((s) =>
+                      s.itens.length > 0 ? (
+                        <div key={s.nome} className="mt-2">
+                          <h3 className="font-semibold">{s.nome}</h3>
+                          <p className="text-muted-foreground">{s.itens.join(', ')}</p>
+                        </div>
+                      ) : null,
+                    )}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </>
   );
 }

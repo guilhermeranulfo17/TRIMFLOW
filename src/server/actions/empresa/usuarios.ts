@@ -6,7 +6,9 @@ import {
   novoVendedorSchema,
   type NovoVendedorEntrada,
 } from '@/domain/validacao/usuario';
+import { mensagemLimite, podeAdicionarUsuario } from '@/domain/cobranca/limites';
 import { AuthAdminNaoConfiguradoError, criarAuthAdmin } from '@/server/auth/admin-supabase';
+import { recursosDaEmpresa, usuariosAtivos } from '@/server/cobranca/carregar';
 import { obterDb } from '@/server/db/client';
 import { comUsuario } from '@/server/db/tenant';
 import {
@@ -51,6 +53,11 @@ export async function criarNovoVendedor(
     comAuthAdmin<{ senha: string; email: string }>(async () => {
       const v = validar(novoVendedorSchema, entrada);
       if (!v.ok) return v.resultado;
+      // limite do plano antes de criar no Auth (o banco confere de novo)
+      const plano = await recursosDaEmpresa(dono.empresa.id);
+      if (!podeAdicionarUsuario(plano, await usuariosAtivos(dono.empresa.id))) {
+        return { ok: false, erro: mensagemLimite('LIMITE_PLANO_USUARIOS', plano) };
+      }
       const r = await criarVendedor(deps(), dono, v.dados);
       if (!r.ok) {
         if (r.motivo === 'email_em_uso')

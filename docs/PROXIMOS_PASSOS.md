@@ -122,8 +122,10 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 
 - **Sessão de 30 dias** (Supabase → Auth → Sessions; "time-box" exige plano pago) e
   expiração/rotação de refresh token.
-- Painel somente leitura quando o plano estiver suspenso (checar em `exigirSessao`).
-- Modo "acessar conta do cliente" (implantação assistida) com auditoria.
+- ~~Painel somente leitura quando o plano estiver suspenso~~ (Etapa 9A: trigger no banco +
+  `acaoDoDono`).
+- ~~Modo "acessar conta do cliente" com auditoria~~ (Etapa 9A: consentimento de 7 dias,
+  sessão de suporte de 2 h, faixa vermelha, `dados.suporte` na auditoria).
 - SMTP próprio no Supabase Cloud (o SMTP padrão tem limite baixo de envios por hora).
 - Reduzir o bundle do cadastro: `libphonenumber-js/max` pesa ~50 kB; avaliar metadata `mobile`
   no cliente e `max` só no servidor.
@@ -131,3 +133,16 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Conta demo somente leitura.
 - Restringir leitura de `auditoria` ao dono, se necessário (hoje qualquer usuário ativo da
   empresa lê a auditoria da própria empresa).
+
+## Depois da Etapa 9A (pendências percebidas)
+
+- Tela de cupons e de planos no /interno (hoje cupom novo e mudança de preço entram por
+  migration).
+- Pró-rata na mudança de plano (hoje o valor novo vale a partir da próxima fatura).
+- Pagamento com cartão salvo (`billingType: CREDIT_CARD` com tokenização) para cobrança
+  automática; hoje o pagador escolhe a forma a cada fatura.
+- Lista de contas a cobrar no /interno (inadimplentes com dias de atraso) e exportação para a
+  contabilidade.
+- Painel do suspenso "mais visual": desabilitar botões e campos (hoje o servidor e o banco
+  recusam com a mensagem e o link para o Plano).
+- Nota fiscal de serviço (NFS-e) das mensalidades (fora do escopo da Etapa 9).

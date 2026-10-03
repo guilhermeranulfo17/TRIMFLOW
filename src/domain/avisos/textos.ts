@@ -2,7 +2,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { FUSO_PADRAO, diaDaSemana, formatData, hojeNoFuso, somarDias } from '../dates';
 import { formatBRL } from '../money';
 import { PASSOS } from '../publico/passos';
-import type { TipoAviso } from './canais';
+import { ehAvisoCobranca, type TipoAviso } from './canais';
 
 /*
  * Textos dos avisos: os mesmos no painel, no push e (como variáveis) nos modelos do WhatsApp.
@@ -111,6 +111,23 @@ function variaveis(tipo: TipoAviso, d: DadosAviso, agora: Date, fuso: string) {
       };
     case 'teste':
       return {};
+    case 'teste_acabando':
+      return { dias: num(d.dias) ?? 1 };
+    case 'fatura_criada':
+    case 'pagamento_falhou':
+    case 'pagamento_confirmado': {
+      const venc = dataCivil(d.vencimento);
+      return {
+        valor: num(d.valor_centavos) !== null ? formatBRL(num(d.valor_centavos)!) : null,
+        vencimento: venc ? formatData(venc).slice(0, 5) : null,
+      };
+    }
+    case 'carencia': {
+      const em = dataCivil(d.suspende_em);
+      return { suspendeEm: em ? formatData(em).slice(0, 5) : null };
+    }
+    case 'conta_suspensa':
+      return {};
   }
 }
 
@@ -126,7 +143,9 @@ export function textoAviso(
     ? `/app/leads/${o.leadId}`
     : tipo === 'teste'
       ? '/app/avisos'
-      : '/app/leads';
+      : ehAvisoCobranca(tipo)
+        ? '/app/empresa/plano'
+        : '/app/leads';
   const v = variaveis(tipo, dados, agora, fuso) as Record<string, string | number | null>;
   const mais = o.agrupados && o.agrupados > 1 ? ` (${o.agrupados} vezes)` : '';
   switch (tipo) {
@@ -196,6 +215,53 @@ export function textoAviso(
       return {
         titulo: 'Aviso de teste',
         corpo: 'Se você recebeu isto, os avisos do Orkestra estão funcionando.',
+        caminho,
+      };
+    case 'teste_acabando': {
+      const dias = Number(v.dias);
+      return {
+        titulo: dias <= 1 ? 'Seu teste acaba amanhã' : `Seu teste acaba em ${dias} dias`,
+        corpo: 'Assine para continuar recebendo pedidos pelo link sem interrupção.',
+        caminho,
+      };
+    }
+    case 'fatura_criada':
+      return {
+        titulo: 'Fatura do Orkestra',
+        corpo: juntar(
+          [
+            `Sua fatura${v.valor ? ` de ${v.valor}` : ''} está disponível`,
+            v.vencimento ? `vence em ${v.vencimento}` : null,
+          ],
+          ' e ',
+        ).concat('. Pague por Pix, boleto ou cartão.'),
+        caminho,
+      };
+    case 'pagamento_confirmado':
+      return {
+        titulo: 'Pagamento confirmado',
+        corpo: `Recebemos seu pagamento${v.valor ? ` de ${v.valor}` : ''}. Obrigado!`,
+        caminho,
+      };
+    case 'pagamento_falhou':
+      return {
+        titulo: 'Pagamento não identificado',
+        corpo: `A fatura${v.valor ? ` de ${v.valor}` : ''}${v.vencimento ? ` venceu em ${v.vencimento}` : ' venceu'} e não identificamos o pagamento. Pague para não perder o acesso.`,
+        caminho,
+      };
+    case 'carencia':
+      return {
+        titulo: 'Pagamento em atraso',
+        corpo: v.suspendeEm
+          ? `Sem o pagamento, sua conta fica somente leitura em ${v.suspendeEm}.`
+          : 'Sem o pagamento, sua conta fica somente leitura em breve.',
+        caminho,
+      };
+    case 'conta_suspensa':
+      return {
+        titulo: 'Conta suspensa',
+        corpo:
+          'Seu painel está somente leitura e o link mostra só a vitrine. Assine ou pague para voltar.',
         caminho,
       };
   }

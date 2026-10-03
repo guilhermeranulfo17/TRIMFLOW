@@ -400,7 +400,7 @@ describe('expiração e atualizar preços', () => {
       const b = await comoDono(tx, () =>
         salvarInterno(tx, c, { data, whatsapp: '+5534990055102' }),
       );
-      await tx`update public.orcamentos set validade_ate = current_date - 1 where id in ${tx([a.id, b.id])}`;
+      await tx`update public.orcamentos set validade_ate = (now() at time zone 'America/Sao_Paulo')::date - 1 where id in ${tx([a.id, b.id])}`;
       // leitura antes do job
       const [p] = await comoAnon(tx, () => tx`select publico.proposta(${c.slug}, ${a.token}) as p`);
       expect(p!.p.status).toBe('expirado');
@@ -432,7 +432,7 @@ describe('expiração e atualizar preços', () => {
           return r!.t as string;
         })();
       await comoAnon(tx, () => esperarMensagem(tx, chamar, 'PUBLICO_ORCAMENTO_VIGENTE'));
-      await tx`update public.orcamentos set validade_ate = current_date - 1 where id = ${o.id}`;
+      await tx`update public.orcamentos set validade_ate = (now() at time zone 'America/Sao_Paulo')::date - 1 where id = ${o.id}`;
       const novo = await comoAnon(tx, chamar);
       const vs = await versoes(tx, IDS.empresaA, o.numero);
       expect(vs.map((v) => [v.versao, v.status, v.total_centavos])).toEqual([

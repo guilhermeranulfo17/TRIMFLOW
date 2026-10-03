@@ -13,6 +13,7 @@ import { gravarModelo } from '@/server/catalogo/gravar-modelo';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { tagDoBuffet } from '@/server/publico/cache';
+import { mensagemErroConta } from '@/domain/cobranca/limites';
 
 /*
  * Onboarding guiado (/app/comecar) e itens manuais do checklist. Escrita só pelas funções SQL
@@ -38,7 +39,8 @@ async function acao<T>(
   } catch (erro) {
     unstable_rethrow(erro);
     const e = (erro as { cause?: unknown })?.cause ?? erro;
-    const mensagem = MENSAGENS[(e as { message?: string } | null)?.message ?? ''] ?? PADRAO;
+    const codigo = (e as { message?: string } | null)?.message ?? '';
+    const mensagem = MENSAGENS[codigo] ?? mensagemErroConta(codigo) ?? PADRAO;
     if (mensagem === PADRAO) console.error('[onboarding] erro inesperado');
     return { ok: false, erro: mensagem };
   }
