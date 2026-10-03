@@ -55,7 +55,9 @@ export function transacaoSobre(reservado: postgres.ReservedSql): Tx {
 }
 
 /** Cria um cliente Drizzle. `prepare: false` é exigido pelo pooler do Supabase (modo transação). */
-const sqlPorDb = new WeakMap<Db, postgres.Sql>();
+// O cliente `postgres` vai preso ao próprio Db (símbolo global): o Next pode carregar este
+// módulo mais de uma vez no servidor (camadas diferentes), então um WeakMap do módulo não serve.
+const SQL = Symbol.for('orkestra.db.sql');
 
 export function criarDb(url: string, opcoes: { max?: number } = {}): { db: Db; sql: postgres.Sql } {
   const conexao = postgres(url, {
@@ -64,13 +66,13 @@ export function criarDb(url: string, opcoes: { max?: number } = {}): { db: Db; s
     onnotice: () => {},
   });
   const db = drizzle(envolver(conexao), { schema });
-  sqlPorDb.set(db, conexao);
+  Object.defineProperty(db, SQL, { value: conexao });
   return { db, sql: conexao };
 }
 
 /** O cliente `postgres` de um Db criado por criarDb (transação reservada, leitura de uma ida). */
 export function sqlDoDb(db: Db): postgres.Sql {
-  const s = sqlPorDb.get(db);
+  const s = (db as unknown as Record<symbol, postgres.Sql | undefined>)[SQL];
   if (!s) throw new Error('Db sem cliente postgres associado (use criarDb).');
   return s;
 }
