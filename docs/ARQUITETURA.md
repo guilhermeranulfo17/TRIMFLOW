@@ -1157,3 +1157,64 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
   próprios com `(select auth.uid())`. `_lead_grupo`/`_lead_ordem` ficam sem `set search_path`:
   o SET impede que o Postgres embuta a função, e a caixa com 5.000 leads passa de 38 para 65 ms.
   São IMMUTABLE, só usam parâmetros e não leem tabelas.
+
+## 61. Página pública do buffet (Etapa 9.5, PR 2)
+
+- **Estrutura de `/b/[slug]`:**
+  1. hero em tela cheia (capa com degradê na cor do buffet, logo, nome, cidade, frase, "a partir de", botões);
+  2. como funciona;
+  3. pacotes em cartões com carrossel e "Ver detalhes" numa gaveta (`<dialog>`);
+  4. galeria em mosaico com lightbox;
+  5. diferenciais;
+  6. depoimentos;
+  7. perguntas frequentes;
+  8. onde fica;
+  9. chamada final.
+
+  Rodapé com "Feito com Orkestra" em limão sobre grafite. Seção sem conteúdo não aparece.
+
+- **Dados:** colunas novas em `empresas` (`slogan`, `estilo`, `diferenciais`, `bairro`,
+  `mostrar_endereco`, `pagina_personalizada_em`) e tabelas `galeria_fotos` (12),
+  `depoimentos` (6) e `perguntas_frequentes` (8).
+  - Limites no banco: checks e o trigger `_limite_pagina`.
+  - RLS: só o dono lê.
+  - Escrita só por `salvar_pagina_publica`, `salvar_galeria`, `salvar_depoimentos` e
+    `salvar_perguntas` (security definer, dono, auditoria, somente leitura na conta suspensa).
+  - Leitura pública só por `publico.pagina(slug)` (`anon`). O endereço completo só sai quando o
+    dono marca. `_diferenciais_validos` = `diferenciaisValidos` (teste de equivalência).
+- **Estilos:** `festivo | elegante | limpo`. Sem escolha, vale o padrão do segmento (infantil
+  festivo, eventos elegante, domicílio limpo; `estiloEfetivo`).
+  - O layout de `/b/[slug]` põe `data-estilo` (vitrine, orçamento e proposta usam a mesma
+    tipografia), e o CSS troca a fonte dos títulos (`font-titulo`), os raios e as decorações.
+  - Nenhuma cor nova: tudo sai da cor do buffet.
+  - Fontes (`components/publico/fontes.ts`): Fredoka e Cormorant Garamond com `preload: false`,
+    `display: swap` e subset `latin`. A página declara só a variável do estilo dela, e o
+    navegador baixa só a fonte usada.
+- **Perguntas automáticas** (`perguntasAutomaticas`): saem dos dados reais (duração,
+  convidados, cardápio, "a partir de" quando o preço é público, opcionais, prazo da
+  pré-reserva) e vêm antes das do dono. Pergunta sem dado não aparece.
+- **Imagens:** a galeria sobe em duas larguras (`{empresa}/galeria/{uuid}-640.webp` e `-1280`)
+  para o `srcset`, com uma miniatura de ~16 px em data URL como fundo desfocado.
+  - Arquivo que sai da galeria é apagado depois da gravação (o que falhar fica no log).
+  - Hero com `priority` e `sizes`; o resto com `loading="lazy"`.
+- **Editor:** fica em Minha empresa → Link (`#pagina`; no PR 3 vai para Configurações →
+  Personalizar página).
+  - Cada seção salva sozinha.
+  - A prévia é um iframe de `/b/[slug]?previa=1`, recarregado a cada salvamento. O dono está
+    logado, então a página abre em modo teste e sem cache.
+  - Só `/b/[slug]` aceita iframe, e só do próprio site (`X-Frame-Options: SAMEORIGIN` e
+    `frame-ancestors 'self'`). Orçamento e proposta continuam `DENY`.
+- **Cache:** `carregarPagina` fica em `unstable_cache` com a tag do buffet (60 s), e toda action
+  do editor invalida pela `acaoDoDono`. No modo teste a leitura é direta.
+- **Compartilhamento:**
+  - `opengraph-image` 1200x630 com capa, logo, nome e cidade sobre a cor do buffet; o `sharp`
+    converte as imagens WEBP, que o gerador não lê.
+  - JSON-LD `LocalBusiness` só com dados reais, nunca nota ou avaliação, com `<` escapado.
+- **Orçamento e proposta:** no PC, duas colunas.
+  - No orçamento, o resumo fixo à direita é o mesmo nó que vira a barra de baixo no celular,
+    então nada se duplica.
+  - Na proposta, a capa leva identidade, resumo, total e validade, e as ações ficam fixas.
+  - "Orçar este pacote" leva `?pacote=` ao orçamento, que o aceita só se o pacote estiver na
+    vitrine.
+- **Movimento:** entrada das seções com `animation-timeline: view()`, só quando o navegador
+  suporta e o usuário não pediu menos movimento. Carrossel com `scroll-snap`, sem dependência.

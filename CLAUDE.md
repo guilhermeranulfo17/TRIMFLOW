@@ -42,14 +42,16 @@ src/
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, follow-up, usuarios, plano (assinar, faturas,
                      cancelar, acesso do suporte), simulador,
-                     proposta-exemplo, link (divulgação + qr: PNG e PDF)
+                     proposta-exemplo, link (divulgação + qr: PNG e PDF + editor da página
+                     pública com prévia, Etapa 9.5)
     api/avisos/      processar (POST, Bearer CRON_SECRET) e contagem (GET, sino)
     api/cobranca/    asaas (webhook, token no header) e reconciliar (POST, Bearer CRON_SECRET)
     interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral,
                      empresas/[id] (ações auditadas, "Entrar como esta empresa")
     manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)
     auth/            rotas técnicas: confirm (link do e-mail), callback (Google), sair
-    b/[slug]/        página pública do buffet, orcamento (wizard), proposta/[token] (+ /pdf)
+    b/[slug]/        página pública do buffet (vitrine com estilo), orcamento (wizard),
+                     proposta/[token] (+ /pdf), opengraph-image
     (legal)/         privacidade e termos
   components/
     ui/              shadcn (não misture regra de negócio aqui)
@@ -62,11 +64,15 @@ src/
       avisos/        sino, preferências, push neste aparelho, WhatsApp, aviso de teste
       onboarding/    faixa, checklist, "Fiz" da bio e os passos de /app/comecar (comecar/)
       divulgacao/    link com Copiar, textos prontos, QR (prévia + downloads)
+      pagina/        editor da página pública (textos e estilo, galeria, depoimentos,
+                     perguntas) e prévia em iframe
       numeros/       cartões, funil, origem, perdas, atendimento, ocupação (SVG próprio)
       plano/         escolher plano, cancelar e suporte, faixa da conta, faixa do suporte
     interno/         formulários e ações do /interno
     orcamento/       peças compartilhadas do wizard e do orçamento interno (contador)
     proposta/        proposta na web (desenha o ModeloProposta)
+    publico/         vitrine (cabeçalho, carrossel, pacotes com gaveta, galeria com lightbox),
+                     fontes dos estilos, cor da marca, rodapé
     auth/            peças dos formulários de autenticação
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
                      conversao (campos), senha, forca-senha, tema, imagem, plano
@@ -75,7 +81,8 @@ src/
     agenda/          intervalo do slot, estado do slot, calendário, mensagens (= regra do SQL)
     preco/           motor de preço (calcularOrcamento, disponibilidade, aPartirDe, parcelas)
     publico/         link público: passos, prévia por modo de preço, vitrine, cor, WhatsApp,
-                     status do lead (= regra do SQL)
+                     status do lead (= regra do SQL), página (estilo, perguntas automáticas,
+                     limites e diferenciais = regra do SQL, JSON-LD)
     leads/           caixa e ações: prioridade (grupo e motivo, = regra do SQL), filtros da URL,
                      mensagens prontas, motivos de perda, adiar, temperatura por inatividade,
                      linha do tempo
@@ -102,7 +109,8 @@ src/
                      admin-supabase (Admin API com service role, só servidor)
     usuarios/        criar/desativar vendedor (dependências injetadas)
     agenda/          leituras da agenda (disponibilidade, reservas, bloqueios) e erros
-    publico/         leituras do link público (cache por slug), hash de IP, modo teste
+    publico/         leituras do link público (cache por slug, página), hash de IP, modo teste
+    pagina/          leitura do editor da página pública (RLS do dono)
     leads/           leituras da caixa (caixa_leads, resumo_hoje) e do detalhe do lead, erros
     tarefas/         leituras da tela de Tarefas
     proposta/        carregador da proposta (público e painel), versão a gravar, PDF, fontes,
@@ -241,8 +249,9 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
   `SUPABASE_SERVICE_ROLE_KEY` só é lida em `server/auth/admin-supabase.ts` (`server-only`); o
   ESLint impede importá-lo em componentes, `lib`, páginas e middleware.
-- Imagens: bucket público `midia`, caminho `{empresa_id}/{logo|capa|pacotes}/{uuid}.webp`; o
-  navegador converte para WEBP e envia; a server action valida o caminho e grava.
+- Imagens: bucket público `midia`, caminho `{empresa_id}/{logo|capa|pacotes}/{uuid}.webp` e,
+  na galeria, `{empresa_id}/galeria/{uuid}-{640|1280}.webp`; o navegador converte para WEBP e
+  envia; a server action valida o caminho e grava.
 - Server action de configuração: `acaoDoDono` + schema Zod compartilhado + `comUsuario` +
   auditoria (`antes`/`depois`) + `revalidatePath` (`server/actions/empresa/comum.ts`).
 - Guard de perfil: `await exigirPerfil('dono')` em páginas e actions restritas.
@@ -257,6 +266,11 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - **Proposta:** web e PDF desenham o mesmo `ModeloProposta` (`montarConteudo`). Condições,
   cardápio e textos ficam congelados em `orcamentos.conteudo`; identidade do buffet é ao vivo.
   `publico.proposta` e o PDF nunca levam observações internas, motivo do desconto nem autor.
+- **Página pública (Etapa 9.5, §61):** frase, estilo, diferenciais, galeria, depoimentos e
+  perguntas só são escritos por `salvar_pagina_publica`, `salvar_galeria`, `salvar_depoimentos`
+  e `salvar_perguntas` (dono, limites, auditoria); o público lê só por `publico.pagina`.
+  Depoimento, nota ou avaliação **nunca** são gerados pelo sistema. Fontes dos estilos sem
+  preload (só a do estilo é baixada). Só `/b/[slug]` aceita iframe, e só do próprio site.
 - **Catálogo usado em orçamento não é excluído, só desativado** (trigger
   `CATALOGO_ITEM_EM_USO`; telas usam `carregarEmUso`).
 - Temperatura por aberturas existe no SQL (`_temperatura_aberturas`) e em
@@ -282,6 +296,7 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 | `pnpm db:reset`                                | Recria o banco local do zero: migrations + seed         |
 | `pnpm db:migrate`                              | Aplica migrations pendentes no banco local              |
 | `pnpm db:seed`                                 | Roda `supabase/seed.sql` (idempotente)                  |
+| `pnpm db:seed:midia`                           | Imagens do seed (capa, galeria) no Storage local        |
 | `pnpm db:seed:volume`                          | Empresa com 5.000 leads para medir a caixa (só local)   |
 | `pnpm vapid:gerar`                             | Gera o par de chaves VAPID do push (para a Vercel)      |
 
@@ -311,7 +326,10 @@ faturas pagas e uma em aberto), o Buffet Teste B tem o teste acabando em 2 dias,
 é cadastrado no primeiro acesso). Cobrança local com a API falsa do Asaas:
 `node tests/support/asaas-fake-servidor.mjs` e `ASAAS_API_URL=http://localhost:4010/v3`.
 `pnpm db:seed:volume` cria o **Buffet Volume**
-(`dono@volume.local`, 5.000 leads) para o `explain analyze` da caixa. Página pública:
+(`dono@volume.local`, 5.000 leads) para o `explain analyze` da caixa. Desde a Etapa 9.5, o
+Buffet Demo tem a página pública preenchida (frase, diferenciais, 6 fotos, 3 depoimentos
+marcados "(seed)" e 3 perguntas); `pnpm db:seed:midia` envia as imagens (geradas, sem fotos de
+terceiros) ao Storage local. Página pública:
 http://localhost:3000/b/buffet-demo (logado como dono, abre em modo teste). E-mails locais (recuperação de senha): http://127.0.0.1:54324.
 
 Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:

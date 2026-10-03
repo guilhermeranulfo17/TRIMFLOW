@@ -507,6 +507,11 @@ describe('conta suspensa = somente leitura', () => {
     'marcar_link_na_bio',
     'marcar_link_testado',
     'dispensar_checklist',
+    // Etapa 9.5: página pública
+    'salvar_pagina_publica',
+    'salvar_galeria',
+    'salvar_depoimentos',
+    'salvar_perguntas',
   ];
 
   it('toda função de escrita do painel está classificada', async () => {

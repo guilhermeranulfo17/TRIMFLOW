@@ -19,7 +19,7 @@ function Secao({
     <section className="mt-6" aria-labelledby={id}>
       <h2
         id={id}
-        className="text-sm font-extrabold tracking-wide text-[var(--marca-destaque)] uppercase"
+        className="font-titulo text-sm font-bold tracking-wide text-[var(--marca-destaque)] uppercase"
       >
         {titulo}
       </h2>
@@ -31,28 +31,65 @@ function Secao({
 export function PropostaWeb({ modelo: m }: { modelo: ModeloProposta }) {
   return (
     <article data-testid="proposta">
+      {/* Capa: identidade do buffet (cor, fonte do estilo, logo), resumo e total em destaque */}
       <header
-        className="sm:rounded-card -mx-4 flex items-center gap-3 px-4 py-5 sm:mx-0"
-        style={{ background: m.cores.base, color: m.cores.texto }}
+        className="sm:rounded-card relative -mx-4 overflow-hidden px-5 pt-6 pb-5 sm:mx-0 sm:px-7 sm:pt-8"
+        style={{
+          background: `linear-gradient(135deg, ${m.cores.destaque} 0%, ${m.cores.base} 100%)`,
+          color: '#FFFFFF',
+        }}
+        data-testid="capa-proposta"
       >
-        {m.cabecalho.logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={m.cabecalho.logoUrl}
-            alt=""
-            className="size-14 shrink-0 rounded-full bg-white object-cover"
-          />
-        )}
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold opacity-90">{m.cabecalho.buffet}</p>
-          <h1 className="text-xl font-extrabold tracking-tight" data-testid="titulo-proposta">
-            {m.cabecalho.titulo}
-          </h1>
-          <p className="text-sm opacity-90">
-            {m.cabecalho.emitidaEm ? `Emitida em ${m.cabecalho.emitidaEm} · ` : ''}
-            <span className="font-semibold" data-testid="validade-proposta">
-              {m.cabecalho.validade}
-            </span>
+        <svg
+          aria-hidden
+          className="formas-festivas absolute -top-10 -right-10 size-48 opacity-20"
+          viewBox="0 0 200 200"
+        >
+          <circle cx="70" cy="70" r="60" fill="white" />
+          <circle cx="160" cy="150" r="30" fill="white" />
+        </svg>
+        <div className="relative flex items-center gap-3">
+          {m.cabecalho.logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={m.cabecalho.logoUrl}
+              alt=""
+              className="size-14 shrink-0 rounded-full border-2 border-white bg-white object-cover sm:size-16"
+            />
+          )}
+          <div className="min-w-0">
+            <p className="font-titulo truncate text-lg font-bold">{m.cabecalho.buffet}</p>
+            <p className="text-sm text-white/90">
+              {m.cabecalho.emitidaEm ? `Emitida em ${m.cabecalho.emitidaEm}` : 'Proposta'}
+            </p>
+          </div>
+        </div>
+        <h1
+          className="font-titulo relative mt-5 text-2xl font-bold tracking-tight sm:text-3xl"
+          data-testid="titulo-proposta"
+        >
+          {m.cabecalho.titulo}
+        </h1>
+        <ul className="relative mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/95">
+          {m.cardapio && <li>Pacote {m.cardapio.pacote}</li>}
+          <li className="first-letter:uppercase">{m.evento.data}</li>
+          <li>{m.evento.totalConvidados} convidados</li>
+        </ul>
+        <div className="relative mt-5 flex flex-wrap items-end justify-between gap-3 rounded-[calc(var(--radius-card)-4px)] bg-white p-4 text-[var(--marca-destaque)] shadow-sm">
+          <div>
+            <p className="text-xs font-bold tracking-wide uppercase">Total</p>
+            <p className="font-titulo text-3xl font-bold tabular-nums sm:text-4xl">
+              {m.investimento.total}
+            </p>
+            {m.investimento.porConvidado && (
+              <p className="text-sm">{m.investimento.porConvidado} por convidado</p>
+            )}
+          </div>
+          <p
+            className="rounded-full bg-[var(--accent)] px-3 py-1 text-sm font-semibold"
+            data-testid="validade-proposta"
+          >
+            {m.cabecalho.validade}
           </p>
         </div>
       </header>
@@ -194,8 +231,11 @@ export function RodapeProposta({ modelo: m }: { modelo: ModeloProposta }) {
     <footer className="text-muted-foreground mt-10 border-t pt-4 pb-8 text-center text-xs">
       <p>{m.rodape.linhas.join(' · ')}</p>
       {m.rodape.orkestra && (
-        <p className="mt-2">
-          feito com <span className="text-foreground font-bold">Orkestra</span>
+        <p className="mt-2 flex items-center justify-center gap-1.5">
+          Feito com
+          <span className="rounded-full bg-[#161616] px-2 py-0.5 font-bold text-[#3EE42E]">
+            Orkestra
+          </span>
         </p>
       )}
     </footer>

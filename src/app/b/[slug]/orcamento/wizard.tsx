@@ -57,6 +57,8 @@ type Props = {
   vitrine: VitrinePublica;
   origem: OrigemLead;
   tipoNaUrl?: string;
+  /** "Orçar este pacote" na vitrine: já vem escolhido (o cliente ainda pode trocar) */
+  pacoteNaUrl?: string;
   inicio: string;
   retomada: { escolhas: Escolhas; passo: NumeroPasso } | null;
 };
@@ -74,6 +76,15 @@ function lerLocal(slug: string): Escolhas | null {
   }
 }
 
+/** Tipo e pacote vindos da vitrine valem sobre o progresso salvo. */
+function daUrl(base: Escolhas, tipo?: string, pacote?: string): Escolhas {
+  return {
+    ...base,
+    ...(tipo ? { tipoEventoId: tipo } : {}),
+    ...(pacote ? { pacoteId: pacote } : {}),
+  };
+}
+
 function salvarLocal(slug: string, escolhas: Escolhas) {
   try {
     localStorage.setItem(CHAVE(slug), JSON.stringify({ escolhas, salvoEm: Date.now() }));
@@ -82,12 +93,21 @@ function salvarLocal(slug: string, escolhas: Escolhas) {
   }
 }
 
-export function Wizard({ slug, buffet, vitrine, origem, tipoNaUrl, inicio, retomada }: Props) {
+export function Wizard({
+  slug,
+  buffet,
+  vitrine,
+  origem,
+  tipoNaUrl,
+  pacoteNaUrl,
+  inicio,
+  retomada,
+}: Props) {
   const router = useRouter();
   const busca = useSearchParams();
   const [escolhas, setEscolhas] = useState<Escolhas>(() => {
     if (retomada) return retomada.escolhas;
-    return tipoNaUrl ? { ...VAZIAS, tipoEventoId: tipoNaUrl } : VAZIAS;
+    return daUrl(VAZIAS, tipoNaUrl, pacoteNaUrl);
   });
   const [comContato, setComContato] = useState(retomada !== null);
   const [previa, setPrevia] = useState<Previa | null>(null);
@@ -107,8 +127,8 @@ export function Wizard({ slug, buffet, vitrine, origem, tipoNaUrl, inicio, retom
   useEffect(() => {
     if (retomada) return;
     const local = lerLocal(slug);
-    if (local) setEscolhas(tipoNaUrl ? { ...local, tipoEventoId: tipoNaUrl } : local);
-  }, [slug, retomada, tipoNaUrl]);
+    if (local) setEscolhas(daUrl(local, tipoNaUrl, pacoteNaUrl));
+  }, [slug, retomada, tipoNaUrl, pacoteNaUrl]);
 
   useEffect(() => salvarLocal(slug, escolhas), [slug, escolhas]);
 
@@ -233,8 +253,8 @@ export function Wizard({ slug, buffet, vitrine, origem, tipoNaUrl, inicio, retom
     passo === 3 ? 'Ver pacotes e valores' : passo === 5 ? 'Ver minha proposta' : 'Continuar';
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
-      <header className="sticky top-0 z-20 border-b bg-white/95 px-4 pt-3 pb-2 backdrop-blur">
+    <div className="mx-auto flex min-h-dvh max-w-2xl flex-col lg:max-w-6xl">
+      <header className="sticky top-0 z-20 border-b bg-white/95 px-4 pt-3 pb-2 backdrop-blur lg:px-8">
         <div className="flex items-center gap-2">
           {anterior ? (
             <button
@@ -276,64 +296,73 @@ export function Wizard({ slug, buffet, vitrine, origem, tipoNaUrl, inicio, retom
         </div>
       </header>
 
-      <main className="flex-1 px-4 pt-5 pb-48">
-        <h1
-          ref={titulo}
-          tabIndex={-1}
-          className="text-2xl font-extrabold tracking-tight outline-none"
-        >
-          {info.titulo}
-        </h1>
-        <div className="mt-5">
-          {passo === 1 && <PassoFesta {...props} />}
-          {passo === 2 && <PassoQuando {...props} />}
-          {passo === 3 && (
-            <PassoContato
-              {...props}
-              contato={contato}
-              setContato={setContato}
-              inicio={inicio}
-              origem={origem}
-              confirmado={contatoConfirmado}
-            />
-          )}
-          {passo === 4 && <PassoPacote {...props} />}
-          {passo === 5 && <PassoExtras {...props} />}
-        </div>
-        <RodapePublico />
-      </main>
-
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 backdrop-blur"
-        data-testid="barra-resumo"
-      >
-        <div className="mx-auto max-w-2xl px-4 pt-2 pb-3">
-          <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="text-muted-foreground min-w-0 truncate">
-              {resumo || 'Monte sua festa'}
-            </span>
-            <span className="shrink-0 font-bold" aria-live="polite" data-testid="preco-resumo">
-              {carregando && !preco ? '…' : preco}
-            </span>
+      {/* No PC: formulário à esquerda e resumo fixo à direita; no celular, resumo embaixo */}
+      <div className="flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-10 lg:px-8">
+        <main className="px-4 pt-5 pb-48 lg:px-0 lg:pt-8 lg:pb-12">
+          <h1
+            ref={titulo}
+            tabIndex={-1}
+            className="font-titulo text-2xl font-bold tracking-tight outline-none lg:text-3xl"
+          >
+            {info.titulo}
+          </h1>
+          <div className="mt-5">
+            {passo === 1 && <PassoFesta {...props} />}
+            {passo === 2 && <PassoQuando {...props} />}
+            {passo === 3 && (
+              <PassoContato
+                {...props}
+                contato={contato}
+                setContato={setContato}
+                inicio={inicio}
+                origem={origem}
+                confirmado={contatoConfirmado}
+              />
+            )}
+            {passo === 4 && <PassoPacote {...props} />}
+            {passo === 5 && <PassoExtras {...props} />}
           </div>
-          <p
-            className="text-muted-foreground mt-1 min-h-5 text-xs"
-            aria-live="polite"
-            data-testid="motivo"
-          >
-            {erro ? <span className="text-destructive font-semibold">{erro}</span> : motivo}
-          </p>
-          <button
-            type={passo === 3 ? 'submit' : 'button'}
-            form={passo === 3 ? 'form-contato' : undefined}
-            onClick={passo === 3 ? undefined : avancar}
-            disabled={!!motivo || concluindo}
-            aria-disabled={!!motivo || concluindo}
-            className={`${BOTAO_PRINCIPAL} mt-1 w-full`}
-          >
-            {concluindo ? 'Calculando sua proposta…' : rotulo}
-          </button>
-        </div>
+          <RodapePublico />
+        </main>
+
+        <aside
+          className="lg:rounded-card fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 backdrop-blur lg:sticky lg:top-28 lg:mt-8 lg:border lg:bg-white lg:shadow-sm"
+          data-testid="barra-resumo"
+          aria-label="Resumo do orçamento"
+        >
+          <div className="mx-auto max-w-2xl px-4 pt-2 pb-3 lg:p-5">
+            <p className="font-titulo mb-3 hidden text-lg font-bold lg:block">Sua festa</p>
+            <div className="flex items-baseline justify-between gap-3 text-sm lg:flex-col lg:items-stretch lg:gap-4">
+              <span className="text-muted-foreground min-w-0 truncate lg:whitespace-normal">
+                {resumo || 'Monte sua festa'}
+              </span>
+              <span
+                className="shrink-0 font-bold lg:border-t lg:pt-4 lg:text-2xl"
+                aria-live="polite"
+                data-testid="preco-resumo"
+              >
+                {carregando && !preco ? '…' : preco}
+              </span>
+            </div>
+            <p
+              className="text-muted-foreground mt-1 min-h-5 text-xs"
+              aria-live="polite"
+              data-testid="motivo"
+            >
+              {erro ? <span className="text-destructive font-semibold">{erro}</span> : motivo}
+            </p>
+            <button
+              type={passo === 3 ? 'submit' : 'button'}
+              form={passo === 3 ? 'form-contato' : undefined}
+              onClick={passo === 3 ? undefined : avancar}
+              disabled={!!motivo || concluindo}
+              aria-disabled={!!motivo || concluindo}
+              className={`${BOTAO_PRINCIPAL} mt-1 w-full`}
+            >
+              {concluindo ? 'Calculando sua proposta…' : rotulo}
+            </button>
+          </div>
+        </aside>
       </div>
     </div>
   );

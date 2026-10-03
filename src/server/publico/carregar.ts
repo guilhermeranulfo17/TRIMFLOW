@@ -6,6 +6,7 @@ import { hojeNoFuso } from '@/domain/dates';
 import type { ContextoPreco, Id } from '@/domain/preco';
 import type { TextosComerciais } from '@/domain/proposta';
 import { montarVitrine, type ExtrasPacote, type VitrinePublica } from '@/domain/publico';
+import { estiloEfetivo, type EstiloPagina, type Segmento } from '@/domain/publico/pagina';
 import { slugValido } from '@/domain/slug';
 import { urlPublicaMidia } from '@/lib/midia';
 import { camelizar, montarContexto, type LinhasCatalogo } from '@/server/catalogo/montar-contexto';
@@ -232,3 +233,91 @@ export async function lerEstadoOrcamento(
   );
   return linha?.e ? camelizar<EstadoOrcamento>(linha.e) : null;
 }
+
+// --- Página pública (Etapa 9.5) ----------------------------------------------
+
+export type FotoPublica = {
+  id: Id;
+  url640: string;
+  url1280: string;
+  largura: number;
+  altura: number;
+  blur: string | null;
+  alt: string | null;
+};
+
+export type PaginaPublica = {
+  segmento: Segmento;
+  estilo: EstiloPagina;
+  slogan: string | null;
+  diferenciais: string[];
+  bairro: string | null;
+  /** só quando o dono marca "mostrar endereço completo" */
+  endereco: string | null;
+  galeria: FotoPublica[];
+  depoimentos: { id: Id; nome: string; tipoFesta: string | null; texto: string }[];
+  perguntas: { id: Id; pergunta: string; resposta: string }[];
+};
+
+type JsonPagina = {
+  segmento: Segmento;
+  slogan: string | null;
+  estilo: string | null;
+  diferenciais: string[] | null;
+  bairro: string | null;
+  endereco: string | null;
+  galeria: {
+    id: Id;
+    caminho640: string;
+    caminho1280: string;
+    largura: number;
+    altura: number;
+    blur: string | null;
+    alt: string | null;
+  }[];
+  depoimentos: PaginaPublica['depoimentos'];
+  perguntas: PaginaPublica['perguntas'];
+};
+
+/** Conteúdo da página (publico.pagina). Null se o slug não existir. Nada de preço aqui. */
+export async function lerPagina(
+  slug: string,
+  comAnon: ComAnon = comAnonPadrao,
+): Promise<PaginaPublica | null> {
+  const [linha] = await comAnon((tx) =>
+    tx.execute<{ p: unknown }>(sql`select publico.pagina(${slug}) as p`),
+  );
+  if (!linha?.p) return null;
+  const j = camelizar<JsonPagina>(linha.p);
+  return {
+    segmento: j.segmento,
+    estilo: estiloEfetivo(j.estilo, j.segmento),
+    slogan: j.slogan,
+    diferenciais: j.diferenciais ?? [],
+    bairro: j.bairro,
+    endereco: j.endereco,
+    galeria: j.galeria.map((f) => ({
+      id: f.id,
+      url640: urlPublicaMidia(f.caminho640)!,
+      url1280: urlPublicaMidia(f.caminho1280)!,
+      largura: f.largura,
+      altura: f.altura,
+      blur: f.blur,
+      alt: f.alt,
+    })),
+    depoimentos: j.depoimentos,
+    perguntas: j.perguntas,
+  };
+}
+
+/**
+ * Página do slug. Em cache pela tag do buffet (toda ação do editor invalida), menos no modo
+ * teste e na prévia do editor: o dono vê na hora o que acabou de salvar.
+ */
+export const carregarPagina = cache(
+  async (slug: string, semCache = false): Promise<PaginaPublica | null> => {
+    if (!slugValido(slug)) return null;
+    if (semCache) return lerPagina(slug);
+    return unstable_cache(() => lerPagina(slug), ['publico-pagina', slug], OPCOES_CACHE(slug))();
+  },
+);

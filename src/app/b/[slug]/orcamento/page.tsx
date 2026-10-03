@@ -40,6 +40,8 @@ export default async function PaginaOrcamento({ params, searchParams }: Props) {
 
   const tipo = typeof busca.tipo === 'string' ? busca.tipo : undefined;
   const tipoNaUrl = !!tipo && dados.vitrine.tiposEvento.some((t) => t.id === tipo);
+  const pacote = typeof busca.pacote === 'string' ? busca.pacote : undefined;
+  const pacoteNaUrl = !!pacote && dados.vitrine.pacotes.some((p) => p.id === pacote);
 
   return (
     <>
@@ -50,6 +52,7 @@ export default async function PaginaOrcamento({ params, searchParams }: Props) {
         vitrine={dados.vitrine}
         origem={origemDoParametro(busca.origem)}
         tipoNaUrl={tipoNaUrl ? tipo : undefined}
+        pacoteNaUrl={pacoteNaUrl ? pacote : undefined}
         inicio={assinarInstante()}
         retomada={
           rascunho?.success

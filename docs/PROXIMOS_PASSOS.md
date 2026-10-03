@@ -170,3 +170,17 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   página (ARQUITETURA §60), o painel de detalhe precisa de um esqueleto do lado do cliente (estado
   da transição) e não de `loading.tsx`. Se o Next corrigir o Suspense de página depois de ação,
   reavaliar a regra (o teste `sem-suspense-de-pagina` diz onde).
+
+## Depois da Etapa 9.5 PR 2 (pendências percebidas)
+
+- **Editor em Configurações → Personalizar página** no PR 3 (hoje em Minha empresa → Link).
+- Reordenar fotos arrastando (hoje subir/descer, que funciona no celular) e recorte da foto.
+- Fotos dos pacotes também em duas larguras (hoje uma só, de até 1600 px) e miniatura desfocada
+  na capa.
+- Galeria por pacote ou por espaço (hoje uma galeria do buffet).
+- Vídeo curto no hero, domínio próprio e avaliações automáticas continuam fora do escopo.
+- Tema escuro na página pública (fora do escopo).
+- Limpeza de arquivos soltos da pasta `galeria` (upload que não chegou a ser gravado).
+- Pré-visualizar antes de salvar (hoje a prévia mostra o que já foi salvo).
+- **Capa em duas larguras** (como a galeria): hoje uma só, de até 1920 px; com foto real pesada,
+  o LCP no celular piora. Gerar 960 e 1920 no envio e usar `srcset` no hero.

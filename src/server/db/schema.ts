@@ -8,6 +8,7 @@ import {
   boolean,
   char,
   index,
+  integer,
   unique,
   jsonb,
   numeric,
@@ -29,6 +30,8 @@ export const planoEmpresa = pgEnum('plano_empresa', [
   'cancelado',
 ]);
 export const perfilUsuario = pgEnum('perfil_usuario', ['dono', 'vendedor']);
+/** Etapa 9.5: estilo da página pública (null = padrão do segmento). */
+export const estiloPagina = pgEnum('estilo_pagina', ['festivo', 'elegante', 'limpo']);
 
 const criadoEm = () => timestamp('criado_em', { withTimezone: true }).notNull().defaultNow();
 const atualizadoEm = () =>
@@ -67,6 +70,16 @@ export const empresas = pgTable('empresas', {
   suspensaManualEm: timestamp('suspensa_manual_em', { withTimezone: true }),
   motivoSuspensao: text('motivo_suspensao'),
   isenta: boolean('isenta').notNull().default(false),
+  /** Etapa 9.5: página pública (escrita só por salvar_pagina_publica). */
+  slogan: text('slogan'),
+  estilo: estiloPagina('estilo'),
+  diferenciais: text('diferenciais')
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
+  bairro: text('bairro'),
+  mostrarEndereco: boolean('mostrar_endereco').notNull().default(false),
+  paginaPersonalizadaEm: timestamp('pagina_personalizada_em', { withTimezone: true }),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 });
@@ -139,3 +152,64 @@ export * from './schema-agenda';
 export * from './schema-leads';
 export * from './schema-avisos';
 export * from './schema-cobranca';
+
+// --- Etapa 9.5: página pública (escrita só pelas funções salvar_*; o dono lê) -------------
+
+export const galeriaFotos = pgTable(
+  'galeria_fotos',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    empresaId: uuid('empresa_id')
+      .notNull()
+      .references(() => empresas.id, { onDelete: 'cascade' }),
+    caminho640: text('caminho_640').notNull(),
+    caminho1280: text('caminho_1280').notNull(),
+    largura: integer('largura').notNull(),
+    altura: integer('altura').notNull(),
+    blur: text('blur'),
+    alt: text('alt'),
+    ordem: smallint('ordem').notNull().default(0),
+    criadoEm: criadoEm(),
+  },
+  (t) => [
+    index('galeria_fotos_empresa_id_fk_idx').on(t.empresaId, t.ordem),
+    unique().on(t.id, t.empresaId),
+  ],
+);
+
+export const depoimentos = pgTable(
+  'depoimentos',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    empresaId: uuid('empresa_id')
+      .notNull()
+      .references(() => empresas.id, { onDelete: 'cascade' }),
+    nome: text('nome').notNull(),
+    tipoFesta: text('tipo_festa'),
+    texto: text('texto').notNull(),
+    ordem: smallint('ordem').notNull().default(0),
+    criadoEm: criadoEm(),
+  },
+  (t) => [
+    index('depoimentos_empresa_id_fk_idx').on(t.empresaId, t.ordem),
+    unique().on(t.id, t.empresaId),
+  ],
+);
+
+export const perguntasFrequentes = pgTable(
+  'perguntas_frequentes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    empresaId: uuid('empresa_id')
+      .notNull()
+      .references(() => empresas.id, { onDelete: 'cascade' }),
+    pergunta: text('pergunta').notNull(),
+    resposta: text('resposta').notNull(),
+    ordem: smallint('ordem').notNull().default(0),
+    criadoEm: criadoEm(),
+  },
+  (t) => [
+    index('perguntas_frequentes_empresa_id_fk_idx').on(t.empresaId, t.ordem),
+    unique().on(t.id, t.empresaId),
+  ],
+);

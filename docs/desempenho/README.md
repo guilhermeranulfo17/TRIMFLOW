@@ -42,3 +42,25 @@ acessibilidade 100, boas práticas 96, SEO 100; LCP 2,3 s (meta 2,5 s), CLS 0, T
 ## Bundle
 
 `bundle.md` (First Load JS por rota, antes e depois).
+
+## Página pública nova (PR 2, `/b/buffet-demo`)
+
+Lighthouse 12 mobile (4G simulado), build de produção local, Buffet Demo bem preenchido (capa,
+6 fotos na galeria, fotos nos pacotes, 3 depoimentos, perguntas; `pnpm db:seed:midia`), 3 voltas:
+
+| Medida         | PR 1 (sem capa nem galeria) | PR 2          | Meta  |
+| -------------- | --------------------------- | ------------- | ----- |
+| Desempenho     | 97                          | 90 a 96       | ≥ 90  |
+| Acessibilidade | 100                         | 100           | ≥ 95  |
+| Boas práticas  | 96                          | 100           | ≥ 95  |
+| SEO            | 100                         | 100           | 100   |
+| LCP            | 2,3 s                       | 2,7 a 3,4 s   | 2,5 s |
+| CLS / TBT      | 0 / 110 ms                  | 0 / 73–122 ms |       |
+
+- O LCP agora é a foto de capa (antes era texto). Na medição real, sem simulação, o primeiro
+  conteúdo pinta em ~280 ms; a diferença vem do modelo simulado, que soma ao LCP as fontes e o
+  JavaScript pedidos antes dele.
+- Fonte do estilo festivo só no peso 700: 30 KB → 16 KB (desempenho de 88 para 91–93 na
+  mesma página). Sem a fonte do estilo ("limpo"), 96–97.
+- Boas práticas 96 → 100: ícone do app (`app/icon.png`), sem o 404 do `/favicon.ico`.
+- First Load JS: `/b/[slug]` 158 kB, `/b/[slug]/orcamento` 152 kB, proposta 148 kB.
