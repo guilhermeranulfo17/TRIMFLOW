@@ -57,6 +57,8 @@ type Props = {
   vitrine: VitrinePublica;
   origem: OrigemLead;
   tipoNaUrl?: string;
+  /** "Orçar este pacote" na vitrine: já vem escolhido (o cliente ainda pode trocar) */
+  pacoteNaUrl?: string;
   inicio: string;
   retomada: { escolhas: Escolhas; passo: NumeroPasso } | null;
 };
@@ -74,6 +76,15 @@ function lerLocal(slug: string): Escolhas | null {
   }
 }
 
+/** Tipo e pacote vindos da vitrine valem sobre o progresso salvo. */
+function daUrl(base: Escolhas, tipo?: string, pacote?: string): Escolhas {
+  return {
+    ...base,
+    ...(tipo ? { tipoEventoId: tipo } : {}),
+    ...(pacote ? { pacoteId: pacote } : {}),
+  };
+}
+
 function salvarLocal(slug: string, escolhas: Escolhas) {
   try {
     localStorage.setItem(CHAVE(slug), JSON.stringify({ escolhas, salvoEm: Date.now() }));
@@ -82,12 +93,21 @@ function salvarLocal(slug: string, escolhas: Escolhas) {
   }
 }
 
-export function Wizard({ slug, buffet, vitrine, origem, tipoNaUrl, inicio, retomada }: Props) {
+export function Wizard({
+  slug,
+  buffet,
+  vitrine,
+  origem,
+  tipoNaUrl,
+  pacoteNaUrl,
+  inicio,
+  retomada,
+}: Props) {
   const router = useRouter();
   const busca = useSearchParams();
   const [escolhas, setEscolhas] = useState<Escolhas>(() => {
     if (retomada) return retomada.escolhas;
-    return tipoNaUrl ? { ...VAZIAS, tipoEventoId: tipoNaUrl } : VAZIAS;
+    return daUrl(VAZIAS, tipoNaUrl, pacoteNaUrl);
   });
   const [comContato, setComContato] = useState(retomada !== null);
   const [previa, setPrevia] = useState<Previa | null>(null);
@@ -107,8 +127,8 @@ export function Wizard({ slug, buffet, vitrine, origem, tipoNaUrl, inicio, retom
   useEffect(() => {
     if (retomada) return;
     const local = lerLocal(slug);
-    if (local) setEscolhas(tipoNaUrl ? { ...local, tipoEventoId: tipoNaUrl } : local);
-  }, [slug, retomada, tipoNaUrl]);
+    if (local) setEscolhas(daUrl(local, tipoNaUrl, pacoteNaUrl));
+  }, [slug, retomada, tipoNaUrl, pacoteNaUrl]);
 
   useEffect(() => salvarLocal(slug, escolhas), [slug, escolhas]);
 

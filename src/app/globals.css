@@ -324,3 +324,113 @@
     overflow-x: hidden;
   }
 }
+
+/*
+ * Estilos da página pública (Etapa 9.5, data-estilo no layout de /b/[slug]): fonte dos títulos,
+ * raios e decorações. Nenhuma cor nova: tudo sai da cor do buffet (components/publico/marca.ts).
+ */
+[data-estilo] {
+  --fonte-titulo: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-foto: 12px;
+}
+[data-estilo='festivo'] {
+  --fonte-titulo: var(--font-festivo), var(--font-manrope), ui-sans-serif, sans-serif;
+  --radius-card: 28px;
+  --radius-control: 999px;
+  --radius-foto: 24px;
+}
+[data-estilo='elegante'] {
+  --fonte-titulo: var(--font-elegante), Georgia, 'Times New Roman', serif;
+  --radius-card: 4px;
+  --radius-control: 4px;
+  --radius-foto: 2px;
+}
+
+@utility font-titulo {
+  font-family: var(--fonte-titulo);
+}
+@utility rounded-foto {
+  border-radius: var(--radius-foto);
+}
+
+/* Título de seção: sublinhado em pílula no festivo, filete fino no elegante, nada no limpo */
+.titulo-secao::after {
+  content: '';
+  display: block;
+  margin-top: 0.6rem;
+}
+[data-estilo='festivo'] .titulo-secao::after {
+  width: 2.75rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--primary);
+}
+[data-estilo='elegante'] .titulo-secao {
+  letter-spacing: 0.01em;
+}
+[data-estilo='elegante'] .titulo-secao::after {
+  width: 4rem;
+  height: 1px;
+  background: var(--marca-destaque);
+}
+.centro .titulo-secao::after {
+  margin-inline: auto;
+}
+
+/* Formas suaves do festivo (decoração, nunca atrás de texto pequeno) */
+.formas-festivas {
+  display: none;
+}
+[data-estilo='festivo'] .formas-festivas {
+  display: block;
+}
+
+/* Entrada das seções ao rolar: só CSS, desligada com movimento reduzido */
+@keyframes entrada-secao {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .entrada {
+      animation: entrada-secao linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+}
+
+/* Carrossel próprio: scroll-snap, sem barra */
+.carrossel {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.carrossel::-webkit-scrollbar {
+  display: none;
+}
+.carrossel > * {
+  scroll-snap-align: start;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .carrossel {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Gaveta e lightbox (<dialog>) */
+dialog.gaveta::backdrop,
+dialog.lightbox::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+dialog.lightbox::backdrop {
+  background: rgb(0 0 0 / 0.9);
+}
