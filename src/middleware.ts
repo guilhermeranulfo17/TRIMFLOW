@@ -36,10 +36,13 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // getUser() valida o token no servidor do Auth (não confia só no cookie).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() renova o token se precisar e valida o JWT pela chave pública do projeto (sem
+  // ida ao servidor do Auth). Com a chave antiga (HS256), o próprio supabase-js cai no getUser().
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims ?? null;
+  const user = claims
+    ? { id: claims.sub, app_metadata: (claims.app_metadata ?? {}) as Record<string, unknown> }
+    : null;
 
   const { pathname, search } = request.nextUrl;
 
@@ -76,7 +79,9 @@ function redirecionar(url: URL, base: NextResponse) {
 }
 
 export const config = {
+  // Fora do middleware (nada de Auth): página pública do buffet, webhooks/filas chamados por
+  // servidor, PWA e arquivos estáticos.
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|b/|api/cobranca/asaas|api/cobranca/reconciliar|api/avisos/processar|manifest.webmanifest|sw.js|icones/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)',
   ],
 };

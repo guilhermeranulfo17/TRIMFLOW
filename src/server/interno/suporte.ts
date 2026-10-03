@@ -29,8 +29,19 @@ export async function consentimentoAte(empresaId: string): Promise<Date | null> 
   return l?.ate ? new Date(l.ate) : null;
 }
 
+/** Há cookie de suporte nesta requisição (barato: só lê o cookie). */
+export async function temCookieSuporte(): Promise<boolean> {
+  try {
+    return !!(await cookies()).get(COOKIE_SUPORTE)?.value;
+  } catch {
+    return false;
+  }
+}
+
 /** Sessão de suporte válida para este usuário do Auth, ou null (nunca lança). */
-export async function sessaoSuporteValida(user: User): Promise<SessaoSuporte | null> {
+export async function sessaoSuporteValida(
+  user: Pick<User, 'id'> & { email?: string | null },
+): Promise<SessaoSuporte | null> {
   try {
     const valor = (await cookies()).get(COOKIE_SUPORTE)?.value;
     if (!valor) return null;

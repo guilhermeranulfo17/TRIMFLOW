@@ -5,7 +5,7 @@ import { cache } from 'react';
 import type { Situacao } from '@/domain/cobranca/situacao';
 import { empresas, usuarios, type Perfil } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { sessaoSuporteValida } from '@/server/interno/suporte';
+import { sessaoSuporteValida, temCookieSuporte } from '@/server/interno/suporte';
 import { contextoSuporte } from './contexto-suporte';
 import { precisaTrocarSenha } from './redirecionamento';
 import { criarClienteSupabase } from './supabase-server';
@@ -33,15 +33,28 @@ export type UsuarioAtual = {
  */
 export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
   const supabase = await criarClienteSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Identidade pelos claims do JWT (validado localmente pela chave pública; sem rede). Com o
+  // cookie de suporte presente, revalida forte no servidor do Auth (getUser).
+  const comSuporte = await temCookieSuporte();
+  let user: { id: string; email?: string | null; app_metadata: Record<string, unknown> } | null;
+  if (comSuporte) {
+    user = (await supabase.auth.getUser()).data.user;
+  } else {
+    const claims = (await supabase.auth.getClaims()).data?.claims;
+    user = claims
+      ? {
+          id: claims.sub,
+          email: (claims.email as string | undefined) ?? null,
+          app_metadata: (claims.app_metadata ?? {}) as Record<string, unknown>,
+        }
+      : null;
+  }
   if (!user) return null;
   // Redirect de server action não passa pelo middleware: a troca obrigatória vale aqui também.
   if (precisaTrocarSenha(user.app_metadata)) redirect('/nova-senha');
 
   // Modo suporte: a sessão do admin age como o dono da empresa que consentiu (RLS igual).
-  const suporte = await sessaoSuporteValida(user);
+  const suporte = comSuporte ? await sessaoSuporteValida(user) : null;
   const alvo = suporte?.donoId ?? user.id;
   if (suporte) contextoSuporte().admin = suporte.adminEmail;
 
