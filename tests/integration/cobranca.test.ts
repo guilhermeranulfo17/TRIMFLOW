@@ -464,6 +464,8 @@ describe('conta suspensa = somente leitura', () => {
     'criar_aviso_teste',
     'permitir_suporte',
     'revogar_suporte',
+    // Etapa 9.5: conta nova pelo Google (ainda não há empresa, então nada a bloquear)
+    'completar_conta_dono',
   ];
   const BLOQUEADAS = [
     'alterar_slug',
