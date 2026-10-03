@@ -166,3 +166,15 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   o plano permitir).
 - Hidratação: campos com `register` do react-hook-form vêm vazios no HTML e são preenchidos no
   cliente; o do link já vem preenchido. Avaliar o mesmo nos formulários grandes de Minha empresa.
+
+## Depois da Etapa 9.5 PR 2 (pendências percebidas)
+
+- **Editor em Configurações → Personalizar página** no PR 3 (hoje em Minha empresa → Link).
+- Reordenar fotos arrastando (hoje subir/descer, que funciona no celular) e recorte da foto.
+- Fotos dos pacotes também em duas larguras (hoje uma só, de até 1600 px) e miniatura desfocada
+  na capa.
+- Galeria por pacote ou por espaço (hoje uma galeria do buffet).
+- Vídeo curto no hero, domínio próprio e avaliações automáticas continuam fora do escopo.
+- Tema escuro na página pública (fora do escopo).
+- Limpeza de arquivos soltos da pasta `galeria` (upload que não chegou a ser gravado).
+- Pré-visualizar antes de salvar (hoje a prévia mostra o que já foi salvo).

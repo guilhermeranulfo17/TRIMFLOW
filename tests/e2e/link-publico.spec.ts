@@ -94,7 +94,7 @@ test.describe('link público', () => {
     await cliente.goto(`/b/${slug}?origem=instagram`);
     await expect(cliente.getByRole('heading', { name: 'Buffet Link Um', level: 1 })).toBeVisible();
     expect(await semRolagemHorizontal(cliente)).toBe(true);
-    await cliente.getByRole('link', { name: 'Montar meu orçamento' }).click();
+    await cliente.getByRole('link', { name: 'Montar meu orçamento' }).first().click();
 
     const data = await festaEData(cliente);
     await expect(cliente.getByTestId('preco-resumo')).toContainText('A partir de R$');
@@ -217,7 +217,7 @@ test.describe('link público', () => {
     await page.getByTestId('testar-como-cliente').waitFor();
     await page.goto(`/b/${slug}`);
     await expect(page.getByText('Modo teste: nada aqui conta nas métricas')).toBeVisible();
-    await page.getByRole('link', { name: 'Montar meu orçamento' }).click();
+    await page.getByRole('link', { name: 'Montar meu orçamento' }).first().click();
     const data = await festaEData(page);
     await contato(page, 'Dona Testando', '34991355450');
     await pacoteEProposta(page);

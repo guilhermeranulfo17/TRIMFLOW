@@ -90,7 +90,8 @@ export function PreviaPagina({ slug }: { slug: string }) {
   );
 
   return (
-    <>
+    // no celular fica antes das seções (order-first): o botão "Ver prévia" no topo do editor
+    <div className="order-first lg:order-none">
       <aside className="hidden lg:block" aria-label="Prévia">
         <div className="bg-card rounded-card sticky top-20 flex h-[calc(100dvh-7rem)] flex-col overflow-hidden border">
           <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
@@ -103,10 +104,11 @@ export function PreviaPagina({ slug }: { slug: string }) {
         </div>
       </aside>
 
-      <div className="fixed right-4 bottom-20 z-30 lg:hidden">
+      <div className="lg:hidden">
         <Button
           type="button"
-          className="shadow-lg"
+          variant="outline"
+          className="w-full"
           onClick={() => {
             setAberto(true);
             dialogo.current?.showModal();
@@ -137,6 +139,6 @@ export function PreviaPagina({ slug }: { slug: string }) {
           <div className="min-h-0 flex-1">{aberto && <Moldura slug={slug} largura="pc" />}</div>
         </div>
       </dialog>
-    </>
+    </div>
   );
 }
