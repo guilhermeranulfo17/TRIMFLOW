@@ -1,10 +1,10 @@
 import 'server-only';
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import type { Situacao } from '@/domain/cobranca/situacao';
-import { empresas, usuarios, type Perfil } from '@/server/db/schema';
-import { comUsuario } from '@/server/db/tenant';
+import type { Perfil } from '@/server/db/schema';
+import { lerComo } from '@/server/db/tenant';
 import { sessaoSuporteValida, temCookieSuporte } from '@/server/interno/suporte';
 import { contextoSuporte } from './contexto-suporte';
 import { precisaTrocarSenha } from './redirecionamento';
@@ -63,40 +63,29 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
   return { ...lido, suporte: suporte ? { admin: suporte.adminEmail } : null };
 });
 
-/** Usuário ativo + empresa pelo id (lido pelo RLS como o próprio usuário), ou null. */
+/** Usuário ativo + empresa pelo id (lido pelo RLS como o próprio usuário), ou null. Uma ida. */
 export async function lerUsuario(alvo: string): Promise<Omit<UsuarioAtual, 'suporte'> | null> {
-  const [linha] = await comUsuario(alvo, (tx) =>
-    tx
-      .select({
-        id: usuarios.id,
-        nome: usuarios.nome,
-        email: usuarios.email,
-        perfil: usuarios.perfil,
-        ativo: usuarios.ativo,
-        empresaId: empresas.id,
-        empresaNome: empresas.nome,
-        empresaSlug: empresas.slug,
-        empresaFuso: empresas.fuso,
-        empresaSituacao: empresas.plano,
-      })
-      .from(usuarios)
-      .innerJoin(empresas, eq(empresas.id, usuarios.empresaId))
-      .where(eq(usuarios.id, alvo))
-      .limit(1),
-  );
+  const [linhas] = await lerComo(alvo, [
+    sql`select u.id, u.nome, u.email, u.perfil, u.ativo, e.id as empresa_id,
+               e.nome as empresa_nome, e.slug as empresa_slug, e.fuso as empresa_fuso,
+               e.plano as empresa_situacao
+        from public.usuarios u join public.empresas e on e.id = u.empresa_id
+        where u.id = ${alvo} limit 1`,
+  ]);
+  const linha = linhas?.[0] as Record<string, string | boolean> | undefined;
   if (!linha?.ativo) return null;
 
   return {
-    id: linha.id,
-    nome: linha.nome,
-    email: linha.email,
-    perfil: linha.perfil,
+    id: String(linha.id),
+    nome: String(linha.nome),
+    email: String(linha.email),
+    perfil: linha.perfil as Perfil,
     empresa: {
-      id: linha.empresaId,
-      nome: linha.empresaNome,
-      slug: linha.empresaSlug,
-      fuso: linha.empresaFuso,
-      situacao: linha.empresaSituacao,
+      id: String(linha.empresa_id),
+      nome: String(linha.empresa_nome),
+      slug: String(linha.empresa_slug),
+      fuso: String(linha.empresa_fuso),
+      situacao: linha.empresa_situacao as Situacao,
     },
   };
 }

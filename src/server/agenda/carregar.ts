@@ -4,7 +4,7 @@ import { and, asc, between, eq, gt, isNotNull, lte, or, sql } from 'drizzle-orm'
 import type { EstadoSlot, StatusReserva, TipoReserva } from '@/domain/agenda';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { bloqueios, espacos, leads, reservas, tiposEvento, turnos } from '@/server/db/schema';
-import { comUsuario, type Tx } from '@/server/db/tenant';
+import { comUsuario, naTransacao, type Tx } from '@/server/db/tenant';
 
 /*
  * Leituras da agenda (sempre pelo RLS). Tudo serializável: datas civis "yyyy-MM-dd" e
@@ -90,19 +90,19 @@ function dataCivil(v: unknown): string {
   return v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10);
 }
 
-export async function carregarBase(usuario: UsuarioAtual): Promise<BaseAgenda> {
-  return comUsuario(usuario.id, async (tx) => ({
-    espacos: await tx
-      .select({
-        id: espacos.id,
-        nome: espacos.nome,
-        eventosSimultaneos: espacos.eventosSimultaneos,
-      })
-      .from(espacos)
-      .where(eq(espacos.ativo, true))
-      .orderBy(asc(espacos.ordem), asc(espacos.nome)),
-    turnos: (
-      await tx
+export async function carregarBase(usuario: UsuarioAtual, tx?: Tx): Promise<BaseAgenda> {
+  return naTransacao(usuario.id, tx, async (tx) => {
+    const [listaEspacos, listaTurnos, listaTipos] = await Promise.all([
+      tx
+        .select({
+          id: espacos.id,
+          nome: espacos.nome,
+          eventosSimultaneos: espacos.eventosSimultaneos,
+        })
+        .from(espacos)
+        .where(eq(espacos.ativo, true))
+        .orderBy(asc(espacos.ordem), asc(espacos.nome)),
+      tx
         .select({
           id: turnos.id,
           nome: turnos.nome,
@@ -112,14 +112,19 @@ export async function carregarBase(usuario: UsuarioAtual): Promise<BaseAgenda> {
         })
         .from(turnos)
         .where(eq(turnos.ativo, true))
-        .orderBy(asc(turnos.horaInicio))
-    ).map((t) => ({ ...t, horaInicio: t.horaInicio.slice(0, 5) })),
-    tiposEvento: await tx
-      .select({ id: tiposEvento.id, nome: tiposEvento.nome })
-      .from(tiposEvento)
-      .where(eq(tiposEvento.ativo, true))
-      .orderBy(asc(tiposEvento.ordem), asc(tiposEvento.nome)),
-  }));
+        .orderBy(asc(turnos.horaInicio)),
+      tx
+        .select({ id: tiposEvento.id, nome: tiposEvento.nome })
+        .from(tiposEvento)
+        .where(eq(tiposEvento.ativo, true))
+        .orderBy(asc(tiposEvento.ordem), asc(tiposEvento.nome)),
+    ]);
+    return {
+      espacos: listaEspacos,
+      turnos: listaTurnos.map((t) => ({ ...t, horaInicio: t.horaInicio.slice(0, 5) })),
+      tiposEvento: listaTipos,
+    };
+  });
 }
 
 async function disponibilidadeTx(
@@ -148,8 +153,9 @@ export async function carregarDisponibilidade(
   de: string,
   ate: string,
   espacoId: string | null = null,
+  tx?: Tx,
 ): Promise<SlotAgenda[]> {
-  return comUsuario(usuario.id, (tx) =>
+  return naTransacao(usuario.id, tx, (tx) =>
     disponibilidadeTx(tx, usuario.empresa.id, de, ate, espacoId),
   );
 }
@@ -215,24 +221,29 @@ async function bloqueiosTx(tx: Tx, de: string, ate: string): Promise<BloqueioAge
 export async function reservasAtivasDoLead(
   usuario: UsuarioAtual,
   leadId: string,
+  tx?: Tx,
 ): Promise<ReservaAgenda[]> {
-  return comUsuario(usuario.id, (tx) => reservasTx(tx, eq(reservas.leadId, leadId)));
+  return naTransacao(usuario.id, tx, (tx) => reservasTx(tx, eq(reservas.leadId, leadId)));
 }
 
 /** Reservas e bloqueios de um período (lista do celular). */
-export async function carregarPeriodo(usuario: UsuarioAtual, de: string, ate: string) {
-  return comUsuario(usuario.id, async (tx) => ({
-    reservas: await reservasTx(tx, between(reservas.data, de, ate)),
-    bloqueios: await bloqueiosTx(tx, de, ate),
-  }));
+export async function carregarPeriodo(usuario: UsuarioAtual, de: string, ate: string, tx?: Tx) {
+  return naTransacao(usuario.id, tx, async (tx) => {
+    const [lista, bloq] = await Promise.all([
+      reservasTx(tx, between(reservas.data, de, ate)),
+      bloqueiosTx(tx, de, ate),
+    ]);
+    return { reservas: lista, bloqueios: bloq };
+  });
 }
 
 /** Pré-reservas que vencem nas próximas `horas` horas (aviso no topo da agenda). */
 export async function preReservasVencendo(
   usuario: UsuarioAtual,
   horas = 12,
+  tx?: Tx,
 ): Promise<ReservaAgenda[]> {
-  return comUsuario(usuario.id, (tx) =>
+  return naTransacao(usuario.id, tx, (tx) =>
     reservasTx(
       tx,
       and(
@@ -245,10 +256,32 @@ export async function preReservasVencendo(
 }
 
 export async function carregarDia(usuario: UsuarioAtual, data: string): Promise<DiaAgenda> {
-  return comUsuario(usuario.id, async (tx) => ({
-    data,
-    slots: await disponibilidadeTx(tx, usuario.empresa.id, data, data, null),
-    reservas: await reservasTx(tx, eq(reservas.data, data)),
-    bloqueios: await bloqueiosTx(tx, data, data),
-  }));
+  return comUsuario(usuario.id, async (tx) => {
+    const [slots, lista, bloq] = await Promise.all([
+      disponibilidadeTx(tx, usuario.empresa.id, data, data, null),
+      reservasTx(tx, eq(reservas.data, data)),
+      bloqueiosTx(tx, data, data),
+    ]);
+    return { data, slots, reservas: lista, bloqueios: bloq };
+  });
+}
+
+/**
+ * Tudo da tela da Agenda numa transação (uma leva em pipeline). A disponibilidade vem de todos
+ * os espaços; a página filtra pelo espaço escolhido (que depende da base).
+ */
+export async function carregarTelaAgenda(
+  usuario: UsuarioAtual,
+  mes: { de: string; ate: string },
+  lista: { de: string; ate: string },
+) {
+  return comUsuario(usuario.id, async (tx) => {
+    const [base, disponibilidade, periodo, vencendo] = await Promise.all([
+      carregarBase(usuario, tx),
+      carregarDisponibilidade(usuario, mes.de, mes.ate, null, tx),
+      carregarPeriodo(usuario, lista.de, lista.ate, tx),
+      preReservasVencendo(usuario, 12, tx),
+    ]);
+    return { base, disponibilidade, lista: periodo, vencendo };
+  });
 }

@@ -78,6 +78,18 @@ export function comUsuario<T>(usuarioId: string, fn: (tx: Tx) => Promise<T>): Pr
   return criarComUsuario(obterDb(), { suporteAdmin: () => contextoSuporte().admin })(usuarioId, fn);
 }
 
+/**
+ * Usa a transação da tela, se houver (várias leituras numa transação só, em pipeline), ou abre
+ * uma própria. Os loaders recebem `tx` opcional e passam por aqui.
+ */
+export function naTransacao<T>(
+  usuarioId: string,
+  tx: Tx | undefined,
+  fn: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  return tx ? fn(tx) : comUsuario(usuarioId, fn);
+}
+
 const dialeto = new PgDialect();
 
 /** SQL do Drizzle → texto com os parâmetros inline (uma instrução). */

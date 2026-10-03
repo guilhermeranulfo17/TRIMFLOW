@@ -46,87 +46,69 @@ async function usuarioDono() {
 
 /** Orçamento (A.3): o teste falha se uma tela passar do limite. */
 const LIMITE: Record<string, number> = {
-  layout: Number.POSITIVE_INFINITY,
-  leads: Number.POSITIVE_INFINITY,
-  agenda: Number.POSITIVE_INFINITY,
-  numeros: Number.POSITIVE_INFINITY,
-  lead: Number.POSITIVE_INFINITY,
-  empresa: Number.POSITIVE_INFINITY,
+  layout: 2,
+  leads: 3,
+  agenda: 3,
+  numeros: 3,
+  lead: 4,
+  empresa: 3,
 };
 
 describe('idas ao banco por tela', () => {
   it('layout do painel (identidade + contexto)', async () => {
     const { lerUsuario } = await import('@/server/auth/sessao');
-    const { carregarPendencias } = await import('@/server/catalogo/pendencias');
-    const { resumoHoje } = await import('@/server/leads/carregar');
-    const { contarNaoLidos } = await import('@/server/avisos/carregar');
-    const { carregarEstadoOnboarding } = await import('@/server/onboarding/carregar');
-    const { carregarFaixaConta } = await import('@/server/cobranca/carregar');
+    const { carregarContextoPainel } = await import('@/server/painel/contexto');
     const n = await medir('layout', async () => {
       const u = { ...(await lerUsuario(IDS.donoA))!, suporte: null };
-      await Promise.all([
-        carregarPendencias(u.id),
-        resumoHoje(u),
-        contarNaoLidos(u),
-        carregarEstadoOnboarding(u),
-        carregarFaixaConta(u),
-      ]);
+      await carregarContextoPainel(u);
     });
     expect(n).toBeLessThanOrEqual(LIMITE.layout!);
   });
 
   it('leads', async () => {
     const u = await usuarioDono();
-    const { listarCaixa, resumoHoje, usuariosDaEmpresa } = await import('@/server/leads/carregar');
+    const { listarCaixa, usuariosDaEmpresa } = await import('@/server/leads/carregar');
     const { carregarChecklist } = await import('@/server/onboarding/carregar');
+    const { comUsuario } = await import('@/server/db/tenant');
     const { filtrosDaUrl } = await import('@/domain/leads/filtros');
+    // o resumo "Hoje" vem do contexto do painel (já contado no layout)
     const n = await medir('leads', () =>
-      Promise.all([
-        resumoHoje(u),
-        listarCaixa(u, filtrosDaUrl({})),
-        usuariosDaEmpresa(u),
-        carregarChecklist(u),
-      ]),
+      comUsuario(u.id, (tx) =>
+        Promise.all([
+          listarCaixa(u, filtrosDaUrl({}), null, 30, tx),
+          usuariosDaEmpresa(u, tx),
+          carregarChecklist(u, tx),
+        ]),
+      ),
     );
     expect(n).toBeLessThanOrEqual(LIMITE.leads!);
   });
 
   it('agenda', async () => {
     const u = await usuarioDono();
-    const ag = await import('@/server/agenda/carregar');
+    const { carregarTelaAgenda } = await import('@/server/agenda/carregar');
     const { hojeNoFuso, somarDias } = await import('@/domain/dates');
     const hoje = hojeNoFuso(u.empresa.fuso);
-    const n = await medir('agenda', async () => {
-      await ag.carregarBase(u);
-      await Promise.all([
-        ag.carregarDisponibilidade(
-          u,
-          `${hoje.slice(0, 7)}-01`,
-          somarDias(`${hoje.slice(0, 7)}-01`, 30),
-          null,
-        ),
-        ag.carregarPeriodo(u, hoje, somarDias(hoje, 59)),
-        ag.preReservasVencendo(u, 12),
-      ]);
-    });
+    const mes = `${hoje.slice(0, 7)}-01`;
+    const n = await medir('agenda', () =>
+      carregarTelaAgenda(
+        u,
+        { de: mes, ate: somarDias(mes, 30) },
+        { de: hoje, ate: somarDias(hoje, 59) },
+      ),
+    );
     expect(n).toBeLessThanOrEqual(LIMITE.agenda!);
   });
 
   it('números', async () => {
     const u = await usuarioDono();
-    const { carregarNumeros, carregarOcupacao } = await import('@/server/numeros/carregar');
-    const { recursosDaEmpresa } = await import('@/server/cobranca/carregar');
-    const { usuariosDaEmpresa } = await import('@/server/leads/carregar');
+    const { carregarTelaNumeros } = await import('@/server/numeros/carregar');
     const { hojeNoFuso, somarDias } = await import('@/domain/dates');
     const hoje = hojeNoFuso(u.empresa.fuso);
-    const n = await medir('numeros', async () => {
-      await recursosDaEmpresa(u.empresa.id);
-      await Promise.all([
-        carregarNumeros(u, somarDias(hoje, -29), hoje),
-        carregarOcupacao(u),
-        usuariosDaEmpresa(u),
-      ]);
-    });
+    // recursos do plano vêm do contexto do painel (já contado no layout)
+    const n = await medir('numeros', () =>
+      carregarTelaNumeros(u, somarDias(hoje, -29), hoje, true),
+    );
     expect(n).toBeLessThanOrEqual(LIMITE.numeros!);
   });
 
@@ -144,16 +126,13 @@ describe('idas ao banco por tela', () => {
 
   it('minha empresa', async () => {
     const u = await usuarioDono();
-    const { carregarPendencias } = await import('@/server/catalogo/pendencias');
     const { comUsuario } = await import('@/server/db/tenant');
     const { empresas } = await import('@/server/db/schema');
     const { eq } = await import('drizzle-orm');
-    const n = await medir('empresa', async () => {
-      await carregarPendencias(u.id);
-      await comUsuario(u.id, (tx) =>
-        tx.select().from(empresas).where(eq(empresas.id, u.empresa.id)),
-      );
-    });
+    // pendências vêm do contexto do painel (já contado no layout)
+    const n = await medir('empresa', () =>
+      comUsuario(u.id, (tx) => tx.select().from(empresas).where(eq(empresas.id, u.empresa.id))),
+    );
     expect(n).toBeLessThanOrEqual(LIMITE.empresa!);
   });
 });

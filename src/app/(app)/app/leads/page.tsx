@@ -9,7 +9,10 @@ import { ListaCaixa } from '@/components/app/leads/lista-caixa';
 import { TopoHoje } from '@/components/app/leads/topo-hoje';
 import { contarFiltros, filtrosDaUrl, filtrosParaUrl } from '@/domain/leads/filtros';
 import { exigirSessao } from '@/server/auth/sessao';
-import { listarCaixa, resumoHoje, usuariosDaEmpresa } from '@/server/leads/carregar';
+import { comUsuario } from '@/server/db/tenant';
+import { listarCaixa, usuariosDaEmpresa } from '@/server/leads/carregar';
+import { carregarChecklist } from '@/server/onboarding/carregar';
+import { carregarContextoPainel } from '@/server/painel/contexto';
 
 export const metadata: Metadata = { title: 'Leads' };
 
@@ -27,10 +30,16 @@ export default async function LeadsPage({ searchParams }: Props) {
   }
   const usuario = await exigirSessao();
   const filtros = filtrosDaUrl(busca);
-  const [resumo, pagina, usuarios] = await Promise.all([
-    resumoHoje(usuario),
-    listarCaixa(usuario, filtros),
-    usuariosDaEmpresa(usuario),
+  // "Hoje" vem do contexto do painel (mesma leitura do layout); o resto numa transação só
+  const [{ resumo }, [pagina, usuarios, checklist]] = await Promise.all([
+    carregarContextoPainel(usuario),
+    comUsuario(usuario.id, (tx) =>
+      Promise.all([
+        listarCaixa(usuario, filtros, null, 30, tx),
+        usuariosDaEmpresa(usuario, tx),
+        carregarChecklist(usuario, tx),
+      ]),
+    ),
   ]);
   const semFiltro = contarFiltros(filtros) === 0 && !filtros.busca && !filtros.atalho;
   const vazioTotal = semFiltro && pagina.cartoes.length === 0;
@@ -52,7 +61,7 @@ export default async function LeadsPage({ searchParams }: Props) {
           )}
         </Link>
       </div>
-      <ChecklistPainel usuario={usuario} />
+      <ChecklistPainel usuario={usuario} checklist={checklist} />
       <TopoHoje resumo={resumo} filtros={filtros} />
       <FiltrosCaixa filtros={filtros} usuarios={usuarios} />
       {vazioTotal ? (

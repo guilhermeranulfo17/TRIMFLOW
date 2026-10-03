@@ -9,21 +9,14 @@ import { FaixaContaPainel } from '@/components/app/plano/faixa-conta';
 import { FaixaSuporte } from '@/components/app/plano/faixa-suporte';
 import { faixaDaConta } from '@/domain/plano';
 import { exigirSessao } from '@/server/auth/sessao';
-import { carregarFaixaConta } from '@/server/cobranca/carregar';
-import { carregarPendencias } from '@/server/catalogo/pendencias';
-import { contarNaoLidos } from '@/server/avisos/carregar';
-import { resumoHoje } from '@/server/leads/carregar';
-import { carregarEstadoOnboarding } from '@/server/onboarding/carregar';
+import { carregarContextoPainel } from '@/server/painel/contexto';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const usuario = await exigirSessao();
-  const [pendencias, hoje, naoLidos, onboarding, conta] = await Promise.all([
-    carregarPendencias(usuario.id),
-    resumoHoje(usuario),
-    contarNaoLidos(usuario),
-    usuario.perfil === 'dono' ? carregarEstadoOnboarding(usuario) : null,
-    carregarFaixaConta(usuario),
-  ]);
+  // badges, sino, faixas e onboarding: uma ida ao banco (painel_contexto)
+  const ctx = await carregarContextoPainel(usuario);
+  const { pendencias, resumo: hoje, naoLidos, conta } = ctx;
+  const onboarding = usuario.perfil === 'dono' ? ctx.onboarding : null;
   const faixa = conta
     ? faixaDaConta({
         plano: conta.situacao,

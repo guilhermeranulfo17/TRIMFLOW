@@ -13,10 +13,9 @@ import { TituloPagina } from '@/components/app/titulo-pagina';
 import { hojeNoFuso } from '@/domain/dates';
 import { resolverPeriodo } from '@/domain/numeros';
 import { exigirSessao } from '@/server/auth/sessao';
-import { recursosDaEmpresa } from '@/server/cobranca/carregar';
 import { urlDoSite } from '@/server/env';
-import { usuariosDaEmpresa } from '@/server/leads/carregar';
-import { carregarNumeros, carregarOcupacao } from '@/server/numeros/carregar';
+import { carregarTelaNumeros } from '@/server/numeros/carregar';
+import { carregarContextoPainel } from '@/server/painel/contexto';
 
 export const metadata: Metadata = { title: 'Números' };
 
@@ -37,12 +36,12 @@ export default async function NumerosPage({ searchParams }: Props) {
   const dono = usuario.perfil === 'dono';
   const link = `${urlDoSite() ?? ''}/b/${usuario.empresa.slug}`;
   // Essencial: cartões e funil; o resto é do Profissional (teste = Profissional)
-  const completo = (await recursosDaEmpresa(usuario.empresa.id)).numerosCompleto;
-  const [n, ocupacao, usuarios] = await Promise.all([
-    carregarNumeros(usuario, periodo.de, periodo.ate),
-    dono && completo ? carregarOcupacao(usuario) : null,
-    usuariosDaEmpresa(usuario),
-  ]);
+  const completo = (await carregarContextoPainel(usuario)).recursos.numerosCompleto;
+  const {
+    numeros: n,
+    ocupacao,
+    usuarios,
+  } = await carregarTelaNumeros(usuario, periodo.de, periodo.ate, dono && completo);
   const nomes = new Map(usuarios.map((u) => [u.id, u.nome]));
   const vazio = n.resumo.visitas === 0 && n.resumo.leads === 0 && n.resumo.reservas === 0;
 

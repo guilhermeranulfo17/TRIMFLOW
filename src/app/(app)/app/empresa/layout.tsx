@@ -2,11 +2,11 @@ import { TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { NavEmpresa, type SecaoEmpresa } from '@/components/app/empresa/nav-empresa';
 import { exigirSessao } from '@/server/auth/sessao';
-import { carregarPendencias } from '@/server/catalogo/pendencias';
+import { carregarContextoPainel } from '@/server/painel/contexto';
 
 export default async function EmpresaLayout({ children }: { children: React.ReactNode }) {
   const usuario = await exigirSessao();
-  const pendencias = await carregarPendencias(usuario.id);
+  const { pendencias } = await carregarContextoPainel(usuario);
   const contar = (secao: string) => pendencias.filter((p) => p.secao === secao).length;
   const dono = usuario.perfil === 'dono';
 

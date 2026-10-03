@@ -42,8 +42,13 @@ const paraRecursos = (p: typeof planos.$inferSelect): PlanoTela => ({
 });
 
 /** Espelho em TS de public._assinatura_referencia (qual assinatura decide a situação). */
-export function assinaturaDeReferencia(lista: Assinatura[], hoje: string): Assinatura | null {
-  const peso = (a: Assinatura) =>
+type AssinaturaRef = Pick<Assinatura, 'status' | 'pagoAte' | 'criadaEm'>;
+
+export function assinaturaDeReferencia<A extends AssinaturaRef>(
+  lista: A[],
+  hoje: string,
+): A | null {
+  const peso = (a: A) =>
     a.status === 'ativa'
       ? 3
       : a.status === 'cancelada' && a.pagoAte && a.pagoAte >= hoje
@@ -63,7 +68,11 @@ export const recursosDaEmpresa = cache(async (empresaId: string): Promise<Recurs
   const [l] = await obterDb().execute<{ p: Record<string, unknown> }>(
     sql`select row_to_json(public._plano_vigente(${empresaId})) as p`,
   );
-  const p = l?.p ?? {};
+  return recursosDoPlano(l?.p ?? {});
+});
+
+/** Linha de public.planos (jsonb) → recursos. Também usada pelo contexto do painel. */
+export function recursosDoPlano(p: Record<string, unknown>): RecursosPlano {
   return {
     codigo: String(p.codigo ?? 'essencial'),
     nome: String(p.nome ?? 'Essencial'),
@@ -73,7 +82,7 @@ export const recursosDaEmpresa = cache(async (empresaId: string): Promise<Recurs
     followUp: Boolean(p.follow_up),
     numerosCompleto: Boolean(p.numeros_completo),
   };
-});
+}
 
 /** Usuários ativos da empresa (conferência do limite antes de criar no Auth). */
 export async function usuariosAtivos(empresaId: string): Promise<number> {
