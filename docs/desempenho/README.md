@@ -63,3 +63,13 @@ Lighthouse 12 mobile (4G simulado), build de produção local, Buffet Demo bem p
   mesma página). Sem a fonte do estilo ("limpo"), 96–97.
 - Boas práticas 96 → 100: ícone do app (`app/icon.png`), sem o 404 do `/favicon.ico`.
 - First Load JS: `/b/[slug]` 158 kB, `/b/[slug]/orcamento` 152 kB, proposta 148 kB.
+
+## Landing (Etapa 9.6)
+
+`/` estática (ISR de 5 min), 144 kB de JS na primeira carga (o motor de preço vai junto, para o
+simulador). Lighthouse local (`npx lighthouse`, build de produção):
+
+|                       | Desempenho | Acessibilidade | Boas práticas | SEO | LCP   | TBT   | CLS |
+| --------------------- | ---------- | -------------- | ------------- | --- | ----- | ----- | --- |
+| Celular (4G simulado) | 98         | 100            | 100           | 100 | 2,3 s | 70 ms | 0   |
+| PC                    | 100        | 100            | 100           | 100 | 0,5 s | 0 ms  | 0   |

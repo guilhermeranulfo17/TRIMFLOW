@@ -34,6 +34,7 @@ src/
   app/
     (auth)/          login, cadastro (+ completar, para quem entrou pelo Google), recuperar-senha,
                      nova-senha; layout dividido no PC (painel da marca)
+    (marketing)/     landing em `/` (Etapa 9.6): página de vendas estática, imagem de compartilhamento
     (onboarding)/app/comecar/  onboarding guiado em 5 passos (tela cheia, sem menu)
     (app)/app/       área logada: leads (caixa) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
@@ -45,6 +46,8 @@ src/
                      proposta-exemplo, link (divulgação + qr: PNG e PDF + editor da página
                      pública com prévia, Etapa 9.5)
     api/avisos/      processar (POST, Bearer CRON_SECRET) e contagem (GET, sino)
+    api/landing/     contar (POST, visitas e cliques agregados da landing)
+    robots.ts, sitemap.ts  indexação (landing, termos, privacidade e vitrines)
     api/cobranca/    asaas (webhook, token no header) e reconciliar (POST, Bearer CRON_SECRET)
     interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral,
                      empresas/[id] (ações auditadas, "Entrar como esta empresa")
@@ -74,6 +77,8 @@ src/
     publico/         vitrine (cabeçalho, carrossel, pacotes com gaveta, galeria com lightbox),
                      fontes dos estilos, cor da marca, rodapé
     auth/            peças dos formulários de autenticação
+    marca/           símbolo do Orkestra (SVG pela construção do manual; troca pelos oficiais aqui)
+    marketing/       seções e ilhas da landing (cabeçalho, simulador, preços, abas, contagem/origem)
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
                      conversao (campos), senha, forca-senha, tema, imagem, plano
     auth/            destino depois do login (destinoPosLogin, destinoSeguro)
@@ -98,6 +103,8 @@ src/
     numeros/         período, métricas, funil, ocupação e datas livres (= funções SQL de Números)
     cobranca/        situação da conta (= _situacao_conta), limites (= _codigo_plano), CPF/CNPJ,
                      preços e cupom, eventos do Asaas (status monotônico = SQL), MRR, motivos
+    marketing/       landing: preços da vitrine (desconto anual, itens), faixa do FUNDADOR, origem
+                     do cadastro (UTM), JSON-LD, simulador (mesmo calcularOrcamento)
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario, lerComo,
                      naTransacao), inline (parâmetros), anon (comAnon), admin (sem RLS)
@@ -124,6 +131,8 @@ src/
     cobranca/        cliente Asaas (fetch), fluxos (assinar, mudar, cancelar, implantação,
                      reconciliar) com dependências injetadas, webhook, leituras da tela de Plano
     interno/         guard (lista + aal2), leituras do /interno, sessão de suporte (cookie HMAC)
+    marketing/       preços da landing (planos_vitrine em cache, tag planos-vitrine), exemplo do
+                     simulador, contagem
     env.ts, erros.ts
   lib/               utilitários de UI (cn)
   middleware.ts      sessão + proteção de /app/**
@@ -244,6 +253,12 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `trocar_senha`), chame `refreshSession()`: os claims vêm do token. Login com Google:
   `/auth/callback` → `decidirVoltaExterna` (`server/auth/volta-externa.ts`, regra em
   `domain/auth/destino`); conta nova completa em `/cadastro/completar` (`completar_conta_dono`).
+- **Landing (Etapa 9.6, §62):** `/` estática (ISR 5 min) e fora do middleware (não toca no
+  Auth). Preços, limites, desconto anual e vagas do FUNDADOR só de `publico.planos_vitrine`
+  (nunca valor fixo no código); quem mudar plano ou cupom invalida a tag `planos-vitrine`. Nada de
+  depoimento, logo de cliente, nota ou número inventado. Simulador usa o `calcularOrcamento` do
+  domínio com preços fictícios. Origem do anúncio (utm_, ref) só por `registrar_origem_cadastro`;
+  contagem agregada só por `publico.landing_contar` (sem nada pessoal).
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
   `SUPABASE_SERVICE_ROLE_KEY` só é lida em `server/auth/admin-supabase.ts` (`server-only`); o
   ESLint impede importá-lo em componentes, `lib`, páginas e middleware.
@@ -359,7 +374,9 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
   `ASAAS_WEBHOOK_TOKEN` (secreta), `ORKESTRA_ADMINS` e `NEXT_PUBLIC_WHATSAPP_VENDAS`; sem as do
   Asaas, a cobrança fica desligada. Passo a passo: `docs/COBRANCA.md`. Desde a Etapa 9.5:
   `NEXT_PUBLIC_LOGIN_GOOGLE=1` liga "Continuar com o Google" (só depois de configurar o provedor:
-  `docs/LOGIN_GOOGLE.md`). Região e chave do JWT: `docs/LANCAMENTO.md`.
+  `docs/LOGIN_GOOGLE.md`). Região e chave do JWT: `docs/LANCAMENTO.md`. Desde a Etapa 9.6
+  (opcionais): `NEXT_PUBLIC_DEMO_SLUG` (botão "Ver um buffet de exemplo" da landing),
+  `NEXT_PUBLIC_EMAIL_CONTATO` e `NEXT_PUBLIC_RAZAO_SOCIAL` (rodapé).
   - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
