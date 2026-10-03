@@ -1072,3 +1072,48 @@ update public.empresas set trial_ate = now() + interval '2 days'
 where id = '22222222-2222-4222-8222-222222222222' and plano = 'trial';
 
 select public.atualizar_situacoes();
+
+-- ---------------------------------------------------------------------------
+-- Página pública (Etapa 9.5 · PR 2). Buffet Demo bem preenchido: frase, diferenciais, bairro,
+-- 6 fotos na galeria, 3 depoimentos (fictícios, só do seed) e 3 perguntas do dono. As imagens
+-- (galeria e capa) sobem para o Storage local com `pnpm db:seed:midia`. Buffet Teste B fica sem
+-- nada (as seções somem). Idempotente: regrava tudo.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  demo constant uuid := '11111111-1111-4111-8111-111111111111';
+  i    integer;
+  alts constant text[] := array['Salão principal decorado', 'Área do brinquedão',
+    'Mesa do bolo', 'Espaço kids com monitores', 'Buffet servido na hora', 'Entrada do salão'];
+begin
+  perform set_config('orkestra.permitir_escrita', '1', true);
+  update public.empresas
+  set slogan = 'Festa feita com carinho, do convite ao último brigadeiro',
+      diferenciais = array['Espaço próprio', 'Monitores', 'Cardápio infantil', 'Brinquedão',
+                           'Estacionamento', 'Acessibilidade'],
+      bairro = 'Centro',
+      mostrar_endereco = false
+  where id = demo;
+
+  delete from public.galeria_fotos where empresa_id = demo;
+  for i in 1..6 loop
+    insert into public.galeria_fotos (empresa_id, caminho_640, caminho_1280, largura, altura, alt, ordem)
+    values (demo,
+      demo || '/galeria/' || md5('seed:galeria:' || i)::uuid || '-640.webp',
+      demo || '/galeria/' || md5('seed:galeria:' || i)::uuid || '-1280.webp',
+      1280, case when i % 3 = 0 then 1600 else 853 end, alts[i], i - 1);
+  end loop;
+
+  delete from public.depoimentos where empresa_id = demo;
+  insert into public.depoimentos (empresa_id, nome, tipo_festa, texto, ordem) values
+    (demo, 'Fernanda (seed)', 'Aniversário de 5 anos', 'Equipe atenciosa do começo ao fim. As crianças não queriam ir embora!', 0),
+    (demo, 'Ricardo (seed)', 'Aniversário de 1 ano', 'Comida farta e muito saborosa. O orçamento online facilitou demais.', 1),
+    (demo, 'Juliana (seed)', 'Aniversário de 8 anos', 'Os monitores cuidaram de tudo e a gente aproveitou a festa.', 2);
+
+  delete from public.perguntas_frequentes where empresa_id = demo;
+  insert into public.perguntas_frequentes (empresa_id, pergunta, resposta, ordem) values
+    (demo, 'Posso levar o bolo de outra confeitaria?', 'Pode, sim. Só avise a equipe com uma semana de antecedência.', 0),
+    (demo, 'Tem estacionamento?', 'Temos estacionamento próprio e gratuito para os convidados.', 1),
+    (demo, 'Posso decorar o salão do meu jeito?', 'Sim. A decoração temática é combinada com a gente na visita.', 2);
+end;
+$$;
