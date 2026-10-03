@@ -178,3 +178,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Tema escuro na página pública (fora do escopo).
 - Limpeza de arquivos soltos da pasta `galeria` (upload que não chegou a ser gravado).
 - Pré-visualizar antes de salvar (hoje a prévia mostra o que já foi salvo).
+- **Capa em duas larguras** (como a galeria): hoje uma só, de até 1920 px; com foto real pesada,
+  o LCP no celular piora. Gerar 960 e 1920 no envio e usar `srcset` no hero.
+- **E2E instável já na `main`:** `onboarding.spec.ts` › "Fiz" na bio (o clique se perde em ~50%
+  das execuções contra o build de produção; passa no retry do CI). Investigar a hidratação do
+  checklist antes do clique.

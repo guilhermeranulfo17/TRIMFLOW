@@ -9,7 +9,7 @@ import type { EstiloPagina } from '@/domain/publico/pagina';
  */
 const festivo = Fredoka({
   subsets: ['latin'],
-  weight: ['500', '600', '700'],
+  weight: '700',
   display: 'swap',
   preload: false,
   variable: '--font-festivo',
@@ -17,7 +17,7 @@ const festivo = Fredoka({
 
 const elegante = Cormorant_Garamond({
   subsets: ['latin'],
-  weight: ['500', '600', '700'],
+  weight: '700',
   display: 'swap',
   preload: false,
   variable: '--font-elegante',

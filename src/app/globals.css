@@ -388,15 +388,16 @@
 }
 
 /*
- * Entrada das seções ao rolar: só CSS, desligada com movimento reduzido. Só opacidade: nada muda
- * de lugar, então um toque logo depois da rolagem acerta o botão.
+ * Entrada das seções ao rolar: só CSS, desligada com movimento reduzido. Revela de baixo para
+ * cima com clip-path: nada muda de lugar (o toque acerta o botão) e a cor do texto não muda (o
+ * contraste continua AA durante a entrada).
  */
 @keyframes entrada-secao {
   from {
-    opacity: 0.2;
+    clip-path: inset(0 0 12% 0);
   }
   to {
-    opacity: 1;
+    clip-path: inset(0);
   }
 }
 @media (prefers-reduced-motion: no-preference) {
