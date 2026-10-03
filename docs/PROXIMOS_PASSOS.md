@@ -180,6 +180,6 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Pré-visualizar antes de salvar (hoje a prévia mostra o que já foi salvo).
 - **Capa em duas larguras** (como a galeria): hoje uma só, de até 1920 px; com foto real pesada,
   o LCP no celular piora. Gerar 960 e 1920 no envio e usar `srcset` no hero.
-- **E2E instável já na `main`:** `onboarding.spec.ts` › "Fiz" na bio (o clique se perde em ~50%
-  das execuções contra o build de produção; passa no retry do CI). Investigar a hidratação do
-  checklist antes do clique.
+- **Hidratação e E2E:** escolher arquivo ou clicar antes da hidratação perde o evento (envio do
+  logo e "Fiz" do checklist eram instáveis já na `main`). Os testes agora repetem a ação até o
+  efeito aparecer; avaliar desabilitar esses controles até hidratar.
