@@ -30,7 +30,7 @@ export default async function RecuperarSenhaPage({
           }
         />
         <p className="text-muted-foreground text-center text-sm">
-          <Link href="/login" className="text-primary font-semibold hover:underline">
+          <Link href="/login" className="text-primary-texto font-semibold hover:underline">
             Voltar para o login
           </Link>
         </p>

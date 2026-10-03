@@ -23,7 +23,7 @@ export function PassoPronto({
         Pronto! Este é o seu link. Coloque na bio do Instagram e na resposta automática do WhatsApp.
       </p>
       <div className="bg-card rounded-card border p-4">
-        <p className="text-primary text-lg font-bold break-all" data-testid="link-pronto">
+        <p className="text-primary-texto text-lg font-bold break-all" data-testid="link-pronto">
           {link}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">

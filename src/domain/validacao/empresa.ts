@@ -24,7 +24,8 @@ export const FUSOS_BR = [
   { valor: 'America/Noronha', rotulo: 'Fernando de Noronha' },
 ] as const;
 
-export const COR_PADRAO = '#7C5CD6';
+/** Cor padrão do buffet (verde-petróleo, AA com texto branco). */
+export { COR_PADRAO } from '../publico/cor';
 
 export const identidadeSchema = z.object({
   nome: nomeCurto('o nome do buffet', 120).refine(

@@ -15,8 +15,8 @@ export function FaixaContaPainel({ faixa }: { faixa: FaixaConta }) {
       data-tipo={faixa.tipo}
       className={cn(
         'flex min-h-11 items-center justify-center gap-2 px-4 py-2 text-center text-sm font-medium',
-        faixa.tipo === 'suspenso' && 'bg-red-500/15 text-red-200',
-        faixa.tipo === 'inadimplente' && 'bg-amber-400/15 text-amber-200',
+        faixa.tipo === 'suspenso' && 'bg-erro/15 text-erro',
+        faixa.tipo === 'inadimplente' && 'bg-alerta/15 text-alerta',
         (faixa.tipo === 'teste' || faixa.tipo === 'cancelado') && 'bg-destaque/15 text-foreground',
       )}
     >

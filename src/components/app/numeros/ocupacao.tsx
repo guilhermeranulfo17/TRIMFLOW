@@ -79,7 +79,7 @@ export function Ocupacao({ o }: { o: OcupacaoTela }) {
                             width={40}
                             height={28}
                             rx={6}
-                            className="fill-primary"
+                            className="fill-primary-texto"
                             opacity={f === 0 ? 0 : 0.15 + f * 0.85}
                           />
                           <text

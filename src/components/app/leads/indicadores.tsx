@@ -25,9 +25,9 @@ export function SeloStatus({ status, className }: { status: StatusLead; classNam
 }
 
 const TEMP = {
-  quente: { Icone: Flame, cor: 'text-rose-400' },
-  morno: { Icone: Thermometer, cor: 'text-amber-300' },
-  frio: { Icone: Snowflake, cor: 'text-sky-300' },
+  quente: { Icone: Flame, cor: 'text-erro' },
+  morno: { Icone: Thermometer, cor: 'text-alerta' },
+  frio: { Icone: Snowflake, cor: 'text-info' },
 } as const;
 
 /** Temperatura com ícone, cor e texto (o texto também serve aos leitores de tela). */

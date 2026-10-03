@@ -73,7 +73,9 @@ export function NavEmpresa({ secoes }: { secoes: SecaoEmpresa[] }) {
                   aria-current={ativa(pathname, s.href) ? 'page' : undefined}
                   className={cn(
                     'flex min-h-11 items-center justify-between px-4 text-sm',
-                    ativa(pathname, s.href) ? 'text-primary font-semibold' : 'text-foreground',
+                    ativa(pathname, s.href)
+                      ? 'text-primary-texto font-semibold'
+                      : 'text-foreground',
                   )}
                 >
                   {s.rotulo}

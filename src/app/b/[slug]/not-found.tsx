@@ -3,7 +3,7 @@ import { SearchX } from 'lucide-react';
 export default function BuffetNaoEncontrado() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center px-4 text-center">
-      <span className="bg-accent text-primary mb-4 grid size-12 place-items-center rounded-full">
+      <span className="bg-accent text-primary-texto mb-4 grid size-12 place-items-center rounded-full">
         <SearchX className="size-6" aria-hidden />
       </span>
       <h1 className="text-2xl font-extrabold">Buffet não encontrado</h1>

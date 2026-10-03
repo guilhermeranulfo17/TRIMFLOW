@@ -204,7 +204,7 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
       <div className="min-w-0 flex-1">
         {tarefa.automatica && (
           <span
-            className="bg-primary/10 text-primary mb-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+            className="bg-primary/10 text-primary-texto mb-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
             data-testid="selo-automatica"
           >
             <Sparkles className="size-3" aria-hidden />
@@ -219,7 +219,7 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
         <p
           className={cn(
             'text-sm',
-            tarefa.atrasada && !feita ? 'font-semibold text-rose-400' : 'text-muted-foreground',
+            tarefa.atrasada && !feita ? 'text-erro font-semibold' : 'text-muted-foreground',
           )}
         >
           {tarefa.atrasada && !feita ? 'Atrasada · ' : ''}

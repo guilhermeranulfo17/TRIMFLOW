@@ -84,7 +84,7 @@ export default async function NumerosPage({ searchParams }: Props) {
             data-testid="numeros-profissional"
           >
             <h2 className="flex items-center gap-2 text-base font-bold">
-              <Sparkles className="text-primary size-5" aria-hidden />
+              <Sparkles className="text-primary-texto size-5" aria-hidden />
               Disponível no Profissional
             </h2>
             <p className="text-muted-foreground text-sm">

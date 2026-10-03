@@ -65,7 +65,7 @@ export function TesteAviso() {
                 data-canal={r.canal}
               >
                 <span className="font-semibold">{CANAL[r.canal]}</span>
-                <span className={cn(e.ok ? 'text-primary' : 'text-muted-foreground')}>
+                <span className={cn(e.ok ? 'text-primary-texto' : 'text-muted-foreground')}>
                   {e.texto}
                 </span>
               </li>

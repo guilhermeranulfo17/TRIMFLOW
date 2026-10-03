@@ -30,9 +30,9 @@ Font.register({
 // Sem hifenização automática (quebra palavras em português de forma estranha).
 Font.registerHyphenationCallback((palavra) => [palavra]);
 
-const CINZA = '#5F5B6E';
-const BORDA = '#E6E4EE';
-const TEXTO = '#16141F';
+const CINZA = '#575B57';
+const BORDA = '#E3E5E3';
+const TEXTO = '#161616';
 
 function estilos(m: ModeloProposta) {
   return StyleSheet.create({

@@ -193,7 +193,7 @@ function FormPerdido({
     >
       {temPreReserva && (
         <p
-          className="rounded-control border border-amber-400/30 bg-amber-400/10 p-3 text-sm font-semibold text-amber-100"
+          className="rounded-control border-alerta/30 bg-alerta/10 text-alerta border p-3 text-sm font-semibold"
           role="alert"
         >
           A pré-reserva deste lead será cancelada e a data ficará livre na Agenda.

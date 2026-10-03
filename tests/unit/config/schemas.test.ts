@@ -35,7 +35,7 @@ describe('identidade e slug', () => {
     cidade: 'Uberlândia',
     uf: 'MG',
     fuso: 'America/Sao_Paulo',
-    corMarca: '#7C5CD6',
+    corMarca: '#0F766E',
     sobre: '',
   };
 

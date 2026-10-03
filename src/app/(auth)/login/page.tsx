@@ -27,7 +27,7 @@ export default async function LoginPage({
         <FormLogin next={next ?? null} avisoInicial={erro ? AVISOS[erro] : undefined} />
         <p className="text-muted-foreground text-center text-sm">
           Ainda não tem conta?{' '}
-          <Link href="/cadastro" className="text-primary font-semibold hover:underline">
+          <Link href="/cadastro" className="text-primary-texto font-semibold hover:underline">
             Criar conta grátis
           </Link>
         </p>

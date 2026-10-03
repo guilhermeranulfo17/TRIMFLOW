@@ -13,10 +13,10 @@ import { carregarTelaPlano } from '@/server/cobranca/carregar';
 export const metadata: Metadata = { title: 'Plano' };
 
 const STATUS_FATURA: Record<string, { rotulo: string; classe: string }> = {
-  pendente: { rotulo: 'Em aberto', classe: 'bg-amber-400/10 text-amber-300' },
-  vencida: { rotulo: 'Vencida', classe: 'bg-red-500/10 text-red-300' },
-  confirmada: { rotulo: 'Paga', classe: 'bg-emerald-400/10 text-emerald-300' },
-  recebida: { rotulo: 'Paga', classe: 'bg-emerald-400/10 text-emerald-300' },
+  pendente: { rotulo: 'Em aberto', classe: 'bg-alerta/10 text-alerta' },
+  vencida: { rotulo: 'Vencida', classe: 'bg-erro/10 text-erro' },
+  confirmada: { rotulo: 'Paga', classe: 'bg-sucesso/10 text-sucesso' },
+  recebida: { rotulo: 'Paga', classe: 'bg-sucesso/10 text-sucesso' },
   estornada: { rotulo: 'Estornada', classe: 'bg-muted text-muted-foreground' },
   cancelada: { rotulo: 'Cancelada', classe: 'bg-muted text-muted-foreground' },
 };
@@ -53,7 +53,7 @@ export default async function PlanoPage({
     <div className="flex max-w-3xl flex-col gap-6">
       {pagamento === 'ok' && (
         <p
-          className="rounded-card border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm text-emerald-200"
+          className="rounded-card border-sucesso/30 bg-sucesso/10 text-sucesso border p-4 text-sm"
           role="status"
         >
           Pagamento enviado. Assim que o banco confirmar, sua conta é atualizada aqui (Pix costuma
@@ -63,7 +63,7 @@ export default async function PlanoPage({
 
       <section className="bg-card rounded-card border p-4 sm:p-5" data-testid="situacao-plano">
         <h2 className="flex items-center gap-2 text-lg font-bold">
-          <CreditCard className="text-primary size-5" aria-hidden />
+          <CreditCard className="text-primary-texto size-5" aria-hidden />
           {rotuloPlano(t.situacao, dias)}
         </h2>
         <div className="text-muted-foreground mt-2 space-y-1 text-sm">
@@ -93,12 +93,12 @@ export default async function PlanoPage({
             </p>
           )}
           {t.situacao === 'inadimplente' && t.suspendeEm && (
-            <p className="text-amber-300">
+            <p className="text-alerta">
               Sem o pagamento, a conta fica somente leitura em {formatData(t.suspendeEm)}.
             </p>
           )}
           {t.situacao === 'suspenso' && (
-            <p className="text-red-300">
+            <p className="text-erro">
               O painel está somente leitura e o link mostra só a vitrine. Você ainda pode ver tudo e
               pagar por aqui.
             </p>
@@ -169,7 +169,7 @@ export default async function PlanoPage({
                   {f.link && (
                     <a
                       href={f.link}
-                      className="text-primary ml-auto inline-flex min-h-11 items-center gap-1 font-semibold"
+                      className="text-primary-texto ml-auto inline-flex min-h-11 items-center gap-1 font-semibold"
                     >
                       {f.status === 'pendente' || f.status === 'vencida' ? 'Pagar' : 'Ver'}
                       <ExternalLink className="size-3.5" aria-hidden />

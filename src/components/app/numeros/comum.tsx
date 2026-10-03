@@ -90,7 +90,7 @@ export function Variacao({ bp, inverter = false }: { bp: number | null; inverter
     <span
       className={cn(
         'inline-flex items-center gap-1 text-xs font-semibold',
-        bp === 0 ? 'text-muted-foreground' : bom ? 'text-primary' : 'text-red-300',
+        bp === 0 ? 'text-muted-foreground' : bom ? 'text-primary-texto' : 'text-erro',
       )}
       aria-label={`${subiu ? 'Subiu' : bp === 0 ? 'Igual' : 'Caiu'} ${formatBp(Math.abs(bp))} contra o período anterior`}
     >

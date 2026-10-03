@@ -151,7 +151,7 @@ export function PassoPrecos({
               <div className="mb-2 flex items-baseline justify-between gap-2">
                 <p className="font-semibold">{p.nome}</p>
                 {p.confirmado && (
-                  <span className="text-primary text-xs font-semibold">Confirmado</span>
+                  <span className="text-primary-texto text-xs font-semibold">Confirmado</span>
                 )}
               </div>
               <label htmlFor={`preco-${p.id}`} className="text-sm">
@@ -174,7 +174,7 @@ export function PassoPrecos({
                 <div className="mt-3">
                   <button
                     type="button"
-                    className="text-primary inline-flex min-h-11 items-center gap-1 text-sm font-semibold"
+                    className="text-primary-texto inline-flex min-h-11 items-center gap-1 text-sm font-semibold"
                     aria-expanded={e.aberto}
                     onClick={() => mudar(p.id, (x) => ({ ...x, aberto: !x.aberto }))}
                   >

@@ -1,62 +1,90 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* dark: vale dentro de .dark e em todo o painel (inclusive diálogos e menus, que abrem no body) */
-@custom-variant dark (&:where(.dark, .dark *, :root:has([data-painel]) *));
-
 /*
- * Tokens da identidade Orkestra.
- * Claro: link público, login e cadastro. Escuro: o painel (área logada), ativado pelo
- * [data-painel] do layout; como fica no :root, diálogos, menus e toasts (portais no body)
- * também ficam escuros. .tema-claro volta ao claro num trecho (ex.: prévia da proposta).
+ * Onde vale cada tema (Etapa 9.5, ARQUITETURA §59):
+ * - sem marcador: claro neutro das páginas do cliente final (link público e proposta), com a
+ *   cor do buffet por cima (components/publico/marca.ts);
+ * - [data-acesso]: login, cadastro e afins, sempre no escuro da marca;
+ * - [data-orkestra-claro]: termos e privacidade, no claro da marca;
+ * - [data-painel][data-tema]: o painel, no tema escolhido (cookie orkestra_tema: escuro, claro ou
+ *   sistema; padrão escuro). O marcador fica no servidor: nada pisca.
+ * Os blocos de tokens se repetem dentro do @media do "sistema": tests/unit/tema/contraste.test.ts
+ * confere que são iguais aos explícitos e que todo par de texto passa no AA.
  */
+
+/* dark: vale onde o tema escuro estiver ligado (inclusive diálogos e menus, que abrem no body) */
+@custom-variant dark {
+  &:where(
+    .dark,
+    .dark *,
+    :root:has([data-acesso]) *,
+    :root:has([data-painel]:not([data-tema='claro'], [data-tema='sistema'])) *
+  ) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:has([data-painel][data-tema='sistema']) *) {
+      @slot;
+    }
+  }
+}
+
+/* Claro neutro: página pública do buffet, orçamento e proposta (cor padrão do buffet: verde-petróleo) */
 :root,
 .tema-claro {
   --radius-card: 12px;
   --radius-control: 10px;
   --radius-botao: 10px;
 
-  --background: #fafafc;
-  --foreground: #16141f;
+  --background: #fafafa;
+  --foreground: #161616;
 
   --card: #ffffff;
-  --card-foreground: #16141f;
+  --card-foreground: #161616;
   --popover: #ffffff;
-  --popover-foreground: #16141f;
+  --popover-foreground: #161616;
 
-  --primary: #7c5cd6;
-  --primary-hover: #6a4bc4;
+  --primary: #0f766e;
+  --primary-hover: #0b5f58;
   --primary-foreground: #ffffff;
+  --primary-texto: #0b5f58;
 
-  --secondary: #f1eefb;
-  --secondary-foreground: #3d2f73;
+  --secondary: #eef5f4;
+  --secondary-foreground: #0b4f4a;
 
-  --muted: #f3f2f7;
-  --muted-foreground: #5f5b6e;
+  --muted: #f2f3f2;
+  --muted-foreground: #575b57;
 
-  --accent: #f1eefb;
-  --accent-foreground: #3d2f73;
+  --accent: #e7f1f0;
+  --accent-foreground: #0b4f4a;
 
-  --destructive: #d93f4c;
+  --destructive: #c62828;
   --destructive-foreground: #ffffff;
 
-  --success: #1f9d6b;
+  --success: #15803d;
 
-  --border: #e6e4ee;
-  --input: #dcd9e6;
-  --ring: #7c5cd6;
+  --border: #e3e5e3;
+  --input: #d3d6d3;
+  --ring: #0f766e;
 
   --sidebar: #ffffff;
-  --sidebar-foreground: #16141f;
+  --sidebar-foreground: #161616;
 
-  /* cartão claro de destaque (no claro, igual ao cartão) */
   --destaque: #ffffff;
-  --destaque-foreground: #16141f;
+  --destaque-foreground: #161616;
+
+  --alerta: #92400e;
+  --erro: #b91c1c;
+  --sucesso: #166534;
+  --info: #0369a1;
+  --quente: #9a3412;
 }
 
-/* Painel: preto, cartões grafite bem arredondados, verde-limão como destaque, botões em pílula */
+/* Escuro da marca: grafite, cartões arredondados, verde-limão de destaque, botões em pílula */
 .dark,
-:root:has([data-painel]) {
+:root:has([data-acesso]),
+:root:has([data-painel]:not([data-tema='claro'], [data-tema='sistema'])) {
   color-scheme: dark;
   --radius-card: 22px;
   --radius-control: 14px;
@@ -73,6 +101,7 @@
   --primary: #3ee42e;
   --primary-hover: #5cec4f;
   --primary-foreground: #0c0c0c;
+  --primary-texto: #3ee42e;
 
   --secondary: #2a2a2a;
   --secondary-foreground: #f4f4f2;
@@ -83,8 +112,8 @@
   --accent: #2a2a2a;
   --accent-foreground: #f4f4f2;
 
-  --destructive: #e5484d;
-  --destructive-foreground: #ffffff;
+  --destructive: #ef5350;
+  --destructive-foreground: #0c0c0c;
 
   --success: #3ee42e;
 
@@ -97,6 +126,145 @@
 
   --destaque: #f4f4f2;
   --destaque-foreground: #0c0c0c;
+
+  --alerta: #fcd34d;
+  --erro: #fb7185;
+  --sucesso: #4ade80;
+  --info: #7dd3fc;
+  --quente: #fb923c;
+}
+
+/* Claro da marca: fundo gelo, cartão branco, botão limão com texto grafite, textos em verde escuro */
+:root:has([data-orkestra-claro]),
+:root:has([data-painel][data-tema='claro']) {
+  color-scheme: light;
+  --radius-card: 22px;
+  --radius-control: 14px;
+  --radius-botao: 9999px;
+
+  --background: #f6f7f5;
+  --foreground: #161616;
+
+  --card: #ffffff;
+  --card-foreground: #161616;
+  --popover: #ffffff;
+  --popover-foreground: #161616;
+
+  --primary: #3ee42e;
+  --primary-hover: #34cc25;
+  --primary-foreground: #0c0c0c;
+  --primary-texto: #1a7f12;
+
+  --secondary: #eceeea;
+  --secondary-foreground: #161616;
+
+  --muted: #edefeb;
+  --muted-foreground: #565a52;
+
+  --accent: #eceeea;
+  --accent-foreground: #161616;
+
+  --destructive: #c62828;
+  --destructive-foreground: #ffffff;
+
+  --success: #15803d;
+
+  --border: #e1e4de;
+  --input: #c9cdc4;
+  --ring: #1a7f12;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #161616;
+
+  --destaque: #161616;
+  --destaque-foreground: #f6f7f5;
+
+  --alerta: #92400e;
+  --erro: #b91c1c;
+  --sucesso: #166534;
+  --info: #0369a1;
+  --quente: #9a3412;
+}
+
+/* "Seguir o sistema": os mesmos blocos, escolhidos pelo aparelho */
+@media (prefers-color-scheme: dark) {
+  :root:has([data-painel][data-tema='sistema']) {
+    color-scheme: dark;
+    --radius-card: 22px;
+    --radius-control: 14px;
+    --radius-botao: 9999px;
+    --background: #0c0c0c;
+    --foreground: #f4f4f2;
+    --card: #1a1a1a;
+    --card-foreground: #f4f4f2;
+    --popover: #1f1f1f;
+    --popover-foreground: #f4f4f2;
+    --primary: #3ee42e;
+    --primary-hover: #5cec4f;
+    --primary-foreground: #0c0c0c;
+    --primary-texto: #3ee42e;
+    --secondary: #2a2a2a;
+    --secondary-foreground: #f4f4f2;
+    --muted: #232323;
+    --muted-foreground: #a0a09c;
+    --accent: #2a2a2a;
+    --accent-foreground: #f4f4f2;
+    --destructive: #ef5350;
+    --destructive-foreground: #0c0c0c;
+    --success: #3ee42e;
+    --border: #2c2c2c;
+    --input: #3a3a3a;
+    --ring: #3ee42e;
+    --sidebar: #141414;
+    --sidebar-foreground: #f4f4f2;
+    --destaque: #f4f4f2;
+    --destaque-foreground: #0c0c0c;
+    --alerta: #fcd34d;
+    --erro: #fb7185;
+    --sucesso: #4ade80;
+    --info: #7dd3fc;
+    --quente: #fb923c;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root:has([data-painel][data-tema='sistema']) {
+    color-scheme: light;
+    --radius-card: 22px;
+    --radius-control: 14px;
+    --radius-botao: 9999px;
+    --background: #f6f7f5;
+    --foreground: #161616;
+    --card: #ffffff;
+    --card-foreground: #161616;
+    --popover: #ffffff;
+    --popover-foreground: #161616;
+    --primary: #3ee42e;
+    --primary-hover: #34cc25;
+    --primary-foreground: #0c0c0c;
+    --primary-texto: #1a7f12;
+    --secondary: #eceeea;
+    --secondary-foreground: #161616;
+    --muted: #edefeb;
+    --muted-foreground: #565a52;
+    --accent: #eceeea;
+    --accent-foreground: #161616;
+    --destructive: #c62828;
+    --destructive-foreground: #ffffff;
+    --success: #15803d;
+    --border: #e1e4de;
+    --input: #c9cdc4;
+    --ring: #1a7f12;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #161616;
+    --destaque: #161616;
+    --destaque-foreground: #f6f7f5;
+    --alerta: #92400e;
+    --erro: #b91c1c;
+    --sucesso: #166534;
+    --info: #0369a1;
+    --quente: #9a3412;
+  }
 }
 
 .tema-claro {
@@ -116,6 +284,7 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-texto: var(--primary-texto);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -132,6 +301,11 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-destaque: var(--destaque);
   --color-destaque-foreground: var(--destaque-foreground);
+  --color-alerta: var(--alerta);
+  --color-erro: var(--erro);
+  --color-sucesso: var(--sucesso);
+  --color-info: var(--info);
+  --color-quente: var(--quente);
 
   --radius-card: var(--radius-card);
   --radius-control: var(--radius-control);

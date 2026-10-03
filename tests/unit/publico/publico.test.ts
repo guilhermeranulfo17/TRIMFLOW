@@ -382,15 +382,15 @@ describe('origem, WhatsApp, cardápio, sugestões e mensagens', () => {
 });
 
 describe('cor da marca', () => {
-  it('cor inválida vira o roxo do Orkestra', () => {
+  it('cor inválida vira o verde-petróleo padrão', () => {
     expect(hexValido('#12345')).toBe(false);
-    expect(coresDaMarca('vermelho').base).toBe('#7C5CD6');
-    expect(coresDaMarca(null).base).toBe('#7C5CD6');
+    expect(coresDaMarca('vermelho').base).toBe('#0F766E');
+    expect(coresDaMarca(null).base).toBe('#0F766E');
   });
 
   it('texto sobre a base e destaque sobre branco sempre com contraste AA', () => {
     for (const cor of [
-      '#7C5CD6',
+      '#0F766E',
       '#FFEB3B',
       '#00BCD4',
       '#111111',
@@ -402,7 +402,7 @@ describe('cor da marca', () => {
       expect(contraste(c.base, c.texto)).toBeGreaterThanOrEqual(3);
       expect(contraste(c.destaque, '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     }
-    expect(coresDaMarca('#FFEB3B').texto).toBe('#16141F');
+    expect(coresDaMarca('#FFEB3B').texto).toBe('#161616');
     expect(coresDaMarca('#111111').texto).toBe('#FFFFFF');
     expect(contraste('#000000', '#FFFFFF')).toBeCloseTo(21, 0);
   });

@@ -100,7 +100,7 @@ export default async function PaginaInterna({
                   <span>{e.leads30d} leads (30 dias)</span>
                   <span>{e.reservas} reservas</span>
                   {e.isenta && <span>cortesia</span>}
-                  {e.suporteAte && <span className="text-primary">suporte liberado</span>}
+                  {e.suporteAte && <span className="text-primary-texto">suporte liberado</span>}
                 </span>
               </Link>
             </li>

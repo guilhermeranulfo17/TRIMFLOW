@@ -12,6 +12,7 @@ import { useToast } from '@/components/app/toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  COR_PADRAO,
   FUSOS_BR,
   identidadeSchema,
   UFS,
@@ -127,7 +128,7 @@ export function FormIdentidade({
           <input
             type="color"
             aria-label="Escolher cor"
-            value={/^#[0-9A-Fa-f]{6}$/.test(cor) ? cor : '#7C5CD6'}
+            value={/^#[0-9A-Fa-f]{6}$/.test(cor) ? cor : COR_PADRAO}
             onChange={(ev) =>
               setValue('corMarca', ev.target.value.toUpperCase(), { shouldDirty: true })
             }

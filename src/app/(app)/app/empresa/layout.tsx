@@ -42,10 +42,10 @@ async function AvisoPendencias({ usuario }: { usuario: UsuarioAtual }) {
   return (
     <div
       role="status"
-      className="rounded-card mb-5 border border-amber-500/40 bg-amber-500/10 p-4 text-sm"
+      className="rounded-card border-alerta/40 bg-alerta/10 mb-5 border p-4 text-sm"
     >
       <p className="mb-2 flex items-center gap-2 font-semibold">
-        <TriangleAlert className="size-4 text-amber-300" aria-hidden />
+        <TriangleAlert className="text-alerta size-4" aria-hidden />
         Falta pouco para o link do seu buffet funcionar
       </p>
       <ul className="space-y-1">

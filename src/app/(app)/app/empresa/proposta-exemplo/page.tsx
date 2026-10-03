@@ -18,7 +18,10 @@ export default async function PropostaExemploPage() {
       <p className="rounded-card text-muted-foreground border border-dashed px-4 py-6 text-center text-sm">
         Ainda não dá para montar uma proposta: cadastre ao menos um tipo de festa, um turno, um
         espaço e um pacote com preço em{' '}
-        <Link href="/app/empresa/catalogo" className="text-primary font-semibold hover:underline">
+        <Link
+          href="/app/empresa/catalogo"
+          className="text-primary-texto font-semibold hover:underline"
+        >
           Catálogo
         </Link>
         .

@@ -44,7 +44,7 @@ export function TopoHoje({ resumo, filtros }: { resumo: ResumoHoje; filtros: Fil
                     atalho === 'atrasadas' &&
                     n > 0 &&
                     !ativo &&
-                    'ring-1 ring-rose-400/50',
+                    'ring-erro/50 ring-1',
                 )}
                 data-testid={`hoje-${atalho}`}
               >
@@ -60,7 +60,7 @@ export function TopoHoje({ resumo, filtros }: { resumo: ResumoHoje; filtros: Fil
                 <span
                   className={cn(
                     'text-4xl leading-none font-light tracking-tight tabular-nums',
-                    atalho === 'atrasadas' && n > 0 && 'text-rose-400',
+                    atalho === 'atrasadas' && n > 0 && 'text-erro',
                   )}
                 >
                   {n}

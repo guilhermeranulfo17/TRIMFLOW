@@ -71,7 +71,7 @@ export default async function LeadsPage({ searchParams }: Props) {
           atender primeiro. Divulgue seu link em{' '}
           <Link
             href="/app/empresa/link"
-            className="text-primary font-semibold underline-offset-2 hover:underline"
+            className="text-primary-texto font-semibold underline-offset-2 hover:underline"
           >
             Minha empresa
           </Link>

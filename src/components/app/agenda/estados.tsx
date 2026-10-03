@@ -6,35 +6,35 @@ export const ESTADOS: Record<EstadoSlot, { rotulo: string; ponto: string; selo: 
   livre: {
     rotulo: 'Livre',
     ponto: 'bg-primary',
-    selo: 'bg-primary/10 text-primary border-primary/30',
+    selo: 'bg-primary/10 text-primary-texto border-primary/30',
   },
   pre_reservado: {
     rotulo: 'Pré-reservado',
-    ponto: 'bg-amber-400',
-    selo: 'bg-amber-400/10 text-amber-300 border-amber-400/30',
+    ponto: 'bg-alerta',
+    selo: 'bg-alerta/10 text-alerta border-alerta/30',
   },
   reservado: {
     rotulo: 'Reservado',
-    ponto: 'bg-violet-400',
-    selo: 'bg-violet-400/10 text-violet-300 border-violet-400/30',
+    ponto: 'bg-info',
+    selo: 'bg-info/10 text-info border-info/30',
   },
   lotado: {
     rotulo: 'Lotado',
-    ponto: 'bg-violet-400',
-    selo: 'bg-violet-400/10 text-violet-300 border-violet-400/30',
+    ponto: 'bg-info',
+    selo: 'bg-info/10 text-info border-info/30',
   },
   bloqueado: {
     rotulo: 'Bloqueado',
     ponto: 'bg-zinc-500',
-    selo: 'bg-zinc-500/15 text-zinc-300 border-zinc-500/40',
+    selo: 'bg-muted text-muted-foreground border-border',
   },
 };
 
 export const RESUMOS: Record<ResumoDia, { rotulo: string; fundo: string }> = {
   sem_turno: { rotulo: 'Sem turno', fundo: 'bg-muted/40 text-muted-foreground' },
   livre: { rotulo: 'Livre', fundo: 'bg-card' },
-  parcial: { rotulo: 'Parcialmente ocupado', fundo: 'bg-amber-400/10' },
-  cheio: { rotulo: 'Cheio', fundo: 'bg-violet-400/15' },
+  parcial: { rotulo: 'Parcialmente ocupado', fundo: 'bg-alerta/10' },
+  cheio: { rotulo: 'Cheio', fundo: 'bg-info/15' },
   bloqueado: { rotulo: 'Bloqueado', fundo: 'bg-zinc-500/20' },
 };
 

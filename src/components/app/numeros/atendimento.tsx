@@ -22,7 +22,7 @@ export function Atendimento({
         pedido · <strong className="tabular-nums">{formatarMinutos(total.medianaAvisoMin)}</strong>{' '}
         desde o aviso
         {total.semContato > 0 && (
-          <span className="text-amber-300"> · {total.semContato} ainda sem contato</span>
+          <span className="text-alerta"> · {total.semContato} ainda sem contato</span>
         )}
       </p>
       {porVendedor.length > 0 && (

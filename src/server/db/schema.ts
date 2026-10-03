@@ -50,7 +50,7 @@ export const empresas = pgTable('empresas', {
   logoPath: text('logo_path'),
   /** Caminho no bucket midia: {empresa_id}/capa/{uuid}.webp */
   capaPath: text('capa_path'),
-  corMarca: text('cor_marca').notNull().default('#7C5CD6'),
+  corMarca: text('cor_marca').notNull().default('#0F766E'),
   sobre: text('sobre'),
   razaoSocial: text('razao_social'),
   /** só dígitos (14) */

@@ -21,7 +21,7 @@ export function Funil({ resumo }: { resumo: Resumo }) {
     >
       {maiorQueda && (
         <p
-          className="rounded-control bg-amber-400/10 px-3 py-2 text-sm text-amber-300"
+          className="rounded-control bg-alerta/10 text-alerta px-3 py-2 text-sm"
           data-testid="maior-queda"
         >
           {maiorQueda}

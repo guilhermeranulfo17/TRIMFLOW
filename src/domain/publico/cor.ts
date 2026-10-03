@@ -1,9 +1,9 @@
 /**
  * Cor da marca na página pública: texto com contraste AA (4,5:1) sobre a cor e variações.
- * Cor inválida → roxo do Orkestra.
+ * Cor inválida → verde-petróleo (padrão do buffet; o limão é só do Orkestra).
  */
-export const COR_PADRAO = '#7C5CD6';
-const ESCURO = '#16141F';
+export const COR_PADRAO = '#0F766E';
+const ESCURO = '#161616';
 const BRANCO = '#FFFFFF';
 
 export type CoresMarca = {

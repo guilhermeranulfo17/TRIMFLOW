@@ -274,7 +274,7 @@ export function FiltrosCaixa({
           )}
           <button
             type="button"
-            className="text-primary inline-flex min-h-9 items-center gap-1 font-semibold"
+            className="text-primary-texto inline-flex min-h-9 items-center gap-1 font-semibold"
             onClick={() => ir({})}
           >
             <X className="size-4" aria-hidden />

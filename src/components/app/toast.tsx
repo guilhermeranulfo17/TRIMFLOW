@@ -82,7 +82,7 @@ export function ProvedorToast({ children }: { children: React.ReactNode }) {
                     remover(t.id);
                     t.desfazer?.();
                   }}
-                  className="text-primary font-semibold underline-offset-2 hover:underline"
+                  className="text-primary-texto font-semibold underline-offset-2 hover:underline"
                   data-testid="desfazer"
                 >
                   Desfazer

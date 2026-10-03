@@ -77,7 +77,7 @@ export function PassoModelo({
       <ul className="bg-card rounded-card divide-y border">
         {itens.map((i) => (
           <li key={i.titulo} className="flex items-start gap-3 p-4">
-            <i.icone className="text-primary mt-0.5 size-5 shrink-0" aria-hidden />
+            <i.icone className="text-primary-texto mt-0.5 size-5 shrink-0" aria-hidden />
             <div className="min-w-0">
               <p className="font-semibold">{i.titulo}</p>
               <p className="text-muted-foreground text-sm">{i.texto}</p>

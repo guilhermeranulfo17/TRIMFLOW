@@ -32,7 +32,7 @@ export default async function NovoOrcamentoPage({ searchParams }: Props) {
           Para fazer orçamentos, cadastre tipos de festa, horários e pacotes em{' '}
           <Link
             href="/app/empresa/catalogo"
-            className="text-primary font-semibold underline-offset-2 hover:underline"
+            className="text-primary-texto font-semibold underline-offset-2 hover:underline"
           >
             Minha empresa
           </Link>

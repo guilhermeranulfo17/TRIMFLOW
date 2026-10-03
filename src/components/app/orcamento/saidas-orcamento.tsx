@@ -56,7 +56,7 @@ export function SaidasOrcamento({
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4" data-testid="saidas-orcamento">
       <div className="bg-card rounded-card border p-5 text-center">
-        <CircleCheck className="text-primary mx-auto size-10" aria-hidden />
+        <CircleCheck className="text-primary-texto mx-auto size-10" aria-hidden />
         <h2 className="mt-2 text-xl font-extrabold">
           Orçamento nº {numeroProposta(salvo.numero)}
           {salvo.versao > 1 ? ` · versão ${salvo.versao}` : ''} salvo
@@ -67,7 +67,7 @@ export function SaidasOrcamento({
             href={salvo.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary font-semibold underline-offset-2 hover:underline"
+            className="text-primary-texto font-semibold underline-offset-2 hover:underline"
             data-testid="link-proposta"
           >
             {salvo.link.replace(/^https?:\/\//, '')}
@@ -102,7 +102,7 @@ export function SaidasOrcamento({
       </a>
       {reservadoAte ? (
         <p
-          className="rounded-control bg-primary/10 text-primary p-3 text-center text-sm font-semibold"
+          className="rounded-control bg-primary/10 text-primary-texto p-3 text-center text-sm font-semibold"
           role="status"
         >
           Pré-reservado até {formatDataHora(reservadoAte, fuso)}. Está na Agenda.

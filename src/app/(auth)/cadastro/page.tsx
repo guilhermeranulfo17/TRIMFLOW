@@ -18,7 +18,7 @@ export default function CadastroPage() {
         <FormCadastro />
         <p className="text-muted-foreground text-center text-sm">
           Já tem conta?{' '}
-          <Link href="/login" className="text-primary font-semibold hover:underline">
+          <Link href="/login" className="text-primary-texto font-semibold hover:underline">
             Entrar
           </Link>
         </p>

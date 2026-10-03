@@ -61,7 +61,7 @@ export function ItemReserva({
           Lead:{' '}
           <Link
             href={`/app/leads/${reserva.leadId}`}
-            className="text-primary font-semibold underline-offset-2 hover:underline"
+            className="text-primary-texto font-semibold underline-offset-2 hover:underline"
             data-testid="abrir-lead"
           >
             {reserva.leadNome ?? 'Abrir lead'}
@@ -70,14 +70,14 @@ export function ItemReserva({
       )}
       <dl className="text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
         {pre && reserva.expiraEm && (
-          <div className="col-span-2 font-medium text-amber-300">
+          <div className="text-alerta col-span-2 font-medium">
             {prazoRestante(new Date(reserva.expiraEm), agora)}
           </div>
         )}
         {reserva.clienteWhatsapp && (
           <div className="col-span-2">
             <a
-              className="text-primary underline-offset-2 hover:underline"
+              className="text-primary-texto underline-offset-2 hover:underline"
               href={`https://wa.me/${reserva.clienteWhatsapp.replace('+', '')}`}
               target="_blank"
               rel="noopener noreferrer"

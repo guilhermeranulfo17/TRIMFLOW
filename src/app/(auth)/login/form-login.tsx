@@ -60,7 +60,10 @@ export function FormLogin({ next, avisoInicial }: { next: string | null; avisoIn
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>Senha</FormLabel>
-                <Link href="/recuperar-senha" className="text-primary text-sm hover:underline">
+                <Link
+                  href="/recuperar-senha"
+                  className="text-primary-texto text-sm hover:underline"
+                >
                   Esqueci minha senha
                 </Link>
               </div>
