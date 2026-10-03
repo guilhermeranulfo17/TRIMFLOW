@@ -11,7 +11,6 @@ import {
   validarArquivoImagem,
   type TipoImagemUpload,
 } from '@/domain/imagem';
-import { criarClienteSupabaseNavegador } from '@/lib/supabase-browser';
 import { cn } from '@/lib/utils';
 
 /** Redimensiona no navegador (canvas) e exporta WEBP. */
@@ -72,6 +71,8 @@ export function UploadImagem({
     try {
       const webp = await converterParaWebp(arquivo, LADO_MAXIMO[tipo]);
       const caminho = `${empresaId}/${tipo}/${crypto.randomUUID()}.webp`;
+      // cliente do Supabase só na hora do envio (fora do bundle inicial das telas)
+      const { criarClienteSupabaseNavegador } = await import('@/lib/supabase-browser');
       const { error } = await criarClienteSupabaseNavegador()
         .storage.from('midia')
         .upload(caminho, webp, {

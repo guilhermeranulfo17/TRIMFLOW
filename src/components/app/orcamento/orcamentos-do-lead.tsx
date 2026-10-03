@@ -98,7 +98,7 @@ export function OrcamentosDoLead({ grupos }: { grupos: GrupoOrcamento[] }) {
             </div>
             <p className="text-muted-foreground">{resumoDaFesta(v)}</p>
             {v.diferencas.length > 0 && (
-              <ul className="mt-1 text-xs text-violet-300" aria-label="O que mudou nesta versão">
+              <ul className="text-info mt-1 text-xs" aria-label="O que mudou nesta versão">
                 {v.diferencas.map((d) => (
                   <li key={d}>{d}</li>
                 ))}
@@ -169,7 +169,7 @@ export function OrcamentosDoLead({ grupos }: { grupos: GrupoOrcamento[] }) {
 
             {anteriores.length > 0 && (
               <details className="mt-3">
-                <summary className="text-primary cursor-pointer text-sm font-semibold">
+                <summary className="text-primary-texto cursor-pointer text-sm font-semibold">
                   Versões anteriores ({anteriores.length})
                 </summary>
                 <ol className="mt-2 flex flex-col gap-2">
@@ -193,7 +193,7 @@ export function OrcamentosDoLead({ grupos }: { grupos: GrupoOrcamento[] }) {
                       )}
                       <a
                         href={`/app/orcamentos/${a.id}/pdf`}
-                        className="text-primary mt-1 inline-block font-semibold underline-offset-2 hover:underline"
+                        className="text-primary-texto mt-1 inline-block font-semibold underline-offset-2 hover:underline"
                       >
                         PDF da versão {a.versao}
                       </a>

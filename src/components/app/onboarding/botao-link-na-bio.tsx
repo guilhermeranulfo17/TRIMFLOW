@@ -32,7 +32,7 @@ export function BotaoLinkNaBio({
       }
       className={cn(
         'rounded-control inline-flex min-h-11 items-center gap-2 border px-3 text-sm font-semibold disabled:opacity-60',
-        feito ? 'border-primary/40 bg-primary/10 text-primary' : 'hover:bg-accent',
+        feito ? 'border-primary/40 bg-primary/10 text-primary-texto' : 'hover:bg-accent',
       )}
       data-testid="fiz-link-na-bio"
     >

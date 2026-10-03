@@ -2,15 +2,20 @@
 
 import { Bell, ChevronDown, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { useState, useTransition } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ROTULO_TEMA, TEMAS, temaValido, type Tema } from '@/domain/tema';
 import { sair } from '@/server/actions/auth';
+import { definirTema } from '@/server/actions/tema';
 
 const ROTULO_PERFIL = { dono: 'Dono', vendedor: 'Vendedor' } as const;
 
@@ -25,11 +30,24 @@ export function UserMenu({
   nome,
   email,
   perfil,
+  tema: temaInicial,
 }: {
   nome: string;
   email: string;
   perfil: keyof typeof ROTULO_PERFIL;
+  tema: Tema;
 }) {
+  const [tema, setTema] = useState(temaInicial);
+  const [, iniciar] = useTransition();
+
+  function escolherTema(valor: string) {
+    const novo = temaValido(valor);
+    setTema(novo);
+    // aplica na hora (o servidor grava o cookie e as próximas páginas já vêm no tema)
+    document.querySelector('[data-painel]')?.setAttribute('data-tema', novo);
+    iniciar(() => definirTema(novo));
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -48,6 +66,17 @@ export function UserMenu({
           <p className="text-muted-foreground truncate text-xs">{email}</p>
           <p className="text-muted-foreground mt-1 text-xs">{ROTULO_PERFIL[perfil]}</p>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-muted-foreground text-xs font-semibold">
+          Tema
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={tema} onValueChange={escolherTema}>
+          {TEMAS.map((t) => (
+            <DropdownMenuRadioItem key={t} value={t} className="cursor-pointer">
+              {ROTULO_TEMA[t]}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/app/conta/avisos" className="cursor-pointer">

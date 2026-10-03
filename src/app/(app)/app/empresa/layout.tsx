@@ -1,16 +1,14 @@
 import { TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { NavEmpresa, type SecaoEmpresa } from '@/components/app/empresa/nav-empresa';
-import { exigirSessao } from '@/server/auth/sessao';
-import { carregarPendencias } from '@/server/catalogo/pendencias';
+import type { Pendencia } from '@/domain/catalogo/pendencias';
+import { exigirSessao, type UsuarioAtual } from '@/server/auth/sessao';
+import { carregarContextoPainel } from '@/server/painel/contexto';
 
-export default async function EmpresaLayout({ children }: { children: React.ReactNode }) {
-  const usuario = await exigirSessao();
-  const pendencias = await carregarPendencias(usuario.id);
+function secoesDe(dono: boolean, pendencias: Pendencia[] = []): SecaoEmpresa[] {
   const contar = (secao: string) => pendencias.filter((p) => p.secao === secao).length;
-  const dono = usuario.perfil === 'dono';
-
-  const secoes: SecaoEmpresa[] = [
+  return [
     { href: '/app/empresa', rotulo: 'Identidade' },
     {
       href: '/app/empresa/agenda-config',
@@ -30,39 +28,57 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
         ]
       : []),
   ];
+}
+
+/** Navegação com os pontos de pendência (contexto do painel, já lido pelo layout). */
+async function NavComPendencias({ usuario }: { usuario: UsuarioAtual }) {
+  const { pendencias } = await carregarContextoPainel(usuario);
+  return <NavEmpresa secoes={secoesDe(usuario.perfil === 'dono', pendencias)} />;
+}
+
+async function AvisoPendencias({ usuario }: { usuario: UsuarioAtual }) {
+  const { pendencias } = await carregarContextoPainel(usuario);
+  if (pendencias.length === 0) return null;
+  return (
+    <div
+      role="status"
+      className="rounded-card border-alerta/40 bg-alerta/10 mb-5 border p-4 text-sm"
+    >
+      <p className="mb-2 flex items-center gap-2 font-semibold">
+        <TriangleAlert className="text-alerta size-4" aria-hidden />
+        Falta pouco para o link do seu buffet funcionar
+      </p>
+      <ul className="space-y-1">
+        {pendencias.map((p) => (
+          <li key={p.codigo}>
+            <Link href={`/app/empresa/${p.secao}`} className="underline-offset-4 hover:underline">
+              {p.mensagem}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default async function EmpresaLayout({ children }: { children: React.ReactNode }) {
+  const usuario = await exigirSessao();
+  const dono = usuario.perfil === 'dono';
 
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="mb-4 text-2xl font-extrabold tracking-tight">Minha empresa</h1>
-      <NavEmpresa secoes={secoes} />
+      <Suspense fallback={<NavEmpresa secoes={secoesDe(dono)} />}>
+        <NavComPendencias usuario={usuario} />
+      </Suspense>
       {!dono && (
         <p className="rounded-control bg-muted text-muted-foreground mb-5 border px-3 py-2.5 text-sm">
           Você está vendo a configuração em modo leitura. Só o dono do buffet pode alterar.
         </p>
       )}
-      {pendencias.length > 0 && (
-        <div
-          role="status"
-          className="rounded-card mb-5 border border-amber-500/40 bg-amber-500/10 p-4 text-sm"
-        >
-          <p className="mb-2 flex items-center gap-2 font-semibold">
-            <TriangleAlert className="size-4 text-amber-300" aria-hidden />
-            Falta pouco para o link do seu buffet funcionar
-          </p>
-          <ul className="space-y-1">
-            {pendencias.map((p) => (
-              <li key={p.codigo}>
-                <Link
-                  href={`/app/empresa/${p.secao}`}
-                  className="underline-offset-4 hover:underline"
-                >
-                  {p.mensagem}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <AvisoPendencias usuario={usuario} />
+      </Suspense>
       {children}
     </div>
   );

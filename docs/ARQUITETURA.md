@@ -1075,3 +1075,72 @@ casos, viradas de dia em vários fusos). Precedência:
   - `comUsuario` liga a GUC `orkestra.suporte_admin` e o trigger da auditoria acrescenta
     `dados.suporte` em tudo o que for gravado. Faixa vermelha fixa no painel, com "Sair do
     modo suporte".
+
+## 59. Identidade e temas (Etapa 9.5)
+
+- **Cor do produto = grafite + limão (`#3EE42E`).** Roxo saiu de tudo (código, ícones, PDF,
+  e-mails, seeds); o teste `tests/unit/tema/sem-roxo.test.ts` falha se a paleta antiga ou classes
+  `violet`/`purple` voltarem. As migrations antigas ficam como histórico.
+- **Cor do buffet só nas páginas do cliente final** (link público, orçamento, proposta, PDF, OG).
+  Padrão `#0F766E` (verde-petróleo, AA com branco); quem estava no roxo antigo migrou
+  (`20261010000002_cor_padrao`). O limão nunca é cor de buffet por padrão.
+- **Três conjuntos de tokens em `globals.css`**, escolhidos por marcador no HTML do servidor
+  (nada pisca e nenhuma página estática vira dinâmica):
+  - sem marcador: claro neutro do cliente final, com a cor do buffet por cima
+    (`components/publico/marca.ts`, que também define `--primary-texto` com 4,5:1);
+  - `[data-acesso]`: login, cadastro, recuperar e nova senha: escuro da marca, sempre;
+  - `[data-orkestra-claro]`: termos e privacidade: claro da marca;
+  - `[data-painel][data-tema]`: painel e onboarding no tema do cookie `orkestra_tema`
+    (`escuro` padrão, `claro`, `sistema` = `prefers-color-scheme`), trocado no menu da conta
+    (`definirTema`). `/interno` fica no escuro.
+- **Tokens de estado:** `alerta`, `erro`, `sucesso`, `info` e `quente` (lead quente), usados como
+  `text-x`, `bg-x/10`, `border-x/30`. Nada de `amber-300`/`rose-400` fixos no painel: no tema
+  claro eles não passam no AA. `primary` é fundo de botão; texto e ícone na cor primária usam
+  `text-primary-texto` (limão no escuro, `#1A7F12` no claro).
+- **Contraste:** `tests/unit/tema/contraste.test.ts` lê os blocos do CSS e exige 4,5:1 em todo par
+  de texto (inclusive estado sobre o próprio tom suave) e 3:1 no anel de foco, nos três temas, e
+  que os blocos do "sistema" sejam iguais aos explícitos.
+
+## 60. Desempenho: idas ao banco (Etapa 9.5)
+
+A latência do painel vinha de idas ao banco em sequência (função na Vercel, banco em
+`sa-east-1`). A regra agora é contar idas, não consultas.
+
+- **Região:** `vercel.json` fixa as funções em `gru1` (São Paulo), ao lado do banco.
+- **Sessão:** `getClaims()` valida o JWT localmente (chave assimétrica do projeto; com HS256 cai
+  na rede sozinho). `getUser()` fica só onde a revalidação forte importa: `/interno`, modo
+  suporte, troca de senha, criar vendedor e cobrança. O middleware não roda em `/b/**`, webhooks,
+  manifest, service worker e ícones.
+- **Parâmetros inline (`server/db/inline.ts`):** com `prepare: false` (exigido pelo pooler em
+  modo transação), o driver faz um Describe por consulta com parâmetro e não enfileira consultas.
+  Os parâmetros viram literais `E'…'` escapados (aspas e barras dobradas, NUL recusado, número
+  negativo entre parênteses) e seguem pelo protocolo simples. Cliente envolvido por um Proxy:
+  o código das features não muda.
+- **`comUsuario` (`server/db/tenant.ts`):** conexão reservada; `BEGIN` + identidade
+  (`set_config(..., true)`) vão sem esperar resposta e a primeira leva de consultas segue atrás,
+  na mesma ida. A ordem na conexão garante que nada roda antes da identidade; se o preâmbulo
+  falhar, a transação fica abortada. Teste de concorrência entre empresas no mesmo pool.
+- **`lerComo`:** leituras de uma ida só (preâmbulo + consultas numa mensagem = uma transação
+  implícita). Usado pela identidade (`lerUsuario`) e pelo contexto do painel.
+- **`painel_contexto()`:** badges, sino, faixas e onboarding numa ida (security invoker, RLS de
+  quem chama). Chama `resumo_hoje()` e `plano_vigente_da_empresa()` e devolve linhas cruas; as
+  regras puras do TypeScript (pendências, faixa da conta, assinatura de referência) rodam sobre
+  elas. React `cache`: layout e página dividem a mesma leitura. Teste de equivalência com os
+  loaders antigos.
+- **Uma transação por tela:** loaders recebem `tx` opcional (`naTransacao`) e a página dispara
+  tudo num `Promise.all` dentro de um `comUsuario`. Nunca passe `tx` para dentro de
+  `unstable_cache`: o callback pode rodar depois, em segundo plano, numa conexão que já é de
+  outra requisição. Por isso Números abre a transação dentro do cache (`carregarTelaNumeros`).
+- **Esqueletos e filtros na URL:** `loading.tsx` envolvendo uma tela que navega para ela mesma
+  trocando só a busca (período de Números, atalhos e filtros de Leads) travava a navegação em
+  produção (Next 15.5: a URL não mudava; achado por bisect, não acontece em `next dev`). Por isso
+  Leads e Números **não** têm `loading.tsx` (nem o painel um genérico): a página desenha o
+  topo na hora e põe os dados num `<Suspense key={filtros}>` com o esqueleto, e os links mostram
+  `PendenteLink` (`useLinkStatus`) enquanto a navegação está pendente. As demais telas mantêm o
+  seu `loading.tsx`. Tela nova com filtros na URL segue o mesmo padrão.
+- **Orçamento no CI (`tests/integration/idas-banco.test.ts`):** layout 2, leads 3, agenda 3,
+  números 3, detalhe do lead 4, Minha empresa 3. Antes: 39, 23, 30, 20, 26 e 16.
+- **Índices de FK** com sufixo `_fk_idx`, nas colunas e na ordem da FK; policies de dados
+  próprios com `(select auth.uid())`. `_lead_grupo`/`_lead_ordem` ficam sem `set search_path`:
+  o SET impede que o Postgres embuta a função, e a caixa com 5.000 leads passa de 38 para 65 ms.
+  São IMMUTABLE, só usam parâmetros e não leem tabelas.

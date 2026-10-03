@@ -163,7 +163,8 @@ export async function lerContextoPublico(
 
 // --- Versões em cache (só dentro do Next) ------------------------------------
 
-const OPCOES_CACHE = (slug: string) => ({ tags: [tagDoBuffet(slug)], revalidate: 300 });
+// 60 s é a rede de segurança: toda ação do dono que muda o link já invalida a tag na hora.
+const OPCOES_CACHE = (slug: string) => ({ tags: [tagDoBuffet(slug)], revalidate: 60 });
 
 /**
  * Buffet do slug (memo por requisição). Sem cache entre requisições: é uma linha só e o

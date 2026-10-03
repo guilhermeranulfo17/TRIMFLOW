@@ -25,11 +25,13 @@ export default async function PaginaOrcamento({ params, searchParams }: Props) {
   const busca = await searchParams;
   const buffet = await exigirBuffet(slug, '/orcamento');
   if (buffet.suspenso) redirect(`/b/${slug}`);
-  const dados = await carregarVitrine(slug);
+  // vitrine, modo teste e orçamento em andamento ao mesmo tempo
+  const [dados, modoTeste, estado] = await Promise.all([
+    carregarVitrine(slug),
+    ehModoTeste(slug),
+    lerTokenDoCookie(slug).then((token) => (token ? lerEstadoOrcamento(slug, token) : null)),
+  ]);
   if (!dados || pendenciasDoContexto(dados.contexto.ctx).length > 0) redirect(`/b/${slug}`);
-
-  const [modoTeste, token] = await Promise.all([ehModoTeste(slug), lerTokenDoCookie(slug)]);
-  const estado = token ? await lerEstadoOrcamento(slug, token) : null;
   const emAndamento =
     estado && ['em_montagem', 'enviado', 'visualizado', 'expirado'].includes(estado.status)
       ? estado

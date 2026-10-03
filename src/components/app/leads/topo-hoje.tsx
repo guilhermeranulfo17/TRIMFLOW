@@ -2,6 +2,7 @@ import { AlarmClock, CalendarCheck, CalendarClock, ListTodo, UserPlus } from 'lu
 import Link from 'next/link';
 import { filtrosParaUrl, type AtalhoCaixa, type FiltrosCaixa } from '@/domain/leads/filtros';
 import { cn } from '@/lib/utils';
+import { PendenteLink } from '../pendente-link';
 import type { ResumoHoje } from '@/server/leads/carregar';
 
 const ITENS: {
@@ -44,7 +45,7 @@ export function TopoHoje({ resumo, filtros }: { resumo: ResumoHoje; filtros: Fil
                     atalho === 'atrasadas' &&
                     n > 0 &&
                     !ativo &&
-                    'ring-1 ring-rose-400/50',
+                    'ring-erro/50 ring-1',
                 )}
                 data-testid={`hoje-${atalho}`}
               >
@@ -56,11 +57,12 @@ export function TopoHoje({ resumo, filtros }: { resumo: ResumoHoje; filtros: Fil
                 >
                   <Icone className="size-3.5" aria-hidden />
                   {rotulo}
+                  <PendenteLink className="ml-auto" />
                 </span>
                 <span
                   className={cn(
                     'text-4xl leading-none font-light tracking-tight tabular-nums',
-                    atalho === 'atrasadas' && n > 0 && 'text-rose-400',
+                    atalho === 'atrasadas' && n > 0 && 'text-erro',
                   )}
                 >
                   {n}

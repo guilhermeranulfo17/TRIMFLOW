@@ -62,10 +62,17 @@ export function SinoAvisos({ inicial }: { inicial: number }) {
   }
 
   function marcarTodos() {
+    // otimista: zera na hora; se o servidor falhar, volta como estava
+    const antes = { naoLidos, itens };
+    setNaoLidos(0);
+    setItens((xs) => xs?.map((x) => ({ ...x, lido: true })) ?? null);
     iniciar(async () => {
-      await marcarAvisosLidos(null);
-      setNaoLidos(0);
-      setItens((xs) => xs?.map((x) => ({ ...x, lido: true })) ?? null);
+      const r = await marcarAvisosLidos(null);
+      if (!r.ok) {
+        setNaoLidos(antes.naoLidos);
+        setItens(antes.itens);
+        return;
+      }
       router.refresh();
     });
   }
@@ -102,7 +109,7 @@ export function SinoAvisos({ inicial }: { inicial: number }) {
             type="button"
             onClick={marcarTodos}
             disabled={naoLidos === 0 || carregando}
-            className="text-primary inline-flex min-h-11 items-center gap-1 text-sm font-semibold disabled:opacity-40"
+            className="text-primary-texto inline-flex min-h-11 items-center gap-1 text-sm font-semibold disabled:opacity-40"
           >
             <CheckCheck className="size-4" aria-hidden />
             Marcar todos como lidos
@@ -149,7 +156,7 @@ export function SinoAvisos({ inicial }: { inicial: number }) {
         <Link
           href="/app/avisos"
           onClick={() => setAberto(false)}
-          className="text-primary block border-t px-3 py-3 text-center text-sm font-semibold"
+          className="text-primary-texto block border-t px-3 py-3 text-center text-sm font-semibold"
         >
           Ver todos os avisos
         </Link>

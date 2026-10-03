@@ -103,6 +103,8 @@ jobs:
             echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
             echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY:-$PUBLISHABLE_KEY}"
             echo "NEXT_PUBLIC_SITE_URL=http://localhost:3000"
+            # Etapa 9.5: o botão do Google aparece (o E2E intercepta a ida ao Supabase)
+            echo "NEXT_PUBLIC_LOGIN_GOOGLE=1"
             echo "DATABASE_URL=$DB_URL"
             echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY:-$SECRET_KEY}"
             echo "E2E_STORAGE=1"

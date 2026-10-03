@@ -1,8 +1,10 @@
 import { BarChart3, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { LinhaDoLink } from '@/components/app/divulgacao/linha-do-link';
 import { EmptyState } from '@/components/app/empty-state';
+import { EsqueletoCartoes } from '@/components/app/esqueleto';
 import { Atendimento } from '@/components/app/numeros/atendimento';
 import { CartoesDono, CartoesVendedor } from '@/components/app/numeros/cartoes';
 import { Funil } from '@/components/app/numeros/funil';
@@ -12,11 +14,9 @@ import { SeletorPeriodo } from '@/components/app/numeros/periodo';
 import { TituloPagina } from '@/components/app/titulo-pagina';
 import { hojeNoFuso } from '@/domain/dates';
 import { resolverPeriodo } from '@/domain/numeros';
-import { exigirSessao } from '@/server/auth/sessao';
-import { recursosDaEmpresa } from '@/server/cobranca/carregar';
+import { exigirSessao, type UsuarioAtual } from '@/server/auth/sessao';
 import { urlDoSite } from '@/server/env';
-import { usuariosDaEmpresa } from '@/server/leads/carregar';
-import { carregarNumeros, carregarOcupacao } from '@/server/numeros/carregar';
+import { carregarTelaNumeros } from '@/server/numeros/carregar';
 
 export const metadata: Metadata = { title: 'Números' };
 
@@ -34,23 +34,56 @@ export default async function NumerosPage({ searchParams }: Props) {
     { periodo: um(busca.periodo), de: um(busca.de), ate: um(busca.ate) },
     hojeNoFuso(usuario.empresa.fuso),
   );
-  const dono = usuario.perfil === 'dono';
-  const link = `${urlDoSite() ?? ''}/b/${usuario.empresa.slug}`;
-  // Essencial: cartões e funil; o resto é do Profissional (teste = Profissional)
-  const completo = (await recursosDaEmpresa(usuario.empresa.id)).numerosCompleto;
-  const [n, ocupacao, usuarios] = await Promise.all([
-    carregarNumeros(usuario, periodo.de, periodo.ate),
-    dono && completo ? carregarOcupacao(usuario) : null,
-    usuariosDaEmpresa(usuario),
-  ]);
-  const nomes = new Map(usuarios.map((u) => [u.id, u.nome]));
-  const vazio = n.resumo.visitas === 0 && n.resumo.leads === 0 && n.resumo.reservas === 0;
-
+  // Título e período na hora; os dados entram por Suspense com a chave do período, então trocar
+  // o período mostra o esqueleto na hora (sem loading.tsx: ver ARQUITETURA §60)
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4" data-testid="pagina-numeros">
       <TituloPagina>Números</TituloPagina>
       <SeletorPeriodo periodo={periodo} />
+      <Suspense key={`${periodo.de}:${periodo.ate}`} fallback={<EsqueletoNumeros />}>
+        <ConteudoNumeros usuario={usuario} de={periodo.de} ate={periodo.ate} />
+      </Suspense>
+    </div>
+  );
+}
 
+function EsqueletoNumeros() {
+  return (
+    <div
+      className="flex flex-col gap-4"
+      aria-busy="true"
+      aria-label="Carregando números"
+      data-testid="esqueleto"
+    >
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <EsqueletoCartoes n={4} className="h-24" />
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <EsqueletoCartoes n={2} className="h-64" />
+      </div>
+    </div>
+  );
+}
+
+async function ConteudoNumeros({
+  usuario,
+  de,
+  ate,
+}: {
+  usuario: UsuarioAtual;
+  de: string;
+  ate: string;
+}) {
+  const dono = usuario.perfil === 'dono';
+  const link = `${urlDoSite() ?? ''}/b/${usuario.empresa.slug}`;
+  // Essencial: cartões e funil; o resto é do Profissional (teste = Profissional)
+  const { numeros: n, ocupacao, usuarios, recursos } = await carregarTelaNumeros(usuario, de, ate);
+  const completo = recursos.numerosCompleto;
+  const nomes = new Map(usuarios.map((u) => [u.id, u.nome]));
+  const vazio = n.resumo.visitas === 0 && n.resumo.leads === 0 && n.resumo.reservas === 0;
+
+  return (
+    <>
       {vazio && (
         <EmptyState icone={BarChart3} titulo="Ainda sem números neste período">
           {dono ? (
@@ -85,7 +118,7 @@ export default async function NumerosPage({ searchParams }: Props) {
             data-testid="numeros-profissional"
           >
             <h2 className="flex items-center gap-2 text-base font-bold">
-              <Sparkles className="text-primary size-5" aria-hidden />
+              <Sparkles className="text-primary-texto size-5" aria-hidden />
               Disponível no Profissional
             </h2>
             <p className="text-muted-foreground text-sm">
@@ -117,6 +150,6 @@ export default async function NumerosPage({ searchParams }: Props) {
         </div>
       )}
       {!dono && <Atendimento total={n.atendimento.total} porVendedor={[]} nomes={nomes} />}
-    </div>
+    </>
   );
 }

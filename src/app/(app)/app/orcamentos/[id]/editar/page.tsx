@@ -33,7 +33,7 @@ export default async function EditarOrcamentoPage({ params }: Props) {
         nova versão.{' '}
         <Link
           href={`/app/leads/${o.cliente.leadId}`}
-          className="text-primary font-semibold underline-offset-2 hover:underline"
+          className="text-primary-texto font-semibold underline-offset-2 hover:underline"
         >
           Voltar ao lead
         </Link>

@@ -75,7 +75,7 @@ export default async function LeadPage({ params }: Props) {
           <SeloStatus status={lead.status} />
           <Temperatura temperatura={lead.temperatura} />
           {lead.ehTeste && (
-            <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs font-semibold text-amber-300">
+            <span className="bg-alerta/15 text-alerta rounded-full px-2 py-0.5 text-xs font-semibold">
               Teste
             </span>
           )}
@@ -88,7 +88,7 @@ export default async function LeadPage({ params }: Props) {
             href={`https://wa.me/${lead.whatsappE164.replace('+', '')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary font-semibold underline-offset-2 hover:underline"
+            className="text-primary-texto font-semibold underline-offset-2 hover:underline"
           >
             {lead.telefone}
           </a>
@@ -109,7 +109,7 @@ export default async function LeadPage({ params }: Props) {
         />
         {lead.perda && (
           <p
-            className="rounded-control border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-100"
+            className="rounded-control border-erro/30 bg-erro/10 text-erro border p-3 text-sm"
             data-testid="perda"
           >
             Perdido{lead.perda.em ? ` em ${formatData(lead.perda.em, fuso)}` : ''}:{' '}
@@ -202,7 +202,7 @@ export default async function LeadPage({ params }: Props) {
           {!lead.ehTeste && (
             <Link
               href={`/app/orcamentos/novo?lead=${lead.id}`}
-              className="text-primary inline-flex min-h-11 items-center font-semibold underline-offset-2 hover:underline"
+              className="text-primary-texto inline-flex min-h-11 items-center font-semibold underline-offset-2 hover:underline"
             >
               + Orçamento
             </Link>

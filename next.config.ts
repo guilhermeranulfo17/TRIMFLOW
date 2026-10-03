@@ -2,6 +2,11 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // radix-ui (pacote único) não é podado sozinho; lucide-react e date-fns já estão na lista
+    // padrão do Next.
+    optimizePackageImports: ['radix-ui'],
+  },
   // PDF gerado no servidor: a biblioteca roda como pacote Node (não entra no bundle).
   serverExternalPackages: ['@react-pdf/renderer', 'sharp'],
   // As fontes do PDF são lidas do disco: precisam ir junto nas funções das rotas de PDF.

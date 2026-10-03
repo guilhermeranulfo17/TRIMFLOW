@@ -127,8 +127,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - ~~Modo "acessar conta do cliente" com auditoria~~ (Etapa 9A: consentimento de 7 dias,
   sessão de suporte de 2 h, faixa vermelha, `dados.suporte` na auditoria).
 - SMTP próprio no Supabase Cloud (o SMTP padrão tem limite baixo de envios por hora).
-- Reduzir o bundle do cadastro: `libphonenumber-js/max` pesa ~50 kB; avaliar metadata `mobile`
-  no cliente e `max` só no servidor.
+- ~~Reduzir o bundle do cadastro~~ (Etapa 9.5: metadados `min` com a regra do Brasil explícita,
+  equivalência com `max` testada).
 - CSP e headers de segurança; rate limit próprio no cadastro/login além do do Supabase.
 - Conta demo somente leitura.
 - Restringir leitura de `auditoria` ao dono, se necessário (hoje qualquer usuário ativo da
@@ -146,3 +146,23 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Painel do suspenso "mais visual": desabilitar botões e campos (hoje o servidor e o banco
   recusam com a mensagem e o link para o Plano).
 - Nota fiscal de serviço (NFS-e) das mensalidades (fora do escopo da Etapa 9).
+
+## Depois da Etapa 9.5 PR 1 (pendências percebidas)
+
+- **`search_path` em `_lead_grupo`/`_lead_ordem`:** ficou de fora de propósito (o SET impede o
+  inlining e a caixa com 5.000 leads vai de 38 para 65 ms). Se um dia o advisor bloquear,
+  reescrever as duas como expressão dentro de `caixa_leads` (com teste de equivalência).
+- **"Desfazer" ao registrar contato:** pede uma função SQL que apague a atividade e a auditoria
+  do contato (hoje o registro é otimista, sem desfazer). Concluir tarefa já tem "Desfazer".
+- **Medir TTFB e tempo de servidor em produção** (Vercel → Observability) depois do merge, com a
+  função em `gru1`; meta 400 ms no `/app/leads`.
+- **Chaves assimétricas do JWT** no Supabase (ver `docs/LANCAMENTO.md`): sem elas, `getClaims`
+  cai na rede e o ganho da sessão some.
+- **Advisors restantes (só leitura, conferidos em 03/10/2026):** FKs para `usuarios`
+  (`criado_por`, `feita_por`…) e do catálogo sem índice (de propósito); índices nunca usados
+  (base ainda pequena: reavaliar com uso real); `pg_net` no schema `public` (extensão instalada
+  pelo Supabase); `slug_atual_por_antigo` executável por `anon` (é o redirecionamento de link
+  antigo, de propósito); "Leaked Password Protection" desligado (ligar em Auth → Settings quando
+  o plano permitir).
+- Hidratação: campos com `register` do react-hook-form vêm vazios no HTML e são preenchidos no
+  cliente; o do link já vem preenchido. Avaliar o mesmo nos formulários grandes de Minha empresa.

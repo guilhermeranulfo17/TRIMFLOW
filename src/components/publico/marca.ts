@@ -11,6 +11,8 @@ export function estiloDaMarca(cor: string | null | undefined): CSSProperties {
     '--primary': c.base,
     '--primary-foreground': c.texto,
     '--primary-hover': c.destaque,
+    // texto e ícones na cor do buffet: a versão com 4,5:1 sobre o branco
+    '--primary-texto': c.destaque,
     '--ring': c.destaque,
     '--accent': c.suave,
     '--accent-foreground': c.destaque,

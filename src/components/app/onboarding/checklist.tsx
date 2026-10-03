@@ -104,7 +104,7 @@ export function ChecklistLink({
                     data-feito={i.feito}
                   >
                     {i.feito ? (
-                      <Check className="text-primary size-5 shrink-0" aria-label="Feito" />
+                      <Check className="text-primary-texto size-5 shrink-0" aria-label="Feito" />
                     ) : (
                       <Circle
                         className="text-muted-foreground size-5 shrink-0"

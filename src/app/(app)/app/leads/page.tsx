@@ -2,14 +2,28 @@ import { Inbox, ListTodo } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { EmptyState } from '@/components/app/empty-state';
+import {
+  Bloco,
+  EsqueletoCartoes,
+  EsqueletoTela,
+  EsqueletoTitulo,
+} from '@/components/app/esqueleto';
 import { ChecklistPainel } from '@/components/app/onboarding/checklist-painel';
 import { FiltrosCaixa } from '@/components/app/leads/filtros-caixa';
 import { ListaCaixa } from '@/components/app/leads/lista-caixa';
 import { TopoHoje } from '@/components/app/leads/topo-hoje';
-import { contarFiltros, filtrosDaUrl, filtrosParaUrl } from '@/domain/leads/filtros';
-import { exigirSessao } from '@/server/auth/sessao';
+import {
+  contarFiltros,
+  filtrosDaUrl,
+  filtrosParaUrl,
+  type FiltrosCaixa as Filtros,
+} from '@/domain/leads/filtros';
+import { exigirSessao, type UsuarioAtual } from '@/server/auth/sessao';
+import { comUsuario } from '@/server/db/tenant';
 import { listarCaixa, resumoHoje, usuariosDaEmpresa } from '@/server/leads/carregar';
+import { carregarChecklist } from '@/server/onboarding/carregar';
 
 export const metadata: Metadata = { title: 'Leads' };
 
@@ -27,11 +41,39 @@ export default async function LeadsPage({ searchParams }: Props) {
   }
   const usuario = await exigirSessao();
   const filtros = filtrosDaUrl(busca);
-  const [resumo, pagina, usuarios] = await Promise.all([
-    resumoHoje(usuario),
-    listarCaixa(usuario, filtros),
-    usuariosDaEmpresa(usuario),
-  ]);
+  // Os dados entram por Suspense com a chave dos filtros: trocar filtro ou atalho mostra o
+  // esqueleto na hora (sem loading.tsx nesta rota: ver ARQUITETURA §60)
+  return (
+    <Suspense key={filtrosParaUrl(filtros)} fallback={<EsqueletoLeads />}>
+      <CaixaDeLeads usuario={usuario} filtros={filtros} />
+    </Suspense>
+  );
+}
+
+function EsqueletoLeads() {
+  return (
+    <EsqueletoTela rotulo="Carregando leads">
+      <EsqueletoTitulo />
+      <div className="flex gap-2 overflow-hidden">
+        <EsqueletoCartoes n={5} className="h-16 min-w-32" />
+      </div>
+      <Bloco className="rounded-control h-11" />
+      <EsqueletoCartoes n={5} className="h-32" />
+    </EsqueletoTela>
+  );
+}
+
+async function CaixaDeLeads({ usuario, filtros }: { usuario: UsuarioAtual; filtros: Filtros }) {
+  // tudo numa transação só (uma leva em pipeline). A página não usa o contexto do painel: ele
+  // fica no layout, atrás de Suspense (ARQUITETURA §60)
+  const [resumo, pagina, usuarios, checklist] = await comUsuario(usuario.id, (tx) =>
+    Promise.all([
+      resumoHoje(usuario, tx),
+      listarCaixa(usuario, filtros, null, 30, tx),
+      usuariosDaEmpresa(usuario, tx),
+      carregarChecklist(usuario, tx),
+    ]),
+  );
   const semFiltro = contarFiltros(filtros) === 0 && !filtros.busca && !filtros.atalho;
   const vazioTotal = semFiltro && pagina.cartoes.length === 0;
 
@@ -52,7 +94,7 @@ export default async function LeadsPage({ searchParams }: Props) {
           )}
         </Link>
       </div>
-      <ChecklistPainel usuario={usuario} />
+      <ChecklistPainel usuario={usuario} checklist={checklist} />
       <TopoHoje resumo={resumo} filtros={filtros} />
       <FiltrosCaixa filtros={filtros} usuarios={usuarios} />
       {vazioTotal ? (
@@ -62,7 +104,7 @@ export default async function LeadsPage({ searchParams }: Props) {
           atender primeiro. Divulgue seu link em{' '}
           <Link
             href="/app/empresa/link"
-            className="text-primary font-semibold underline-offset-2 hover:underline"
+            className="text-primary-texto font-semibold underline-offset-2 hover:underline"
           >
             Minha empresa
           </Link>

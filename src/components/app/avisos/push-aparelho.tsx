@@ -122,7 +122,7 @@ export function PushAparelho({
       )}
       {estado === 'ios-instalar' && (
         <div
-          className="rounded-control border border-sky-400/30 bg-sky-400/10 p-3 text-sm text-sky-100"
+          className="rounded-control border-info/30 bg-info/10 text-info border p-3 text-sm"
           data-testid="passos-iphone"
         >
           <p className="font-semibold">No iPhone, o aviso chega pelo app instalado:</p>
@@ -139,7 +139,7 @@ export function PushAparelho({
         </div>
       )}
       {estado === 'negado' && (
-        <p className="rounded-control border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100">
+        <p className="rounded-control border-alerta/30 bg-alerta/10 text-alerta border p-3 text-sm">
           As notificações estão bloqueadas para o Orkestra neste navegador. Libere nas configurações
           do navegador e volte aqui.
         </p>
@@ -152,7 +152,7 @@ export function PushAparelho({
       )}
       {estado === 'ativo' && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-primary text-sm font-semibold" data-testid="push-ativo">
+          <span className="text-primary-texto text-sm font-semibold" data-testid="push-ativo">
             Ativo neste aparelho.
           </span>
           <Button

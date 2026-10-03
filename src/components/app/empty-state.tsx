@@ -11,7 +11,7 @@ export function EmptyState({
 }) {
   return (
     <section className="rounded-card bg-card mx-auto flex max-w-md flex-col items-center border border-dashed px-6 py-12 text-center">
-      <span className="ring-primary text-primary mb-4 grid size-12 place-items-center rounded-full ring-2">
+      <span className="ring-primary text-primary-texto mb-4 grid size-12 place-items-center rounded-full ring-2">
         <Icone className="size-6" aria-hidden />
       </span>
       <h2 className="text-lg font-bold">{titulo}</h2>

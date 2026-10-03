@@ -114,7 +114,7 @@ export function CardsCatalogo({
                   {item.nome}
                 </Link>
                 {item.destaque && (
-                  <Star className="size-4 fill-amber-400 text-amber-400" aria-label="Destaque" />
+                  <Star className="fill-alerta text-alerta size-4" aria-label="Destaque" />
                 )}
                 {!item.ativo && (
                   <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">

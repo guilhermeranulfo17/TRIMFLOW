@@ -17,7 +17,7 @@ export function Barra({
           width={Math.max(largura, 1.5)}
           height={8}
           rx={4}
-          className={tom === 'primary' ? 'fill-primary' : 'fill-destaque'}
+          className={tom === 'primary' ? 'fill-primary-texto' : 'fill-destaque'}
         />
       )}
     </svg>

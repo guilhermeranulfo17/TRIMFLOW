@@ -5,8 +5,17 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 import { pedeIrAoPlano } from '@/domain/cobranca/limites';
 import { cn } from '@/lib/utils';
 
-type Toast = { id: number; tipo: 'sucesso' | 'erro'; mensagem: string };
-type ApiToast = { sucesso: (mensagem: string) => void; erro: (mensagem: string) => void };
+type Toast = {
+  id: number;
+  tipo: 'sucesso' | 'erro';
+  mensagem: string;
+  /** ação otimista que ainda pode ser desfeita (botão "Desfazer" por alguns segundos) */
+  desfazer?: () => void;
+};
+type ApiToast = {
+  sucesso: (mensagem: string, opcoes?: { desfazer?: () => void }) => void;
+  erro: (mensagem: string) => void;
+};
 
 const ContextoToast = createContext<ApiToast | null>(null);
 
@@ -17,15 +26,18 @@ export function ProvedorToast({ children }: { children: React.ReactNode }) {
 
   const remover = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
   const adicionar = useCallback(
-    (tipo: Toast['tipo'], mensagem: string) => {
+    (tipo: Toast['tipo'], mensagem: string, desfazer?: () => void) => {
       const id = proximoId.current++;
-      setToasts((t) => [...t.slice(-2), { id, tipo, mensagem }]);
-      setTimeout(() => remover(id), tipo === 'erro' ? 7000 : 4000);
+      setToasts((t) => [...t.slice(-2), { id, tipo, mensagem, desfazer }]);
+      setTimeout(() => remover(id), tipo === 'erro' ? 7000 : desfazer ? 6000 : 4000);
     },
     [remover],
   );
   const api = useMemo<ApiToast>(
-    () => ({ sucesso: (m) => adicionar('sucesso', m), erro: (m) => adicionar('erro', m) }),
+    () => ({
+      sucesso: (m, o) => adicionar('sucesso', m, o?.desfazer),
+      erro: (m) => adicionar('erro', m),
+    }),
     [adicionar],
   );
 
@@ -63,6 +75,19 @@ export function ProvedorToast({ children }: { children: React.ReactNode }) {
                   </a>
                 )}
               </span>
+              {t.desfazer && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    remover(t.id);
+                    t.desfazer?.();
+                  }}
+                  className="text-primary-texto font-semibold underline-offset-2 hover:underline"
+                  data-testid="desfazer"
+                >
+                  Desfazer
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => remover(t.id)}

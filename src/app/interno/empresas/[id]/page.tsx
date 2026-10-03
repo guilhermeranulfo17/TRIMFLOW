@@ -21,7 +21,7 @@ export default async function EmpresaInterna({ params }: { params: Promise<{ id:
   if (!e) notFound();
   return (
     <div className="flex flex-col gap-5" data-testid="empresa-interna">
-      <Link href="/interno" className="text-primary text-sm font-semibold">
+      <Link href="/interno" className="text-primary-texto text-sm font-semibold">
         ← Voltar
       </Link>
       <header>

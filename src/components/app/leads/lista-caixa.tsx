@@ -15,11 +15,11 @@ import { BotaoRegistrarContato } from './registrar-contato';
 
 /** Ponto colorido do motivo: a cor diz por que o lead está nessa posição da caixa. */
 const COR_GRUPO: Record<number, string> = {
-  1: 'bg-amber-400',
-  2: 'bg-violet-400',
-  3: 'bg-rose-400',
-  4: 'bg-orange-400',
-  5: 'bg-sky-400',
+  1: 'bg-alerta',
+  2: 'bg-info',
+  3: 'bg-erro',
+  4: 'bg-quente',
+  5: 'bg-info',
   6: 'bg-zinc-400',
 };
 
@@ -48,7 +48,7 @@ function Cartao({ lead }: { lead: CartaoLead }) {
             </Link>
             <SeloStatus status={status} />
             {lead.ehTeste && (
-              <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs font-semibold text-amber-300">
+              <span className="bg-alerta/15 text-alerta rounded-full px-2 py-0.5 text-xs font-semibold">
                 Teste
               </span>
             )}
@@ -61,7 +61,7 @@ function Cartao({ lead }: { lead: CartaoLead }) {
             <Temperatura temperatura={lead.temperatura} comTexto={false} />
             {motivo}
             {lead.temAtrasada && lead.grupo !== 3 && (
-              <AlarmClock className="size-3.5 text-rose-400" aria-label="Tem tarefa atrasada" />
+              <AlarmClock className="text-erro size-3.5" aria-label="Tem tarefa atrasada" />
             )}
           </p>
           {lead.festa && <p className="text-muted-foreground mt-0.5 text-sm">{lead.festa}</p>}

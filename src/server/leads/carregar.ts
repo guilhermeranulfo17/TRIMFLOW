@@ -39,7 +39,7 @@ import {
   usuarios,
   visitas,
 } from '@/server/db/schema';
-import { comUsuario, type Tx } from '@/server/db/tenant';
+import { comUsuario, naTransacao, type Tx } from '@/server/db/tenant';
 import { automaticaDaTarefa } from '@/server/tarefas/automatica';
 import { urlDoSite } from '@/server/env';
 
@@ -142,12 +142,13 @@ export async function listarCaixa(
   filtros: FiltrosCaixa,
   cursor: CursorCaixa = null,
   limite = 30,
+  tx?: Tx,
 ): Promise<PaginaCaixa> {
   const cursorValido =
     cursor && Number.isInteger(cursor.g) && ORDEM.test(cursor.o) && UUID.test(cursor.id)
       ? cursor
       : null;
-  const linhas = await comUsuario(usuario.id, (tx) =>
+  const linhas = await naTransacao(usuario.id, tx, (tx) =>
     tx.execute<LinhaCaixa>(sql`select * from public.caixa_leads(
       ${JSON.stringify(filtrosParaSql(filtros))}::jsonb,
       ${cursorValido ? JSON.stringify(cursorValido) : null}::jsonb, ${limite + 1})`),
@@ -219,10 +220,15 @@ export type ResumoHoje = {
   pedemAcao: number;
 };
 
-export async function resumoHoje(usuario: UsuarioAtual): Promise<ResumoHoje> {
-  const [r] = await comUsuario(usuario.id, (tx) =>
+export async function resumoHoje(usuario: UsuarioAtual, tx?: Tx): Promise<ResumoHoje> {
+  const [r] = await naTransacao(usuario.id, tx, (tx) =>
     tx.execute<Record<string, number>>(sql`select * from public.resumo_hoje()`),
   );
+  return resumoDaLinha(r);
+}
+
+/** Linha de public.resumo_hoje() → ResumoHoje. Também usada pelo contexto do painel. */
+export function resumoDaLinha(r: Record<string, unknown> | undefined): ResumoHoje {
   return {
     preReservas: Number(r?.pre_reservas ?? 0),
     visitas: Number(r?.visitas ?? 0),
@@ -374,62 +380,83 @@ async function resumosDosOrcamentos(tx: Tx, leadId: string): Promise<ResumoOrcam
 
 export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<DetalheLead | null> {
   if (!UUID.test(id)) return null;
+  // tudo numa leva só (pipeline): as consultas dependem do id, não da linha do lead
   const dados = await comUsuario(usuario.id, async (tx) => {
-    const [l] = await tx
-      .select({ l: leads, responsavelNome: usuarios.nome })
-      .from(leads)
-      .leftJoin(usuarios, eq(usuarios.id, leads.responsavelId))
-      .where(eq(leads.id, id))
-      .limit(1);
+    const [
+      [l],
+      resumos,
+      itens,
+      listaVisitas,
+      listaTarefas,
+      listaNotas,
+      listaAtividades,
+      equipe,
+      reservasDoLead,
+    ] = await Promise.all([
+      tx
+        .select({ l: leads, responsavelNome: usuarios.nome })
+        .from(leads)
+        .leftJoin(usuarios, eq(usuarios.id, leads.responsavelId))
+        .where(eq(leads.id, id))
+        .limit(1),
+      resumosDosOrcamentos(tx, id),
+      tx
+        .select({
+          orcamentoId: orcamentoItens.orcamentoId,
+          tipo: orcamentoItens.tipo,
+          descricao: orcamentoItens.descricao,
+          detalhe: orcamentoItens.detalhe,
+          subtotalCentavos: orcamentoItens.subtotalCentavos,
+        })
+        .from(orcamentoItens)
+        .innerJoin(orcamentos, eq(orcamentos.id, orcamentoItens.orcamentoId))
+        .where(eq(orcamentos.leadId, id))
+        .orderBy(asc(orcamentoItens.ordem)),
+      tx.select().from(visitas).where(eq(visitas.leadId, id)).orderBy(desc(visitas.criadoEm)),
+      tx
+        .select({ t: tarefas, responsavelNome: usuarios.nome })
+        .from(tarefas)
+        .leftJoin(usuarios, eq(usuarios.id, tarefas.responsavelId))
+        .where(
+          and(
+            eq(tarefas.leadId, id),
+            isNull(tarefas.canceladaEm),
+            or(isNull(tarefas.feitaEm), gt(tarefas.feitaEm, sql`now() - interval '7 days'`)),
+          ),
+        )
+        .orderBy(asc(tarefas.venceEfetivo)),
+      tx
+        .select({ n: notas, autorNome: usuarios.nome })
+        .from(notas)
+        .leftJoin(usuarios, eq(usuarios.id, notas.autorId))
+        .where(eq(notas.leadId, id))
+        .orderBy(desc(notas.criadoEm)),
+      tx
+        .select({ a: atividades, quem: usuarios.nome })
+        .from(atividades)
+        .leftJoin(usuarios, eq(usuarios.id, atividades.usuarioId))
+        .where(eq(atividades.leadId, id))
+        .orderBy(desc(atividades.criadoEm))
+        .limit(200),
+      tx
+        .select({ id: usuarios.id, nome: usuarios.nome })
+        .from(usuarios)
+        .where(eq(usuarios.ativo, true))
+        .orderBy(asc(usuarios.nome)),
+      reservasAtivasDoLead(usuario, id, tx),
+    ]);
     if (!l) return null;
-    const [resumos, itens, listaVisitas, listaTarefas, listaNotas, listaAtividades, equipe] =
-      await Promise.all([
-        resumosDosOrcamentos(tx, id),
-        tx
-          .select({
-            orcamentoId: orcamentoItens.orcamentoId,
-            tipo: orcamentoItens.tipo,
-            descricao: orcamentoItens.descricao,
-            detalhe: orcamentoItens.detalhe,
-            subtotalCentavos: orcamentoItens.subtotalCentavos,
-          })
-          .from(orcamentoItens)
-          .innerJoin(orcamentos, eq(orcamentos.id, orcamentoItens.orcamentoId))
-          .where(eq(orcamentos.leadId, id))
-          .orderBy(asc(orcamentoItens.ordem)),
-        tx.select().from(visitas).where(eq(visitas.leadId, id)).orderBy(desc(visitas.criadoEm)),
-        tx
-          .select({ t: tarefas, responsavelNome: usuarios.nome })
-          .from(tarefas)
-          .leftJoin(usuarios, eq(usuarios.id, tarefas.responsavelId))
-          .where(
-            and(
-              eq(tarefas.leadId, id),
-              isNull(tarefas.canceladaEm),
-              or(isNull(tarefas.feitaEm), gt(tarefas.feitaEm, sql`now() - interval '7 days'`)),
-            ),
-          )
-          .orderBy(asc(tarefas.venceEfetivo)),
-        tx
-          .select({ n: notas, autorNome: usuarios.nome })
-          .from(notas)
-          .leftJoin(usuarios, eq(usuarios.id, notas.autorId))
-          .where(eq(notas.leadId, id))
-          .orderBy(desc(notas.criadoEm)),
-        tx
-          .select({ a: atividades, quem: usuarios.nome })
-          .from(atividades)
-          .leftJoin(usuarios, eq(usuarios.id, atividades.usuarioId))
-          .where(eq(atividades.leadId, id))
-          .orderBy(desc(atividades.criadoEm))
-          .limit(200),
-        tx
-          .select({ id: usuarios.id, nome: usuarios.nome })
-          .from(usuarios)
-          .where(eq(usuarios.ativo, true))
-          .orderBy(asc(usuarios.nome)),
-      ]);
-    return { l, resumos, itens, listaVisitas, listaTarefas, listaNotas, listaAtividades, equipe };
+    return {
+      l,
+      resumos,
+      itens,
+      listaVisitas,
+      listaTarefas,
+      listaNotas,
+      listaAtividades,
+      equipe,
+      reservasDoLead,
+    };
   });
   if (!dados) return null;
   const {
@@ -441,9 +468,9 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
     listaNotas,
     listaAtividades,
     equipe,
+    reservasDoLead,
   } = dados;
   const l = linha.l;
-  const reservasDoLead = await reservasAtivasDoLead(usuario, id);
 
   const agora = Date.now();
   const hoje = hojeNoFuso(usuario.empresa.fuso);
@@ -691,8 +718,8 @@ export function prioridadeDoDetalhe(d: DetalheLead, usuario: UsuarioAtual) {
 }
 
 /** Usuários ativos da empresa (filtro de responsável e "Atribuir"). */
-export async function usuariosDaEmpresa(usuario: UsuarioAtual) {
-  return comUsuario(usuario.id, (tx) =>
+export async function usuariosDaEmpresa(usuario: UsuarioAtual, tx?: Tx) {
+  return naTransacao(usuario.id, tx, (tx) =>
     tx
       .select({ id: usuarios.id, nome: usuarios.nome })
       .from(usuarios)

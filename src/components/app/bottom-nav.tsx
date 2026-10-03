@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { BadgePendencia } from './badge-pendencia';
+import { PendenteLink } from './pendente-link';
 import { itemAtivo, ITENS_NAV } from './nav-items';
 
 /** Barra de navegação inferior (celular, < md). */
@@ -39,7 +40,10 @@ export function BottomNav({ badges = {} }: { badges?: Record<string, number> }) 
                     className="absolute -top-2 -right-3"
                   />
                 </span>
-                <span className="max-w-full truncate">{rotulo}</span>
+                <span className="flex max-w-full items-center gap-1 truncate">
+                  {rotulo}
+                  <PendenteLink className="size-3" />
+                </span>
               </Link>
             </li>
           );

@@ -21,6 +21,7 @@ import {
   confirmarVisita,
   editarNota,
   marcarVisitaRealizada,
+  reabrirTarefa,
 } from '@/server/actions/leads';
 import { useAcao } from './acoes-lead';
 import { CampoQuando } from './campo-quando';
@@ -167,9 +168,20 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
     setFeita(true); // otimista
     iniciar(async () => {
       const r = await concluirTarefa(tarefa.id);
-      if (r.ok) toast.sucesso(r.mensagem);
+      if (r.ok) toast.sucesso(r.mensagem, { desfazer: reabrir });
       else {
         setFeita(false);
+        toast.erro(r.erro);
+      }
+    });
+  }
+
+  function reabrir() {
+    setFeita(false); // otimista
+    iniciar(async () => {
+      const r = await reabrirTarefa(tarefa.id);
+      if (!r.ok) {
+        setFeita(true);
         toast.erro(r.erro);
       }
     });
@@ -192,7 +204,7 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
       <div className="min-w-0 flex-1">
         {tarefa.automatica && (
           <span
-            className="bg-primary/10 text-primary mb-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+            className="bg-primary/10 text-primary-texto mb-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
             data-testid="selo-automatica"
           >
             <Sparkles className="size-3" aria-hidden />
@@ -207,7 +219,7 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
         <p
           className={cn(
             'text-sm',
-            tarefa.atrasada && !feita ? 'font-semibold text-rose-400' : 'text-muted-foreground',
+            tarefa.atrasada && !feita ? 'text-erro font-semibold' : 'text-muted-foreground',
           )}
         >
           {tarefa.atrasada && !feita ? 'Atrasada · ' : ''}

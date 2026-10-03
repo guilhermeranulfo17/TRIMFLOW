@@ -76,7 +76,7 @@ export function CancelarAssinatura() {
         <button
           type="submit"
           disabled={!motivo || pendente}
-          className="rounded-control min-h-11 border border-red-400/40 bg-red-500/10 px-4 text-sm font-semibold text-red-200 disabled:opacity-60"
+          className="rounded-control border-erro/40 bg-erro/10 text-erro min-h-11 border px-4 text-sm font-semibold disabled:opacity-60"
         >
           {pendente ? 'Cancelando…' : 'Confirmar cancelamento'}
         </button>

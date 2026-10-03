@@ -6,12 +6,7 @@ import { TituloPagina } from '@/components/app/titulo-pagina';
 import { Button } from '@/components/ui/button';
 import { limitesDoMes, montarCalendario } from '@/domain/agenda';
 import { hojeNoFuso, somarDias } from '@/domain/dates';
-import {
-  carregarBase,
-  carregarDisponibilidade,
-  carregarPeriodo,
-  preReservasVencendo,
-} from '@/server/agenda/carregar';
+import { carregarTelaAgenda } from '@/server/agenda/carregar';
 import { exigirSessao } from '@/server/auth/sessao';
 import { AgendaCliente } from './agenda-cliente';
 
@@ -25,7 +20,14 @@ export default async function AgendaPage({ searchParams }: Props) {
   const hoje = hojeNoFuso(usuario.empresa.fuso);
   const mesEscolhido = /^\d{4}-(0[1-9]|1[0-2])$/.test(params.mes ?? '');
   const mes = mesEscolhido ? params.mes! : hoje.slice(0, 7);
-  const base = await carregarBase(usuario);
+  const { de, ate } = limitesDoMes(mes);
+  const periodoLista = mesEscolhido ? { de, ate } : { de: hoje, ate: somarDias(hoje, 59) };
+  // base, mês, lista e vencendo numa transação só (uma leva em pipeline)
+  const { base, disponibilidade, lista, vencendo } = await carregarTelaAgenda(
+    usuario,
+    { de, ate },
+    periodoLista,
+  );
   const espacoId = base.espacos.some((e) => e.id === params.espaco) ? params.espaco! : '';
 
   if (base.espacos.length === 0 || base.turnos.length === 0) {
@@ -45,14 +47,6 @@ export default async function AgendaPage({ searchParams }: Props) {
     );
   }
 
-  const { de, ate } = limitesDoMes(mes);
-  const periodoLista = mesEscolhido ? { de, ate } : { de: hoje, ate: somarDias(hoje, 59) };
-  const [disponibilidade, lista, vencendo] = await Promise.all([
-    carregarDisponibilidade(usuario, de, ate, espacoId || null),
-    carregarPeriodo(usuario, periodoLista.de, periodoLista.ate),
-    preReservasVencendo(usuario, 12),
-  ]);
-
   return (
     <>
       <TituloPagina>Agenda</TituloPagina>
@@ -62,7 +56,10 @@ export default async function AgendaPage({ searchParams }: Props) {
         mes={mes}
         mesEscolhido={mesEscolhido}
         espacoId={espacoId}
-        calendario={montarCalendario(mes, disponibilidade)}
+        calendario={montarCalendario(
+          mes,
+          espacoId ? disponibilidade.filter((s) => s.espacoId === espacoId) : disponibilidade,
+        )}
         lista={lista}
         vencendo={vencendo}
         podeBloquear={usuario.perfil === 'dono'}

@@ -47,7 +47,7 @@ export function FormLogin({ next, avisoInicial }: { next: string | null; avisoIn
             <FormItem>
               <FormLabel>E-mail</FormLabel>
               <FormControl>
-                <Input type="email" autoComplete="email" inputMode="email" {...field} />
+                <Input type="email" autoComplete="email" inputMode="email" autoFocus {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -60,7 +60,10 @@ export function FormLogin({ next, avisoInicial }: { next: string | null; avisoIn
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>Senha</FormLabel>
-                <Link href="/recuperar-senha" className="text-primary text-sm hover:underline">
+                <Link
+                  href="/recuperar-senha"
+                  className="text-primary-texto text-sm hover:underline"
+                >
                   Esqueci minha senha
                 </Link>
               </div>

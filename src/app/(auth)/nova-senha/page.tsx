@@ -34,7 +34,10 @@ export default async function NovaSenhaPage() {
           <>
             <AvisoForm tipo="erro">Esse link expirou ou já foi usado. Peça um novo.</AvisoForm>
             <p className="text-center text-sm">
-              <Link href="/recuperar-senha" className="text-primary font-semibold hover:underline">
+              <Link
+                href="/recuperar-senha"
+                className="text-primary-texto font-semibold hover:underline"
+              >
                 Pedir novo link
               </Link>
             </p>

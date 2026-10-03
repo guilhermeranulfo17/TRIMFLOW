@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { PERIODOS, type Periodo } from '@/domain/numeros';
 import { formatData } from '@/domain/dates';
 import { cn } from '@/lib/utils';
+import { PendenteLink } from '../pendente-link';
 
 /** Seletor de período (na URL): atalhos e de/até. Funciona sem JavaScript. */
 export function SeletorPeriodo({ periodo }: { periodo: Periodo }) {
@@ -22,6 +23,7 @@ export function SeletorPeriodo({ periodo }: { periodo: Periodo }) {
             data-testid={`periodo-${p.chave}`}
           >
             {p.rotulo}
+            <PendenteLink className="ml-1.5" />
           </Link>
         ))}
       </nav>

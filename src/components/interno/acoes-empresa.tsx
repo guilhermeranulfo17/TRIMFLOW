@@ -70,7 +70,7 @@ export function AcoesEmpresa({
           <button
             type="button"
             disabled={pendente}
-            className={`${BOTAO} border-red-400/40 bg-red-500/10 text-red-200`}
+            className={`${BOTAO} border-erro/40 bg-erro/10 text-erro`}
             onClick={() => rodar(() => entrarComoEmpresa(empresaId))}
             data-testid="entrar-como-empresa"
           >
@@ -201,7 +201,7 @@ export function AcoesEmpresa({
             <button
               type="button"
               disabled={pendente || motivo.trim().length < 3}
-              className={`${BOTAO} border-red-400/40 text-red-200`}
+              className={`${BOTAO} border-erro/40 text-erro`}
               onClick={() => rodar(() => suspenderEmpresa(empresaId, motivo))}
             >
               Suspender

@@ -59,3 +59,17 @@ export async function concluirEntregaAviso(
       array(select jsonb_array_elements_text(${JSON.stringify(endpointsInvalidos)}::jsonb)))`,
   );
 }
+
+/**
+ * Callback do login pelo Google (/auth/callback): logo depois da troca do code, decide entre
+ * painel, completar cadastro ou recusa. Precisa saber se o usuário existe mesmo quando está
+ * inativo (o RLS esconderia a linha). Devolve SOMENTE existe/ativo.
+ */
+export async function situacaoParaLogin(
+  usuarioId: string,
+): Promise<{ temUsuario: boolean; ativo: boolean }> {
+  const [linha] = (await obterDb().execute(
+    sql`select ativo from public.usuarios where id = ${usuarioId} limit 1`,
+  )) as unknown as { ativo: boolean }[];
+  return { temUsuario: !!linha, ativo: linha?.ativo === true };
+}

@@ -4,7 +4,7 @@ import { cache } from 'react';
 import { calcularChecklist, type Checklist } from '@/domain/onboarding/checklist';
 import type { PassoOnboarding } from '@/domain/onboarding/passos';
 import type { UsuarioAtual } from '@/server/auth/sessao';
-import { comUsuario } from '@/server/db/tenant';
+import { comUsuario, naTransacao, type Tx } from '@/server/db/tenant';
 import { configWhatsapp } from '@/server/env';
 
 /*
@@ -28,8 +28,8 @@ export const carregarEstadoOnboarding = cache(
     comUsuario(usuario.id, async (tx) => {
       const r = linha<{
         passo: number;
-        iniciado_em: Date | null;
-        concluido_em: Date | null;
+        iniciado_em: Date | string | null;
+        concluido_em: Date | string | null;
         confirmado: boolean;
         vazio: boolean;
       }>(
@@ -44,8 +44,9 @@ export const carregarEstadoOnboarding = cache(
       return {
         passo: r.passo as PassoOnboarding,
         concluido: r.concluido_em !== null,
-        iniciadoEm: r.iniciado_em,
-        concluidoEm: r.concluido_em,
+        // execute devolve timestamptz como texto (parser do Drizzle): normaliza para Date
+        iniciadoEm: r.iniciado_em === null ? null : new Date(r.iniciado_em),
+        concluidoEm: r.concluido_em === null ? null : new Date(r.concluido_em),
         temPacoteConfirmado: r.confirmado,
         catalogoVazio: r.vazio,
       };
@@ -158,10 +159,11 @@ export async function carregarAgendaRapida(usuario: UsuarioAtual): Promise<Agend
 export type ChecklistDoUsuario = Checklist & { dispensado: boolean };
 
 /** Checklist calculado do estado real da empresa (memoizado por requisição). */
-export const carregarChecklist = cache(async (usuario: UsuarioAtual): Promise<ChecklistDoUsuario> =>
-  comUsuario(usuario.id, async (tx) => {
-    const r = linha<Record<string, boolean | Date | null>>(
-      await tx.execute(sql`
+export const carregarChecklist = cache(
+  async (usuario: UsuarioAtual, tx?: Tx): Promise<ChecklistDoUsuario> =>
+    naTransacao(usuario.id, tx, async (tx) => {
+      const r = linha<Record<string, boolean | Date | null>>(
+        await tx.execute(sql`
           select
             exists (select 1 from public.pacotes p where p.ativo and p.preco_confirmado_em is not null
                     and (p.preco_pessoa_centavos is not null
@@ -189,26 +191,26 @@ export const carregarChecklist = cache(async (usuario: UsuarioAtual): Promise<Ch
                       where p.usuario_id = ${usuario.id}), false) as "whatsappAvisos",
             (select u.checklist_dispensado_em from public.usuarios u where u.id = ${usuario.id}) as dispensado
           from public.empresas e where e.id = ${usuario.empresa.id}`),
-    );
-    const b = (k: string) => r[k] === true;
-    const checklist = calcularChecklist({
-      pacoteConfirmado: b('pacoteConfirmado'),
-      tipoEventoAtivo: b('tipoEventoAtivo'),
-      espacoETurnoAtivos: b('espacoETurnoAtivos'),
-      logo: b('logo'),
-      capa: b('capa'),
-      sobre: b('sobre'),
-      fotoEmPacote: b('fotoEmPacote'),
-      cardapioCompleto: b('cardapioCompleto'),
-      condicoesPagamento: b('condicoesPagamento'),
-      textosProposta: b('textosProposta'),
-      dadosEmpresa: b('dadosEmpresa'),
-      eventosNaAgenda: b('eventosNaAgenda'),
-      linkTestado: b('linkTestado'),
-      linkNaBio: b('linkNaBio'),
-      pushAtivo: b('pushAtivo'),
-      whatsappAvisos: configWhatsapp() ? b('whatsappAvisos') : null,
-    });
-    return { ...checklist, dispensado: r.dispensado !== null };
-  }),
+      );
+      const b = (k: string) => r[k] === true;
+      const checklist = calcularChecklist({
+        pacoteConfirmado: b('pacoteConfirmado'),
+        tipoEventoAtivo: b('tipoEventoAtivo'),
+        espacoETurnoAtivos: b('espacoETurnoAtivos'),
+        logo: b('logo'),
+        capa: b('capa'),
+        sobre: b('sobre'),
+        fotoEmPacote: b('fotoEmPacote'),
+        cardapioCompleto: b('cardapioCompleto'),
+        condicoesPagamento: b('condicoesPagamento'),
+        textosProposta: b('textosProposta'),
+        dadosEmpresa: b('dadosEmpresa'),
+        eventosNaAgenda: b('eventosNaAgenda'),
+        linkTestado: b('linkTestado'),
+        linkNaBio: b('linkNaBio'),
+        pushAtivo: b('pushAtivo'),
+        whatsappAvisos: configWhatsapp() ? b('whatsappAvisos') : null,
+      });
+      return { ...checklist, dispensado: r.dispensado !== null };
+    }),
 );

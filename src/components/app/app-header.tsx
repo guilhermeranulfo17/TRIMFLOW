@@ -1,15 +1,16 @@
-import { SinoAvisos } from './avisos/sino';
+import type { Tema } from '@/domain/tema';
 import { Logo } from './logo';
 import { UserMenu } from './user-menu';
 
 export function AppHeader({
   nomeBuffet,
   usuario,
-  naoLidos,
+  sino,
 }: {
   nomeBuffet: string;
-  naoLidos: number;
-  usuario: { nome: string; email: string; perfil: 'dono' | 'vendedor' };
+  /** sino de avisos (entra por Suspense com a contagem) */
+  sino: React.ReactNode;
+  usuario: { nome: string; email: string; perfil: 'dono' | 'vendedor'; tema: Tema };
 }) {
   return (
     <header className="bg-background/90 sticky top-0 z-20 flex h-16 items-center justify-between gap-3 px-4 backdrop-blur md:px-8">
@@ -20,7 +21,7 @@ export function AppHeader({
         </p>
       </div>
       <div className="flex items-center gap-1">
-        <SinoAvisos inicial={naoLidos} />
+        {sino}
         <UserMenu {...usuario} />
       </div>
     </header>

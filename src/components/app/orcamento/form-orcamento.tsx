@@ -311,7 +311,7 @@ export function FormOrcamento(props: PropsFormOrcamento) {
     >
       {recuperado && (
         <div
-          className="rounded-card flex items-center justify-between gap-3 border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100"
+          className="rounded-card border-alerta/30 bg-alerta/10 text-alerta flex items-center justify-between gap-3 border p-3 text-sm"
           role="status"
         >
           <span>Recuperamos o rascunho que você não salvou.</span>
@@ -356,7 +356,7 @@ export function FormOrcamento(props: PropsFormOrcamento) {
             </Campo>
             {leadExistente && (
               <p
-                className="rounded-control flex items-start gap-2 bg-sky-400/10 p-3 text-sm text-sky-100"
+                className="rounded-control bg-info/10 text-info flex items-start gap-2 p-3 text-sm"
                 data-testid="aviso-lead-existente"
               >
                 <UserCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -815,7 +815,7 @@ export function FormOrcamento(props: PropsFormOrcamento) {
 
       {foraAntecedencia && (
         <div
-          className="rounded-card flex flex-col gap-3 border border-amber-400/30 bg-amber-400/10 p-4 text-amber-100"
+          className="rounded-card border-alerta/30 bg-alerta/10 text-alerta flex flex-col gap-3 border p-4"
           data-testid="alerta-antecedencia"
         >
           <p className="flex items-start gap-2 text-sm">

@@ -137,7 +137,7 @@ export function PassoAgenda({ inicial }: { inicial: AgendaRapida }) {
         ))}
       </section>
       <p className="bg-card rounded-card text-muted-foreground flex items-start gap-3 border p-4 text-sm">
-        <CalendarCheck className="text-primary mt-0.5 size-5 shrink-0" aria-hidden />
+        <CalendarCheck className="text-primary-texto mt-0.5 size-5 shrink-0" aria-hidden />
         <span>
           <strong className="text-foreground">Já tem festas fechadas?</strong> Depois de terminar,
           registre-as na Agenda para essas datas não aparecerem livres. Fica no seu checklist.

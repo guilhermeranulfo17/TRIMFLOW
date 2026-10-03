@@ -110,7 +110,7 @@ export function EscolherPlano({ planos, atual, dados, emailPadrao }: Props) {
               <span className="flex items-center justify-between gap-2">
                 <span className="text-base font-bold">{p.nome}</span>
                 {atual?.plano === p.codigo && (
-                  <span className="text-primary text-xs font-semibold">Seu plano</span>
+                  <span className="text-primary-texto text-xs font-semibold">Seu plano</span>
                 )}
               </span>
               <span className="text-2xl font-bold tabular-nums">
@@ -122,7 +122,7 @@ export function EscolherPlano({ planos, atual, dados, emailPadrao }: Props) {
               <ul className="text-muted-foreground flex flex-col gap-1 text-sm">
                 {itensDoPlano(p).map((i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <Check className="text-primary mt-0.5 size-4 shrink-0" aria-hidden />
+                    <Check className="text-primary-texto mt-0.5 size-4 shrink-0" aria-hidden />
                     {i}
                   </li>
                 ))}

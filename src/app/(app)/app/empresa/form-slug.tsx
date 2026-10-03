@@ -91,6 +91,8 @@ export function FormSlug({
             autoCapitalize="none"
             autoCorrect="off"
             aria-invalid={!!e.slug || undefined}
+            // já vem preenchido no HTML (antes da hidratação o campo não fica vazio)
+            defaultValue={slugAtual}
             {...form.register('slug', {
               onBlur: (ev: React.FocusEvent<HTMLInputElement>) => {
                 const normalizado = gerarSlug(ev.target.value);

@@ -97,7 +97,7 @@ export function AgendaCliente({
 
       {vencendo.length > 0 && (
         <section
-          className="rounded-card space-y-2 border border-amber-400/30 bg-amber-400/10 p-3 text-amber-100"
+          className="rounded-card border-alerta/30 bg-alerta/10 text-alerta space-y-2 border p-3"
           aria-labelledby="titulo-vencendo"
         >
           <h2 id="titulo-vencendo" className="flex items-center gap-2 text-sm font-bold">
