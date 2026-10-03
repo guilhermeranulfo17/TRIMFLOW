@@ -387,15 +387,16 @@
   display: block;
 }
 
-/* Entrada das seções ao rolar: só CSS, desligada com movimento reduzido */
+/*
+ * Entrada das seções ao rolar: só CSS, desligada com movimento reduzido. Só opacidade: nada muda
+ * de lugar, então um toque logo depois da rolagem acerta o botão.
+ */
 @keyframes entrada-secao {
   from {
-    opacity: 0;
-    transform: translateY(1.5rem);
+    opacity: 0.2;
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 @media (prefers-reduced-motion: no-preference) {

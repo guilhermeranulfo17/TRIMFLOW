@@ -59,15 +59,18 @@ export function CabecalhoPublico({ nome, logoUrl, linkOrcamento, topo = 0 }: Pro
             <span className="font-titulo truncate text-lg font-bold">{nome}</span>
           </span>
           {linkOrcamento && (
-            <Link
-              href={linkOrcamento}
-              className={`${BOTAO_PRINCIPAL} ml-auto hidden min-h-11 px-4 text-sm transition-opacity md:inline-flex ${solido ? '' : 'pointer-events-none opacity-0'}`}
-              tabIndex={solido ? 0 : -1}
-              aria-hidden={!solido}
-            >
-              <CalendarDays className="size-4" aria-hidden />
-              Montar meu orçamento
-            </Link>
+            // só no PC: no celular a barra fixa de baixo já leva ao orçamento
+            <span className="ml-auto hidden md:block">
+              <Link
+                href={linkOrcamento}
+                className={`${BOTAO_PRINCIPAL} min-h-11 px-4 text-sm transition-opacity ${solido ? '' : 'pointer-events-none opacity-0'}`}
+                tabIndex={solido ? 0 : -1}
+                aria-hidden={!solido}
+              >
+                <CalendarDays className="size-4" aria-hidden />
+                Montar meu orçamento
+              </Link>
+            </span>
           )}
         </div>
       </header>

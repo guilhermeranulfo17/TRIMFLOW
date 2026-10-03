@@ -69,19 +69,23 @@ test.describe('página pública', () => {
     await page.locator('#pagina-textos').getByRole('button', { name: 'Salvar' }).click();
     await esperarToast(page, 'Página atualizada.');
 
-    // galeria: duas fotos (convertidas para WEBP em 640 e 1280 no navegador)
-    await page.getByTestId('entrada-galeria').setInputFiles([
-      { name: 'salao.png', mimeType: 'image/png', buffer: await foto('#0f766e') },
-      { name: 'mesa.png', mimeType: 'image/png', buffer: await foto('#f59e0b') },
-    ]);
-    await esperarToast(page, '2 fotos enviadas.');
-    await expect(page.getByTestId('foto-editor')).toHaveCount(2);
-    await page
-      .getByLabel('Descrição da foto (para leitores de tela)')
-      .first()
-      .fill('Salão decorado');
-    await page.getByRole('button', { name: 'Salvar galeria' }).click();
-    await esperarToast(page, 'Galeria salva.');
+    // galeria: duas fotos (convertidas para WEBP em 640 e 1280 no navegador); o Storage do
+    // Supabase só roda no CI (E2E_STORAGE), como no teste de upload de Minha empresa
+    const comStorage = !!process.env.E2E_STORAGE;
+    if (comStorage) {
+      await page.getByTestId('entrada-galeria').setInputFiles([
+        { name: 'salao.png', mimeType: 'image/png', buffer: await foto('#0f766e') },
+        { name: 'mesa.png', mimeType: 'image/png', buffer: await foto('#f59e0b') },
+      ]);
+      await esperarToast(page, '2 fotos enviadas.');
+      await expect(page.getByTestId('foto-editor')).toHaveCount(2);
+      await page
+        .getByLabel('Descrição da foto (para leitores de tela)')
+        .first()
+        .fill('Salão decorado');
+      await page.getByRole('button', { name: 'Salvar galeria' }).click();
+      await esperarToast(page, 'Galeria salva.');
+    }
 
     // depoimento e pergunta do dono
     await page.getByRole('button', { name: 'Adicionar depoimento' }).click();
@@ -112,8 +116,10 @@ test.describe('página pública', () => {
     await expect(cliente.getByTestId('slogan')).toHaveText('A festa mais feliz da cidade');
     await expect(cliente.getByText('Espaço próprio')).toBeVisible();
     await expect(cliente.getByText('Festa linda, equipe nota dez!')).toBeVisible();
-    await expect(cliente.getByRole('button', { name: 'Ampliar: Salão decorado' })).toBeVisible();
-    await expect(cliente.getByTestId('foto-galeria')).toHaveCount(2);
+    if (comStorage) {
+      await expect(cliente.getByRole('button', { name: 'Ampliar: Salão decorado' })).toBeVisible();
+      await expect(cliente.getByTestId('foto-galeria')).toHaveCount(2);
+    }
     await cliente.getByText('Tem estacionamento?').click();
     await expect(cliente.getByText('Sim, gratuito.')).toBeVisible();
     expect(await semRolagemHorizontal(cliente)).toBe(true);
