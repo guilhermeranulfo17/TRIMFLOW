@@ -133,7 +133,9 @@ export function CascaLanding() {
           'bg-background/95 backdrop-blur',
           passouHero && !logado ? 'translate-y-0' : 'pointer-events-none translate-y-full',
         )}
-        aria-hidden={!passouHero || logado}
+        // escondida: fora do foco e do leitor de tela (inert), não só invisível
+        inert={!passouHero || logado}
+        data-visivel={passouHero && !logado}
         data-testid="barra-teste-celular"
       >
         <BotaoTeste tamanho="medio" className="w-full">

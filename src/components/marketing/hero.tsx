@@ -68,7 +68,7 @@ function Composicao() {
         {/* celular do cliente: visual da vitrine (claro neutro) */}
         <div className="tema-claro bg-background text-foreground absolute top-0 left-0 w-[15.5rem] overflow-hidden rounded-[2.2rem] border-[6px] border-[#2a2a2a] shadow-2xl sm:left-4 sm:w-64">
           <div className="bg-primary text-primary-foreground px-4 pt-5 pb-4">
-            <p className="text-xs opacity-80">Buffet Alegria</p>
+            <p className="text-xs">Buffet Alegria</p>
             <p className="mt-1 text-sm font-bold">Seu orçamento</p>
           </div>
           <div className="space-y-3 p-4 text-sm">

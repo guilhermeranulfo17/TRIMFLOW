@@ -97,6 +97,7 @@ test('"Testar grátis" leva ao cadastro e a conta nasce com a origem do anúncio
 }) => {
   await page.goto('/?utm_source=Instagram&utm_campaign=lancamento&ref=bio');
   await page
+    .getByRole('main')
     .getByRole('link', { name: /Testar 14 dias grátis/ })
     .first()
     .click();
@@ -141,4 +142,22 @@ test('logado, o cabeçalho leva ao painel', async ({ page }) => {
   await expect(page.getByTestId('ir-para-painel')).toBeVisible();
   await page.getByTestId('ir-para-painel').click();
   await expect(page).toHaveURL(/\/app\/leads$/);
+});
+
+test('cabeçalho ganha fundo ao rolar; no celular, a barra "Testar grátis" aparece depois do hero', async ({
+  page,
+  isMobile,
+}) => {
+  await page.goto('/');
+  const cabecalho = page.getByTestId('cabecalho-landing');
+  const barra = page.getByTestId('barra-teste-celular');
+  await expect(cabecalho).toHaveAttribute('data-rolou', 'false');
+  await expect(barra).toHaveAttribute('data-visivel', 'false');
+  await page.mouse.wheel(0, 3000);
+  await expect(cabecalho).toHaveAttribute('data-rolou', 'true');
+  await expect(barra).toHaveAttribute('data-visivel', 'true');
+  if (isMobile)
+    await expect(barra.getByRole('link', { name: /Testar 14 dias grátis/ })).toBeVisible();
+  await page.mouse.wheel(0, -3000);
+  await expect(barra).toHaveAttribute('data-visivel', 'false');
 });
