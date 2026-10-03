@@ -156,6 +156,9 @@ export async function definirNovaSenha(input: NovaSenhaInput): Promise<Resultado
         erro: 'Senha alterada, mas não conseguimos liberar seu acesso. Tente de novo.',
       };
     }
+    // A sessão é lida pelos claims do JWT (getClaims): renova o token para ele já sair sem o
+    // trocar_senha; senão o middleware manda de volta para /nova-senha até o token expirar.
+    await supabase.auth.refreshSession();
   }
 
   await comUsuario(user.id, async (tx) => {
