@@ -11,6 +11,7 @@ export function SeletorPeriodo({ periodo }: { periodo: Periodo }) {
         {PERIODOS.map((p) => (
           <Link
             key={p.chave}
+            prefetch={false}
             href={`/app/numeros?periodo=${p.chave}`}
             aria-current={periodo.chave === p.chave ? 'page' : undefined}
             className={cn(

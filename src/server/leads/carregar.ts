@@ -220,8 +220,8 @@ export type ResumoHoje = {
   pedemAcao: number;
 };
 
-export async function resumoHoje(usuario: UsuarioAtual): Promise<ResumoHoje> {
-  const [r] = await comUsuario(usuario.id, (tx) =>
+export async function resumoHoje(usuario: UsuarioAtual, tx?: Tx): Promise<ResumoHoje> {
+  const [r] = await naTransacao(usuario.id, tx, (tx) =>
     tx.execute<Record<string, number>>(sql`select * from public.resumo_hoje()`),
   );
   return resumoDaLinha(r);

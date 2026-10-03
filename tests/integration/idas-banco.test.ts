@@ -67,14 +67,14 @@ describe('idas ao banco por tela', () => {
 
   it('leads', async () => {
     const u = await usuarioDono();
-    const { listarCaixa, usuariosDaEmpresa } = await import('@/server/leads/carregar');
+    const { listarCaixa, resumoHoje, usuariosDaEmpresa } = await import('@/server/leads/carregar');
     const { carregarChecklist } = await import('@/server/onboarding/carregar');
     const { comUsuario } = await import('@/server/db/tenant');
     const { filtrosDaUrl } = await import('@/domain/leads/filtros');
-    // o resumo "Hoje" vem do contexto do painel (já contado no layout)
     const n = await medir('leads', () =>
       comUsuario(u.id, (tx) =>
         Promise.all([
+          resumoHoje(u, tx),
           listarCaixa(u, filtrosDaUrl({}), null, 30, tx),
           usuariosDaEmpresa(u, tx),
           carregarChecklist(u, tx),
@@ -105,10 +105,7 @@ describe('idas ao banco por tela', () => {
     const { carregarTelaNumeros } = await import('@/server/numeros/carregar');
     const { hojeNoFuso, somarDias } = await import('@/domain/dates');
     const hoje = hojeNoFuso(u.empresa.fuso);
-    // recursos do plano vêm do contexto do painel (já contado no layout)
-    const n = await medir('numeros', () =>
-      carregarTelaNumeros(u, somarDias(hoje, -29), hoje, true),
-    );
+    const n = await medir('numeros', () => carregarTelaNumeros(u, somarDias(hoje, -29), hoje));
     expect(n).toBeLessThanOrEqual(LIMITE.numeros!);
   });
 

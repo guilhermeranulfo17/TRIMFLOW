@@ -9,6 +9,8 @@ import type {
   Resumo,
 } from '@/domain/numeros';
 import type { UsuarioAtual } from '@/server/auth/sessao';
+import type { RecursosPlano } from '@/domain/cobranca/limites';
+import { recursosDoPlano } from '@/server/cobranca/carregar';
 import { comUsuario, type Tx } from '@/server/db/tenant';
 
 /*
@@ -70,34 +72,47 @@ async function ocupacaoTx(tx: Tx): Promise<OcupacaoTela> {
 
 export type TelaNumeros = {
   numeros: NumerosPeriodo;
+  /** null quando não é o dono ou o plano não tem Números completo */
   ocupacao: OcupacaoTela | null;
   usuarios: { id: string; nome: string }[];
+  recursos: RecursosPlano;
 };
 
 /**
- * Tudo da tela numa transação (uma leva em pipeline), em cache curto por empresa, usuário,
- * período e se mostra a ocupação. A transação é aberta DENTRO do cache: o callback pode rodar
- * depois (revalidação em segundo plano) e nunca reaproveita conexão de outra requisição.
+ * Tudo da tela numa transação (uma leva em pipeline), em cache curto por empresa, usuário e
+ * período. O plano vigente vem junto (plano_vigente_da_empresa); a ocupação só é calculada para o
+ * dono e só aparece no plano com Números completo. A transação é aberta DENTRO do cache: o
+ * callback pode rodar depois (revalidação em segundo plano) e nunca reaproveita conexão de outra
+ * requisição.
  */
 export function carregarTelaNumeros(
   usuario: UsuarioAtual,
   de: string,
   ate: string,
-  comOcupacao: boolean,
 ): Promise<TelaNumeros> {
+  const dono = usuario.perfil === 'dono';
   return unstable_cache(
     async () =>
       comUsuario(usuario.id, async (tx) => {
-        const [numeros, ocupacao, usuarios] = await Promise.all([
+        const [numeros, ocupacao, usuarios, [plano]] = await Promise.all([
           numerosTx(tx, de, ate),
-          comOcupacao ? ocupacaoTx(tx) : null,
+          dono ? ocupacaoTx(tx) : null,
           tx.execute<{ id: string; nome: string }>(
             sql`select id, nome from public.usuarios where ativo order by nome`,
           ),
+          tx.execute<{ p: Record<string, unknown> | null }>(
+            sql`select public.plano_vigente_da_empresa() as p`,
+          ),
         ]);
-        return { numeros, ocupacao, usuarios: [...usuarios] };
+        const recursos = recursosDoPlano(plano?.p ?? {});
+        return {
+          numeros,
+          ocupacao: recursos.numerosCompleto ? ocupacao : null,
+          usuarios: [...usuarios],
+          recursos,
+        };
       }),
-    ['tela-numeros', usuario.empresa.id, usuario.id, de, ate, String(comOcupacao)],
+    ['tela-numeros', usuario.empresa.id, usuario.id, de, ate],
     { tags: [tagNumeros(usuario.empresa.id)], revalidate: 300 },
   )();
 }

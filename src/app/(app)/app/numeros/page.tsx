@@ -15,7 +15,6 @@ import { resolverPeriodo } from '@/domain/numeros';
 import { exigirSessao } from '@/server/auth/sessao';
 import { urlDoSite } from '@/server/env';
 import { carregarTelaNumeros } from '@/server/numeros/carregar';
-import { carregarContextoPainel } from '@/server/painel/contexto';
 
 export const metadata: Metadata = { title: 'Números' };
 
@@ -36,12 +35,13 @@ export default async function NumerosPage({ searchParams }: Props) {
   const dono = usuario.perfil === 'dono';
   const link = `${urlDoSite() ?? ''}/b/${usuario.empresa.slug}`;
   // Essencial: cartões e funil; o resto é do Profissional (teste = Profissional)
-  const completo = (await carregarContextoPainel(usuario)).recursos.numerosCompleto;
   const {
     numeros: n,
     ocupacao,
     usuarios,
-  } = await carregarTelaNumeros(usuario, periodo.de, periodo.ate, dono && completo);
+    recursos,
+  } = await carregarTelaNumeros(usuario, periodo.de, periodo.ate);
+  const completo = recursos.numerosCompleto;
   const nomes = new Map(usuarios.map((u) => [u.id, u.nome]));
   const vazio = n.resumo.visitas === 0 && n.resumo.leads === 0 && n.resumo.reservas === 0;
 
