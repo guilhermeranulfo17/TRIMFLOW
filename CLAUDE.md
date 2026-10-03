@@ -39,9 +39,13 @@ src/
                      [id]/editar, [id]/pdf), avisos (histórico), conta/avisos (Minha conta),
                      numeros (Números)
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
-                     opcionais/[id]), regras, follow-up, usuarios, plano, simulador,
+                     opcionais/[id]), regras, follow-up, usuarios, plano (assinar, faturas,
+                     cancelar, acesso do suporte), simulador,
                      proposta-exemplo, link (divulgação + qr: PNG e PDF)
     api/avisos/      processar (POST, Bearer CRON_SECRET) e contagem (GET, sino)
+    api/cobranca/    asaas (webhook, token no header) e reconciliar (POST, Bearer CRON_SECRET)
+    interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral,
+                     empresas/[id] (ações auditadas, "Entrar como esta empresa")
     manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)
     auth/            rotas técnicas: confirm (link do e-mail), sair
     b/[slug]/        página pública do buffet, orcamento (wizard), proposta/[token] (+ /pdf)
@@ -58,6 +62,8 @@ src/
       onboarding/    faixa, checklist, "Fiz" da bio e os passos de /app/comecar (comecar/)
       divulgacao/    link com Copiar, textos prontos, QR (prévia + downloads)
       numeros/       cartões, funil, origem, perdas, atendimento, ocupação (SVG próprio)
+      plano/         escolher plano, cancelar e suporte, faixa da conta, faixa do suporte
+    interno/         formulários e ações do /interno
     orcamento/       peças compartilhadas do wizard e do orçamento interno (contador)
     proposta/        proposta na web (desenha o ModeloProposta)
     auth/            peças dos formulários de autenticação
@@ -81,6 +87,8 @@ src/
     onboarding/      passos, checklist (percentual), preços do passo 3 (faixas proporcionais)
     divulgacao/      textos prontos (bio, WhatsApp Business, post, status) com a origem certa
     numeros/         período, métricas, funil, ocupação e datas livres (= funções SQL de Números)
+    cobranca/        situação da conta (= _situacao_conta), limites (= _codigo_plano), CPF/CNPJ,
+                     preços e cupom, eventos do Asaas (status monotônico = SQL), MRR, motivos
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario), anon (comAnon),
                      admin (sem RLS)
@@ -101,6 +109,9 @@ src/
     onboarding/      estado do onboarding, resumo do modelo, preços, agenda rápida, checklist
     numeros/         public.numeros e numeros_ocupacao (cache por empresa e período)
     divulgacao/      QR code (SVG, PNG, PDF A4)
+    cobranca/        cliente Asaas (fetch), fluxos (assinar, mudar, cancelar, implantação,
+                     reconciliar) com dependências injetadas, webhook, leituras da tela de Plano
+    interno/         guard (lista + aal2), leituras do /interno, sessão de suporte (cookie HMAC)
     env.ts, erros.ts
   lib/               utilitários de UI (cn)
   middleware.ts      sessão + proteção de /app/**
@@ -174,6 +185,22 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   passo salvo em `empresas.onboarding_passo` (`avancar_onboarding`, passar do 3 exige preço
   confirmado). Checklist calculado do estado real (`domain/onboarding/checklist`), dispensável
   por usuário.
+- **Cobrança (Etapa 9A):** situação da conta em `empresas.plano` (`trial`, `ativo`,
+  `inadimplente`, `cancelado`, `suspenso`), por `_atualizar_situacao`; regra em
+  `domain/cobranca/situacao` e `_situacao_conta`, limites em `domain/cobranca/limites` e
+  `_codigo_plano`, status de cobrança em `proximoStatus` e `_cobranca_proximo_status`, com
+  teste de equivalência: mudou uma, mude a outra. Asaas só por `fetch` (sem SDK); webhook e
+  reconciliação só gravam por `cobranca_registrar_evento` (idempotente, monotônico, uma
+  transação). Assinaturas, cobranças e dados de cobrança: o dono lê; escrita só pela conexão
+  administrativa (`server/cobranca/fluxos`, com auditoria) e funções. Limites valem no servidor
+  e no banco (triggers); downgrade nunca apaga.
+- **Conta suspensa = somente leitura:** o trigger `_exigir_escrita` está em toda tabela com
+  `empresa_id`. **Tabela nova com `empresa_id` liga o trigger na própria migration** (ou entra
+  na lista de exceções do teste, com justificativa). Função nova de escrita para
+  `authenticated` entra na lista do teste `cobranca.test.ts`.
+- **/interno e suporte:** só `ORKESTRA_ADMINS` com MFA (aal2); ações em `auditoria_interna`.
+  Suporte só com consentimento vigente do dono (7 dias), sessão de 2 h, faixa vermelha e
+  `dados.suporte` na auditoria (GUC `orkestra.suporte_admin` ligada por `comUsuario`).
 - **Números:** métricas em `public.numeros`/`numeros_ocupacao` e em `domain/numeros`, com teste
   de equivalência numa tabela de casos: mudou uma, mude a outra. Leads únicos, nunca lead de
   teste, datas civis no fuso da empresa. Vendedor vê só os próprios leads.
@@ -254,7 +281,12 @@ todos os tipos, preferências (o vendedor com silêncio 23:00–08:00), a regra 
 desligada e tarefas automáticas abertas e uma cancelada; desde a Etapa 8, onboarding concluído,
 90 dias de visitas ao link (várias origens, inclusive QR code) e ~70 leads extras com perdas,
 reservas e tempos de atendimento (Números cheia); o **Buffet Teste B** fica com o onboarding
-parado no passo 3. `pnpm db:seed:volume` cria o **Buffet Volume**
+parado no passo 3. Desde a Etapa 9A, o Buffet Demo tem o Profissional mensal ativo (duas
+faturas pagas e uma em aberto), o Buffet Teste B tem o teste acabando em 2 dias, e
+`equipe@orkestra.local` (mesma senha) é a equipe do /interno (`ORKESTRA_ADMINS`; o código TOTP
+é cadastrado no primeiro acesso). Cobrança local com a API falsa do Asaas:
+`node tests/support/asaas-fake-servidor.mjs` e `ASAAS_API_URL=http://localhost:4010/v3`.
+`pnpm db:seed:volume` cria o **Buffet Volume**
 (`dono@volume.local`, 5.000 leads) para o `explain analyze` da caixa. Página pública:
 http://localhost:3000/b/buffet-demo (logado como dono, abre em modo teste). E-mails locais (recuperação de senha): http://127.0.0.1:54324.
 
@@ -263,7 +295,7 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 7 e o visual escuro (PRs #1 a #9)
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 8 e o visual escuro (PRs #1 a #10)
   na `main`.
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
@@ -282,7 +314,10 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
   `WHATSAPP_TOKEN` (secreta) e `WHATSAPP_PHONE_NUMBER_ID`; faltar alguma só desliga o canal,
   com aviso no log. URL do site e o mesmo `CRON_SECRET` também no **Supabase Vault**
   (`orkestra_site_url`, `orkestra_cron_secret`) para o `pg_cron` chamar a fila: ver
-  `docs/AVISOS_CONFIGURACAO.md`. Modelos do WhatsApp: `docs/WHATSAPP_MODELOS.md`.
+  `docs/AVISOS_CONFIGURACAO.md`. Modelos do WhatsApp: `docs/WHATSAPP_MODELOS.md`. Desde a
+  Etapa 9A: `ASAAS_API_KEY` (secreta), `ASAAS_AMBIENTE` (`sandbox`|`producao`),
+  `ASAAS_WEBHOOK_TOKEN` (secreta), `ORKESTRA_ADMINS` e `NEXT_PUBLIC_WHATSAPP_VENDAS`; sem as do
+  Asaas, a cobrança fica desligada. Passo a passo: `docs/COBRANCA.md`.
   - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
