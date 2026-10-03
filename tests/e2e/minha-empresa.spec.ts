@@ -23,6 +23,21 @@ async function novaEmpresa(page: Page, buffet: string) {
   await esvaziarCatalogo(email);
 }
 
+/** Envia um PNG 1×1 como logo (o navegador converte para WEBP) e espera a tela mostrar. */
+async function enviarLogo(page: Page) {
+  await page.goto('/app/empresa');
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  const campo = page.getByLabel('Escolher Logo');
+  // o campo só fica ativo depois que o React assume a página
+  await expect(campo).toBeEnabled();
+  await campo.setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: png });
+  await esperarToast(page, 'Logo atualizada.');
+  await expect(page.getByRole('img', { name: 'Logo' })).toBeVisible();
+}
+
 async function esperarToast(page: Page, texto: string) {
   await expect(page.getByTestId('toast').filter({ hasText: texto })).toBeVisible();
 }
@@ -235,16 +250,16 @@ test.describe('minha empresa', () => {
   test('dono envia o logo (precisa do Storage)', async ({ page }) => {
     test.skip(!process.env.E2E_STORAGE, 'Storage do Supabase só roda no CI.');
     await novaEmpresa(page, 'Buffet Logo');
-    await page.goto('/app/empresa');
-    // PNG 1×1: o navegador converte para WEBP antes de enviar.
-    const png = Buffer.from(
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-      'base64',
+    await enviarLogo(page);
+  });
+
+  test('logo salvo aparece na tela sem recarregar (Storage simulado)', async ({ page }) => {
+    // Regressão: com Suspense de página (loading.tsx), a tela às vezes não trocava depois da
+    // ação (ARQUITETURA §60). O Storage é simulado para rodar também sem o Supabase completo.
+    await page.route('**/storage/v1/object/midia/**', (rota) =>
+      rota.fulfill({ status: 200, contentType: 'application/json', body: '{"Key":"midia/x"}' }),
     );
-    await page
-      .getByLabel('Escolher Logo')
-      .setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: png });
-    await esperarToast(page, 'Logo atualizada.');
-    await expect(page.getByRole('img', { name: 'Logo' })).toBeVisible();
+    await novaEmpresa(page, 'Buffet Logo Simulado');
+    await enviarLogo(page);
   });
 });
