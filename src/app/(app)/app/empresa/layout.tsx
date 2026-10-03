@@ -66,7 +66,8 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
   const dono = usuario.perfil === 'dono';
 
   return (
-    <div className="mx-auto max-w-4xl">
+    // a tela do Link (editor + prévia) marca data-tela-larga e ganha mais largura no PC
+    <div className="mx-auto max-w-4xl has-[[data-tela-larga]]:max-w-7xl">
       <h1 className="mb-4 text-2xl font-extrabold tracking-tight">Minha empresa</h1>
       <Suspense fallback={<NavEmpresa secoes={secoesDe(dono)} />}>
         <NavComPendencias usuario={usuario} />

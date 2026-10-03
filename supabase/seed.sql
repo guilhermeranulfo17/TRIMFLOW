@@ -1092,7 +1092,8 @@ begin
       diferenciais = array['Espaço próprio', 'Monitores', 'Cardápio infantil', 'Brinquedão',
                            'Estacionamento', 'Acessibilidade'],
       bairro = 'Centro',
-      mostrar_endereco = false
+      mostrar_endereco = false,
+      pagina_personalizada_em = coalesce(pagina_personalizada_em, now() - interval '5 days')
   where id = demo;
 
   delete from public.galeria_fotos where empresa_id = demo;
