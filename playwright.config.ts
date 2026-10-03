@@ -40,7 +40,7 @@ export default defineConfig({
     {
       name: 'desktop',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
-      testMatch: /navegacao\.spec\.ts/,
+      testMatch: /(navegacao|acesso)\.spec\.ts/,
     },
   ],
   webServer: [

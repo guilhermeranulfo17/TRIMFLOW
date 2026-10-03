@@ -38,7 +38,7 @@ export function PainelMarca() {
         </ul>
 
         {/* composição: um lead que quer reservar e a proposta dele */}
-        <div className="relative h-56" aria-hidden>
+        <div className="relative h-64" aria-hidden>
           <div className="bg-card rounded-card absolute top-0 left-0 w-80 border p-4 shadow-2xl">
             <div className="flex items-center justify-between">
               <p className="font-bold">Ana</p>
@@ -57,8 +57,10 @@ export function PainelMarca() {
               </span>
             </div>
           </div>
-          <div className="tema-claro bg-card rounded-card absolute top-24 left-40 w-64 border p-4 shadow-2xl">
-            <p className="text-xs font-semibold tracking-wide text-primary-texto uppercase">Proposta</p>
+          <div className="tema-claro bg-card rounded-card absolute top-32 left-40 w-64 border p-4 shadow-2xl">
+            <p className="text-primary-texto text-xs font-semibold tracking-wide uppercase">
+              Proposta
+            </p>
             <p className="mt-1 text-sm font-bold">Pacote Alegria · 60 convidados</p>
             <div className="text-muted-foreground mt-3 space-y-1.5 text-xs">
               <p className="flex items-center gap-2">
@@ -70,9 +72,7 @@ export function PainelMarca() {
                 Decoração e monitores inclusos
               </p>
             </div>
-            <p className="mt-3 text-right text-base font-extrabold tabular-nums">
-              R$ 4.900,00
-            </p>
+            <p className="mt-3 text-right text-base font-extrabold tabular-nums">R$ 4.900,00</p>
           </div>
         </div>
       </div>
