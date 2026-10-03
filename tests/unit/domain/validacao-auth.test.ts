@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loginSchema, novaSenhaSchema } from '@/domain/validacao/auth';
-import { cadastroSchema } from '@/domain/validacao/cadastro';
+import { cadastroSchema, completarSchema } from '@/domain/validacao/cadastro';
 
 const valido = {
   nome: 'Ana Souza',
@@ -9,6 +9,7 @@ const valido = {
   senha: 'senha-forte',
   nomeBuffet: 'Buffet Alegria & Cia',
   segmento: 'infantil',
+  aceite: true,
 };
 
 describe('cadastroSchema', () => {
@@ -32,6 +33,20 @@ describe('cadastroSchema', () => {
     const r = cadastroSchema.safeParse({ ...valido, segmento: 'pizzaria' });
     expect(r.success).toBe(false);
     expect(r.error?.issues[0]?.message).toBe('Escolha o tipo de buffet');
+  });
+});
+
+describe('aceite dos termos e completar (Google)', () => {
+  it('cadastro sem aceite é recusado com mensagem clara', () => {
+    const r = cadastroSchema.safeParse({ ...valido, aceite: false });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0]?.message).toBe('Para criar a conta, aceite os termos de uso.');
+  });
+
+  it('completar pede só os dados do buffet (sem e-mail e senha)', () => {
+    const { email: _e, senha: _s, ...dados } = valido;
+    expect(completarSchema.safeParse(dados).success).toBe(true);
+    expect(completarSchema.safeParse({ ...dados, aceite: false }).success).toBe(false);
   });
 });
 

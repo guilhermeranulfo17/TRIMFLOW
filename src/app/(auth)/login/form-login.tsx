@@ -47,7 +47,7 @@ export function FormLogin({ next, avisoInicial }: { next: string | null; avisoIn
             <FormItem>
               <FormLabel>E-mail</FormLabel>
               <FormControl>
-                <Input type="email" autoComplete="email" inputMode="email" {...field} />
+                <Input type="email" autoComplete="email" inputMode="email" autoFocus {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -1,12 +1,5 @@
-export const DESTINO_PADRAO = '/app/leads';
-
-/** Aceita só caminhos internos ("/app/…"); bloqueia open redirect ("//site", "https://…"). */
-export function destinoSeguro(next: string | null | undefined, padrao = DESTINO_PADRAO): string {
-  if (!next || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) {
-    return padrao;
-  }
-  return next;
-}
+// regra pura em domain/auth/destino (também usada pelo callback do Google)
+export { DESTINO_PADRAO, destinoSeguro } from '@/domain/auth/destino';
 
 export const ROTAS_SO_VISITANTE = ['/login', '/cadastro'] as const;
 

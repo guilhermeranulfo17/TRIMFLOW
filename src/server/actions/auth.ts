@@ -14,7 +14,12 @@ import {
   type NovaSenhaInput,
   type RecuperarSenhaInput,
 } from '@/domain/validacao/auth';
-import { cadastroSchema, type CadastroInput } from '@/domain/validacao/cadastro';
+import {
+  cadastroSchema,
+  completarSchema,
+  type CadastroInput,
+  type CompletarInput,
+} from '@/domain/validacao/cadastro';
 import { criarAuthAdmin } from '@/server/auth/admin-supabase';
 import { destinoSeguro, precisaTrocarSenha } from '@/server/auth/redirecionamento';
 import { criarClienteSupabase } from '@/server/auth/supabase-server';
@@ -60,6 +65,7 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
         whatsapp_e164: whatsappE164,
         segmento: dados.segmento,
         slug_base: slugBaseDaEmpresa(dados.nomeBuffet),
+        termos_aceitos_em: new Date().toISOString(),
       },
     },
   });
@@ -73,6 +79,38 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
     };
   }
   if (data.user) await aplicarModeloDoCadastro(data.user.id, dados.segmento);
+  redirect('/app/comecar');
+}
+
+/**
+ * Quem entrou pelo Google e ainda não tem conta no Orkestra completa os dados do buffet
+ * (completar_conta_dono: só o próprio usuário, idempotente). Depois, igual ao cadastro: modelo do
+ * segmento e onboarding.
+ */
+export async function completarConta(input: CompletarInput): Promise<ResultadoAcao> {
+  const parsed = completarSchema.safeParse(input);
+  if (!parsed.success) return DADOS_INVALIDOS;
+  const dados = parsed.data;
+  const whatsappE164 = celularBRParaE164(dados.whatsapp);
+  if (!whatsappE164) return { ok: false, erro: 'Informe um celular válido com DDD.' };
+
+  const supabase = await criarClienteSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, erro: 'Sua sessão expirou. Entre de novo com o Google.' };
+
+  try {
+    await comUsuario(user.id, (tx) =>
+      tx.execute(sql`select public.completar_conta_dono(
+        ${dados.nome}, ${dados.nomeBuffet}, ${whatsappE164},
+        ${dados.segmento}::public.segmento_empresa, ${slugBaseDaEmpresa(dados.nomeBuffet)})`),
+    );
+  } catch {
+    console.error('[cadastro] completar conta falhou');
+    return { ok: false, erro: 'Não foi possível criar sua conta agora. Tente novamente.' };
+  }
+  await aplicarModeloDoCadastro(user.id, dados.segmento);
   redirect('/app/comecar');
 }
 
