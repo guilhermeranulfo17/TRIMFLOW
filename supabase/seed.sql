@@ -1016,3 +1016,59 @@ begin
   end loop;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Etapa 9A · Cobrança
+--   * Buffet Demo: Profissional mensal ativo (duas faturas pagas e a próxima em aberto)
+--   * Buffet Teste B: teste grátis acabando em 2 dias (faixa no painel)
+--   * equipe@orkestra.local: equipe Orkestra para o /interno (ORKESTRA_ADMINS); o código de
+--     verificação (TOTP) é cadastrado no primeiro acesso
+-- ---------------------------------------------------------------------------
+insert into auth.users (
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change
+)
+values (
+  '00000000-0000-0000-0000-000000000000', '0e000000-0000-4000-8000-000000000001', 'authenticated',
+  'authenticated', 'equipe@orkestra.local', extensions.crypt('demo12345', extensions.gen_salt('bf')),
+  now(), '{"provider": "email", "providers": ["email"]}'::jsonb, '{"nome": "Equipe Orkestra"}'::jsonb,
+  now(), now(), '', '', '', ''
+)
+on conflict (id) do nothing;
+
+insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+select u.id, u.id::text, u.id,
+  jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
+  'email', now(), now(), now()
+from auth.users u where u.id = '0e000000-0000-4000-8000-000000000001'
+on conflict do nothing;
+
+insert into public.empresas_cobranca (empresa_id, nome, documento, email, asaas_cliente_id)
+values ('11111111-1111-4111-8111-111111111111', 'Dona Demo', '52998224725', 'dono@demo.local',
+        'cus_seed_demo')
+on conflict (empresa_id) do nothing;
+
+insert into public.assinaturas (id, empresa_id, asaas_assinatura_id, plano_codigo, ciclo,
+  valor_centavos, status, criada_em)
+values ('5e000000-0000-4000-8000-000000000001', '11111111-1111-4111-8111-111111111111',
+        'sub_seed_demo', 'profissional', 'mensal', 24700, 'ativa', now() - interval '45 days')
+on conflict (id) do nothing;
+
+insert into public.cobrancas (empresa_id, assinatura_id, asaas_cobranca_id, valor_centavos,
+  vencimento, status, forma, link_fatura, pago_em)
+select '11111111-1111-4111-8111-111111111111', '5e000000-0000-4000-8000-000000000001',
+  c.asaas, 24700, current_date + c.dias, c.status, c.forma,
+  'https://sandbox.asaas.com/i/' || c.asaas,
+  case when c.status = 'recebida' then (current_date + c.dias)::timestamptz end
+from (values ('pay_seed_demo_1', -40, 'recebida', 'PIX'),
+             ('pay_seed_demo_2', -10, 'recebida', 'PIX'),
+             ('pay_seed_demo_3', 20, 'pendente', 'UNDEFINED')) c(asaas, dias, status, forma)
+on conflict (asaas_cobranca_id) do nothing;
+
+select public._recalcular_assinatura('5e000000-0000-4000-8000-000000000001');
+
+update public.empresas set trial_ate = now() + interval '2 days'
+where id = '22222222-2222-4222-8222-222222222222' and plano = 'trial';
+
+select public.atualizar_situacoes();

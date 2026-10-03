@@ -525,7 +525,8 @@ describe('conta suspensa = somente leitura', () => {
       const [espaco] =
         await tx`select id from public.espacos where empresa_id = ${empresa} limit 1`;
       const [reserva] =
-        await tx`select id from public.reservas where empresa_id = ${empresa} and status = 'ativa' limit 1`;
+        await tx`select id from public.reservas where empresa_id = ${empresa} and status = 'ativa'
+        and tipo = 'pre_reserva' and expira_em > now() limit 1`;
       const amanha = await hojeSP(tx, 40);
       // marcar_link_testado só grava a primeira vez
       await tx`update public.empresas set plano = 'suspenso', link_testado_em = null where id = ${empresa}`;
