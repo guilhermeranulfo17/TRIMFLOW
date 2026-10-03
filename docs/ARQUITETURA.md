@@ -1076,6 +1076,31 @@ casos, viradas de dia em vários fusos). Precedência:
     `dados.suporte` em tudo o que for gravado. Faixa vermelha fixa no painel, com "Sair do
     modo suporte".
 
+## 59. Identidade e temas (Etapa 9.5)
+
+- **Cor do produto = grafite + limão (`#3EE42E`).** Roxo saiu de tudo (código, ícones, PDF,
+  e-mails, seeds); o teste `tests/unit/tema/sem-roxo.test.ts` falha se a paleta antiga ou classes
+  `violet`/`purple` voltarem. As migrations antigas ficam como histórico.
+- **Cor do buffet só nas páginas do cliente final** (link público, orçamento, proposta, PDF, OG).
+  Padrão `#0F766E` (verde-petróleo, AA com branco); quem estava no roxo antigo migrou
+  (`20261010000002_cor_padrao`). O limão nunca é cor de buffet por padrão.
+- **Três conjuntos de tokens em `globals.css`**, escolhidos por marcador no HTML do servidor
+  (nada pisca e nenhuma página estática vira dinâmica):
+  - sem marcador: claro neutro do cliente final, com a cor do buffet por cima
+    (`components/publico/marca.ts`, que também define `--primary-texto` com 4,5:1);
+  - `[data-acesso]`: login, cadastro, recuperar e nova senha: escuro da marca, sempre;
+  - `[data-orkestra-claro]`: termos e privacidade: claro da marca;
+  - `[data-painel][data-tema]`: painel e onboarding no tema do cookie `orkestra_tema`
+    (`escuro` padrão, `claro`, `sistema` = `prefers-color-scheme`), trocado no menu da conta
+    (`definirTema`). `/interno` fica no escuro.
+- **Tokens de estado:** `alerta`, `erro`, `sucesso`, `info` e `quente` (lead quente), usados como
+  `text-x`, `bg-x/10`, `border-x/30`. Nada de `amber-300`/`rose-400` fixos no painel: no tema
+  claro eles não passam no AA. `primary` é fundo de botão; texto e ícone na cor primária usam
+  `text-primary-texto` (limão no escuro, `#1A7F12` no claro).
+- **Contraste:** `tests/unit/tema/contraste.test.ts` lê os blocos do CSS e exige 4,5:1 em todo par
+  de texto (inclusive estado sobre o próprio tom suave) e 3:1 no anel de foco, nos três temas, e
+  que os blocos do "sistema" sejam iguais aos explícitos.
+
 ## 60. Desempenho: idas ao banco (Etapa 9.5)
 
 A latência do painel vinha de idas ao banco em sequência (função na Vercel, banco em
