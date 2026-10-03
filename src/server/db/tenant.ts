@@ -30,9 +30,11 @@ export const PREAMBULO_ANON =
   `set_config('role', 'anon', true)`;
 
 /**
- * Transação numa conexão reservada, com `BEGIN` e a identidade na MESMA ida ao banco. As
- * consultas disparadas juntas (Promise.all) seguem em pipeline (parâmetros inline, ver
- * ./inline). Erro = rollback; a conexão sempre volta ao pool.
+ * Transação numa conexão reservada. `BEGIN` + identidade seguem sem esperar resposta e as
+ * consultas disparadas por `fn` (Promise.all) vão logo atrás, na mesma ida e em pipeline
+ * (parâmetros inline, ver ./inline). A ordem na conexão é garantida: nenhuma consulta roda antes
+ * da identidade, e se o preâmbulo falhar a transação fica abortada e nada depois dele executa.
+ * Erro = rollback; a conexão sempre volta ao pool.
  */
 export async function emTransacaoReservada<T>(
   base: postgres.Sql,
@@ -41,14 +43,20 @@ export async function emTransacaoReservada<T>(
 ): Promise<T> {
   const reservado = await base.reserve();
   try {
-    await reservado.unsafe(`begin; ${preambulo}`);
+    const inicio = reservado.unsafe(`begin; ${preambulo}`);
+    inicio.catch(() => undefined); // tratado abaixo (não vira rejeição solta)
     try {
       const r = await fn(transacaoSobre(reservado));
+      await inicio;
       await reservado.unsafe('commit');
       return r;
     } catch (erro) {
       await reservado.unsafe('rollback').catch(() => undefined);
-      throw erro;
+      // se o preâmbulo falhou, é ele a causa
+      throw await inicio.then(
+        () => erro,
+        (e: unknown) => e,
+      );
     }
   } finally {
     reservado.release();

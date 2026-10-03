@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { criarComAnon } from '@/server/db/anon';
 import { criarDb } from '@/server/db/client';
 import { empresas, leads } from '@/server/db/schema';
-import { criarComUsuario, criarLerComo } from '@/server/db/tenant';
+import { criarComUsuario, criarLerComo, emTransacaoReservada } from '@/server/db/tenant';
 import { IDS, urlBancoTeste } from '../support/db';
 
 /*
@@ -149,6 +149,25 @@ describe('comUsuario em pipeline: concorrência no mesmo pool', () => {
     } finally {
       await umaConexao.sql.end();
     }
+  });
+
+  it('preâmbulo que falha: nenhuma consulta da transação executa (fail-closed)', async () => {
+    const executou = await db.execute(
+      q`select count(*)::int as n from public.auditoria where acao = 'teste.preambulo'`,
+    );
+    const antes = (executou as unknown as Linha[])[0]!.n;
+    await expect(
+      emTransacaoReservada(sql, `select 1/0`, async (tx) => {
+        await tx.execute(
+          q`insert into public.auditoria (empresa_id, acao, entidade) values (${IDS.empresaA}, 'teste.preambulo', 'teste')`,
+        );
+      }),
+    ).rejects.toThrow(/division by zero/);
+    const depois = await db.execute(
+      q`select count(*)::int as n from public.auditoria where acao = 'teste.preambulo'`,
+    );
+    expect((depois as unknown as Linha[])[0]!.n).toBe(antes);
+    expect(await identidadeSolta()).toMatchObject({ papel: 'postgres', claims: '' });
   });
 
   it('id de usuário inválido é recusado antes de ir ao banco', async () => {
