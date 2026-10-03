@@ -186,7 +186,7 @@ describe('funções de escrita', () => {
       );
       const doze = treze.slice(0, 12);
       await tx`select public.salvar_galeria(${tx.json(doze)})`;
-      const [{ n }] = await tx`select count(*)::int as n from public.galeria_fotos`;
+      const { n } = (await tx`select count(*)::int as n from public.galeria_fotos`)[0]!;
       expect(n).toBe(12);
     });
   });
@@ -263,7 +263,7 @@ describe('leitura pública', () => {
   it('anon lê só por publico.pagina; endereço completo só quando o dono marca', async () => {
     await emTransacao(sql, async (tx) => {
       await assumirAnon(tx);
-      const [{ p }] = await tx`select publico.pagina('buffet-demo') as p`;
+      const { p } = (await tx`select publico.pagina('buffet-demo') as p`)[0]!;
       expect(p).toMatchObject({ segmento: 'infantil', bairro: 'Centro', endereco: null });
       expect(p.galeria).toHaveLength(6);
       expect(p.depoimentos).toHaveLength(3);
@@ -281,15 +281,15 @@ describe('leitura pública', () => {
           'slogan',
         ].sort(),
       );
-      const [{ b }] = await tx`select publico.pagina('buffet-teste-b') as b`;
+      const { b } = (await tx`select publico.pagina('buffet-teste-b') as b`)[0]!;
       expect(b).toMatchObject({ galeria: [], depoimentos: [], perguntas: [], diferenciais: [] });
-      const [{ x }] = await tx`select publico.pagina('nao-existe') as x`;
+      const { x } = (await tx`select publico.pagina('nao-existe') as x`)[0]!;
       expect(x).toBeNull();
     });
     await emTransacao(sql, async (tx) => {
       await tx`update public.empresas set mostrar_endereco = true where id = ${IDS.empresaA}`;
       await assumirAnon(tx);
-      const [{ p }] = await tx`select publico.pagina('buffet-demo') as p`;
+      const { p } = (await tx`select publico.pagina('buffet-demo') as p`)[0]!;
       expect(p.endereco).toMatch(/Rondon Pacheco/);
     });
   });
@@ -311,7 +311,7 @@ describe('equivalência SQL × domínio', () => {
       ['Espaço próprio', 'ESPAÇO PRÓPRIO'],
     ];
     for (const c of casos) {
-      const [{ v }] = await sql`select public._diferenciais_validos(${c}::text[]) as v`;
+      const { v } = (await sql`select public._diferenciais_validos(${c}::text[]) as v`)[0]!;
       expect(v, JSON.stringify(c)).toBe(diferenciaisValidos(c));
     }
   });
