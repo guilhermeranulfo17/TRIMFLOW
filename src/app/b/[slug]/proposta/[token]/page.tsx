@@ -1,6 +1,7 @@
 import { RefreshCw, TriangleAlert } from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
+import { after } from 'next/server';
 import { formatData } from '@/domain/dates';
 import { BannerTeste } from '@/components/publico/banner-teste';
 import { PropostaWeb, RodapeProposta } from '@/components/proposta/proposta-web';
@@ -34,8 +35,10 @@ export default async function PaginaProposta({ params, searchParams }: Props) {
   if (proposta.meta.tokenAntigo)
     redirect(`/b/${slug}/proposta/${proposta.meta.token}?atualizada=1`);
 
-  // Rastreio: abertura pelo cliente (o próprio usuário da empresa não conta).
-  await registrarAbertura(slug, token, modoTeste, await hashIpDoVisitante());
+  // Rastreio: abertura pelo cliente (o próprio usuário da empresa não conta). Depois da
+  // resposta (after): a proposta não espera a gravação.
+  const ipHash = await hashIpDoVisitante();
+  after(() => registrarAbertura(slug, token, modoTeste, ipHash));
 
   const { modelo: m, versao: v, meta } = proposta;
   const expirada = m.validade.expirada || v.status === 'expirado';
