@@ -150,14 +150,17 @@ describe('eventos do Asaas', () => {
       expect(ass).toEqual({ status: 'ativa', pago_ate: esperado!.d });
       expect(await plano(tx, e.id)).toBe('ativo');
       expect(await avisos(tx, e.id, 'pagamento_confirmado')).toHaveLength(1);
-      // auditoria da mudança de situação
-      expect(
-        await tx`select dados from public.auditoria where empresa_id = ${e.id} and acao = 'conta.situacao'
-          order by criado_em`,
-      ).toEqual([
-        { dados: { antes: 'trial', depois: 'suspenso' } },
-        { dados: { antes: 'suspenso', depois: 'ativo' } },
-      ]);
+      // auditoria da mudança de situação (as duas linhas nascem na mesma transação, com o
+      // mesmo criado_em: a ordem entre elas não é garantida, então compara sem ordem)
+      const situacoes = await tx`select dados from public.auditoria
+        where empresa_id = ${e.id} and acao = 'conta.situacao'`;
+      expect(situacoes).toHaveLength(2);
+      expect(situacoes).toEqual(
+        expect.arrayContaining([
+          { dados: { antes: 'trial', depois: 'suspenso' } },
+          { dados: { antes: 'suspenso', depois: 'ativo' } },
+        ]),
+      );
     });
   });
 
