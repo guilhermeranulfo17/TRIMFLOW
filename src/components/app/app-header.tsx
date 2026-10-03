@@ -1,14 +1,14 @@
-import { SinoAvisos } from './avisos/sino';
 import { Logo } from './logo';
 import { UserMenu } from './user-menu';
 
 export function AppHeader({
   nomeBuffet,
   usuario,
-  naoLidos,
+  sino,
 }: {
   nomeBuffet: string;
-  naoLidos: number;
+  /** sino de avisos (entra por Suspense com a contagem) */
+  sino: React.ReactNode;
   usuario: { nome: string; email: string; perfil: 'dono' | 'vendedor' };
 }) {
   return (
@@ -20,7 +20,7 @@ export function AppHeader({
         </p>
       </div>
       <div className="flex items-center gap-1">
-        <SinoAvisos inicial={naoLidos} />
+        {sino}
         <UserMenu {...usuario} />
       </div>
     </header>

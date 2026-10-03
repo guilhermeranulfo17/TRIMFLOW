@@ -1,21 +1,20 @@
+import {
+  Bloco,
+  EsqueletoCartoes,
+  EsqueletoTela,
+  EsqueletoTitulo,
+} from '@/components/app/esqueleto';
+
 /** Esqueleto da caixa enquanto a consulta roda. */
 export default function Carregando() {
   return (
-    <div
-      className="mx-auto flex max-w-3xl flex-col gap-4"
-      aria-busy="true"
-      aria-label="Carregando leads"
-    >
-      <div className="bg-muted h-8 w-32 animate-pulse rounded-md" />
+    <EsqueletoTela rotulo="Carregando leads">
+      <EsqueletoTitulo />
       <div className="flex gap-2 overflow-hidden">
-        {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className="bg-muted rounded-card h-16 min-w-32 animate-pulse" />
-        ))}
+        <EsqueletoCartoes n={5} className="h-16 min-w-32" />
       </div>
-      <div className="bg-muted rounded-control h-11 animate-pulse" />
-      {Array.from({ length: 5 }, (_, i) => (
-        <div key={i} className="bg-muted rounded-card h-32 animate-pulse" />
-      ))}
-    </div>
+      <Bloco className="rounded-control h-11" />
+      <EsqueletoCartoes n={5} className="h-32" />
+    </EsqueletoTela>
   );
 }
