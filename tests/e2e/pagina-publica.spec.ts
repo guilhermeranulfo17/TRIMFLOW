@@ -37,6 +37,7 @@ async function empresaPronta(page: Page, buffet: string): Promise<string> {
 async function visitante(browser: Browser, largura = 375, altura = 812): Promise<Page> {
   const ctx = await browser.newContext({
     viewport: { width: largura, height: altura },
+    deviceScaleFactor: 1,
     locale: 'pt-BR',
     timezoneId: 'America/Sao_Paulo',
     reducedMotion: 'reduce',
@@ -213,10 +214,24 @@ test.describe('página pública', () => {
       await expect(cliente.getByRole('heading', { name: 'Buffet Demo', level: 1 })).toBeVisible();
       await expect(cliente.getByTestId('pacote-publico').first()).toBeVisible();
       expect(await semRolagemHorizontal(cliente), `rolagem em ${largura}`).toBe(true);
+      // rola até o fim para as fotos com loading="lazy" carregarem antes da captura
+      await cliente.evaluate(async () => {
+        for (let y = 0; y < document.body.scrollHeight; y += 500) {
+          window.scrollTo(0, y);
+          await new Promise((r) => setTimeout(r, 60));
+        }
+        window.scrollTo(0, 0);
+      });
+      await cliente.waitForLoadState('networkidle');
       const imagem = await cliente.screenshot({ fullPage: true });
       await info.attach(`vitrine-${largura}`, { body: imagem, contentType: 'image/png' });
       if (process.env.CAPTURAS === '1') {
-        await cliente.screenshot({ path: `${pasta}/vitrine-${largura}.png`, fullPage: true });
+        await cliente.screenshot({
+          path: `${pasta}/vitrine-${largura}.jpg`,
+          fullPage: true,
+          type: 'jpeg',
+          quality: 75,
+        });
       }
       await cliente.context().close();
     }
