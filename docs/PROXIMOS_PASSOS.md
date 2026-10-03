@@ -166,3 +166,7 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   o plano permitir).
 - Hidratação: campos com `register` do react-hook-form vêm vazios no HTML e são preenchidos no
   cliente; o do link já vem preenchido. Avaliar o mesmo nos formulários grandes de Minha empresa.
+- **Esqueleto do detalhe no mestre-detalhe (PR 3):** como o painel não pode ter Suspense de
+  página (ARQUITETURA §60), o painel de detalhe precisa de um esqueleto do lado do cliente (estado
+  da transição) e não de `loading.tsx`. Se o Next corrigir o Suspense de página depois de ação,
+  reavaliar a regra (o teste `sem-suspense-de-pagina` diz onde).
