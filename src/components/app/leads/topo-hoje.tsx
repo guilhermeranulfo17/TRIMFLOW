@@ -32,7 +32,6 @@ export function TopoHoje({ resumo, filtros }: { resumo: ResumoHoje; filtros: Fil
           return (
             <li key={atalho} className="shrink-0">
               <Link
-                prefetch={false}
                 href={`/app/leads${qs ? `?${qs}` : ''}`}
                 aria-current={ativo ? 'true' : undefined}
                 className={cn(
