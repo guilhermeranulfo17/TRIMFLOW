@@ -45,6 +45,13 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
   const alvo = suporte?.donoId ?? user.id;
   if (suporte) contextoSuporte().admin = suporte.adminEmail;
 
+  const lido = await lerUsuario(alvo);
+  if (!lido) return null;
+  return { ...lido, suporte: suporte ? { admin: suporte.adminEmail } : null };
+});
+
+/** Usuário ativo + empresa pelo id (lido pelo RLS como o próprio usuário), ou null. */
+export async function lerUsuario(alvo: string): Promise<Omit<UsuarioAtual, 'suporte'> | null> {
   const [linha] = await comUsuario(alvo, (tx) =>
     tx
       .select({
@@ -78,9 +85,8 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
       fuso: linha.empresaFuso,
       situacao: linha.empresaSituacao,
     },
-    suporte: suporte ? { admin: suporte.adminEmail } : null,
   };
-});
+}
 
 /**
  * Exige usuário ativo. Sem sessão → /login. Com sessão no Auth mas sem acesso ao painel
