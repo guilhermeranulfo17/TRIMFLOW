@@ -63,7 +63,6 @@ export default async function ImagemCompartilhamento({
       }}
     >
       {capa && (
-         
         <img
           src={capa}
           alt=""
@@ -103,7 +102,6 @@ export default async function ImagemCompartilhamento({
         }}
       >
         {logo && (
-           
           <img
             src={logo}
             alt=""
