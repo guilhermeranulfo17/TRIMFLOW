@@ -166,3 +166,20 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   o plano permitir).
 - Hidratação: campos com `register` do react-hook-form vêm vazios no HTML e são preenchidos no
   cliente; o do link já vem preenchido. Avaliar o mesmo nos formulários grandes de Minha empresa.
+
+## Depois da Etapa 9.5 PR 2 (pendências percebidas)
+
+- **Editor em Configurações → Personalizar página** no PR 3 (hoje em Minha empresa → Link).
+- Reordenar fotos arrastando (hoje subir/descer, que funciona no celular) e recorte da foto.
+- Fotos dos pacotes também em duas larguras (hoje uma só, de até 1600 px) e miniatura desfocada
+  na capa.
+- Galeria por pacote ou por espaço (hoje uma galeria do buffet).
+- Vídeo curto no hero, domínio próprio e avaliações automáticas continuam fora do escopo.
+- Tema escuro na página pública (fora do escopo).
+- Limpeza de arquivos soltos da pasta `galeria` (upload que não chegou a ser gravado).
+- Pré-visualizar antes de salvar (hoje a prévia mostra o que já foi salvo).
+- **Capa em duas larguras** (como a galeria): hoje uma só, de até 1920 px; com foto real pesada,
+  o LCP no celular piora. Gerar 960 e 1920 no envio e usar `srcset` no hero.
+- **Hidratação e E2E:** escolher arquivo ou clicar antes da hidratação perde o evento (envio do
+  logo e "Fiz" do checklist eram instáveis já na `main`). Os testes agora repetem a ação até o
+  efeito aparecer; avaliar desabilitar esses controles até hidratar.

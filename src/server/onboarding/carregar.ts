@@ -174,6 +174,7 @@ export const carregarChecklist = cache(
             e.logo_path is not null as logo,
             e.capa_path is not null as capa,
             coalesce(btrim(e.sobre), '') <> '' as sobre,
+            e.pagina_personalizada_em is not null as "paginaPersonalizada",
             exists (select 1 from public.pacotes p where p.ativo and jsonb_array_length(p.fotos) > 0) as "fotoEmPacote",
             exists (select 1 from public.pacotes where ativo)
               and not exists (select 1 from public.pacotes p where p.ativo and not exists (
@@ -200,6 +201,7 @@ export const carregarChecklist = cache(
         logo: b('logo'),
         capa: b('capa'),
         sobre: b('sobre'),
+        paginaPersonalizada: b('paginaPersonalizada'),
         fotoEmPacote: b('fotoEmPacote'),
         cardapioCompleto: b('cardapioCompleto'),
         condicoesPagamento: b('condicoesPagamento'),

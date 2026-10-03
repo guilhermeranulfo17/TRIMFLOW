@@ -11,6 +11,8 @@ export type EstadoChecklist = {
   logo: boolean;
   capa: boolean;
   sobre: boolean;
+  /** Etapa 9.5: salvou algo no editor da página (frase, estilo, galeria…) */
+  paginaPersonalizada: boolean;
   fotoEmPacote: boolean;
   /** todos os pacotes ativos com pelo menos uma seção de cardápio com itens */
   cardapioCompleto: boolean;
@@ -62,6 +64,12 @@ const ITENS: Omit<ItemChecklist, 'feito'>[] = [
   { chave: 'logo', titulo: 'Logo do buffet', obrigatorio: false, href: '/app/empresa' },
   { chave: 'capa', titulo: 'Foto de capa', obrigatorio: false, href: '/app/empresa' },
   { chave: 'sobre', titulo: 'Texto "sobre" o buffet', obrigatorio: false, href: '/app/empresa' },
+  {
+    chave: 'paginaPersonalizada',
+    titulo: 'Personalize sua página',
+    obrigatorio: false,
+    href: '/app/empresa/link#pagina',
+  },
   {
     chave: 'fotoEmPacote',
     titulo: 'Foto em pelo menos 1 pacote',

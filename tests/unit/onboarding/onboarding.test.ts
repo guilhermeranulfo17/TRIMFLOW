@@ -92,6 +92,7 @@ describe('checklist', () => {
     logo: false,
     capa: false,
     sobre: false,
+    paginaPersonalizada: false,
     fotoEmPacote: false,
     cardapioCompleto: false,
     condicoesPagamento: false,
@@ -119,7 +120,7 @@ describe('checklist', () => {
     });
   });
 
-  it('obrigatórios pesam 3: só eles feitos dá 9/(9+12) = 42%', () => {
+  it('obrigatórios pesam 3: só eles feitos dá 9/(9+13) = 40%', () => {
     const r = calcularChecklist({
       ...vazio,
       pacoteConfirmado: true,
@@ -127,14 +128,14 @@ describe('checklist', () => {
       espacoETurnoAtivos: true,
     });
     expect(r.linkFunciona).toBe(true);
-    expect(r.percentual).toBe(42);
-    expect(r.itens).toHaveLength(15); // WhatsApp de avisos fora (canal não configurado)
+    expect(r.percentual).toBe(40);
+    expect(r.itens).toHaveLength(16); // WhatsApp de avisos fora (canal não configurado)
   });
 
   it('WhatsApp de avisos aparece quando o canal está configurado', () => {
     const r = calcularChecklist({ ...tudo, whatsappAvisos: false });
-    expect(r.itens).toHaveLength(16);
-    expect(r.percentual).toBe(Math.floor((21 * 100) / 22)); // 9 + 13 itens de peso 1
+    expect(r.itens).toHaveLength(17);
+    expect(r.percentual).toBe(Math.floor((22 * 100) / 23)); // 9 + 14 itens de peso 1
     expect(r.completo).toBe(false);
   });
 

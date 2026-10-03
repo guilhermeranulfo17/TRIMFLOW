@@ -241,10 +241,15 @@ test.describe('minha empresa', () => {
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
       'base64',
     );
-    await page
-      .getByLabel('Escolher Logo')
-      .setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: png });
-    await esperarToast(page, 'Logo atualizada.');
+    // escolher o arquivo antes da hidratação perde o onChange: repete até o envio acontecer
+    await expect(async () => {
+      await page
+        .getByLabel('Escolher Logo')
+        .setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: png });
+      await expect(page.getByTestId('toast').filter({ hasText: 'Logo atualizada.' })).toBeVisible({
+        timeout: 4_000,
+      });
+    }).toPass({ timeout: 25_000 });
     await expect(page.getByRole('img', { name: 'Logo' })).toBeVisible();
   });
 });

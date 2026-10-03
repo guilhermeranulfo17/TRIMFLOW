@@ -14,7 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 
 /** Redimensiona no navegador (canvas) e exporta WEBP. */
-async function converterParaWebp(arquivo: File, ladoMaximo: number): Promise<Blob> {
+export async function converterParaWebp(arquivo: File, ladoMaximo: number): Promise<Blob> {
   const bitmap = await createImageBitmap(arquivo);
   const { largura, altura } = dimensoesRedimensionadas(bitmap.width, bitmap.height, ladoMaximo);
   const canvas = document.createElement('canvas');
