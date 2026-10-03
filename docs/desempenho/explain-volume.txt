@@ -1,0 +1,36 @@
+Timing is off.
+BEGIN
+=== caixa_leads (primeira página, sem filtro)
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Function Scan on caixa_leads  (cost=0.25..10.25 rows=1000 width=415) (actual time=68.831..68.833 rows=31 loops=1)
+   Buffers: shared hit=4893
+ Planning Time: 0.044 ms
+ Execution Time: 69.046 ms
+(4 rows)
+
+=== numeros (30 dias)
+                                      QUERY PLAN                                       
+---------------------------------------------------------------------------------------
+ Result  (cost=0.00..0.27 rows=1 width=32) (actual time=29.682..29.683 rows=1 loops=1)
+ Planning Time: 0.015 ms
+ Execution Time: 29.697 ms
+(3 rows)
+
+=== agenda do mês: disponibilidade
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Function Scan on disponibilidade  (cost=0.27..10.27 rows=1000 width=84) (actual time=3.122..3.125 rows=31 loops=1)
+ Planning Time: 0.023 ms
+ Execution Time: 3.137 ms
+(3 rows)
+
+=== painel_contexto
+                                      QUERY PLAN                                       
+---------------------------------------------------------------------------------------
+ Result  (cost=0.00..0.26 rows=1 width=32) (actual time=11.583..11.583 rows=1 loops=1)
+ Planning Time: 0.009 ms
+ Execution Time: 11.590 ms
+(3 rows)
+
+ROLLBACK

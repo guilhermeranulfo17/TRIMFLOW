@@ -1075,3 +1075,40 @@ casos, viradas de dia em vários fusos). Precedência:
   - `comUsuario` liga a GUC `orkestra.suporte_admin` e o trigger da auditoria acrescenta
     `dados.suporte` em tudo o que for gravado. Faixa vermelha fixa no painel, com "Sair do
     modo suporte".
+
+## 60. Desempenho: idas ao banco (Etapa 9.5)
+
+A latência do painel vinha de idas ao banco em sequência (função na Vercel, banco em
+`sa-east-1`). A regra agora é contar idas, não consultas.
+
+- **Região:** `vercel.json` fixa as funções em `gru1` (São Paulo), ao lado do banco.
+- **Sessão:** `getClaims()` valida o JWT localmente (chave assimétrica do projeto; com HS256 cai
+  na rede sozinho). `getUser()` fica só onde a revalidação forte importa: `/interno`, modo
+  suporte, troca de senha, criar vendedor e cobrança. O middleware não roda em `/b/**`, webhooks,
+  manifest, service worker e ícones.
+- **Parâmetros inline (`server/db/inline.ts`):** com `prepare: false` (exigido pelo pooler em
+  modo transação), o driver faz um Describe por consulta com parâmetro e não enfileira consultas.
+  Os parâmetros viram literais `E'…'` escapados (aspas e barras dobradas, NUL recusado, número
+  negativo entre parênteses) e seguem pelo protocolo simples. Cliente envolvido por um Proxy:
+  o código das features não muda.
+- **`comUsuario` (`server/db/tenant.ts`):** conexão reservada; `BEGIN` + identidade
+  (`set_config(..., true)`) vão sem esperar resposta e a primeira leva de consultas segue atrás,
+  na mesma ida. A ordem na conexão garante que nada roda antes da identidade; se o preâmbulo
+  falhar, a transação fica abortada. Teste de concorrência entre empresas no mesmo pool.
+- **`lerComo`:** leituras de uma ida só (preâmbulo + consultas numa mensagem = uma transação
+  implícita). Usado pela identidade (`lerUsuario`) e pelo contexto do painel.
+- **`painel_contexto()`:** badges, sino, faixas e onboarding numa ida (security invoker, RLS de
+  quem chama). Chama `resumo_hoje()` e `plano_vigente_da_empresa()` e devolve linhas cruas; as
+  regras puras do TypeScript (pendências, faixa da conta, assinatura de referência) rodam sobre
+  elas. React `cache`: layout e página dividem a mesma leitura. Teste de equivalência com os
+  loaders antigos.
+- **Uma transação por tela:** loaders recebem `tx` opcional (`naTransacao`) e a página dispara
+  tudo num `Promise.all` dentro de um `comUsuario`. Nunca passe `tx` para dentro de
+  `unstable_cache`: o callback pode rodar depois, em segundo plano, numa conexão que já é de
+  outra requisição. Por isso Números abre a transação dentro do cache (`carregarTelaNumeros`).
+- **Orçamento no CI (`tests/integration/idas-banco.test.ts`):** layout 2, leads 3, agenda 3,
+  números 3, detalhe do lead 4, Minha empresa 3. Antes: 39, 23, 30, 20, 26 e 16.
+- **Índices de FK** com sufixo `_fk_idx`, nas colunas e na ordem da FK; policies de dados
+  próprios com `(select auth.uid())`. `_lead_grupo`/`_lead_ordem` ficam sem `set search_path`:
+  o SET impede que o Postgres embuta a função, e a caixa com 5.000 leads passa de 38 para 65 ms.
+  São IMMUTABLE, só usam parâmetros e não leem tabelas.

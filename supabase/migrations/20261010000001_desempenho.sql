@@ -1,5 +1,5 @@
--- Etapa 9.5 · Desempenho (A.3 e A.6). Aditiva: índices, policies reescritas com a MESMA regra,
--- search_path fixo e duas funções de leitura novas. Nada que o código anterior use muda.
+-- Etapa 9.5 · Desempenho (A.3 e A.6). Aditiva: índices, policies reescritas com a MESMA regra
+-- e duas funções de leitura novas. Nada que o código anterior use muda.
 
 -- ---------------------------------------------------------------------------------------------
 -- 1. Índices nas chaves estrangeiras compostas (pai_id, empresa_id) usadas por junções, RLS e
@@ -60,14 +60,12 @@ create policy preferencias_avisos_select_proprias on public.preferencias_avisos
   using (usuario_id = (select auth.uid()) and empresa_id = (select public.empresa_do_usuario()));
 
 -- ---------------------------------------------------------------------------------------------
--- 3. search_path fixo nas regras da caixa (o corpo só usa tipos de pg_catalog e parâmetros).
+-- 3. _lead_grupo e _lead_ordem ficam SEM "set search_path" de propósito (o advisor avisa):
+--    qualquer SET numa função SQL impede o Postgres de embuti-la na consulta, e as duas rodam
+--    por linha na caixa. Medido com 5.000 leads: caixa_leads 38 ms → 65 ms com o SET. Elas são
+--    IMMUTABLE, só usam parâmetros e operadores de pg_catalog, não leem tabela: o search_path
+--    de quem chama não muda o resultado. Ver docs/ARQUITETURA.md §60.
 -- ---------------------------------------------------------------------------------------------
-alter function public._lead_grupo(public.status_lead, public.temperatura_lead, timestamptz, boolean,
-  timestamptz, timestamptz, timestamptz, timestamptz, timestamptz, timestamptz, timestamptz)
-  set search_path = '';
-alter function public._lead_ordem(integer, timestamptz, timestamptz, timestamptz, timestamptz,
-  timestamptz, timestamptz)
-  set search_path = '';
 
 -- ---------------------------------------------------------------------------------------------
 -- 4. Plano vigente da empresa do próprio usuário (limites e recursos, para qualquer perfil).
