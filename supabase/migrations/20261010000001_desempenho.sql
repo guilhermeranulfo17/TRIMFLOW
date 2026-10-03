@@ -2,44 +2,34 @@
 -- search_path fixo e duas funções de leitura novas. Nada que o código anterior use muda.
 
 -- ---------------------------------------------------------------------------------------------
--- 1. Índices nas chaves estrangeiras usadas por junções, RLS e exclusões em cascata.
---    FK composta (pai_id, empresa_id): o índice cobre as duas colunas na ordem da FK.
---    Ficam de fora, de propósito, as FKs para usuarios (criado_por, feita_por…: usuário nunca
---    é excluído, só desativado) e as do catálogo (tabelas pequenas por empresa).
+-- 1. Índices nas chaves estrangeiras compostas (pai_id, empresa_id) usadas por junções, RLS e
+--    exclusões: um índice por FK, nas colunas e na ordem da FK (o que o advisor do Supabase
+--    reconhece). Nomes com sufixo _fk_idx para não colidir com índices antigos de mesmo nome.
+--    Ficam de fora, de propósito, as FKs para usuarios (criado_por, feita_por…: usuário nunca é
+--    excluído, só desativado), as FKs só de empresa_id e as do catálogo (tabelas pequenas).
 -- ---------------------------------------------------------------------------------------------
-create index if not exists tarefas_lead_idx on public.tarefas (lead_id, empresa_id);
-create index if not exists tarefas_orcamento_idx on public.tarefas (orcamento_id, empresa_id)
-  where orcamento_id is not null;
-
-create index if not exists atividades_orcamento_idx on public.atividades (orcamento_id, empresa_id)
-  where orcamento_id is not null;
-
-create index if not exists avisos_lead_idx on public.avisos (lead_id, empresa_id)
-  where lead_id is not null;
-create index if not exists avisos_usuario_idx on public.avisos (usuario_id, empresa_id);
-create index if not exists avisos_entregas_aviso_idx on public.avisos_entregas (aviso_id, empresa_id);
-
-create index if not exists reservas_orcamento_idx on public.reservas (orcamento_id, empresa_id)
-  where orcamento_id is not null;
-create index if not exists reservas_turno_idx on public.reservas (turno_id, empresa_id);
-create index if not exists reservas_tipo_evento_idx on public.reservas (tipo_evento_id, empresa_id)
-  where tipo_evento_id is not null;
-
-create index if not exists orcamentos_espaco_idx on public.orcamentos (espaco_id, empresa_id)
-  where espaco_id is not null;
-create index if not exists orcamentos_turno_idx on public.orcamentos (turno_id, empresa_id)
-  where turno_id is not null;
-create index if not exists orcamentos_tipo_evento_idx on public.orcamentos (tipo_evento_id, empresa_id)
-  where tipo_evento_id is not null;
-
-create index if not exists notas_lead_idx on public.notas (lead_id, empresa_id);
-
-create index if not exists visitas_lead_idx on public.visitas (lead_id, empresa_id);
-create index if not exists visitas_orcamento_idx on public.visitas (orcamento_id, empresa_id)
-  where orcamento_id is not null;
-
-create index if not exists orcamento_itens_orcamento_idx
-  on public.orcamento_itens (orcamento_id, empresa_id);
+create index if not exists leads_responsavel_fk_idx on public.leads (responsavel_id, empresa_id);
+create index if not exists tarefas_lead_fk_idx on public.tarefas (lead_id, empresa_id);
+create index if not exists tarefas_orcamento_fk_idx on public.tarefas (orcamento_id, empresa_id);
+create index if not exists tarefas_responsavel_fk_idx on public.tarefas (responsavel_id, empresa_id);
+create index if not exists atividades_lead_fk_idx on public.atividades (lead_id, empresa_id);
+create index if not exists atividades_orcamento_fk_idx on public.atividades (orcamento_id, empresa_id);
+create index if not exists avisos_lead_fk_idx on public.avisos (lead_id, empresa_id);
+create index if not exists avisos_usuario_fk_idx on public.avisos (usuario_id, empresa_id);
+create index if not exists avisos_entregas_aviso_fk_idx on public.avisos_entregas (aviso_id, empresa_id);
+create index if not exists reservas_lead_fk_idx on public.reservas (lead_id, empresa_id);
+create index if not exists reservas_orcamento_fk_idx on public.reservas (orcamento_id, empresa_id);
+create index if not exists reservas_espaco_fk_idx on public.reservas (espaco_id, empresa_id);
+create index if not exists reservas_turno_fk_idx on public.reservas (turno_id, empresa_id);
+create index if not exists reservas_tipo_evento_fk_idx on public.reservas (tipo_evento_id, empresa_id);
+create index if not exists orcamentos_lead_fk_idx on public.orcamentos (lead_id, empresa_id);
+create index if not exists orcamentos_espaco_fk_idx on public.orcamentos (espaco_id, empresa_id);
+create index if not exists orcamentos_turno_fk_idx on public.orcamentos (turno_id, empresa_id);
+create index if not exists orcamentos_tipo_evento_fk_idx on public.orcamentos (tipo_evento_id, empresa_id);
+create index if not exists notas_lead_fk_idx on public.notas (lead_id, empresa_id);
+create index if not exists visitas_lead_fk_idx on public.visitas (lead_id, empresa_id);
+create index if not exists visitas_orcamento_fk_idx on public.visitas (orcamento_id, empresa_id);
+create index if not exists orcamento_itens_orcamento_fk_idx on public.orcamento_itens (orcamento_id, empresa_id);
 
 -- ---------------------------------------------------------------------------------------------
 -- 2. Policies com as funções dentro de (select …): o Postgres avalia uma vez por consulta, não
