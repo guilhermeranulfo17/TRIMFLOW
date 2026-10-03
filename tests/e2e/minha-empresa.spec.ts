@@ -220,6 +220,8 @@ test.describe('minha empresa', () => {
     const slugAntigo = linkAntigo.split('/b/')[1]!;
     const slugNovo = `link-novo-${Date.now().toString(36)}`;
 
+    // campo pronto (hidratado, com o link atual) antes de digitar
+    await expect(page.getByLabel('Final do link')).toHaveValue(slugAntigo);
     await page.getByLabel('Final do link').fill(slugNovo);
     await page.getByRole('button', { name: 'Alterar link' }).click();
     await esperarToast(page, 'O link antigo continua funcionando por 12 meses.');

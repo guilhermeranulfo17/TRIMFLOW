@@ -32,7 +32,8 @@ Não adicione dependências fora dessa lista sem perguntar.
 ```
 src/
   app/
-    (auth)/          login, cadastro, recuperar-senha, nova-senha
+    (auth)/          login, cadastro (+ completar, para quem entrou pelo Google), recuperar-senha,
+                     nova-senha; layout dividido no PC (painel da marca)
     (onboarding)/app/comecar/  onboarding guiado em 5 passos (tela cheia, sem menu)
     (app)/app/       área logada: leads (caixa) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
@@ -47,7 +48,7 @@ src/
     interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral,
                      empresas/[id] (ações auditadas, "Entrar como esta empresa")
     manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)
-    auth/            rotas técnicas: confirm (link do e-mail), sair
+    auth/            rotas técnicas: confirm (link do e-mail), callback (Google), sair
     b/[slug]/        página pública do buffet, orcamento (wizard), proposta/[token] (+ /pdf)
     (legal)/         privacidade e termos
   components/
@@ -68,7 +69,8 @@ src/
     proposta/        proposta na web (desenha o ModeloProposta)
     auth/            peças dos formulários de autenticação
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
-                     conversao (campos), senha, imagem, plano
+                     conversao (campos), senha, forca-senha, tema, imagem, plano
+    auth/            destino depois do login (destinoPosLogin, destinoSeguro)
     catalogo/        validações do catálogo, pendências do link público, resumos de preço
     agenda/          intervalo do slot, estado do slot, calendário, mensagens (= regra do SQL)
     preco/           motor de preço (calcularOrcamento, disponibilidade, aPartirDe, parcelas)
@@ -90,8 +92,10 @@ src/
     cobranca/        situação da conta (= _situacao_conta), limites (= _codigo_plano), CPF/CNPJ,
                      preços e cupom, eventos do Asaas (status monotônico = SQL), MRR, motivos
   server/
-    db/              client, schema (espelho das migrations), tenant (comUsuario), anon (comAnon),
-                     admin (sem RLS)
+    db/              client, schema (espelho das migrations), tenant (comUsuario, lerComo,
+                     naTransacao), inline (parâmetros), anon (comAnon), admin (sem RLS)
+    painel/          contexto do painel (painel_contexto: badges, sino, faixas, onboarding)
+    tema/            leitura do cookie do tema
     actions/         server actions (auth, simulador, leads, agenda, orcamentos, empresa/*)
     catalogo/        carregar (ContextoPreco via RLS), gravar-modelo, aplicar-modelo
     auth/            cliente Supabase do servidor, sessão, guards, redirecionamento,
@@ -146,10 +150,15 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - **Termos fixos do produto:** Lead, Orçamento, Proposta, Pré-reserva, Reserva, Pacote,
   Opcional, Turno, Espaço.
 - **ids:** sempre uuid. Nunca expor ids sequenciais.
-- **Visual do painel:** só escuro (tokens em `globals.css`, ligados por `data-painel`; ver
-  `docs/ARQUITETURA.md` §44). Use os tokens (`bg-card`, `bg-primary`, `bg-destaque`…) e, para
-  estados, tons translúcidos (`bg-amber-400/10 text-amber-300`); nada de fundos claros fixos
-  (`bg-white`, `bg-*-50`). Link público, proposta e login continuam claros.
+- **Identidade e temas (Etapa 9.5, `docs/ARQUITETURA.md` §59):** grafite + limão; **nada de
+  roxo** (teste `sem-roxo`). Painel com tema escolhido no menu da conta (cookie `orkestra_tema`:
+  escuro padrão, claro, sistema) via `data-painel data-tema`; telas de acesso sempre no escuro
+  (`data-acesso`); termos e privacidade no claro da marca (`data-orkestra-claro`); link público e
+  proposta no claro neutro com a cor do buffet (padrão `#0F766E`). Use só tokens (`bg-card`,
+  `bg-primary`, `bg-destaque`…); estados com `alerta`/`erro`/`sucesso`/`info`/`quente`
+  (`bg-alerta/10 text-alerta border-alerta/30`), nunca `amber-300`/`rose-400` fixos; texto na cor
+  primária com `text-primary-texto` (não `text-primary`). Nada de fundos claros fixos no painel.
+  Token novo ou mudado passa pelo teste de contraste AA (`tests/unit/tema/contraste.test.ts`).
 
 ## Multiempresa e segurança
 
@@ -157,6 +166,13 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `public.empresa_do_usuario()` e `public.perfil_do_usuario()`.
 - No servidor, queries da área logada usam `comUsuario(usuario.id, tx => …)` (`server/db/tenant.ts`):
   a transação roda como `authenticated` com as claims do usuário, então o RLS vale também aqui.
+  **Desempenho (Etapa 9.5, §60):** conexão reservada, `BEGIN` + identidade na mesma ida e
+  parâmetros inline (`server/db/inline.ts`): consultas disparadas juntas (`Promise.all`) vão em
+  pipeline. Cada tela abre **uma** transação e passa `tx` aos loaders (`naTransacao`); badges,
+  sino, faixas e onboarding vêm de `carregarContextoPainel` (`painel_contexto()`, uma ida,
+  memoizado). Nunca passe `tx` para dentro de `unstable_cache` (o callback pode rodar depois, em
+  outra conexão). Orçamento de idas no CI (`tests/integration/idas-banco.test.ts`): tela nova
+  ou loader novo entra lá.
 - `server/db/admin.ts` ignora RLS: só para casos revisados, expondo o mínimo, com
   `import 'server-only'`.
 - **Link público:** só pelas funções do schema `publico` (fora da API do Supabase, `execute` só
@@ -214,6 +230,12 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `domain/leads/temperatura`. Testes de equivalência: mudou uma, mude a outra. Componente
   cliente de Leads importa módulos específicos de `domain/leads` (nunca o índice) e nunca
   `domain/phone`: o telefone chega formatado do servidor.
+- **Sessão (Etapa 9.5):** `getClaims()` (JWT validado localmente) no middleware e em
+  `usuarioAtual`; `getUser()` (rede) só onde precisa de revalidação forte (`/interno`, suporte,
+  troca de senha, callback do Google, Admin API). Depois de mudar `app_metadata` (ex.: limpar
+  `trocar_senha`), chame `refreshSession()`: os claims vêm do token. Login com Google:
+  `/auth/callback` → `decidirVoltaExterna` (`server/auth/volta-externa.ts`, regra em
+  `domain/auth/destino`); conta nova completa em `/cadastro/completar` (`completar_conta_dono`).
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
   `SUPABASE_SERVICE_ROLE_KEY` só é lida em `server/auth/admin-supabase.ts` (`server-only`); o
   ESLint impede importá-lo em componentes, `lib`, páginas e middleware.
@@ -295,8 +317,8 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 8 e o visual escuro (PRs #1 a #10)
-  na `main`.
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 8, o visual escuro e a Etapa 9A
+  (PRs #1 a #11) na `main`. Região das funções na Vercel: `gru1` (`vercel.json`).
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região
@@ -317,7 +339,9 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
   `docs/AVISOS_CONFIGURACAO.md`. Modelos do WhatsApp: `docs/WHATSAPP_MODELOS.md`. Desde a
   Etapa 9A: `ASAAS_API_KEY` (secreta), `ASAAS_AMBIENTE` (`sandbox`|`producao`),
   `ASAAS_WEBHOOK_TOKEN` (secreta), `ORKESTRA_ADMINS` e `NEXT_PUBLIC_WHATSAPP_VENDAS`; sem as do
-  Asaas, a cobrança fica desligada. Passo a passo: `docs/COBRANCA.md`.
+  Asaas, a cobrança fica desligada. Passo a passo: `docs/COBRANCA.md`. Desde a Etapa 9.5:
+  `NEXT_PUBLIC_LOGIN_GOOGLE=1` liga "Continuar com o Google" (só depois de configurar o provedor:
+  `docs/LOGIN_GOOGLE.md`). Região e chave do JWT: `docs/LANCAMENTO.md`.
   - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
