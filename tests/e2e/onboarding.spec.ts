@@ -180,8 +180,14 @@ test.describe('Buffet Demo', () => {
     const antes = Number(await checklist.getAttribute('data-percentual'));
     await page.getByRole('button', { name: /Seu link está \d+% pronto/ }).click();
     await expect(page.getByTestId('item-linkNaBio')).toHaveAttribute('data-feito', 'false');
-    await page.getByTestId('item-linkNaBio').getByTestId('fiz-link-na-bio').click();
-    await expect(checklist).not.toHaveAttribute('data-percentual', String(antes));
+    // clique antes da hidratação se perde: repete enquanto o "Fiz" ainda estiver na tela
+    const fiz = page.getByTestId('item-linkNaBio').getByTestId('fiz-link-na-bio');
+    await expect(async () => {
+      if (await fiz.isVisible()) await fiz.click();
+      await expect(checklist).not.toHaveAttribute('data-percentual', String(antes), {
+        timeout: 3_000,
+      });
+    }).toPass({ timeout: 25_000 });
     const depois = Number(await checklist.getAttribute('data-percentual'));
     expect(depois).toBeGreaterThan(antes);
     expect(await semRolagemHorizontal(page)).toBe(true);
