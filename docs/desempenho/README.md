@@ -18,9 +18,11 @@ acima do limite).
 
 ## Tela antes dos dados
 
-Navegação pelo menu no PC (1440), do clique até o primeiro quadro com o esqueleto ou a tela
-nova (Playwright, `requestAnimationFrame`, 3 voltas): Agenda 52–64 ms, Números 52–72 ms, Minha
-empresa 42–93 ms, Leads 41–119 ms. Mediana ~60 ms (meta: 100 ms).
+Do clique até o primeiro quadro com resposta (esqueleto, indicador no link ou a tela nova),
+Playwright no PC (1440), `requestAnimationFrame`, 3 voltas: menu → Agenda 52–85 ms, Números
+37–66 ms, Minha empresa 61–72 ms, Leads 41–53 ms; período de Números 60–74 ms; atalho do topo de
+Leads 71–81 ms (meta: 100 ms). Leads e Números usam Suspense com chave dos filtros em vez de
+`loading.tsx` (ARQUITETURA §60).
 
 ## Servidor
 

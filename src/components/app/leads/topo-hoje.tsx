@@ -2,6 +2,7 @@ import { AlarmClock, CalendarCheck, CalendarClock, ListTodo, UserPlus } from 'lu
 import Link from 'next/link';
 import { filtrosParaUrl, type AtalhoCaixa, type FiltrosCaixa } from '@/domain/leads/filtros';
 import { cn } from '@/lib/utils';
+import { PendenteLink } from '../pendente-link';
 import type { ResumoHoje } from '@/server/leads/carregar';
 
 const ITENS: {
@@ -56,6 +57,7 @@ export function TopoHoje({ resumo, filtros }: { resumo: ResumoHoje; filtros: Fil
                 >
                   <Icone className="size-3.5" aria-hidden />
                   {rotulo}
+                  <PendenteLink className="ml-auto" />
                 </span>
                 <span
                   className={cn(

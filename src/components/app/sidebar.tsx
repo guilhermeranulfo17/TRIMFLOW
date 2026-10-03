@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import { BadgePendencia } from './badge-pendencia';
+import { PendenteLink } from './pendente-link';
 import { itemAtivo, ITENS_NAV } from './nav-items';
 
 /** Navegação lateral (desktop, ≥ md). */
@@ -33,6 +34,7 @@ export function Sidebar({ badges = {} }: { badges?: Record<string, number> }) {
               >
                 <Icone className="size-5" aria-hidden />
                 {rotulo}
+                <PendenteLink />
                 <BadgePendencia quantidade={badges[href] ?? 0} className="ml-auto" />
               </Link>
             );

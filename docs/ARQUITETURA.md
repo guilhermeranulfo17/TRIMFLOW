@@ -1131,6 +1131,13 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
   tudo num `Promise.all` dentro de um `comUsuario`. Nunca passe `tx` para dentro de
   `unstable_cache`: o callback pode rodar depois, em segundo plano, numa conexão que já é de
   outra requisição. Por isso Números abre a transação dentro do cache (`carregarTelaNumeros`).
+- **Esqueletos e filtros na URL:** `loading.tsx` envolvendo uma tela que navega para ela mesma
+  trocando só a busca (período de Números, atalhos e filtros de Leads) travava a navegação em
+  produção (Next 15.5: a URL não mudava; achado por bisect, não acontece em `next dev`). Por isso
+  Leads e Números **não** têm `loading.tsx` (nem o painel um genérico): a página desenha o
+  topo na hora e põe os dados num `<Suspense key={filtros}>` com o esqueleto, e os links mostram
+  `PendenteLink` (`useLinkStatus`) enquanto a navegação está pendente. As demais telas mantêm o
+  seu `loading.tsx`. Tela nova com filtros na URL segue o mesmo padrão.
 - **Orçamento no CI (`tests/integration/idas-banco.test.ts`):** layout 2, leads 3, agenda 3,
   números 3, detalhe do lead 4, Minha empresa 3. Antes: 39, 23, 30, 20, 26 e 16.
 - **Índices de FK** com sufixo `_fk_idx`, nas colunas e na ordem da FK; policies de dados
