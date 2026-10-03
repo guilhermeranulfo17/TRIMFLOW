@@ -7,6 +7,7 @@ import {
   esperarErroSql,
   IDS,
 } from '../support/db';
+import { diferenciaisValidos } from '@/domain/publico/pagina';
 
 /*
  * Etapa 9.5 · PR 2: página pública. Tabelas novas (galeria, depoimentos, perguntas) com RLS por
@@ -291,5 +292,27 @@ describe('leitura pública', () => {
       const [{ p }] = await tx`select publico.pagina('buffet-demo') as p`;
       expect(p.endereco).toMatch(/Rondon Pacheco/);
     });
+  });
+});
+
+describe('equivalência SQL × domínio', () => {
+  it('_diferenciais_validos = diferenciaisValidos', async () => {
+    const casos: string[][] = [
+      [],
+      ['Monitores'],
+      ['Monitores', 'monitores'],
+      ['Monitores', ' Monitores '],
+      ['x'],
+      ['  ab  '],
+      ['x'.repeat(40)],
+      ['x'.repeat(41)],
+      Array.from({ length: 8 }, (_, i) => `Item ${i}`),
+      Array.from({ length: 9 }, (_, i) => `Item ${i}`),
+      ['Espaço próprio', 'ESPAÇO PRÓPRIO'],
+    ];
+    for (const c of casos) {
+      const [{ v }] = await sql`select public._diferenciais_validos(${c}::text[]) as v`;
+      expect(v, JSON.stringify(c)).toBe(diferenciaisValidos(c));
+    }
   });
 });

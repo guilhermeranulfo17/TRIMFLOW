@@ -10,3 +10,4 @@ export * from './tipos';
 export * from './vitrine';
 export * from './whatsapp';
 export * from './mensagens';
+export * from './pagina';
