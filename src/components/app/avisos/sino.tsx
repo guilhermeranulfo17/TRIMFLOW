@@ -62,10 +62,17 @@ export function SinoAvisos({ inicial }: { inicial: number }) {
   }
 
   function marcarTodos() {
+    // otimista: zera na hora; se o servidor falhar, volta como estava
+    const antes = { naoLidos, itens };
+    setNaoLidos(0);
+    setItens((xs) => xs?.map((x) => ({ ...x, lido: true })) ?? null);
     iniciar(async () => {
-      await marcarAvisosLidos(null);
-      setNaoLidos(0);
-      setItens((xs) => xs?.map((x) => ({ ...x, lido: true })) ?? null);
+      const r = await marcarAvisosLidos(null);
+      if (!r.ok) {
+        setNaoLidos(antes.naoLidos);
+        setItens(antes.itens);
+        return;
+      }
       router.refresh();
     });
   }

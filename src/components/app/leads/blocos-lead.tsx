@@ -21,6 +21,7 @@ import {
   confirmarVisita,
   editarNota,
   marcarVisitaRealizada,
+  reabrirTarefa,
 } from '@/server/actions/leads';
 import { useAcao } from './acoes-lead';
 import { CampoQuando } from './campo-quando';
@@ -167,9 +168,20 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
     setFeita(true); // otimista
     iniciar(async () => {
       const r = await concluirTarefa(tarefa.id);
-      if (r.ok) toast.sucesso(r.mensagem);
+      if (r.ok) toast.sucesso(r.mensagem, { desfazer: reabrir });
       else {
         setFeita(false);
+        toast.erro(r.erro);
+      }
+    });
+  }
+
+  function reabrir() {
+    setFeita(false); // otimista
+    iniciar(async () => {
+      const r = await reabrirTarefa(tarefa.id);
+      if (!r.ok) {
+        setFeita(true);
         toast.erro(r.erro);
       }
     });
