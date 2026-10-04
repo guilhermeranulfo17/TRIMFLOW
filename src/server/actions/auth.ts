@@ -30,7 +30,7 @@ import { auditoria } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { urlDoSite } from '@/server/env';
 import { mensagemDeErroAuth } from '@/server/erros';
-import { logar } from '@/server/log';
+import { codigoDoErro, logar } from '@/server/log';
 import { dentroDoLimite, MENSAGEM_LIMITE } from '@/server/seguranca/limite';
 
 export type ResultadoAcao = { ok: true; mensagem?: string } | { ok: false; erro: string };
@@ -117,7 +117,7 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
         ${dados.segmento}::public.segmento_empresa, ${slugBaseDaEmpresa(dados.nomeBuffet)})`),
     );
   } catch {
-    console.error('[cadastro] completar conta falhou');
+    logar('erro', 'cadastro.completar_falhou');
     return { ok: false, erro: 'Não foi possível criar sua conta agora. Tente novamente.' };
   }
   await registrarAceite(user.id);
@@ -156,10 +156,7 @@ async function registrarOrigem(usuarioId: string) {
     );
     loja.delete(COOKIE_ORIGEM);
   } catch (e) {
-    console.error(
-      '[cadastro] origem não registrada',
-      (e as { code?: string }).code ?? 'sem-codigo',
-    );
+    logar('aviso', 'cadastro.origem_nao_registrada', { codigo: codigoDoErro(e) });
   }
 }
 
@@ -176,7 +173,7 @@ async function aplicarModeloDoCadastro(usuarioId: string, segmento: CadastroInpu
     if (!linha) return;
     await gravarModelo(comUsuario, usuarioId, linha.empresa_id, modeloDoSegmento(segmento));
   } catch {
-    console.error('[cadastro] modelo do segmento não aplicado');
+    logar('erro', 'cadastro.modelo_nao_aplicado');
   }
 }
 
@@ -195,6 +192,10 @@ export async function entrar(input: LoginInput, next?: string | null): Promise<R
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };
   // Senha temporária (vendedor criado pelo dono): primeiro cria a senha pessoal.
   if (precisaTrocarSenha(data.user?.app_metadata)) redirect('/nova-senha');
+  // Verificação em duas etapas ligada: falta o código do aplicativo (Etapa 9B)
+  if (data.user?.app_metadata?.mfa === true) {
+    redirect(`/login/verificacao?next=${encodeURIComponent(destinoSeguro(next))}`);
+  }
   redirect(destinoSeguro(next));
 }
 
@@ -243,7 +244,7 @@ export async function definirNovaSenha(input: NovaSenhaInput): Promise<Resultado
     try {
       await criarAuthAdmin().concluirTrocaDeSenha(user.id);
     } catch (erro) {
-      console.error('[auth] não foi possível concluir a troca de senha', erro);
+      logar('erro', 'auth.troca_de_senha', { codigo: codigoDoErro(erro) });
       return {
         ok: false,
         erro: 'Senha alterada, mas não conseguimos liberar seu acesso. Tente de novo.',

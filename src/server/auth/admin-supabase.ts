@@ -1,5 +1,6 @@
 import 'server-only';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { codigoDoErro, logar } from '@/server/log';
 
 /*
  * ACESSO ADMINISTRATIVO AO AUTH (service role).
@@ -64,7 +65,7 @@ export function criarAuthAdmin(): AuthAdmin {
         const codigo = (error as { code?: string }).code;
         if (codigo === 'email_exists' || /already (been )?registered/i.test(error.message))
           return { ok: false, motivo: 'email_em_uso' };
-        console.error('[auth-admin] criarUsuario:', error.message);
+        logar('erro', 'auth_admin.criar_usuario', { codigo: codigoDoErro(error) });
         return { ok: false, motivo: 'falha' };
       }
       return { ok: true, id: data.user.id };
@@ -143,4 +144,15 @@ export function criarStorageAdmin(): StorageAdmin {
       }
     },
   };
+}
+
+/**
+ * Marca no app_metadata que o usuário ligou a verificação em duas etapas (Etapa 9B). O middleware
+ * lê dos claims do JWT (sem rede): sessão sem aal2 de quem tem a marca não entra no painel.
+ */
+export async function definirMarcaMfa(id: string, ligada: boolean): Promise<void> {
+  const { error } = await clienteAdmin().auth.admin.updateUserById(id, {
+    app_metadata: { mfa: ligada },
+  });
+  falhar('definirMarcaMfa', error);
 }
