@@ -104,3 +104,43 @@ export async function chaveDerivada(rotulo: string): Promise<Buffer> {
   const { createHmac } = await import('node:crypto');
   return createHmac('sha256', chave).update(`orkestra:${rotulo}`).digest();
 }
+
+/** Storage com a service role (exclusão definitiva da conta, LGPD). Só o que o fluxo precisa. */
+export interface StorageAdmin {
+  /** Todos os caminhos de arquivos do bucket sob o prefixo (busca recursiva nas pastas). */
+  listar(bucket: string, prefixo: string): Promise<string[]>;
+  remover(bucket: string, caminhos: string[]): Promise<void>;
+}
+
+export function criarStorageAdmin(): StorageAdmin {
+  return {
+    async listar(bucket, prefixo) {
+      const storage = clienteAdmin().storage.from(bucket);
+      const achados: string[] = [];
+      const pastas = [prefixo.replace(/\/+$/, '')];
+      while (pastas.length) {
+        const pasta = pastas.pop()!;
+        for (let pagina = 0; ; pagina++) {
+          const { data, error } = await storage.list(pasta, { limit: 1000, offset: pagina * 1000 });
+          falhar('listar', error);
+          for (const item of data ?? []) {
+            const caminho = `${pasta}/${item.name}`;
+            // pasta: sem id (o Storage devolve só o nome)
+            if (item.id === null) pastas.push(caminho);
+            else achados.push(caminho);
+          }
+          if (!data || data.length < 1000) break;
+        }
+      }
+      return achados;
+    },
+    async remover(bucket, caminhos) {
+      for (let i = 0; i < caminhos.length; i += 100) {
+        const { error } = await clienteAdmin()
+          .storage.from(bucket)
+          .remove(caminhos.slice(i, i + 100));
+        falhar('remover', error);
+      }
+    },
+  };
+}

@@ -3,6 +3,7 @@
 import { sql } from 'drizzle-orm';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
 import { modeloDoSegmento } from '@/domain/modelos';
 import { celularBRParaE164 } from '@/domain/phone';
@@ -29,6 +30,8 @@ import { auditoria } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { urlDoSite } from '@/server/env';
 import { mensagemDeErroAuth } from '@/server/erros';
+import { logar } from '@/server/log';
+import { dentroDoLimite, MENSAGEM_LIMITE } from '@/server/seguranca/limite';
 
 export type ResultadoAcao = { ok: true; mensagem?: string } | { ok: false; erro: string };
 
@@ -53,6 +56,7 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
   const dados = parsed.data;
   const whatsappE164 = celularBRParaE164(dados.whatsapp);
   if (!whatsappE164) return { ok: false, erro: 'Informe um celular válido com DDD.' };
+  if (!(await dentroDoLimite('cadastro'))) return { ok: false, erro: MENSAGEM_LIMITE };
 
   const supabase = await criarClienteSupabase();
   const { data, error } = await supabase.auth.signUp({
@@ -71,6 +75,8 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
     },
   });
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };
+  // aceite dos Termos e da Privacidade (versão e data), mesmo sem sessão (confirmação por e-mail)
+  if (data.user) await registrarAceite(data.user.id);
 
   // Com confirmação de e-mail ligada no projeto, o signup não devolve sessão.
   if (!data.session) {
@@ -114,9 +120,26 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
     console.error('[cadastro] completar conta falhou');
     return { ok: false, erro: 'Não foi possível criar sua conta agora. Tente novamente.' };
   }
+  await registrarAceite(user.id);
   await aplicarModeloDoCadastro(user.id, dados.segmento);
   await registrarOrigem(user.id);
   redirect('/app/comecar');
+}
+
+/**
+ * Aceite versionado (Etapa 9B, LGPD): o checkbox do cadastro vira versão e data gravadas. Se
+ * falhar, o cadastro segue e o painel pede o aceite no primeiro acesso (/app/aceite).
+ */
+async function registrarAceite(usuarioId: string) {
+  try {
+    await comUsuario(usuarioId, (tx) =>
+      tx.execute(sql`select public.registrar_aceite(${VERSAO_DOCUMENTOS})`),
+    );
+  } catch (e) {
+    logar('aviso', 'cadastro.aceite_nao_registrado', {
+      codigo: (e as { code?: string }).code ?? 'sem-codigo',
+    });
+  }
 }
 
 /**
@@ -160,6 +183,9 @@ async function aplicarModeloDoCadastro(usuarioId: string, segmento: CadastroInpu
 export async function entrar(input: LoginInput, next?: string | null): Promise<ResultadoAcao> {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) return DADOS_INVALIDOS;
+  if (!(await dentroDoLimite('login', { email: parsed.data.email }))) {
+    return { ok: false, erro: MENSAGEM_LIMITE };
+  }
 
   const supabase = await criarClienteSupabase();
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -182,6 +208,9 @@ export async function sair(): Promise<void> {
 export async function recuperarSenha(input: RecuperarSenhaInput): Promise<ResultadoAcao> {
   const parsed = recuperarSenhaSchema.safeParse(input);
   if (!parsed.success) return DADOS_INVALIDOS;
+  if (!(await dentroDoLimite('recuperar_senha', { email: parsed.data.email }))) {
+    return { ok: false, erro: MENSAGEM_LIMITE };
+  }
 
   const supabase = await criarClienteSupabase();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {

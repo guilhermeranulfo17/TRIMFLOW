@@ -267,7 +267,8 @@ export type VersaoDoLead = ResumoOrcamento & {
   diferencas: string[];
   validade: { expirada: boolean; texto: string } | null;
   link: string;
-  linkWhatsapp: string;
+  /** null quando o lead foi anonimizado (sem WhatsApp) */
+  linkWhatsapp: string | null;
 };
 
 export type GrupoOrcamento = { numero: number; versoes: VersaoDoLead[] };
@@ -319,7 +320,9 @@ export type AtividadeDoLead = {
 export type DetalheLead = {
   id: string;
   nome: string;
-  whatsappE164: string;
+  /** null depois da anonimização (LGPD) */
+  whatsappE164: string | null;
+  anonimizadoEm: string | null;
   telefone: string;
   email: string | null;
   status: StatusLead;
@@ -498,7 +501,8 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
     id: l.id,
     nome: l.nome,
     whatsappE164: l.whatsappE164,
-    telefone: formatPhoneBR(l.whatsappE164),
+    telefone: l.whatsappE164 ? formatPhoneBR(l.whatsappE164) : '',
+    anonimizadoEm: l.anonimizadoEm?.toISOString() ?? null,
     email: l.email,
     status: l.status,
     temperatura: l.temperatura,
@@ -541,10 +545,12 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
               : [],
             validade: o.validadeAte ? estadoValidade(o.validadeAte, hoje) : null,
             link,
-            linkWhatsapp: linkWhatsApp(
-              l.whatsappE164,
-              mensagemEnvioProposta(usuario.empresa.nome, l.nome, link),
-            ),
+            linkWhatsapp: l.whatsappE164
+              ? linkWhatsApp(
+                  l.whatsappE164,
+                  mensagemEnvioProposta(usuario.empresa.nome, l.nome, link),
+                )
+              : null,
           };
         }),
       };
@@ -649,6 +655,9 @@ export async function dadosDaMensagem(
   });
   if (!r) return null;
   const { l, o, pre, visita } = r;
+  // lead anonimizado (LGPD): não há para quem mandar mensagem
+  if (!l.whatsappE164) return null;
+  const whatsappE164 = l.whatsappE164;
   const orc = o?.o ?? null;
   const resultado = (orc?.resultado ?? null) as { sinalCentavos?: number } | null;
 
@@ -660,7 +669,7 @@ export async function dadosDaMensagem(
   }
 
   return {
-    whatsappE164: l.whatsappE164,
+    whatsappE164,
     momento: {
       status: l.status,
       temperatura: l.temperatura,

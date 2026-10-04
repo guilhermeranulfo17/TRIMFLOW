@@ -255,6 +255,8 @@ describe('transições', () => {
       expect(canc).toEqual({ status: 'cancelada', motivo_cancelamento: 'Cliente desistiu' });
       // Cancelada libera o slot na hora.
       await reservar(tx, c.espaco, c.turnos.Tarde!, data);
+      // Etapa 9B: só o dono lê a auditoria; aqui a conferência é como administrador
+      await tx`reset role`;
       const auditoria =
         await tx`select acao from public.auditoria where entidade_id = ${id} order by criado_em`;
       expect(auditoria.map((a) => a.acao)).toEqual([

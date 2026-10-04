@@ -32,6 +32,10 @@ select n.id, '33333333-3333-4333-8333-333333333333', n.nome, n.email, n.perfil::
 from novos n
 on conflict (id) do nothing;
 
+-- Etapa 9B: aceite dos termos vigentes (src/domain/legal/versao.ts)
+update public.usuarios set termos_versao = '2026-10-04', termos_aceitos_em = now()
+where empresa_id = '33333333-3333-4333-8333-333333333333';
+
 do $$
 declare
   vol constant uuid := '33333333-3333-4333-8333-333333333333';

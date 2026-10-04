@@ -107,7 +107,8 @@ export async function carregarOrcamentoParaEditar(
       .limit(1);
     if (!o) return null;
     const [l] = await tx.select().from(leads).where(eq(leads.id, o.leadId)).limit(1);
-    if (!l) return null;
+    // lead anonimizado (LGPD): sem WhatsApp não há versão nova
+    if (!l?.whatsappE164) return null;
     return {
       id: o.id,
       numero: o.numero,
@@ -134,5 +135,6 @@ export async function carregarClienteDoLead(usuario: UsuarioAtual, leadId: strin
       .orderBy(asc(leads.criadoEm))
       .limit(1),
   );
-  return l ?? null;
+  // lead anonimizado (LGPD): sem WhatsApp, o "+ Orçamento" começa do zero
+  return l?.whatsapp ? { ...l, whatsapp: l.whatsapp } : null;
 }

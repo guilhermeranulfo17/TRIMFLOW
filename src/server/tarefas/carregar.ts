@@ -21,7 +21,7 @@ export type TarefaDaTela = {
   feitaEm: string | null;
   mensagemSugerida: string | null;
   automatica: { situacao: SituacaoMensagem; motivo: string } | null;
-  lead: { id: string; nome: string; telefone: string; whatsappE164: string };
+  lead: { id: string; nome: string; telefone: string; whatsappE164: string | null };
   responsavelNome: string | null;
 };
 
@@ -85,7 +85,7 @@ export async function carregarTarefas(usuario: UsuarioAtual): Promise<TelaTarefa
     lead: {
       id: r.t.leadId,
       nome: r.leadNome,
-      telefone: formatPhoneBR(r.leadWhatsapp),
+      telefone: r.leadWhatsapp ? formatPhoneBR(r.leadWhatsapp) : '',
       whatsappE164: r.leadWhatsapp,
     },
     responsavelNome: r.responsavelNome,
