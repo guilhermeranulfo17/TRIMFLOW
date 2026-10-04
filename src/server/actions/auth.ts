@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import { cookies, headers } from 'next/headers';
 import { after } from 'next/server';
 import { redirect } from 'next/navigation';
+import { ehSessaoDemo, MENSAGEM_DEMO } from '@/domain/auth/demo';
 import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
 import { modeloDoSegmento } from '@/domain/modelos';
@@ -220,7 +221,10 @@ export async function entrar(input: LoginInput, next?: string | null): Promise<R
 
 export async function sair(): Promise<void> {
   const supabase = await criarClienteSupabase();
-  await supabase.auth.signOut();
+  // demo: um usuário para todos os visitantes, então só esta sessão sai
+  const { data } = await supabase.auth.getClaims();
+  const demo = ehSessaoDemo(data?.claims?.app_metadata as Record<string, unknown> | undefined);
+  await supabase.auth.signOut({ scope: demo ? 'local' : 'global' });
   redirect('/login');
 }
 
@@ -254,6 +258,7 @@ export async function definirNovaSenha(input: NovaSenhaInput): Promise<Resultado
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, erro: 'Seu link expirou. Peça um novo em "Esqueci minha senha".' };
+  if (ehSessaoDemo(user.app_metadata)) return { ok: false, erro: MENSAGEM_DEMO };
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.senha });
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };

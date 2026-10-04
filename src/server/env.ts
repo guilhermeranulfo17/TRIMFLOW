@@ -68,6 +68,15 @@ export function configWhatsapp(): ConfigWhatsapp | null {
   return { token, phoneNumberId };
 }
 
+/**
+ * Slug da conta de demonstração (Etapa 9B): NEXT_PUBLIC_DEMO_SLUG. Vazio ou inválido = demo
+ * desligada (a landing esconde os botões e /demo/entrar volta para a landing).
+ */
+export function demoSlug(): string | null {
+  const s = process.env.NEXT_PUBLIC_DEMO_SLUG?.trim().toLowerCase();
+  return s && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) && s.length >= 3 && s.length <= 60 ? s : null;
+}
+
 export type ConfigEmail = { chave: string; remetente: string };
 
 /**

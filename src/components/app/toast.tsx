@@ -2,6 +2,7 @@
 
 import { CircleAlert, CircleCheck, X } from 'lucide-react';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { ehMensagemDemo, SAIR_DA_DEMO_PARA_CADASTRO } from '@/domain/auth/demo';
 import { pedeIrAoPlano } from '@/domain/cobranca/limites';
 import { cn } from '@/lib/utils';
 
@@ -66,6 +67,15 @@ export function ProvedorToast({ children }: { children: React.ReactNode }) {
               />
               <span className="flex-1">
                 {t.mensagem}
+                {t.tipo === 'erro' && ehMensagemDemo(t.mensagem) && (
+                  <a
+                    href={SAIR_DA_DEMO_PARA_CADASTRO}
+                    className="text-foreground mt-1 block font-semibold underline underline-offset-2"
+                    data-testid="toast-criar-conta"
+                  >
+                    Criar conta grátis
+                  </a>
+                )}
                 {t.tipo === 'erro' && pedeIrAoPlano(t.mensagem) && (
                   <a
                     href="/app/empresa/plano"

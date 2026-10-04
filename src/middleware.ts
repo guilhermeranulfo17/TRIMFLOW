@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { COOKIE_DEMO, demoVencida, ehSessaoDemo } from '@/domain/auth/demo';
 import { precisaSegundoFator } from '@/domain/auth/mfa';
 import {
   cabecalhosFixos,
@@ -113,6 +114,19 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login/verificacao';
     url.search = `?next=${encodeURIComponent(pathname + search)}`;
+    return proteger(redirecionar(url, response));
+  }
+
+  // Demonstração (Etapa 9B): sessão de 2 horas, contada pelo cookie gravado na entrada
+  if (
+    user &&
+    ehSessaoDemo(user.app_metadata) &&
+    demoVencida(request.cookies.get(COOKIE_DEMO)?.value, Date.now()) &&
+    !pathname.startsWith('/auth/')
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/sair';
+    url.search = '?motivo=demo-fim';
     return proteger(redirecionar(url, response));
   }
 

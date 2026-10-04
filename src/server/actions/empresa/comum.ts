@@ -2,6 +2,7 @@ import 'server-only';
 import { revalidateTag } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
 import type { z } from 'zod';
+import { MENSAGEM_DEMO } from '@/domain/auth/demo';
 import { MENSAGEM_SOMENTE_LEITURA, mensagemErroConta } from '@/domain/cobranca/limites';
 import { podeEscrever } from '@/domain/cobranca/situacao';
 import { idSchema } from '@/domain/validacao/comum';
@@ -87,6 +88,7 @@ export async function acaoDoDono<T>(
     const dono = await exigirPerfil('dono');
     // conta suspensa: somente leitura (o banco recusa de novo; aqui a mensagem sai limpa e
     // cobre também o que grava pela conexão administrativa, como criar vendedor)
+    if (dono.empresa.demo) return { ok: false, erro: MENSAGEM_DEMO };
     if (!podeEscrever(dono.empresa.situacao)) return { ok: false, erro: MENSAGEM_SOMENTE_LEITURA };
     const resultado = await fn(dono);
     // A página pública guarda vitrine e catálogo em cache (tag por slug): toda configuração
