@@ -18,11 +18,12 @@ acima do limite).
 
 ## Tela antes dos dados
 
-Do clique até o primeiro quadro com resposta (esqueleto, indicador no link ou a tela nova),
-Playwright no PC (1440), `requestAnimationFrame`, 3 voltas: menu → Agenda 52–85 ms, Números
-37–66 ms, Minha empresa 61–72 ms, Leads 41–53 ms; período de Números 60–74 ms; atalho do topo de
-Leads 71–81 ms (meta: 100 ms). Leads e Números usam Suspense com chave dos filtros em vez de
-`loading.tsx` (ARQUITETURA §60).
+Do clique até o primeiro quadro com resposta (indicador no link ou nos filtros, ou a tela nova),
+Playwright no PC (1440), `requestAnimationFrame`, 3 voltas, com 400 ms a mais em cada pedido da
+navegação (rede lenta simulada): menu → Agenda 74–77 ms, menu → Números 64–81 ms, período de
+Números 64–88 ms, busca de Leads 60–80 ms (meta: 100 ms). O painel não tem `loading.tsx` nem
+Suspense de página (ARQUITETURA §60): o retorno imediato é o `PendenteLink` no link clicado e o
+indicador da transição nos filtros de Leads. Navegação com 0, 150 e 400 ms de atraso: 5/5.
 
 ## Servidor
 

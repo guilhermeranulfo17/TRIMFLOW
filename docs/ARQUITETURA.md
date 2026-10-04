@@ -1131,13 +1131,26 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
   tudo num `Promise.all` dentro de um `comUsuario`. Nunca passe `tx` para dentro de
   `unstable_cache`: o callback pode rodar depois, em segundo plano, numa conexão que já é de
   outra requisição. Por isso Números abre a transação dentro do cache (`carregarTelaNumeros`).
-- **Esqueletos e filtros na URL:** `loading.tsx` envolvendo uma tela que navega para ela mesma
-  trocando só a busca (período de Números, atalhos e filtros de Leads) travava a navegação em
-  produção (Next 15.5: a URL não mudava; achado por bisect, não acontece em `next dev`). Por isso
-  Leads e Números **não** têm `loading.tsx` (nem o painel um genérico): a página desenha o
-  topo na hora e põe os dados num `<Suspense key={filtros}>` com o esqueleto, e os links mostram
-  `PendenteLink` (`useLinkStatus`) enquanto a navegação está pendente. As demais telas mantêm o
-  seu `loading.tsx`. Tela nova com filtros na URL segue o mesmo padrão.
+- **Sem Suspense de página no painel (correção depois do merge do PR 1):** dois defeitos com a
+  mesma origem, os dois só no build de produção:
+  - `loading.tsx` numa tela que navega para ela mesma trocando só a busca (período de Números,
+    atalhos e filtros de Leads) travava a navegação: a URL não mudava (achado por bisect).
+  - Suspense em volta do conteúdo da página (`loading.tsx` ou `<Suspense>` no `page.tsx`, com ou
+    sem `key`) fazia a tela às vezes ficar com os dados antigos depois de uma ação com
+    `revalidatePath`/`router.refresh()`. A resposta chegava com os dados novos (conferido no
+    tráfego), mas a tela não trocava, em cerca de metade das vezes. No CI: o "Fiz" do checklist
+    não subia o percentual e o logo salvo não aparecia. Sem o Suspense de página: 8/8 e 6/6.
+    O Suspense do **layout** (badges, sino, faixas) atualiza normalmente.
+
+  Regra: no painel, **nenhum `loading.tsx` e nenhum `<Suspense>` dentro de `page.tsx`**
+  (teste `tests/unit/config/sem-suspense-de-pagina.test.ts`). Suspense só no layout. O retorno
+  imediato ao navegar fica no link clicado (`PendenteLink`, `useLinkStatus`) e, nos filtros de
+  Leads, no estado da transição (`useTransition`: o ícone da busca vira indicador). O wizard e a
+  proposta públicos mantêm o `loading.tsx` (não têm esse padrão de ação + refresh).
+
+- **Campo de imagem só depois de montado:** `UploadImagem` fica desativado até o React assumir a
+  página. Antes disso, escolher um arquivo não disparava o `onChange` e a escolha se perdia sem
+  aviso (o E2E do logo escolhia o arquivo cedo demais).
 - **Orçamento no CI (`tests/integration/idas-banco.test.ts`):** layout 2, leads 3, agenda 3,
   números 3, detalhe do lead 4, Minha empresa 3. Antes: 39, 23, 30, 20, 26 e 16.
 - **Índices de FK** com sufixo `_fk_idx`, nas colunas e na ordem da FK; policies de dados
