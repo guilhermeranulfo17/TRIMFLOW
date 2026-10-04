@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 /*
  * Etapa 9B (B.2): o que já quebrou a CSP com nonce não volta.
  * - next/dynamic emite um <link rel="preload"> sem nonce (Next 15): use React.lazy + Suspense;
- * - o zod do navegador roda sem JIT (alias no next.config).
+ * - o zod do navegador roda sem JIT (global ligado no instrumentation-client).
  */
 function arquivos(dir: string): string[] {
   return readdirSync(dir).flatMap((n) => {
@@ -20,10 +20,14 @@ describe('código compatível com a CSP', () => {
     expect(usam).toEqual([]);
   });
 
-  it('o navegador usa o zod sem JIT', () => {
-    expect(readFileSync('next.config.ts', 'utf8')).toContain(
-      "zod$: path.join(process.cwd(), 'src/lib/zod-sem-jit.ts')",
+  it('o navegador liga o zod sem JIT antes do app (sem importar o zod)', () => {
+    const cliente = readFileSync('src/instrumentation-client.ts', 'utf8');
+    expect(cliente).toContain('__zod_globalConfig');
+    expect(cliente).toContain('jitless: true');
+    expect(cliente).not.toMatch(/from 'zod/);
+    // o zod continua lendo a configuração desse global
+    expect(readFileSync('node_modules/zod/v4/core/core.js', 'utf8')).toContain(
+      'globalThis.__zod_globalConfig',
     );
-    expect(readFileSync('src/lib/zod-sem-jit.ts', 'utf8')).toContain('z.config({ jitless: true })');
   });
 });

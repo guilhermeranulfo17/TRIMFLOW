@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { withSentryConfig } from '@sentry/nextjs/config';
 import type { NextConfig } from 'next';
 
@@ -16,16 +15,6 @@ const nextConfig: NextConfig = {
     '/b/[slug]/proposta/[token]/pdf': ['./src/server/proposta/fontes/**'],
     '/app/orcamentos/[id]/pdf': ['./src/server/proposta/fontes/**'],
     '/app/empresa/proposta-exemplo/pdf': ['./src/server/proposta/fontes/**'],
-  },
-  // Navegador: zod sem JIT (sem `Function("")`, que a CSP recusa). Ver src/lib/zod-sem-jit.ts.
-  webpack(config, { isServer }) {
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        zod$: path.join(process.cwd(), 'src/lib/zod-sem-jit.ts'),
-      };
-    }
-    return config;
   },
   images: {
     // As imagens já chegam redimensionadas e em WEBP (conversão no navegador, Etapa 2).

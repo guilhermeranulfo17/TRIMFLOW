@@ -145,9 +145,10 @@ src/
     saude/           dados do /api/saude (deps injetadas)
     log.ts, cron.ts  log estruturado (logar, codigoDoErro) e autorização das rotas do pg_cron
     env.ts, erros.ts
-  lib/               utilitários de UI (cn), opções do Sentry, zod sem JIT do navegador
+  lib/               utilitários de UI (cn), opções do Sentry
   middleware.ts      cabeçalhos de segurança (CSP com nonce) em tudo + sessão e proteção de /app/**
-  instrumentation*.ts  checagem do ambiente e Sentry (servidor só no ramo nodejs; navegador sob demanda)
+  instrumentation*.ts  checagem do ambiente e Sentry (servidor só no ramo nodejs; navegador sob
+                     demanda) e zod sem JIT no navegador (CSP sem eval)
 supabase/
   migrations/        SQL versionado (tabelas, RLS, funções, triggers): FONTE DA VERDADE do banco
   seed.sql           dados fictícios de desenvolvimento

@@ -1323,8 +1323,9 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
   toda resposta (e na requisição, para o log).
 - **O que o percurso de CSP achou:** (1) o `next/dynamic` do Next 15 emite
   `<link rel="preload" as="script">` sem nonce: o wizard usa `React.lazy` + `Suspense` (teste
-  proíbe `next/dynamic`); (2) o Zod 4 testa `Function("")` para o JIT: no navegador o `zod` é
-  apelidado (`next.config`, webpack) para `src/lib/zod-sem-jit.ts` (`jitless`). A página 404
+  proíbe `next/dynamic`); (2) o Zod 4 testa `Function("")` para o JIT: o `instrumentation-client.ts` liga `jitless` no
+  global que o Zod lê (`globalThis.__zod_globalConfig`), antes do app e sem importar o Zod (um
+  apelido de webpack para um arquivo próprio funcionava, mas desligava a poda: +65 kB no login). A página 404
   padrão do Next é estática e, em URL desconhecida, recebe a CSP com nonce: aparece sem
   hidratar (só texto), sem efeito prático.
 - **Limite de tentativas** (`publico.limite_acesso`, só hashes): login 30/h por IP e 10/h por
