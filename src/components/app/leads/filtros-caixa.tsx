@@ -1,8 +1,8 @@
 'use client';
 
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Folha } from '@/components/app/agenda/folha';
 import { classeCampo } from '@/components/app/form/estilos';
 import { Button } from '@/components/ui/button';
@@ -201,6 +201,9 @@ export function FiltrosCaixa({
   const [rascunho, setRascunho] = useState<FiltrosCaixa>(filtros);
   const [busca, setBusca] = useState(filtros.busca ?? '');
   const [desktopAberto, setDesktopAberto] = useState(contarFiltros(filtros) > 0);
+  // a página não tem esqueleto (ARQUITETURA §60): enquanto a lista nova não chega, o ícone da
+  // busca vira o indicador de carregando
+  const [pendente, iniciar] = useTransition();
 
   useEffect(() => {
     setRascunho(filtros);
@@ -209,12 +212,12 @@ export function FiltrosCaixa({
 
   const ir = (f: FiltrosCaixa) => {
     const qs = filtrosParaUrl(f);
-    router.push(`/app/leads${qs ? `?${qs}` : ''}`, { scroll: false });
+    iniciar(() => router.push(`/app/leads${qs ? `?${qs}` : ''}`, { scroll: false }));
   };
   const total = contarFiltros(filtros);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2" aria-busy={pendente || undefined}>
       <div className="flex gap-2">
         <form
           role="search"
@@ -224,10 +227,18 @@ export function FiltrosCaixa({
             ir({ ...filtros, busca: busca.trim() || undefined });
           }}
         >
-          <Search
-            className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
-            aria-hidden
-          />
+          {pendente ? (
+            <Loader2
+              className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2 animate-spin"
+              aria-hidden
+              data-testid="filtros-pendente"
+            />
+          ) : (
+            <Search
+              className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
+              aria-hidden
+            />
+          )}
           <input
             type="search"
             name="q"

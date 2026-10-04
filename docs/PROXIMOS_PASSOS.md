@@ -166,6 +166,10 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   o plano permitir).
 - Hidratação: campos com `register` do react-hook-form vêm vazios no HTML e são preenchidos no
   cliente; o do link já vem preenchido. Avaliar o mesmo nos formulários grandes de Minha empresa.
+- **Esqueleto do detalhe no mestre-detalhe (PR 3):** como o painel não pode ter Suspense de
+  página (ARQUITETURA §60), o painel de detalhe precisa de um esqueleto do lado do cliente (estado
+  da transição) e não de `loading.tsx`. Se o Next corrigir o Suspense de página depois de ação,
+  reavaliar a regra (o teste `sem-suspense-de-pagina` diz onde).
 
 ## Depois da Etapa 9.5 PR 2 (pendências percebidas)
 
@@ -180,9 +184,6 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Pré-visualizar antes de salvar (hoje a prévia mostra o que já foi salvo).
 - **Capa em duas larguras** (como a galeria): hoje uma só, de até 1920 px; com foto real pesada,
   o LCP no celular piora. Gerar 960 e 1920 no envio e usar `srcset` no hero.
-- **Hidratação e E2E:** escolher arquivo ou clicar antes da hidratação perde o evento (envio do
-  logo e "Fiz" do checklist eram instáveis já na `main`). Os testes agora repetem a ação até o
-  efeito aparecer; avaliar desabilitar esses controles até hidratar.
 
 ## Etapa 9 · Parte B
 
