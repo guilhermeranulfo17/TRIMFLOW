@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import { ipHashSalt } from '@/server/env';
 
 /** IP do visitante (a Vercel sobrescreve x-forwarded-for com o IP real do cliente). */
-async function ipDoVisitante(): Promise<string> {
+export async function ipDoVisitante(): Promise<string> {
   const h = await headers();
   return h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'desconhecido';
 }
