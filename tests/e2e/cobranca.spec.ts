@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { noBanco } from './banco';
 import { cadastrar, emailUnico, entrar, SENHA_SEED } from './helpers';
+import { vigiarCsp } from './csp';
 import { codigoTotp } from './totp';
 
 /*
@@ -92,6 +93,8 @@ test('/interno exige a lista e o MFA; o suporte só entra com o consentimento do
   // equipe: login → sem MFA não entra → cadastra o TOTP → entra
   const ctxAdmin = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const admin = await ctxAdmin.newPage();
+  // Etapa 9B: o /interno (login, MFA, empresa, modo suporte) também sem violação de CSP
+  const violacoes = await vigiarCsp(admin);
   await admin.goto('/interno');
   await expect(admin).toHaveURL(/\/interno\/entrar$/);
   await admin.getByLabel('E-mail').fill(ADMIN.email);
@@ -127,6 +130,7 @@ test('/interno exige a lista e o MFA; o suporte só entra com o consentimento do
   await admin.getByRole('button', { name: 'Sair do modo suporte' }).click();
   await expect(admin).toHaveURL(new RegExp(`/interno/empresas/${TESTE_B}$`));
   await expect(admin.getByTestId('empresa-interna')).toContainText('suporte.saiu');
+  expect(violacoes()).toEqual([]);
 
   // o dono revoga: o botão some
   await page.reload();

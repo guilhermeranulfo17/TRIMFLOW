@@ -7,6 +7,8 @@ import { loginGoogleLigado } from '@/lib/login-google';
 import { FormCadastro } from './form-cadastro';
 
 export const metadata: Metadata = { title: 'Criar conta' };
+// Dinâmica para receber o nonce da CSP (Etapa 9B): página estática sai do cache sem nonce.
+export const dynamic = 'force-dynamic';
 
 export default function CadastroPage() {
   return (
