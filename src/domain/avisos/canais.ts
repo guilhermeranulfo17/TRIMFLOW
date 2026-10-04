@@ -17,6 +17,10 @@ export const TIPOS_AVISO = [
   'pagamento_falhou',
   'carencia',
   'conta_suspensa',
+  // Etapa 9B: avisos da conta (só para o dono, também por e-mail)
+  'boas_vindas',
+  'exportacao_pronta',
+  'exclusao_agendada',
 ] as const;
 export type TipoAviso = (typeof TIPOS_AVISO)[number];
 
@@ -33,12 +37,41 @@ export const TIPOS_COBRANCA = [
 export const ehAvisoCobranca = (tipo: TipoAviso): boolean =>
   (TIPOS_COBRANCA as readonly TipoAviso[]).includes(tipo);
 
+/** Avisos da conta (Etapa 9B): como os de cobrança, só para o dono e não configuráveis. */
+export const TIPOS_CONTA = [
+  'boas_vindas',
+  'exportacao_pronta',
+  'exclusao_agendada',
+] as const satisfies readonly TipoAviso[];
+
+/** Cobrança ou conta: push sempre, sem preferência, chegam mesmo com a conta suspensa. */
+export const ehAvisoDeConta = (tipo: TipoAviso): boolean =>
+  ehAvisoCobranca(tipo) || (TIPOS_CONTA as readonly TipoAviso[]).includes(tipo);
+
+/**
+ * Tipos que também vão por e-mail (Etapa 9B, canal `email` da fila, para o e-mail do dono).
+ * ESPELHO de public._aviso_email. Avisos de lead nunca vão por e-mail.
+ */
+export const TIPOS_COM_EMAIL = [
+  'boas_vindas',
+  'teste_acabando',
+  'fatura_criada',
+  'pagamento_confirmado',
+  'pagamento_falhou',
+  'conta_suspensa',
+  'exportacao_pronta',
+  'exclusao_agendada',
+] as const satisfies readonly TipoAviso[];
+
+export const recebeEmail = (tipo: TipoAviso): boolean =>
+  (TIPOS_COM_EMAIL as readonly TipoAviso[]).includes(tipo);
+
 export const CANAIS_EXTERNOS = ['push', 'whatsapp'] as const;
 export type CanalExterno = (typeof CANAIS_EXTERNOS)[number];
 export type CanalAviso = 'painel' | CanalExterno;
 
 /** Tipos que aparecem em Minha conta → Avisos (teste e cobrança não são configuráveis). */
-export const TIPOS_CONFIGURAVEIS = TIPOS_AVISO.filter((t) => t !== 'teste' && !ehAvisoCobranca(t));
+export const TIPOS_CONFIGURAVEIS = TIPOS_AVISO.filter((t) => t !== 'teste' && !ehAvisoDeConta(t));
 
 export const CANAIS_PADRAO: Record<TipoAviso, CanalExterno[]> = {
   pre_reserva_pedida: ['push', 'whatsapp'],
@@ -55,6 +88,9 @@ export const CANAIS_PADRAO: Record<TipoAviso, CanalExterno[]> = {
   pagamento_falhou: ['push'],
   carencia: ['push'],
   conta_suspensa: ['push'],
+  boas_vindas: ['push'],
+  exportacao_pronta: ['push'],
+  exclusao_agendada: ['push'],
 };
 
 export const ROTULO_TIPO_AVISO: Record<TipoAviso, string> = {
@@ -72,6 +108,9 @@ export const ROTULO_TIPO_AVISO: Record<TipoAviso, string> = {
   pagamento_falhou: 'Pagamento não identificado',
   carencia: 'Pagamento em atraso',
   conta_suspensa: 'Conta suspensa',
+  boas_vindas: 'Boas-vindas',
+  exportacao_pronta: 'Exportação dos dados',
+  exclusao_agendada: 'Exclusão da conta',
 };
 
 /** Só estes tipos têm modelo aprovado no WhatsApp (docs/WHATSAPP_MODELOS.md). */
@@ -92,7 +131,7 @@ export function canaisDoTipo(
   tipo: TipoAviso,
   preferencias: Partial<Record<string, unknown>> | null | undefined,
 ): CanalExterno[] {
-  const salvo = tipo === 'teste' || ehAvisoCobranca(tipo) ? undefined : preferencias?.[tipo];
+  const salvo = tipo === 'teste' || ehAvisoDeConta(tipo) ? undefined : preferencias?.[tipo];
   const escolhidos = Array.isArray(salvo) ? salvo : CANAIS_PADRAO[tipo];
   const disponiveis = canaisDisponiveis(tipo);
   return CANAIS_EXTERNOS.filter((c) => escolhidos.includes(c) && disponiveis.includes(c));

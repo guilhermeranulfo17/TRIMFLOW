@@ -128,6 +128,14 @@ function variaveis(tipo: TipoAviso, d: DadosAviso, agora: Date, fuso: string) {
     }
     case 'conta_suspensa':
       return {};
+    case 'boas_vindas':
+      return { buffet: txt(d.buffet) ?? 'seu buffet', slug: txt(d.slug) };
+    case 'exportacao_pronta':
+      return {};
+    case 'exclusao_agendada': {
+      const em = instante(d.exclusao_em);
+      return { em: em ? formatInTimeZone(em, fuso, 'dd/MM/yyyy') : null };
+    }
   }
 }
 
@@ -143,9 +151,13 @@ export function textoAviso(
     ? `/app/leads/${o.leadId}`
     : tipo === 'teste'
       ? '/app/avisos'
-      : ehAvisoCobranca(tipo)
-        ? '/app/empresa/plano'
-        : '/app/leads';
+      : tipo === 'boas_vindas'
+        ? '/app/comecar'
+        : tipo === 'exportacao_pronta' || tipo === 'exclusao_agendada'
+          ? '/app/empresa/privacidade'
+          : ehAvisoCobranca(tipo)
+            ? '/app/empresa/plano'
+            : '/app/leads';
   const v = variaveis(tipo, dados, agora, fuso) as Record<string, string | number | null>;
   const mais = o.agrupados && o.agrupados > 1 ? ` (${o.agrupados} vezes)` : '';
   switch (tipo) {
@@ -262,6 +274,25 @@ export function textoAviso(
         titulo: 'Conta suspensa',
         corpo:
           'Seu painel está somente leitura e o link mostra só a vitrine. Assine ou pague para voltar.',
+        caminho,
+      };
+    case 'boas_vindas':
+      return {
+        titulo: 'Boas-vindas ao Orkestra',
+        corpo: `A conta de ${v.buffet} está criada. Em poucos minutos o seu link de orçamento fica no ar: confirme os preços e divulgue.`,
+        caminho,
+      };
+    case 'exportacao_pronta':
+      return {
+        titulo: 'Seus dados foram exportados',
+        corpo:
+          'Alguém da sua conta baixou todos os dados do buffet agora. Se não foi você, troque a senha e fale com o suporte.',
+        caminho,
+      };
+    case 'exclusao_agendada':
+      return {
+        titulo: 'Sua conta será excluída',
+        corpo: `A exclusão da conta foi pedida e acontece em ${v.em ?? '30 dias'}. Até lá a conta fica somente leitura e você pode baixar os dados ou desistir.`,
         caminho,
       };
   }
