@@ -2,6 +2,7 @@
 
 import { eq, sql } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { arquivosDaCapa } from '@/domain/imagem';
 import { toE164 } from '@/domain/phone';
 import { limparCnpj } from '@/domain/validacao/cnpj';
 import {
@@ -170,7 +171,9 @@ export async function salvarImagemEmpresa(entrada: {
       );
       return linha?.caminho ?? null;
     });
-    if (anterior && anterior !== caminho) await apagarArquivosMidia([anterior]);
+    if (anterior && anterior !== caminho) {
+      await apagarArquivosMidia(tipo === 'capa' ? arquivosDaCapa(anterior) : [anterior]);
+    }
     revalidatePath('/app/empresa');
     const nome = tipo === 'logo' ? 'Logo' : 'Capa';
     return { ok: true, mensagem: caminho ? `${nome} atualizada.` : `${nome} removida.` };

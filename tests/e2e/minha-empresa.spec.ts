@@ -262,4 +262,33 @@ test.describe('minha empresa', () => {
     await novaEmpresa(page, 'Buffet Logo Simulado');
     await enviarLogo(page);
   });
+
+  test('capa sai em duas larguras (960 e 1920) e a vitrine usa as duas (Storage simulado)', async ({
+    page,
+  }) => {
+    const enviados: string[] = [];
+    await page.route('**/storage/v1/object/midia/**', (rota) => {
+      enviados.push(new URL(rota.request().url()).pathname);
+      return rota.fulfill({ status: 200, contentType: 'application/json', body: '{"Key":"x"}' });
+    });
+    await novaEmpresa(page, 'Buffet Capa Dupla');
+    await page.goto('/app/empresa');
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const campo = page.getByLabel('Escolher Capa');
+    await expect(campo).toBeEnabled();
+    await campo.setInputFiles({ name: 'capa.png', mimeType: 'image/png', buffer: png });
+    await esperarToast(page, 'Capa atualizada.');
+    expect(enviados.filter((c) => c.endsWith('-1920.webp'))).toHaveLength(1);
+    expect(enviados.filter((c) => c.endsWith('-960.webp'))).toHaveLength(1);
+
+    await page.goto('/b/buffet-capa-dupla');
+    const srcset = await page
+      .locator('main img[srcset*="-960.webp"]')
+      .first()
+      .getAttribute('srcset');
+    expect(srcset).toMatch(/-960\.webp 960w, .*-1920\.webp 1920w/);
+  });
 });

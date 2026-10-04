@@ -76,5 +76,7 @@ export type TipoImagem = (typeof TIPOS_IMAGEM)[number];
 
 /** Caminho de uma imagem no bucket "midia", sempre dentro da pasta da empresa. */
 export function caminhoImagemValido(caminho: string, empresaId: string, tipo: TipoImagem): boolean {
-  return new RegExp(`^${empresaId}/${tipo}/[0-9a-f-]{36}\\.webp$`).test(caminho);
+  // a capa nova tem a largura no nome (`-1920`; a de 960 px vai junto, ver domain/imagem)
+  const largura = tipo === 'capa' ? '(-1920)?' : '';
+  return new RegExp(`^${empresaId}/${tipo}/[0-9a-f-]{36}${largura}\\.webp$`).test(caminho);
 }

@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
 import { hojeNoFuso } from '@/domain/dates';
+import { capaPequenaDe } from '@/domain/imagem';
 import type { ContextoPreco, Id } from '@/domain/preco';
 import type { TextosComerciais } from '@/domain/proposta';
 import { montarVitrine, type ExtrasPacote, type VitrinePublica } from '@/domain/publico';
@@ -28,6 +29,8 @@ export type BuffetPublico = {
   sobre: string | null;
   logoUrl: string | null;
   capaUrl: string | null;
+  /** Versão de 960 px da capa (celular); null em capas antigas, de uma largura só. */
+  capaUrl960: string | null;
   corMarca: string | null;
   whatsappE164: string | null;
   cidade: string | null;
@@ -61,6 +64,7 @@ export async function lerBuffet(slug: string, comAnon: ComAnon = comAnonPadrao) 
     sobre: linha.sobre,
     logoUrl: urlPublicaMidia(linha.logo_path),
     capaUrl: urlPublicaMidia(linha.capa_path),
+    capaUrl960: urlPublicaMidia(capaPequenaDe(linha.capa_path)),
     corMarca: linha.cor_marca,
     whatsappE164: linha.whatsapp_e164,
     cidade: linha.cidade,

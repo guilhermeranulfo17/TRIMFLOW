@@ -137,6 +137,13 @@ jobs:
       - name: Testes E2E
         run: pnpm test:e2e
 
+      # Etapa 9B (B.0): os E2E de "salvar e atualizar" já foram instáveis (hidratação, Suspense
+      # de página). Repetidos 5 vezes, sem nova tentativa: qualquer falha derruba o CI.
+      - name: Estabilidade dos E2E de salvar e atualizar (5 vezes, sem retry)
+        run: >-
+          pnpm exec playwright test --project=celular --repeat-each=5 --retries=0
+          -g "identidade e vê a confirmação|logo salvo aparece|capa sai em duas larguras|checklist: \"Fiz\""
+
       - name: Relatório do Playwright
         if: failure()
         uses: actions/upload-artifact@v4

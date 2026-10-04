@@ -187,15 +187,19 @@ export default async function PaginaPublicaBuffet({ params, searchParams }: Prop
         >
           <div className="relative aspect-[4/3] w-full sm:aspect-[16/7] md:absolute md:inset-0 md:aspect-auto">
             {buffet.capaUrl ? (
-              <Image
-                src={buffet.capaUrl}
-                alt=""
-                fill
-                priority
-                fetchPriority="high"
+              // eslint-disable-next-line @next/next/no-img-element -- capa em 960/1920 px (srcset)
+              <img
+                src={buffet.capaUrl960 ?? buffet.capaUrl}
+                srcSet={
+                  buffet.capaUrl960
+                    ? `${buffet.capaUrl960} 960w, ${buffet.capaUrl} 1920w`
+                    : undefined
+                }
                 sizes="100vw"
-                className="object-cover"
-                unoptimized
+                alt=""
+                fetchPriority="high"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
               />
             ) : (
               <div

@@ -5,8 +5,10 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
+  caminhosDaCapa,
   dimensoesRedimensionadas,
   LADO_MAXIMO,
+  LARGURAS_CAPA,
   QUALIDADE_WEBP,
   validarArquivoImagem,
   type TipoImagemUpload,
@@ -32,7 +34,8 @@ export async function converterParaWebp(arquivo: File, ladoMaximo: number): Prom
 }
 
 /**
- * Envia uma imagem para o bucket "midia" em `{empresaId}/{tipo}/{uuid}.webp` e devolve o
+ * Envia uma imagem para o bucket "midia" em `{empresaId}/{tipo}/{uuid}.webp` (a capa em duas
+ * larguras, `{uuid}-1920.webp` e `{uuid}-960.webp`) e devolve o
  * caminho para a server action gravar (e apagar a anterior). As policies do bucket garantem
  * que só o dono grava na pasta da própria empresa.
  */
@@ -73,18 +76,25 @@ export function UploadImagem({
     }
     setEnviando(true);
     try {
-      const webp = await converterParaWebp(arquivo, LADO_MAXIMO[tipo]);
-      const caminho = `${empresaId}/${tipo}/${crypto.randomUUID()}.webp`;
+      const id = crypto.randomUUID();
+      // capa em duas larguras (celular e PC); o caminho salvo é o da maior
+      const arquivos =
+        tipo === 'capa'
+          ? [
+              { caminho: caminhosDaCapa(empresaId, id).grande, lado: LARGURAS_CAPA.grande },
+              { caminho: caminhosDaCapa(empresaId, id).pequena, lado: LARGURAS_CAPA.pequena },
+            ]
+          : [{ caminho: `${empresaId}/${tipo}/${id}.webp`, lado: LADO_MAXIMO[tipo] }];
+      const blobs = await Promise.all(arquivos.map((a) => converterParaWebp(arquivo, a.lado)));
       // cliente do Supabase só na hora do envio (fora do bundle inicial das telas)
       const { criarClienteSupabaseNavegador } = await import('@/lib/supabase-browser');
-      const { error } = await criarClienteSupabaseNavegador()
-        .storage.from('midia')
-        .upload(caminho, webp, {
-          contentType: 'image/webp',
-          cacheControl: '31536000',
-          upsert: false,
-        });
-      if (error) {
+      const storage = criarClienteSupabaseNavegador().storage.from('midia');
+      const opcoes = { contentType: 'image/webp', cacheControl: '31536000', upsert: false };
+      const envios = await Promise.all(
+        arquivos.map((a, i) => storage.upload(a.caminho, blobs[i]!, opcoes)),
+      );
+      const caminho = arquivos[0]!.caminho;
+      if (envios.some((r) => r.error)) {
         setErro('Não foi possível enviar a imagem. Tente de novo.');
         return;
       }

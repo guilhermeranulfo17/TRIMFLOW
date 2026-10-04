@@ -31,3 +31,32 @@ export function dimensoesRedimensionadas(
     altura: Math.max(1, Math.round(altura * escala)),
   };
 }
+
+/*
+ * Capa em duas larguras (Etapa 9B, B.0): o envio grava `{uuid}-1920.webp` (o caminho salvo na
+ * empresa) e `{uuid}-960.webp` (celular). Capas antigas (`{uuid}.webp`) só têm uma largura.
+ */
+export const LARGURAS_CAPA = { pequena: 960, grande: 1920 } as const;
+
+export function caminhosDaCapa(empresaId: string, id: string) {
+  return {
+    grande: `${empresaId}/capa/${id}-${LARGURAS_CAPA.grande}.webp`,
+    pequena: `${empresaId}/capa/${id}-${LARGURAS_CAPA.pequena}.webp`,
+  };
+}
+
+/** Caminho da versão de 960 px de uma capa, ou null se a capa é antiga (uma largura só). */
+export function capaPequenaDe(caminho: string | null | undefined): string | null {
+  if (!caminho) return null;
+  const sufixo = `-${LARGURAS_CAPA.grande}.webp`;
+  return caminho.endsWith(sufixo)
+    ? `${caminho.slice(0, -sufixo.length)}-${LARGURAS_CAPA.pequena}.webp`
+    : null;
+}
+
+/** Todos os arquivos de uma capa no Storage (para apagar junto). */
+export function arquivosDaCapa(caminho: string | null | undefined): string[] {
+  if (!caminho) return [];
+  const pequena = capaPequenaDe(caminho);
+  return pequena ? [caminho, pequena] : [caminho];
+}
