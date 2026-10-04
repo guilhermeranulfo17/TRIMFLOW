@@ -32,20 +32,23 @@ Não adicione dependências fora dessa lista sem perguntar.
 ```
 src/
   app/
-    (auth)/          login, cadastro (+ completar, para quem entrou pelo Google), recuperar-senha,
-                     nova-senha; layout dividido no PC (painel da marca)
+    (auth)/          login (+ verificacao: código da MFA), cadastro (+ completar, para quem entrou
+                     pelo Google), recuperar-senha, nova-senha; layout dividido no PC
+    (aceite)/app/aceite/  aceite dos Termos e da Privacidade novos (Etapa 9B)
     (marketing)/     landing em `/` (Etapa 9.6): página de vendas estática, imagem de compartilhamento
     (onboarding)/app/comecar/  onboarding guiado em 5 passos (tela cheia, sem menu)
     (app)/app/       área logada: leads (caixa) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
-                     [id]/editar, [id]/pdf), avisos (histórico), conta/avisos (Minha conta),
-                     numeros (Números)
+                     [id]/editar, [id]/pdf), avisos (histórico), conta/avisos e conta/seguranca
+                     (Minha conta: avisos e MFA), numeros (Números), leads/[id]/exportar (LGPD)
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, follow-up, usuarios, plano (assinar, faturas,
-                     cancelar, acesso do suporte), simulador,
+                     cancelar, acesso do suporte), simulador, privacidade (+ exportar: ZIP),
                      proposta-exemplo, link (divulgação + qr: PNG e PDF + editor da página
                      pública com prévia, Etapa 9.5)
     api/avisos/      processar (POST, Bearer CRON_SECRET) e contagem (GET, sino)
+    api/lgpd/        processar (POST, Bearer CRON_SECRET): exclusão definitiva das contas
+    api/saude/       GET público para o monitor de disponibilidade (200/503)
     api/landing/     contar (POST, visitas e cliques agregados da landing)
     robots.ts, sitemap.ts  indexação (landing, termos, privacidade e vitrines)
     api/cobranca/    asaas (webhook, token no header) e reconciliar (POST, Bearer CRON_SECRET)
@@ -55,7 +58,7 @@ src/
     auth/            rotas técnicas: confirm (link do e-mail), callback (Google), sair
     b/[slug]/        página pública do buffet (vitrine com estilo), orcamento (wizard),
                      proposta/[token] (+ /pdf), opengraph-image
-    (legal)/         privacidade e termos
+    (legal)/         privacidade, termos (com o acordo de operador) e subprocessadores (modelos)
   components/
     ui/              shadcn (não misture regra de negócio aqui)
     app/             painel: sidebar, bottom-nav, header, empty states, toast
@@ -105,6 +108,10 @@ src/
                      preços e cupom, eventos do Asaas (status monotônico = SQL), MRR, motivos
     marketing/       landing: preços da vitrine (desconto anual, itens), faixa do FUNDADOR, origem
                      do cadastro (UTM), JSON-LD, simulador (mesmo calcularOrcamento)
+    legal/           versão vigente dos Termos e da Privacidade (VERSAO_DOCUMENTOS)
+    lgpd/            CSV das exportações
+    seguranca/       CSP, nonce e cabeçalhos (middleware)
+    observabilidade/ log estruturado (mascaramento), limpeza do Sentry, avaliação da saúde
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario, lerComo,
                      naTransacao), inline (parâmetros), anon (comAnon), admin (sem RLS)
@@ -133,9 +140,14 @@ src/
     interno/         guard (lista + aal2), leituras do /interno, sessão de suporte (cookie HMAC)
     marketing/       preços da landing (planos_vitrine em cache, tag planos-vitrine), exemplo do
                      simulador, contagem
+    lgpd/            exportações (ZIP próprio), exclusão definitiva (deps injetadas), Privacidade
+    seguranca/       limite de tentativas (publico.limite_acesso)
+    saude/           dados do /api/saude (deps injetadas)
+    log.ts, cron.ts  log estruturado (logar, codigoDoErro) e autorização das rotas do pg_cron
     env.ts, erros.ts
-  lib/               utilitários de UI (cn)
-  middleware.ts      sessão + proteção de /app/**
+  lib/               utilitários de UI (cn), opções do Sentry, zod sem JIT do navegador
+  middleware.ts      cabeçalhos de segurança (CSP com nonce) em tudo + sessão e proteção de /app/**
+  instrumentation*.ts  checagem do ambiente e Sentry (servidor só no ramo nodejs; navegador sob demanda)
 supabase/
   migrations/        SQL versionado (tabelas, RLS, funções, triggers): FONTE DA VERDADE do banco
   seed.sql           dados fictícios de desenvolvimento
@@ -261,6 +273,22 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   depoimento, logo de cliente, nota ou número inventado. Simulador usa o `calcularOrcamento` do
   domínio com preços fictícios. Origem do anúncio (utm_, ref) só por `registrar_origem_cadastro`;
   contagem agregada só por `publico.landing_contar` (sem nada pessoal).
+- **LGPD (Etapa 9B, §63):** o buffet é controlador dos leads, o Orkestra operador. Lead só é
+  anonimizado/exportado por `lgpd_apagar_lead`/`lgpd_exportar_lead` (dono) e pelo job
+  `lgpd_retencao`; empresa exportada pela rota do ZIP (RLS do dono) e excluída 30 dias depois do
+  pedido pela rota `/api/lgpd/processar`. Coluna nova com dado pessoal de lead entra em
+  `_lgpd_anonimizar_lead` (e no teste que procura o nome no banco inteiro). Lead pode ter
+  `whatsapp_e164` nulo (anonimizado): telas e loaders tratam. Funções LGPD e `registrar_aceite`
+  valem com a conta suspensa. Mudou Termos ou Privacidade: suba `VERSAO_DOCUMENTOS` (e o seed).
+  Leitura de `auditoria` só do dono.
+- **Segurança (Etapa 9B, §64):** CSP com nonce vem do middleware; não use `next/dynamic` (preload
+  sem nonce: use `React.lazy` + `Suspense`), nem script inline sem nonce, nem `eval`; página nova
+  estática entra em `PAGINAS_ESTATICAS`. Login, cadastro, recuperar senha, webhook e rotas do cron
+  passam por `dentroDoLimite`/`autorizadoPorCron`. MFA do dono: marca `app_metadata.mfa` (só a
+  Admin API grava) + `aal2`. Nunca `<Link>` para rota que muda estado (`/auth/sair`): o prefetch
+  executa. Toda tabela nova cai no `rls-revisao.test.ts` (escrita direta só com motivo).
+- **Logs (Etapa 9B, §65):** no servidor só `logar(nivel, evento, { ids e códigos })` (ESLint
+  proíbe `console`); erro entra por `codigoDoErro`, nunca a mensagem nem o objeto.
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
   `SUPABASE_SERVICE_ROLE_KEY` só é lida em `server/auth/admin-supabase.ts` (`server-only`); o
   ESLint impede importá-lo em componentes, `lib`, páginas e middleware.
@@ -314,6 +342,7 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 | `pnpm db:seed:midia`                           | Imagens do seed (capa, galeria) no Storage local        |
 | `pnpm db:seed:volume`                          | Empresa com 5.000 leads para medir a caixa (só local)   |
 | `pnpm vapid:gerar`                             | Gera o par de chaves VAPID do push (para a Vercel)      |
+| `node scripts/conferir-bundle.mjs`             | Depois do build: navegador sem libphonenumber `max`     |
 
 ## Como rodar localmente
 
@@ -378,7 +407,9 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
   `NEXT_PUBLIC_LOGIN_GOOGLE=1` liga "Continuar com o Google" (só depois de configurar o provedor:
   `docs/LOGIN_GOOGLE.md`). Região e chave do JWT: `docs/LANCAMENTO.md`. Desde a Etapa 9.6
   (opcionais): `NEXT_PUBLIC_DEMO_SLUG` (botão "Ver um buffet de exemplo" da landing),
-  `NEXT_PUBLIC_EMAIL_CONTATO` e `NEXT_PUBLIC_RAZAO_SOCIAL` (rodapé).
+  `NEXT_PUBLIC_EMAIL_CONTATO` e `NEXT_PUBLIC_RAZAO_SOCIAL` (rodapé). Desde a Etapa 9B (todas
+  opcionais, só Production): `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`,
+  `SENTRY_ORG`, `SENTRY_PROJECT`; previews, sessão, MFA, monitor e LGPD em `docs/LANCAMENTO.md`.
   - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.
