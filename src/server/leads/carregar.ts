@@ -87,7 +87,8 @@ export type CartaoLead = {
   id: string;
   nome: string;
   telefone: string;
-  whatsappE164: string;
+  /** null depois da anonimização (LGPD) */
+  whatsappE164: string | null;
   status: StatusLead;
   temperatura: TemperaturaLead;
   origem: OrigemLead;
@@ -105,7 +106,7 @@ export type PaginaCaixa = { cartoes: CartaoLead[]; cursor: CursorCaixa };
 type LinhaCaixa = {
   id: string;
   nome: string;
-  whatsapp_e164: string;
+  whatsapp_e164: string | null;
   status: StatusLead;
   temperatura: TemperaturaLead;
   origem: OrigemLead;
@@ -175,7 +176,7 @@ export async function listarCaixa(
     return {
       id: r.id,
       nome: r.nome,
-      telefone: formatPhoneBR(r.whatsapp_e164),
+      telefone: r.whatsapp_e164 ? formatPhoneBR(r.whatsapp_e164) : '',
       whatsappE164: r.whatsapp_e164,
       status: r.status,
       temperatura: r.temperatura,

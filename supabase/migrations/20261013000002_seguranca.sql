@@ -79,3 +79,8 @@ $$;
 
 revoke all on function publico.limite_acesso(text, text, text, boolean) from public, authenticated;
 grant execute on function publico.limite_acesso(text, text, text, boolean) to anon;
+
+-- Advisor "anon_security_definer_function_executable": o redirecionamento de slug antigo é lido
+-- pelo servidor na conexão administrativa (server/db/admin.ts) e pelo link público via
+-- publico.slug_atual. Ninguém precisa dela pela API REST do Supabase.
+revoke execute on function public.slug_atual_por_antigo(text) from public, anon, authenticated;

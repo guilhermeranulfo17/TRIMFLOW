@@ -1,0 +1,31 @@
+# Etapa 9B (B.2): atualizações semanais das dependências (pnpm) e das actions do CI.
+# Cada PR do Dependabot roda o CI inteiro (lint, testes, E2E e pnpm audit). Dependência nova
+# continua precisando de aprovação (CLAUDE.md).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    groups:
+      producao-patch:
+        dependency-type: production
+        update-types: [patch]
+      desenvolvimento:
+        dependency-type: development
+        update-types: [minor, patch]
+    commit-message:
+      prefix: 'chore(deps)'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Sao_Paulo
+    commit-message:
+      prefix: 'chore(ci)'
