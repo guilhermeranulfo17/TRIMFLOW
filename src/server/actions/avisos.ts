@@ -15,6 +15,7 @@ import { listarAvisos, type AvisoVista } from '@/server/avisos/carregar';
 import { processarAvisos } from '@/server/avisos/processar';
 import { comUsuario } from '@/server/db/tenant';
 import { mensagemErroConta } from '@/domain/cobranca/limites';
+import { logar } from '@/server/log';
 
 const MENSAGENS: Record<string, string> = {
   AVISO_SEM_PERMISSAO: 'Sua sessão expirou. Entre de novo.',
@@ -38,7 +39,7 @@ async function acao<T>(
     const e = (erro as { cause?: unknown })?.cause ?? erro;
     const codigo = (e as { message?: string } | null)?.message ?? '';
     const mensagem = MENSAGENS[codigo] ?? mensagemErroConta(codigo) ?? PADRAO;
-    if (mensagem === PADRAO) console.error('[avisos] erro inesperado');
+    if (mensagem === PADRAO) logar('erro', 'avisos.erro_inesperado');
     return { ok: false, erro: mensagem };
   }
 }

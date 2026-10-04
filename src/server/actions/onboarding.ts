@@ -14,6 +14,7 @@ import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { tagDoBuffet } from '@/server/publico/cache';
 import { mensagemErroConta } from '@/domain/cobranca/limites';
+import { logar } from '@/server/log';
 
 /*
  * Onboarding guiado (/app/comecar) e itens manuais do checklist. Escrita só pelas funções SQL
@@ -41,7 +42,7 @@ async function acao<T>(
     const e = (erro as { cause?: unknown })?.cause ?? erro;
     const codigo = (e as { message?: string } | null)?.message ?? '';
     const mensagem = MENSAGENS[codigo] ?? mensagemErroConta(codigo) ?? PADRAO;
-    if (mensagem === PADRAO) console.error('[onboarding] erro inesperado');
+    if (mensagem === PADRAO) logar('erro', 'onboarding.erro_inesperado');
     return { ok: false, erro: mensagem };
   }
 }

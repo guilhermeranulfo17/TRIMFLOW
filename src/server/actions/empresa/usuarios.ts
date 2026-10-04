@@ -19,6 +19,7 @@ import {
   type ResultadoAlterarUsuario,
 } from '@/server/usuarios/gerenciar';
 import { acaoDoDono, idValido, NAO_ENCONTRADO, validar, type ResultadoAcao } from './comum';
+import { logar } from '@/server/log';
 
 function deps(): DepsUsuarios {
   return { db: obterDb(), comUsuario, auth: criarAuthAdmin() };
@@ -33,7 +34,7 @@ async function comAuthAdmin<T>(fn: () => Promise<ResultadoAcao<T>>): Promise<Res
     return await fn();
   } catch (erro) {
     if (erro instanceof AuthAdminNaoConfiguradoError) {
-      console.error('[usuarios] SUPABASE_SERVICE_ROLE_KEY não configurada');
+      logar('erro', 'usuarios.service_role_ausente');
       return { ok: false, erro: SEM_CONFIGURACAO };
     }
     throw erro;

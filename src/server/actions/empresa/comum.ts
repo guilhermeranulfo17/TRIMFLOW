@@ -10,6 +10,7 @@ import type { UsuarioAtual } from '@/server/auth/sessao';
 import { auditoria } from '@/server/db/schema';
 import type { Tx } from '@/server/db/tenant';
 import { tagDoBuffet } from '@/server/publico/cache';
+import { codigoDoErro, logar } from '@/server/log';
 
 export { tagDoBuffet };
 
@@ -97,7 +98,7 @@ export async function acaoDoDono<T>(
     if (erro instanceof AcessoNegadoError) {
       return { ok: false, erro: 'Só o dono do buffet pode alterar a configuração.' };
     }
-    console.error('[acaoDoDono]', erro);
+    logar('erro', 'acao_do_dono', { codigo: codigoDoErro(erro) });
     return { ok: false, erro: mensagemDeErroBanco(erro) };
   }
 }

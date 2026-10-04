@@ -13,6 +13,7 @@ import { camelizar } from '@/server/catalogo/montar-contexto';
 import { comAnon as comAnonPadrao } from '@/server/db/anon';
 import type { ComAnon } from '@/server/publico/carregar';
 import { TAG_PLANOS } from './cache';
+import { codigoDoErro, logar } from '@/server/log';
 
 export { TAG_PLANOS };
 
@@ -76,10 +77,7 @@ export async function carregarPrecosVitrine(): Promise<PrecosVitrine | null> {
       },
     };
   } catch (e) {
-    console.error(
-      '[landing] falha ao ler planos_vitrine',
-      (e as { code?: string }).code ?? 'sem-codigo',
-    );
+    logar('erro', 'landing.planos_vitrine', { codigo: codigoDoErro(e) });
   }
   // Fora do try: no build e na revalidação o noStore interrompe a renderização de propósito.
   unstable_noStore();

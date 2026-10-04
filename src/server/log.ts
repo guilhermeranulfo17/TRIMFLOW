@@ -26,3 +26,15 @@ export function logar(nivel: NivelLog, evento: string, dados: DadosLog = {}): vo
     else console.info(linha);
   });
 }
+
+/** Código do erro para o log (SQLSTATE, código do Auth/Asaas ou o nome), nunca a mensagem. */
+export function codigoDoErro(erro: unknown): string {
+  const e = erro as {
+    code?: unknown;
+    codigo?: unknown;
+    cause?: { code?: unknown };
+    name?: unknown;
+  } | null;
+  const c = e?.code ?? e?.codigo ?? e?.cause?.code ?? e?.name;
+  return typeof c === 'string' || typeof c === 'number' ? String(c) : 'sem-codigo';
+}

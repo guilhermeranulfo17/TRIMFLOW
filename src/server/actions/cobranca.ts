@@ -13,6 +13,7 @@ import { comUsuario } from '@/server/db/tenant';
 import { TAG_PLANOS } from '@/server/marketing/cache';
 import { sql } from 'drizzle-orm';
 import { errosDoZod, type ResultadoAcao } from './empresa/comum';
+import { codigoDoErro, logar } from '@/server/log';
 
 /*
  * Ações da tela de Plano (só o dono). Funcionam também com a conta suspensa: pagar e assinar
@@ -37,7 +38,7 @@ async function acaoDaCobranca<T>(
     if (erro instanceof AcessoNegadoError) {
       return { ok: false, erro: 'Só o dono do buffet cuida do plano.' };
     }
-    console.error('[cobranca] acao', (erro as { code?: string }).code ?? 'ERRO');
+    logar('erro', 'cobranca.acao', { codigo: codigoDoErro(erro) });
     return { ok: false, erro: PADRAO };
   }
 }

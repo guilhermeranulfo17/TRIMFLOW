@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { contarEventoLanding, type EventoLanding } from '@/server/marketing/carregar';
+import { codigoDoErro, logar } from '@/server/log';
 
 /*
  * Contagem agregada da landing (Etapa 9.6): só o evento ('visita' | 'clicou_teste') e o dia.
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
   try {
     await contarEventoLanding(evento as EventoLanding);
   } catch (e) {
-    console.error('[landing] falha ao contar', (e as { code?: string }).code ?? 'sem-codigo');
+    logar('erro', 'landing.contar', { codigo: codigoDoErro(e) });
   }
   return new NextResponse(null, { status: 204 });
 }

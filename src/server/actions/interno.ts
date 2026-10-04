@@ -16,6 +16,7 @@ import {
   consentimentoAte,
   fecharSessaoSuporte,
 } from '@/server/interno/suporte';
+import { codigoDoErro, logar } from '@/server/log';
 
 /*
  * Ações do /interno (equipe Orkestra). Toda ação exige admin com MFA e grava em
@@ -43,7 +44,7 @@ async function acaoInterna(
     return r;
   } catch (erro) {
     unstable_rethrow(erro);
-    console.error('[interno] acao', (erro as { code?: string }).code ?? 'ERRO');
+    logar('erro', 'interno.acao', { codigo: codigoDoErro(erro) });
     return { ok: false, erro: PADRAO };
   }
 }

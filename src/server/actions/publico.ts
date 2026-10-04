@@ -45,6 +45,7 @@ import {
   TEMPO_MINIMO_MS,
   tempoDesde,
 } from '@/server/publico/seguranca';
+import { logar } from '@/server/log';
 
 /*
  * Server actions do link público. Recebem SÓ escolhas e contato: "hoje", fuso, preço,
@@ -66,7 +67,7 @@ function codigoDoErro(erro: unknown): string | undefined {
 
 function falha<T>(erro: unknown, onde: string): ResultadoPublico<T> {
   const codigo = codigoDoErro(erro);
-  if (!codigo) console.error(`[publico:${onde}] erro inesperado`);
+  if (!codigo) logar('erro', `publico.${onde}`);
   return { ok: false, erro: traduzirErroPublico(codigo), ...(codigo ? { codigo } : {}) };
 }
 

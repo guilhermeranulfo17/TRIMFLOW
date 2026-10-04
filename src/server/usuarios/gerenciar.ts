@@ -9,6 +9,7 @@ import type { UsuarioAtual } from '@/server/auth/sessao';
 import type { Db } from '@/server/db/client';
 import { auditoria, usuarios } from '@/server/db/schema';
 import type { Tx } from '@/server/db/tenant';
+import { codigoDoErro, logar } from '@/server/log';
 
 /*
  * Regras de Usuários com as dependências injetadas (banco e Admin API do Auth), para os testes
@@ -75,9 +76,9 @@ export async function criarVendedor(
       });
     });
   } catch (erro) {
-    console.error('[usuarios] falha ao gravar vendedor; desfazendo no Auth', erro);
+    logar('erro', 'usuarios.gravar_vendedor', { codigo: codigoDoErro(erro) });
     await deps.auth.apagarUsuario(criado.id).catch((e) => {
-      console.error('[usuarios] não foi possível apagar o usuário do Auth', criado.id, e);
+      logar('erro', 'usuarios.desfazer_auth', { usuario_id: criado.id, codigo: codigoDoErro(e) });
     });
     return { ok: false, motivo: 'falha' };
   }
