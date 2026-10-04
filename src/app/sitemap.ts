@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = urlDoSite() ?? 'http://localhost:3000';
+  const base = siteUrl();
   return [
     { url: `${base}/`, changeFrequency: 'weekly', priority: 1 },
     { url: `${base}/termos`, changeFrequency: 'yearly', priority: 0.3 },

@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { COOKIE_DEMO, demoVencida, ehSessaoDemo } from '@/domain/auth/demo';
 import { precisaSegundoFator } from '@/domain/auth/mfa';
+import { redirecionamentoDeDominio } from '@/domain/seguranca/dominio';
 import {
   cabecalhosFixos,
   gerarNonce,
@@ -18,7 +19,8 @@ import {
 } from '@/server/auth/redirecionamento';
 
 /**
- * Duas coisas, nesta ordem:
+ * Antes de tudo, o domínio antigo redireciona para o novo (Etapa 9B, B.6). Depois, duas coisas,
+ * nesta ordem:
  * 1. Cabeçalhos de segurança em todas as rotas (Etapa 9B, B.2): CSP com nonce nas páginas
  *    dinâmicas, HSTS, Referrer-Policy, Permissions-Policy, nosniff e X-Frame-Options, e o id da
  *    requisição (x-request-id) para o log estruturado.
@@ -29,6 +31,14 @@ import {
  */
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  // 0. Domínio antigo → domínio de NEXT_PUBLIC_SITE_URL (308, mesmo caminho e query)
+  const novoEndereco = redirecionamentoDeDominio(
+    request.headers.get('host'),
+    { pathname, search },
+    process.env.NEXT_PUBLIC_SITE_URL,
+  );
+  if (novoEndereco) return NextResponse.redirect(novoEndereco, 308);
+
   const tipo = tipoDaRota(pathname);
   const embutivel = podeSerEmbutida(pathname);
   const nonce = tipo === 'pagina' ? gerarNonce() : null;

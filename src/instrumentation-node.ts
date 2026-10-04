@@ -16,6 +16,11 @@ export async function registrarNode() {
     await import('./server/env');
   ipHashSalt();
   if (process.env.NODE_ENV === 'production') {
+    if (!process.env.NEXT_PUBLIC_SITE_URL?.trim()) {
+      console.error(
+        '[site] NEXT_PUBLIC_SITE_URL ausente: links de e-mail, WhatsApp, PDF e QR saem com localhost.',
+      );
+    }
     if (!cronSecret()) {
       console.warn(
         '[avisos] CRON_SECRET ausente: a fila de avisos não roda pelo job (só pelo after()).',

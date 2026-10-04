@@ -13,7 +13,7 @@ import { TituloPagina } from '@/components/app/titulo-pagina';
 import { hojeNoFuso } from '@/domain/dates';
 import { resolverPeriodo } from '@/domain/numeros';
 import { exigirSessao, type UsuarioAtual } from '@/server/auth/sessao';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import { carregarTelaNumeros } from '@/server/numeros/carregar';
 
 export const metadata: Metadata = { title: 'Números' };
@@ -53,7 +53,7 @@ async function ConteudoNumeros({
   ate: string;
 }) {
   const dono = usuario.perfil === 'dono';
-  const link = `${urlDoSite() ?? ''}/b/${usuario.empresa.slug}`;
+  const link = `${siteUrl()}/b/${usuario.empresa.slug}`;
   // Essencial: cartões e funil; o resto é do Profissional (teste = Profissional)
   const { numeros: n, ocupacao, usuarios, recursos } = await carregarTelaNumeros(usuario, de, ate);
   const completo = recursos.numerosCompleto;

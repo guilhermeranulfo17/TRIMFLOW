@@ -19,7 +19,7 @@ import { SimuladorDemo } from '@/components/marketing/simulador';
 import { DIAS_TESTE_GRATIS, VALOR_IMPLANTACAO_CENTAVOS } from '@/domain/cobranca/precos';
 import { faixaFundador, jsonLdSoftware, seloAnual } from '@/domain/marketing';
 import { slugValido } from '@/domain/slug';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import { carregarPrecosVitrine, exemploDoSimulador } from '@/server/marketing/carregar';
 
 // Página estática, refeita a cada 5 min (preços em cache com a tag dos planos). Não toca no Auth.
@@ -31,7 +31,7 @@ const DESCRICAO =
 export const metadata: Metadata = {
   title: { absolute: 'Orkestra: orçamento de festa que responde sozinho' },
   description: DESCRICAO,
-  metadataBase: new URL(urlDoSite() ?? 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl()),
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
@@ -84,7 +84,7 @@ export default async function Landing() {
   const fundador = precos ? faixaFundador(precos.fundador, planos, new Date()) : null;
   const demo = process.env.NEXT_PUBLIC_DEMO_SLUG?.trim().toLowerCase() || null;
   const demoSlug = demo && slugValido(demo) ? demo : null;
-  const url = urlDoSite() ?? 'http://localhost:3000';
+  const url = siteUrl();
   const jsonLd = jsonLdSoftware({ url, descricao: DESCRICAO, planos });
 
   return (

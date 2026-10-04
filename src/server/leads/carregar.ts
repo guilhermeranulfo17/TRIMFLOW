@@ -41,7 +41,7 @@ import {
 } from '@/server/db/schema';
 import { comUsuario, naTransacao, type Tx } from '@/server/db/tenant';
 import { automaticaDaTarefa } from '@/server/tarefas/automatica';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 
 /*
  * Leituras de Leads (dono e vendedor), sempre pelo RLS. A caixa usa public.caixa_leads (uma
@@ -478,7 +478,7 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
 
   const agora = Date.now();
   const hoje = hojeNoFuso(usuario.empresa.fuso);
-  const site = urlDoSite() ?? '';
+  const site = siteUrl();
   const itensDe = (oid: string) => itens.filter((i) => i.orcamentoId === oid);
   const resumoVersao = (o: ResumoOrcamento): ResumoVersao => ({
     data: o.data,
@@ -685,9 +685,7 @@ export async function dadosDaMensagem(
       vendedor: usuario.nome,
       tipoFesta: o?.tipo ?? null,
       dataFesta: orc?.data ?? null,
-      linkProposta: orc
-        ? `${urlDoSite() ?? ''}/b/${usuario.empresa.slug}/proposta/${orc.token}`
-        : null,
+      linkProposta: orc ? `${siteUrl()}/b/${usuario.empresa.slug}/proposta/${orc.token}` : null,
       preReservaExpiraEm: pre?.expira ?? null,
       sinalCentavos: resultado?.sinalCentavos ?? null,
       visitaEm: visita?.dataHora ?? null,

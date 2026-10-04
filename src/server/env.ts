@@ -23,6 +23,15 @@ export function urlDoSite(): string | undefined {
   return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '') || undefined;
 }
 
+/**
+ * Base de TODO link absoluto (e-mails, avisos, WhatsApp, PDF, QR, Open Graph, sitemap, JSON-LD,
+ * links do Auth): só NEXT_PUBLIC_SITE_URL, nunca o host da requisição nem um domínio fixo
+ * (Etapa 9B, B.6). Sem a variável (só em desenvolvimento), http://localhost:3000.
+ */
+export function siteUrl(): string {
+  return urlDoSite() ?? 'http://localhost:3000';
+}
+
 const SAL_DESENVOLVIMENTO = 'orkestra-dev-nao-use-em-producao';
 
 /**

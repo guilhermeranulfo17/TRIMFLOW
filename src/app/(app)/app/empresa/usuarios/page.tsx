@@ -1,3 +1,4 @@
+import { siteUrl } from '@/server/env';
 import { asc, desc } from 'drizzle-orm';
 import { Lock } from 'lucide-react';
 import type { Metadata } from 'next';
@@ -33,7 +34,7 @@ export default async function UsuariosPage() {
         <p className="text-muted-foreground text-sm">
           Quem acessa o painel. Vendedores veem a configuração, mas não alteram.
         </p>
-        <NovoVendedor />
+        <NovoVendedor site={siteUrl()} />
       </div>
       <ListaUsuarios
         usuarioAtualId={usuario.id}

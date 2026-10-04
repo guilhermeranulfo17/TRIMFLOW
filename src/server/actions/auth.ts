@@ -1,7 +1,7 @@
 'use server';
 
 import { sql } from 'drizzle-orm';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { after } from 'next/server';
 import { redirect } from 'next/navigation';
 import { ehSessaoDemo, MENSAGEM_DEMO } from '@/domain/auth/demo';
@@ -31,7 +31,7 @@ import { criarClienteSupabase } from '@/server/auth/supabase-server';
 import { gravarModelo } from '@/server/catalogo/gravar-modelo';
 import { auditoria } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import { mensagemDeErroAuth } from '@/server/erros';
 import { codigoDoErro, logar } from '@/server/log';
 import { dentroDoLimite, MENSAGEM_LIMITE } from '@/server/seguranca/limite';
@@ -40,13 +40,9 @@ export type ResultadoAcao = { ok: true; mensagem?: string } | { ok: false; erro:
 
 const DADOS_INVALIDOS: ResultadoAcao = { ok: false, erro: 'Confira os campos destacados.' };
 
+/** Links do Auth (confirmação, nova senha) sempre no domínio configurado, nunca no do Host. */
 async function origemDoSite(): Promise<string> {
-  const configurada = urlDoSite();
-  if (configurada) return configurada;
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
-  const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
-  return `${proto}://${host}`;
+  return siteUrl();
 }
 
 /**

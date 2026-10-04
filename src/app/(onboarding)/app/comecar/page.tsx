@@ -15,7 +15,7 @@ import { ROTULO_SEGMENTO } from '@/domain/segmento';
 import { exigirSessao } from '@/server/auth/sessao';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import {
   carregarAgendaRapida,
   carregarEstadoOnboarding,
@@ -49,7 +49,7 @@ export default async function PaginaComecar({ searchParams }: Props) {
     tx.select().from(empresas).where(eq(empresas.id, usuario.empresa.id)),
   );
   if (!empresa) redirect('/app/leads');
-  const link = `${urlDoSite() ?? ''}/b/${empresa.slug}`;
+  const link = `${siteUrl()}/b/${empresa.slug}`;
 
   let conteudo: React.ReactNode;
   switch (passo) {

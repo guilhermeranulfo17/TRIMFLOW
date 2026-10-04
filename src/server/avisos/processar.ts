@@ -1,7 +1,7 @@
 import 'server-only';
 import type { CanalEntrega, TipoAviso } from '@/domain/avisos/canais';
 import { concluirEntregaAviso, reservarEntregasAvisos } from '@/server/db/admin';
-import { configEmail, configVapid, configWhatsapp, urlDoSite } from '@/server/env';
+import { configEmail, configVapid, configWhatsapp, siteUrl } from '@/server/env';
 import { criarCanalEmail } from './canais/email';
 import { criarCanalPush } from './canais/push';
 import type { Canal, EntregaParaEnviar, ResultadoEnvio } from './canais/tipos';
@@ -37,7 +37,7 @@ export function canaisPadrao(): Canal[] {
   return [
     criarCanalPush(configVapid()),
     criarCanalWhatsapp(configWhatsapp()),
-    criarCanalEmail(configEmail(), { site: urlDoSite() }),
+    criarCanalEmail(configEmail(), { site: siteUrl() }),
   ];
 }
 

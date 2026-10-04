@@ -25,8 +25,8 @@ import { criarNovoVendedor } from '@/server/actions/empresa/usuarios';
 
 type Criado = { nome: string; email: string; senha: string; whatsapp: string };
 
-function linkWhatsApp(c: Criado): string {
-  const login = `${window.location.origin}/login`;
+function linkWhatsApp(c: Criado, site: string): string {
+  const login = `${site}/login`;
   const texto =
     `Olá, ${c.nome.split(' ')[0]}! Seu acesso ao painel do buffet no Orkestra:\n` +
     `${login}\nE-mail: ${c.email}\nSenha temporária: ${c.senha}\n` +
@@ -37,7 +37,8 @@ function linkWhatsApp(c: Criado): string {
 
 const VAZIO: NovoVendedorEntrada = { nome: '', email: '', whatsapp: '', limiteDescontoBp: 0 };
 
-export function NovoVendedor() {
+/** `site`: NEXT_PUBLIC_SITE_URL (vem do servidor), nunca o endereço aberto no navegador. */
+export function NovoVendedor({ site }: { site: string }) {
   const toast = useToast();
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
@@ -122,7 +123,7 @@ export function NovoVendedor() {
                   Copiar senha
                 </Button>
                 <Button asChild>
-                  <a href={linkWhatsApp(criado)} target="_blank" rel="noopener noreferrer">
+                  <a href={linkWhatsApp(criado, site)} target="_blank" rel="noopener noreferrer">
                     <MessageCircle aria-hidden />
                     Enviar pelo WhatsApp
                   </a>

@@ -14,7 +14,7 @@ import { linkComOrigem, ORIGENS_DIVULGACAO } from '@/domain/publico/origem';
 import { exigirSessao } from '@/server/auth/sessao';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import { carregarEditorPagina } from '@/server/pagina/carregar';
 import { carregarVitrine } from '@/server/publico/carregar';
 
@@ -28,7 +28,7 @@ export default async function PaginaLink() {
   const usuario = await exigirSessao();
   const dono = usuario.perfil === 'dono';
   const slug = usuario.empresa.slug;
-  const base = `${urlDoSite() ?? ''}/b/${slug}`;
+  const base = `${siteUrl()}/b/${slug}`;
   // uma transação para a tela; a vitrine (perguntas automáticas) vem do cache do link público
   const [[empresa, editor], vitrine] = await Promise.all([
     comUsuario(usuario.id, (tx) =>
