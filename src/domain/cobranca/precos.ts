@@ -7,6 +7,12 @@ import { type DataCivil, somarDias, somarMeses } from '../dates';
 
 export type Ciclo = 'mensal' | 'anual';
 
+/** Implantação assistida (cobrança avulsa pelo /interno). A landing mostra este mesmo valor. */
+export const VALOR_IMPLANTACAO_CENTAVOS = 49_700;
+
+/** Dias do teste grátis. Espelho de `trial_ate = now() + interval '14 days'` em _criar_conta_dono. */
+export const DIAS_TESTE_GRATIS = 14;
+
 export type PrecosPlano = {
   codigo: string;
   nome: string;

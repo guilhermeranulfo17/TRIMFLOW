@@ -1218,3 +1218,45 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
     vitrine.
 - **Movimento:** entrada das seções com `animation-timeline: view()`, só quando o navegador
   suporta e o usuário não pediu menos movimento. Carrossel com `scroll-snap`, sem dependência.
+
+## 62. Landing page (Etapa 9.6)
+
+- **`/` é a página de vendas** (`src/app/(marketing)`), não mais um redirecionamento para o login.
+  Server Component estático com ISR de 5 min (`revalidate = 300`); ilhas de cliente só no
+  cabeçalho e na barra do celular (`CascaLanding`), no simulador, na alternância de preços, nas
+  abas de segmento e na contagem/origem (`RastreioLanding`). Fora do matcher do middleware: a
+  landing não toca no Auth. "Ir para o painel" só olha a presença do cookie `sb-…-auth-token` no
+  navegador (sem rede e sem ler o conteúdo).
+- **Nada fixo no código:** preços, limites, desconto anual, etiqueta "Profissional" e vagas do
+  FUNDADOR vêm de `publico.planos_vitrine()` (só colunas públicas, só `anon`), lidos por
+  `carregarPrecosVitrine` com `unstable_cache` (tag `planos-vitrine`, 5 min). Usar o cupom
+  (assinatura ou /interno) invalida a tag. Leitura falhou: cartões sem preço e WhatsApp de vendas
+  (a falha não entra no cache). Regras puras em `domain/marketing` (`descontoAnual`, `seloAnual`,
+  `itensDoPlano`, `planoDoRecurso`, `faixaFundador`). O valor da implantação assistida e os dias
+  de teste ficam em `domain/cobranca/precos` (o mesmo valor que a cobrança usa; um teste confere
+  os 14 dias contra o SQL de `_criar_conta_dono`).
+- **Proibido inventar:** sem depoimentos, logos de clientes, notas ou "mais de X buffets"
+  (E2E confere). JSON-LD `SoftwareApplication` com as ofertas reais e sem `aggregateRating`.
+- **Simulador:** o servidor monta o exemplo (`contextoDoModelo(MODELOS.infantil)`, preços
+  fictícios) e a ilha calcula no navegador com o mesmo `calcularOrcamento` do link público
+  (`domain/marketing/simulador`, sem importar `domain/modelos` para o Zod não ir ao bundle).
+  Teste de igualdade com o motor em todas as combinações do exemplo.
+- **Origem do cadastro:** `CapturaOrigem` guarda `utm_source`, `utm_medium`, `utm_campaign` e
+  `ref` (normalizados em `domain/marketing/origem`, último toque com origem) no cookie
+  `orkestra_origem` por 30 dias, na landing e em `/cadastro`. `cadastrar` e `completarConta`
+  gravam por `registrar_origem_cadastro` (uma vez, com auditoria); falhar nunca bloqueia o
+  cadastro. Nada pessoal.
+- **Contagem:** `landing_contagem` (dia, evento, total) por `publico.landing_contar`, chamada pela
+  rota `/api/landing/contar` (beacon: uma visita por aba e cada clique em `[data-cta-teste]`).
+  Sem IP, cookie ou user agent; número aproximado (robôs e recargas contam).
+- **Visual:** `[data-landing]` usa o claro da marca com fundo `#F7F6F2`; as seções escuras usam a
+  classe `.dark` (tokens do escuro só naquele trecho). Teste de contraste inclui o fundo novo.
+  Movimento só com a `.entrada` existente (`animation-timeline: view()`, desligada com
+  `prefers-reduced-motion`). Cabeçalho e barra do celular usam IntersectionObserver com a raiz
+  "acima do topo da tela" (`rootMargin: '100000px 0px -100% 0px'`), para não perder a troca numa
+  rolagem rápida; a barra escondida fica `inert`.
+- **Marca:** `components/marca/simbolo.tsx` desenha o símbolo pela construção do manual (anel,
+  ponto limão a 45°, folga calculada no contorno, sem máscara nem id). O `Logo` usa o símbolo;
+  os SVGs oficiais entram só nesse arquivo e em `public/marca/`.
+- **Capturas da vitrine** (3 estilos) em `public/landing/`, geradas por
+  `scripts/capturas-landing.mjs` (só local; imagens do seed geradas na hora, sem o Storage).

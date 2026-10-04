@@ -184,3 +184,21 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Pré-visualizar antes de salvar (hoje a prévia mostra o que já foi salvo).
 - **Capa em duas larguras** (como a galeria): hoje uma só, de até 1920 px; com foto real pesada,
   o LCP no celular piora. Gerar 960 e 1920 no envio e usar `srcset` no hero.
+
+## Etapa 9 · Parte B
+
+- **B.6 "Site de vendas": substituído pela Etapa 9.6** (landing em `/`, `docs/ARQUITETURA.md` §62).
+  Na Parte B, só apontar para ela; nada a construir.
+
+## Depois da Etapa 9.6 (pendências percebidas)
+
+- **Logo oficial:** trocar `components/marca/simbolo.tsx` (e o nome em texto do `Logo`) pelos
+  SVGs entregues; gerar de novo favicon, ícones do PWA e a imagem de compartilhamento.
+- **Textos jurídicos:** Termos e Privacidade ainda são texto-modelo (faixa amarela na página);
+  revisão jurídica antes de anunciar.
+- **Fotos reais** de festa (com direito de uso) no hero e em "Sua página" (hoje capturas do
+  Buffet Demo com ilustrações geradas).
+- **Tela dos números da landing** no /interno (visitas, cliques e cadastros por origem): hoje só
+  pelo banco (`landing_contagem`, `empresas.origem_cadastro`).
+- Edição de planos e cupons pelo /interno (quando existir, invalidar a tag `planos-vitrine`).
+- Página por segmento, blog, vídeo, chat e teste A/B seguem fora do escopo.

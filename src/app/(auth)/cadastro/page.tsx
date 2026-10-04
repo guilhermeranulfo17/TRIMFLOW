@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BotaoGoogle, DivisorOu } from '@/components/auth/botao-google';
+import { CapturaOrigem } from '@/components/marketing/rastreio';
 import { loginGoogleLigado } from '@/lib/login-google';
 import { FormCadastro } from './form-cadastro';
 
@@ -19,6 +20,8 @@ export default function CadastroPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* link de anúncio direto para o cadastro: guarda a origem também aqui */}
+        <CapturaOrigem />
         {loginGoogleLigado() && (
           <>
             <BotaoGoogle next="/app/comecar" />

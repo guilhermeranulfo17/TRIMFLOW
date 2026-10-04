@@ -28,6 +28,15 @@ const nextConfig: NextConfig = {
     ];
     return [
       { source: '/b/:path*', headers: seguranca },
+      // Landing (Etapa 9.6): os mesmos cabeçalhos e nunca dentro de iframe
+      {
+        source: '/',
+        headers: [
+          ...seguranca,
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+        ],
+      },
       // A vitrine pode abrir num iframe do próprio painel (prévia do editor); o resto, nunca.
       {
         source: '/b/:slug',

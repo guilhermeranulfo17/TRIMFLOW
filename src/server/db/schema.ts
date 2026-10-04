@@ -80,6 +80,8 @@ export const empresas = pgTable('empresas', {
   bairro: text('bairro'),
   mostrarEndereco: boolean('mostrar_endereco').notNull().default(false),
   paginaPersonalizadaEm: timestamp('pagina_personalizada_em', { withTimezone: true }),
+  /** Etapa 9.6: utm_source, utm_medium, utm_campaign e ref do cadastro (gravado uma vez). */
+  origemCadastro: jsonb('origem_cadastro').$type<Record<string, string>>(),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 });

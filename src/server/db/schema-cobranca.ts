@@ -11,6 +11,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -188,3 +189,14 @@ export const acessosSuporte = pgTable(
 export type PlanoComercial = typeof planos.$inferSelect;
 export type Assinatura = typeof assinaturas.$inferSelect;
 export type Cobranca = typeof cobrancas.$inferSelect;
+
+/** Etapa 9.6: visitas e cliques da landing por dia (sem nada pessoal). Só publico.landing_contar grava. */
+export const landingContagem = pgTable(
+  'landing_contagem',
+  {
+    dia: date('dia', { mode: 'string' }).notNull(),
+    evento: text('evento').$type<'visita' | 'clicou_teste'>().notNull(),
+    total: integer('total').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.dia, t.evento] })],
+);

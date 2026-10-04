@@ -79,9 +79,9 @@ function redirecionar(url: URL, base: NextResponse) {
 }
 
 export const config = {
-  // Fora do middleware (nada de Auth): página pública do buffet, webhooks/filas chamados por
-  // servidor, PWA e arquivos estáticos.
+  // Fora do middleware (nada de Auth): a landing (`/` e a imagem dela, Etapa 9.6), página pública
+  // do buffet, contagem da landing, webhooks/filas chamados por servidor, PWA e estáticos.
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|b/|api/cobranca/asaas|api/cobranca/reconciliar|api/avisos/processar|manifest.webmanifest|sw.js|icones/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)',
+    '/((?!$|opengraph-image|api/landing/|_next/static|_next/image|favicon.ico|b/|api/cobranca/asaas|api/cobranca/reconciliar|api/avisos/processar|manifest.webmanifest|sw.js|icones/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)',
   ],
 };
