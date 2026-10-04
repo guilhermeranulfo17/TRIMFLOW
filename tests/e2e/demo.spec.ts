@@ -19,15 +19,14 @@ test('demonstração: entra sem senha, vê tudo, não salva nada e termina no ca
   page,
   context,
 }) => {
-  const cliques = () =>
-    noBanco(async (sql) => {
-      const [r] = await sql<{ n: number }[]>`select coalesce(sum(total), 0)::int as n
-        from public.landing_contagem where evento = 'clicou_teste'`;
-      return r!.n;
-    });
-  const antes = await cliques();
+  // contagem da landing feita por ESTA página (o total do banco muda com os outros testes)
+  const contagens: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('/api/landing/contar')) contagens.push(r.postData() ?? '');
+  });
 
   await page.goto('/');
+  await expect(page.getByTestId('ver-demo')).not.toHaveAttribute('data-cta-teste');
   await page.getByTestId('ver-demo').click();
   await expect(page).toHaveURL(/\/app\/leads$/, { timeout: 30_000 });
   await expect(page.getByTestId('faixa-demo')).toBeVisible();
@@ -83,8 +82,8 @@ test('demonstração: entra sem senha, vê tudo, não salva nada e termina no ca
   await visitante.close();
   expect(await reais()).toBe(leadsAntes);
 
-  // a landing não contou o botão da demo como "Testar grátis"
-  expect(await cliques()).toBe(antes);
+  // a landing não contou o botão da demo como "Testar grátis" (só a visita)
+  expect(contagens.some((c) => c.includes('clicou_teste'))).toBe(false);
 
   // 2 horas depois (cookie vencido) a próxima tela leva ao cadastro, sem sessão
   await context.clearCookies({ name: 'orkestra_demo' });
