@@ -1,9 +1,9 @@
-import type { CanalExterno, TipoAviso } from '@/domain/avisos/canais';
+import type { CanalEntrega, TipoAviso } from '@/domain/avisos/canais';
 
 /** Uma entrega reservada na fila, pronta para sair por um canal. */
 export type EntregaParaEnviar = {
   entregaId: string;
-  canal: CanalExterno;
+  canal: CanalEntrega;
   tentativas: number;
   aviso: {
     id: string;
@@ -14,6 +14,8 @@ export type EntregaParaEnviar = {
   };
   fuso: string;
   whatsappNumero: string | null;
+  /** E-mail de login do dono (só nas entregas do canal email). */
+  email?: string | null;
   inscricoes: { endpoint: string; p256dh: string; auth: string }[];
 };
 
@@ -28,7 +30,7 @@ export type ResultadoEnvio =
   | { resultado: 'erro'; erro: string; endpointsInvalidos?: string[] };
 
 export interface Canal {
-  nome: CanalExterno;
+  nome: CanalEntrega;
   configurado(): boolean;
   enviar(e: EntregaParaEnviar): Promise<ResultadoEnvio>;
 }

@@ -12,7 +12,8 @@ export async function registrarNode() {
     const Sentry = await import('@sentry/nextjs');
     Sentry.init(opcoesSentry(process.env.SENTRY_DSN));
   }
-  const { ipHashSalt, cronSecret, configVapid, configWhatsapp } = await import('./server/env');
+  const { ipHashSalt, cronSecret, configVapid, configWhatsapp, configEmail } =
+    await import('./server/env');
   ipHashSalt();
   if (process.env.NODE_ENV === 'production') {
     if (!cronSecret()) {
@@ -25,6 +26,9 @@ export async function registrarNode() {
     }
     if (!configWhatsapp()) {
       console.info('[avisos] WhatsApp não configurado: canal desligado.');
+    }
+    if (!configEmail()) {
+      console.warn('[avisos] RESEND_API_KEY ou EMAIL_REMETENTE ausente: e-mails desligados.');
     }
     if (!process.env.SENTRY_DSN) {
       console.info('[observabilidade] SENTRY_DSN ausente: erros só no log da Vercel.');

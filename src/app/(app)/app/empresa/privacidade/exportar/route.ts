@@ -1,5 +1,7 @@
 import { sql } from 'drizzle-orm';
+import { after } from 'next/server';
 import { usuarioAtual } from '@/server/auth/sessao';
+import { processarAvisosSemFalhar } from '@/server/avisos/processar';
 import { comUsuario } from '@/server/db/tenant';
 import { arquivosDaEmpresa } from '@/server/lgpd/exportar';
 import { montarZip } from '@/server/lgpd/zip';
@@ -23,6 +25,8 @@ export async function GET() {
       await tx.execute(sql`select public.lgpd_registrar_exportacao()`);
       return arquivosDaEmpresa(tx);
     });
+    // aviso de segurança "seus dados foram exportados" (painel, push e e-mail)
+    after(processarAvisosSemFalhar);
     const zip = montarZip(arquivos);
     const dia = new Date().toISOString().slice(0, 10);
     return new Response(new Uint8Array(zip), {

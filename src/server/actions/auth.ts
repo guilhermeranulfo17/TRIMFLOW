@@ -2,6 +2,7 @@
 
 import { sql } from 'drizzle-orm';
 import { cookies, headers } from 'next/headers';
+import { after } from 'next/server';
 import { redirect } from 'next/navigation';
 import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
@@ -23,6 +24,7 @@ import {
   type CompletarInput,
 } from '@/domain/validacao/cadastro';
 import { criarAuthAdmin } from '@/server/auth/admin-supabase';
+import { processarAvisosSemFalhar } from '@/server/avisos/processar';
 import { destinoSeguro, precisaTrocarSenha } from '@/server/auth/redirecionamento';
 import { criarClienteSupabase } from '@/server/auth/supabase-server';
 import { gravarModelo } from '@/server/catalogo/gravar-modelo';
@@ -76,7 +78,10 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
   });
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };
   // aceite dos Termos e da Privacidade (versão e data), mesmo sem sessão (confirmação por e-mail)
-  if (data.user) await registrarAceite(data.user.id);
+  if (data.user) {
+    await registrarAceite(data.user.id);
+    await avisarBoasVindas(data.user.id);
+  }
 
   // Com confirmação de e-mail ligada no projeto, o signup não devolve sessão.
   if (!data.session) {
@@ -121,6 +126,7 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
     return { ok: false, erro: 'Não foi possível criar sua conta agora. Tente novamente.' };
   }
   await registrarAceite(user.id);
+  await avisarBoasVindas(user.id);
   await aplicarModeloDoCadastro(user.id, dados.segmento);
   await registrarOrigem(user.id);
   redirect('/app/comecar');
@@ -139,6 +145,19 @@ async function registrarAceite(usuarioId: string) {
     logar('aviso', 'cadastro.aceite_nao_registrado', {
       codigo: (e as { code?: string }).code ?? 'sem-codigo',
     });
+  }
+}
+
+/**
+ * Boas-vindas (Etapa 9B, B.4): aviso no painel e e-mail com o link do buffet. Uma vez por empresa;
+ * falhar aqui nunca impede o cadastro.
+ */
+async function avisarBoasVindas(usuarioId: string) {
+  try {
+    await comUsuario(usuarioId, (tx) => tx.execute(sql`select public.avisar_boas_vindas()`));
+    after(processarAvisosSemFalhar);
+  } catch (e) {
+    logar('aviso', 'cadastro.boas_vindas_falhou', { codigo: codigoDoErro(e) });
   }
 }
 

@@ -482,6 +482,8 @@ describe('conta suspensa = somente leitura', () => {
     'solicitar_exclusao_conta',
     'desistir_exclusao_conta',
     'registrar_aceite',
+    // Etapa 9B (e-mail): boas-vindas logo depois do cadastro (só cria o aviso do próprio dono)
+    'avisar_boas_vindas',
   ];
   const BLOQUEADAS = [
     'alterar_slug',

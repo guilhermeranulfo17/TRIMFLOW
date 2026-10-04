@@ -68,6 +68,20 @@ export function configWhatsapp(): ConfigWhatsapp | null {
   return { token, phoneNumberId };
 }
 
+export type ConfigEmail = { chave: string; remetente: string };
+
+/**
+ * E-mail transacional (Resend, por fetch). RESEND_API_KEY e EMAIL_REMETENTE
+ * ("Orkestra <avisos@seudominio.com.br>", domínio verificado no Resend). Vazias = canal desligado:
+ * as entregas de e-mail viram "ignorado" e nada quebra.
+ */
+export function configEmail(): ConfigEmail | null {
+  const chave = process.env.RESEND_API_KEY?.trim();
+  const remetente = process.env.EMAIL_REMETENTE?.trim();
+  if (!chave || !remetente) return null;
+  return { chave, remetente };
+}
+
 /**
  * E-mails da equipe Orkestra com acesso ao /interno (separados por vírgula). Além da lista, o
  * /interno exige MFA (TOTP) na sessão. Vazia = ninguém entra.

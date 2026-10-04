@@ -69,6 +69,8 @@ export const recebeEmail = (tipo: TipoAviso): boolean =>
 export const CANAIS_EXTERNOS = ['push', 'whatsapp'] as const;
 export type CanalExterno = (typeof CANAIS_EXTERNOS)[number];
 export type CanalAviso = 'painel' | CanalExterno;
+/** Canais da fila de entregas: os externos configuráveis e o e-mail (só avisos da conta). */
+export type CanalEntrega = CanalExterno | 'email';
 
 /** Tipos que aparecem em Minha conta → Avisos (teste e cobrança não são configuráveis). */
 export const TIPOS_CONFIGURAVEIS = TIPOS_AVISO.filter((t) => t !== 'teste' && !ehAvisoDeConta(t));
