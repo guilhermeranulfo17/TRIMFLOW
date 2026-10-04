@@ -3,6 +3,7 @@
 import { sql } from 'drizzle-orm';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
 import { modeloDoSegmento } from '@/domain/modelos';
 import { celularBRParaE164 } from '@/domain/phone';
@@ -29,6 +30,8 @@ import { auditoria } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { urlDoSite } from '@/server/env';
 import { mensagemDeErroAuth } from '@/server/erros';
+import { codigoDoErro, logar } from '@/server/log';
+import { dentroDoLimite, MENSAGEM_LIMITE } from '@/server/seguranca/limite';
 
 export type ResultadoAcao = { ok: true; mensagem?: string } | { ok: false; erro: string };
 
@@ -53,6 +56,7 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
   const dados = parsed.data;
   const whatsappE164 = celularBRParaE164(dados.whatsapp);
   if (!whatsappE164) return { ok: false, erro: 'Informe um celular válido com DDD.' };
+  if (!(await dentroDoLimite('cadastro'))) return { ok: false, erro: MENSAGEM_LIMITE };
 
   const supabase = await criarClienteSupabase();
   const { data, error } = await supabase.auth.signUp({
@@ -71,6 +75,8 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
     },
   });
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };
+  // aceite dos Termos e da Privacidade (versão e data), mesmo sem sessão (confirmação por e-mail)
+  if (data.user) await registrarAceite(data.user.id);
 
   // Com confirmação de e-mail ligada no projeto, o signup não devolve sessão.
   if (!data.session) {
@@ -111,12 +117,29 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
         ${dados.segmento}::public.segmento_empresa, ${slugBaseDaEmpresa(dados.nomeBuffet)})`),
     );
   } catch {
-    console.error('[cadastro] completar conta falhou');
+    logar('erro', 'cadastro.completar_falhou');
     return { ok: false, erro: 'Não foi possível criar sua conta agora. Tente novamente.' };
   }
+  await registrarAceite(user.id);
   await aplicarModeloDoCadastro(user.id, dados.segmento);
   await registrarOrigem(user.id);
   redirect('/app/comecar');
+}
+
+/**
+ * Aceite versionado (Etapa 9B, LGPD): o checkbox do cadastro vira versão e data gravadas. Se
+ * falhar, o cadastro segue e o painel pede o aceite no primeiro acesso (/app/aceite).
+ */
+async function registrarAceite(usuarioId: string) {
+  try {
+    await comUsuario(usuarioId, (tx) =>
+      tx.execute(sql`select public.registrar_aceite(${VERSAO_DOCUMENTOS})`),
+    );
+  } catch (e) {
+    logar('aviso', 'cadastro.aceite_nao_registrado', {
+      codigo: (e as { code?: string }).code ?? 'sem-codigo',
+    });
+  }
 }
 
 /**
@@ -133,10 +156,7 @@ async function registrarOrigem(usuarioId: string) {
     );
     loja.delete(COOKIE_ORIGEM);
   } catch (e) {
-    console.error(
-      '[cadastro] origem não registrada',
-      (e as { code?: string }).code ?? 'sem-codigo',
-    );
+    logar('aviso', 'cadastro.origem_nao_registrada', { codigo: codigoDoErro(e) });
   }
 }
 
@@ -153,13 +173,16 @@ async function aplicarModeloDoCadastro(usuarioId: string, segmento: CadastroInpu
     if (!linha) return;
     await gravarModelo(comUsuario, usuarioId, linha.empresa_id, modeloDoSegmento(segmento));
   } catch {
-    console.error('[cadastro] modelo do segmento não aplicado');
+    logar('erro', 'cadastro.modelo_nao_aplicado');
   }
 }
 
 export async function entrar(input: LoginInput, next?: string | null): Promise<ResultadoAcao> {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) return DADOS_INVALIDOS;
+  if (!(await dentroDoLimite('login', { email: parsed.data.email }))) {
+    return { ok: false, erro: MENSAGEM_LIMITE };
+  }
 
   const supabase = await criarClienteSupabase();
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -169,6 +192,10 @@ export async function entrar(input: LoginInput, next?: string | null): Promise<R
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };
   // Senha temporária (vendedor criado pelo dono): primeiro cria a senha pessoal.
   if (precisaTrocarSenha(data.user?.app_metadata)) redirect('/nova-senha');
+  // Verificação em duas etapas ligada: falta o código do aplicativo (Etapa 9B)
+  if (data.user?.app_metadata?.mfa === true) {
+    redirect(`/login/verificacao?next=${encodeURIComponent(destinoSeguro(next))}`);
+  }
   redirect(destinoSeguro(next));
 }
 
@@ -182,6 +209,9 @@ export async function sair(): Promise<void> {
 export async function recuperarSenha(input: RecuperarSenhaInput): Promise<ResultadoAcao> {
   const parsed = recuperarSenhaSchema.safeParse(input);
   if (!parsed.success) return DADOS_INVALIDOS;
+  if (!(await dentroDoLimite('recuperar_senha', { email: parsed.data.email }))) {
+    return { ok: false, erro: MENSAGEM_LIMITE };
+  }
 
   const supabase = await criarClienteSupabase();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
@@ -214,7 +244,7 @@ export async function definirNovaSenha(input: NovaSenhaInput): Promise<Resultado
     try {
       await criarAuthAdmin().concluirTrocaDeSenha(user.id);
     } catch (erro) {
-      console.error('[auth] não foi possível concluir a troca de senha', erro);
+      logar('erro', 'auth.troca_de_senha', { codigo: codigoDoErro(erro) });
       return {
         ok: false,
         erro: 'Senha alterada, mas não conseguimos liberar seu acesso. Tente de novo.',

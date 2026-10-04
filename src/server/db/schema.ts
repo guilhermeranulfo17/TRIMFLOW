@@ -82,6 +82,10 @@ export const empresas = pgTable('empresas', {
   paginaPersonalizadaEm: timestamp('pagina_personalizada_em', { withTimezone: true }),
   /** Etapa 9.6: utm_source, utm_medium, utm_campaign e ref do cadastro (gravado uma vez). */
   origemCadastro: jsonb('origem_cadastro').$type<Record<string, string>>(),
+  /** Etapa 9B (LGPD): retenção dos leads e exclusão da conta com 30 dias para desistir. */
+  retencaoLeadsMeses: smallint('retencao_leads_meses').notNull().default(24),
+  exclusaoSolicitadaEm: timestamp('exclusao_solicitada_em', { withTimezone: true }),
+  exclusaoAgendadaPara: timestamp('exclusao_agendada_para', { withTimezone: true }),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 });
@@ -115,6 +119,9 @@ export const usuarios = pgTable(
       .default('0'),
     ativo: boolean('ativo').notNull().default(true),
     checklistDispensadoEm: timestamp('checklist_dispensado_em', { withTimezone: true }),
+    /** Etapa 9B: versão dos Termos e da Privacidade aceita (histórico em aceites_termos). */
+    termosVersao: text('termos_versao'),
+    termosAceitosEm: timestamp('termos_aceitos_em', { withTimezone: true }),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },
@@ -213,5 +220,25 @@ export const perguntasFrequentes = pgTable(
   (t) => [
     index('perguntas_frequentes_empresa_id_fk_idx').on(t.empresaId, t.ordem),
     unique().on(t.id, t.empresaId),
+  ],
+);
+
+/** Etapa 9B (LGPD): histórico dos aceites dos Termos e da Privacidade. Escrita só por função. */
+export const aceitesTermos = pgTable(
+  'aceites_termos',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    empresaId: uuid('empresa_id')
+      .notNull()
+      .references(() => empresas.id, { onDelete: 'cascade' }),
+    usuarioId: uuid('usuario_id')
+      .notNull()
+      .references(() => usuarios.id, { onDelete: 'cascade' }),
+    versao: text('versao').notNull(),
+    aceitoEm: timestamp('aceito_em', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('aceites_termos_usuario_idx').on(t.usuarioId, t.aceitoEm),
+    index('aceites_termos_empresa_idx').on(t.empresaId),
   ],
 );

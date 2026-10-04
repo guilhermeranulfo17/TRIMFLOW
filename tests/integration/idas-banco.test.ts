@@ -54,6 +54,8 @@ const LIMITE: Record<string, number> = {
   empresa: 3,
   // Etapa 9.6: a landing lê os preços numa ida (anon, sem identidade de usuário)
   landing: 2,
+  // Etapa 9B: Minha empresa → Privacidade e dados (retenção e exclusão agendada numa leitura)
+  privacidade: 2,
 };
 
 describe('idas ao banco por tela', () => {
@@ -133,6 +135,13 @@ describe('idas ao banco por tela', () => {
       comUsuario(u.id, (tx) => tx.select().from(empresas).where(eq(empresas.id, u.empresa.id))),
     );
     expect(n).toBeLessThanOrEqual(LIMITE.empresa!);
+  });
+
+  it('privacidade e dados (LGPD)', async () => {
+    const u = await usuarioDono();
+    const { carregarPrivacidade } = await import('@/server/lgpd/carregar');
+    const n = await medir('privacidade', () => carregarPrivacidade(u));
+    expect(n).toBeLessThanOrEqual(LIMITE.privacidade!);
   });
 
   it('landing (preços da vitrine)', async () => {

@@ -1,9 +1,17 @@
 'use client';
 
 import { ArrowLeft } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { formatData } from '@/domain/dates';
 import { formatBRL } from '@/domain/money';
 import {
@@ -40,12 +48,14 @@ function Carregando() {
   );
 }
 
-// Um componente por passo, carregado sob demanda (o celular baixa só o passo da vez).
-const PassoFesta = dynamic(() => import('./passo-festa'), { loading: Carregando });
-const PassoQuando = dynamic(() => import('./passo-quando'), { loading: Carregando });
-const PassoContato = dynamic(() => import('./passo-contato'), { loading: Carregando });
-const PassoPacote = dynamic(() => import('./passo-pacote'), { loading: Carregando });
-const PassoExtras = dynamic(() => import('./passo-extras'), { loading: Carregando });
+// Um componente por passo, carregado sob demanda (o celular baixa só o passo da vez). React.lazy
+// em vez de next/dynamic: o next/dynamic do Next 15 emite um <link rel="preload"> sem o nonce da
+// CSP, que o navegador recusa (Etapa 9B, B.2). O chunk é carregado pelo webpack igual.
+const PassoFesta = lazy(() => import('./passo-festa'));
+const PassoQuando = lazy(() => import('./passo-quando'));
+const PassoContato = lazy(() => import('./passo-contato'));
+const PassoPacote = lazy(() => import('./passo-pacote'));
+const PassoExtras = lazy(() => import('./passo-extras'));
 
 const CHAVE = (slug: string) => `orkestra:orcamento:${slug}`;
 const VALIDADE_LOCAL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -307,20 +317,22 @@ export function Wizard({
             {info.titulo}
           </h1>
           <div className="mt-5">
-            {passo === 1 && <PassoFesta {...props} />}
-            {passo === 2 && <PassoQuando {...props} />}
-            {passo === 3 && (
-              <PassoContato
-                {...props}
-                contato={contato}
-                setContato={setContato}
-                inicio={inicio}
-                origem={origem}
-                confirmado={contatoConfirmado}
-              />
-            )}
-            {passo === 4 && <PassoPacote {...props} />}
-            {passo === 5 && <PassoExtras {...props} />}
+            <Suspense fallback={<Carregando />}>
+              {passo === 1 && <PassoFesta {...props} />}
+              {passo === 2 && <PassoQuando {...props} />}
+              {passo === 3 && (
+                <PassoContato
+                  {...props}
+                  contato={contato}
+                  setContato={setContato}
+                  inicio={inicio}
+                  origem={origem}
+                  confirmado={contatoConfirmado}
+                />
+              )}
+              {passo === 4 && <PassoPacote {...props} />}
+              {passo === 5 && <PassoExtras {...props} />}
+            </Suspense>
           </div>
           <RodapePublico />
         </main>

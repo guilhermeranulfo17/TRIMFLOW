@@ -40,8 +40,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   Quando a cobrança mudar o plano, nada a fazer no cache (a identidade do buffet não é cacheada).
 - Agenda de visitas (confirmar, remarcar) e lembrete; hoje a visita é só um pedido no lead.
 - Captcha se os limites e o honeypot não bastarem; QR code do link; domínio próprio do buffet.
-- Exportar e apagar os dados de um lead a pedido (LGPD, Etapa 9). Revisão jurídica dos textos
-  de privacidade e termos (hoje modelos).
+- ~~Exportar e apagar os dados de um lead a pedido~~ (Etapa 9B). Revisão jurídica dos textos de
+  privacidade e termos (continuam modelos, marcados na página).
 - Painel de métricas do funil (`funil_eventos`) em Números.
 - Fotos de pacote na página pública usam `<img>`/`next/image` sem otimizador (como na Etapa 2).
 
@@ -58,9 +58,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   item.
 - Cache do logo convertido para PNG (hoje o PDF baixa e converte a cada geração; ~100 ms).
 - Fontes do PDF por buffet (hoje Manrope para todos).
-- Bundles do painel que ainda carregam `libphonenumber-js/max` no navegador (Agenda, Minha
-  empresa, Usuários; Leads e Tarefas não, desde a Etapa 6) pelo `formatPhoneBR` ou
-  `CampoTelefone`: usar só a máscara no cliente, como no "+ Orçamento".
+- ~~Bundles que carregam `libphonenumber-js/max` no navegador~~ (Etapa 9.5 trocou por `min`; a
+  Etapa 9B conferiu no CI com `scripts/conferir-bundle.mjs`).
 - Seed: os orçamentos fictícios usam totais aproximados (não recalculados pelo motor).
 
 ## Depois da Etapa 6 (pendências percebidas)
@@ -95,8 +94,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Webhook de status da Meta (entregue/lida) para mostrar "lido no WhatsApp" e desligar números
   inválidos; hoje só o erro do envio é gravado.
 - Avisos por e-mail (resumo semanal) quando houver SMTP próprio (Etapa 9).
-- Limpeza periódica: avisos com mais de 90 dias e entregas `enviado`/`ignorado` antigas
-  (hoje a tela mostra 30 dias e nada é apagado).
+- ~~Limpeza periódica: avisos com mais de 90 dias e entregas antigas~~ (Etapa 9B, job da
+  retenção).
 - Regras de follow-up personalizadas (texto e prazo livres) e mensagens prontas editáveis.
 - Push no desktop com mais de um navegador por usuário funciona, mas a tela não permite dar
   nome ao aparelho.
@@ -120,19 +119,19 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 
 ## Etapa 9: Produção
 
-- **Sessão de 30 dias** (Supabase → Auth → Sessions; "time-box" exige plano pago) e
-  expiração/rotação de refresh token.
+- ~~**Sessão de 30 dias** e rotação de refresh token~~ (Etapa 9B: passo a passo no
+  `docs/LANCAMENTO.md`; o "time-box" exige o plano Pro).
 - ~~Painel somente leitura quando o plano estiver suspenso~~ (Etapa 9A: trigger no banco +
   `acaoDoDono`).
 - ~~Modo "acessar conta do cliente" com auditoria~~ (Etapa 9A: consentimento de 7 dias,
   sessão de suporte de 2 h, faixa vermelha, `dados.suporte` na auditoria).
-- SMTP próprio no Supabase Cloud (o SMTP padrão tem limite baixo de envios por hora).
+- SMTP próprio no Supabase Cloud (o SMTP padrão tem limite baixo de envios por hora): Etapa 9B,
+  PR 2 (Resend).
 - ~~Reduzir o bundle do cadastro~~ (Etapa 9.5: metadados `min` com a regra do Brasil explícita,
   equivalência com `max` testada).
-- CSP e headers de segurança; rate limit próprio no cadastro/login além do do Supabase.
-- Conta demo somente leitura.
-- Restringir leitura de `auditoria` ao dono, se necessário (hoje qualquer usuário ativo da
-  empresa lê a auditoria da própria empresa).
+- ~~CSP e headers de segurança; rate limit próprio no cadastro/login~~ (Etapa 9B).
+- Conta demo somente leitura: Etapa 9B, PR 2.
+- ~~Restringir leitura de `auditoria` ao dono~~ (Etapa 9B).
 
 ## Depois da Etapa 9A (pendências percebidas)
 
@@ -182,13 +181,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Tema escuro na página pública (fora do escopo).
 - Limpeza de arquivos soltos da pasta `galeria` (upload que não chegou a ser gravado).
 - Pré-visualizar antes de salvar (hoje a prévia mostra o que já foi salvo).
-- **Capa em duas larguras** (como a galeria): hoje uma só, de até 1920 px; com foto real pesada,
-  o LCP no celular piora. Gerar 960 e 1920 no envio e usar `srcset` no hero.
-
-## Etapa 9 · Parte B
-
-- **B.6 "Site de vendas": substituído pela Etapa 9.6** (landing em `/`, `docs/ARQUITETURA.md` §62).
-  Na Parte B, só apontar para ela; nada a construir.
+- ~~**Capa em duas larguras**~~ (Etapa 9B: 960 e 1920 no envio, `srcset` no hero; capas antigas
+  seguem com uma largura até o dono trocar).
 
 ## Depois da Etapa 9.6 (pendências percebidas)
 
@@ -202,3 +196,33 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   pelo banco (`landing_contagem`, `empresas.origem_cadastro`).
 - Edição de planos e cupons pelo /interno (quando existir, invalidar a tag `planos-vitrine`).
 - Página por segmento, blog, vídeo, chat e teste A/B seguem fora do escopo.
+
+## Etapa 9B · PR 2 (lançamento): a fazer nesta mesma etapa
+
+- B.4 e-mail transacional (Resend) como canal `email` da fila de avisos; SMTP do Supabase Auth.
+- B.5 conta demo (`eh_demo`, recriada às 03:00, painel somente leitura, link em modo teste).
+- B.6 domínio próprio: links absolutos só de `NEXT_PUBLIC_SITE_URL`; 308 do domínio antigo.
+- B.7 backup: política e workflow manual de dump criptografado.
+- B.8 E2E da jornada inteira do buffet; B.9 roteiro completo do `docs/LANCAMENTO.md`.
+- E-mail "exportação pronta" e "conta será excluída" (a exportação do PR 1 é síncrona, um
+  download na hora; avaliar fila se alguma empresa passar de ~50 mil linhas).
+
+## Depois da Etapa 9B · PR 1 (pendências percebidas)
+
+- **Fora do escopo da Etapa 9:** nota fiscal automática da assinatura (o Asaas emite NFS-e, mas
+  exige configuração fiscal do Orkestra), app nativo, domínio próprio por buffet, programa de
+  indicação, multi-idioma, mensagens automáticas ao cliente final, troca de identidade visual.
+- **Dados fiscais na exclusão da conta:** hoje assinaturas e cobranças vão junto com a empresa (o
+  Asaas guarda as faturas). Confirmar com o contador se o Orkestra precisa manter cópia própria
+  por 5 anos; se sim, mover para uma tabela de arquivo sem ligação com a empresa.
+- **Anonimização x menções em outros registros:** o nome do titular citado em textos de outros
+  leads ("indicada pela Patrícia") não é procurado. Avaliar uma busca opcional na empresa toda.
+- **Página 404 estática** recebe a CSP com nonce e aparece sem hidratar (só texto). Se precisar
+  de interação no 404, criar `not-found.tsx` dinâmico.
+- **`next/dynamic` sem nonce no preload (Next 15):** voltar a usar quando o Next passar o nonce
+  ao `preload()`; hoje um teste proíbe.
+- **Lista de subprocessadores:** avisar os donos antes de incluir um novo (hoje só a página).
+- **Exportação da empresa** é síncrona (até 60 s na Vercel); com bases muito grandes, gerar em
+  segundo plano e mandar por e-mail (PR 2 traz o e-mail).
+- **MFA do vendedor** (hoje só o dono liga) e códigos de recuperação da MFA.
+- **Prévias da Vercel** com banco separado (branches do Supabase, plano pago).

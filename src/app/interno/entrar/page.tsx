@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { FormEntrarInterno } from '@/components/interno/formularios';
 
 export const metadata: Metadata = { title: 'Entrar' };
+// Dinâmica para receber o nonce da CSP (Etapa 9B): página estática sai do cache sem nonce.
+export const dynamic = 'force-dynamic';
 
 export default function EntrarInterno() {
   return (

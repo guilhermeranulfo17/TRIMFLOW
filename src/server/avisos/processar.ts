@@ -5,6 +5,7 @@ import { configVapid, configWhatsapp } from '@/server/env';
 import { criarCanalPush } from './canais/push';
 import type { Canal, EntregaParaEnviar, ResultadoEnvio } from './canais/tipos';
 import { criarCanalWhatsapp } from './canais/whatsapp';
+import { logar } from '@/server/log';
 
 /*
  * Processador da fila de avisos. Roda sem usuário logado (pg_cron → /api/avisos/processar,
@@ -83,7 +84,7 @@ export async function processarAvisos(
       }),
     );
   }
-  if (resumo.processadas > 0) console.info('[avisos] fila processada', resumo);
+  if (resumo.processadas > 0) logar('info', 'avisos.fila_processada', { ...resumo });
   return resumo;
 }
 
@@ -92,6 +93,6 @@ export async function processarAvisosSemFalhar(): Promise<void> {
   try {
     await processarAvisos({ lotes: 1 });
   } catch {
-    console.error('[avisos] falha ao processar a fila');
+    logar('erro', 'avisos.fila_falhou');
   }
 }

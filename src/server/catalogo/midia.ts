@@ -1,5 +1,6 @@
 import 'server-only';
 import { criarClienteSupabase } from '@/server/auth/supabase-server';
+import { logar } from '@/server/log';
 
 /**
  * Apaga arquivos do bucket "midia" com a sessão do dono (as policies do bucket valem).
@@ -10,5 +11,5 @@ export async function apagarArquivosMidia(caminhos: (string | null | undefined)[
   if (lista.length === 0) return;
   const supabase = await criarClienteSupabase();
   const { error } = await supabase.storage.from('midia').remove(lista);
-  if (error) console.error('[storage] não foi possível apagar', lista, error.message);
+  if (error) logar('erro', 'storage.apagar', { arquivos: lista.length });
 }

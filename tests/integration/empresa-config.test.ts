@@ -184,17 +184,20 @@ describe('alterar_slug', () => {
 });
 
 describe('slug_atual_por_antigo (redirecionamento público)', () => {
-  it('slug antigo válido resolve para o atual, inclusive para anon', async () => {
+  it('slug antigo válido resolve para o atual (conexão administrativa; anon não executa)', async () => {
     const r = await emTransacao(sql, async (tx) => {
       await assumirUsuario(tx, IDS.donoA);
       await tx`select public.alterar_slug('buffet-demo-atual')`;
       await tx`reset role`;
-      await assumirAnon(tx);
       const [a] = await tx`select public.slug_atual_por_antigo('buffet-demo') as atual`;
       const [b] = await tx`select public.slug_atual_por_antigo('nao-existe') as atual`;
-      return [a?.atual, b?.atual];
+      // Etapa 9B: fora da API REST (advisor anon_security_definer_function_executable)
+      await assumirAnon(tx);
+      const [anon] = await tx`select has_function_privilege('anon',
+        'public.slug_atual_por_antigo(text)', 'execute') as pode`;
+      return [a?.atual, b?.atual, anon?.pode];
     });
-    expect(r).toEqual(['buffet-demo-atual', null]);
+    expect(r).toEqual(['buffet-demo-atual', null, false]);
   });
 
   it('slug antigo expirado não resolve', async () => {

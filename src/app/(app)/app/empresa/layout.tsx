@@ -25,6 +25,7 @@ function secoesDe(dono: boolean, pendencias: Pendencia[] = []): SecaoEmpresa[] {
           { href: '/app/empresa/usuarios', rotulo: 'Usuários' },
           { href: '/app/empresa/plano', rotulo: 'Plano' },
           { href: '/app/empresa/simulador', rotulo: 'Simulador' },
+          { href: '/app/empresa/privacidade', rotulo: 'Privacidade e dados' },
         ]
       : []),
   ];

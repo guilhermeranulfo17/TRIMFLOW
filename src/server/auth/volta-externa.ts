@@ -4,6 +4,7 @@ import { destinoPosLogin } from '@/domain/auth/destino';
 import { situacaoParaLogin } from '@/server/db/admin';
 import { criarAuthAdmin } from './admin-supabase';
 import { precisaTrocarSenha } from './redirecionamento';
+import { logar } from '@/server/log';
 
 /*
  * Volta do login por provedor externo (Google, OAuth com PKCE). Dependências injetadas para o
@@ -49,7 +50,7 @@ export async function decidirVoltaExterna(
     }
     return destino.url;
   } catch {
-    console.error('[auth] falha na volta do login externo');
+    logar('erro', 'auth.volta_externa_falhou');
     await deps.sair().catch(() => undefined);
     return '/login?erro=google';
   }

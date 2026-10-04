@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs/config';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
@@ -20,37 +21,13 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   async headers() {
-    // Página pública do buffet: não pode ser embutida em outro site nem vazar o caminho
-    // (com o token da proposta) para terceiros.
-    const seguranca = [
-      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-      { key: 'X-Content-Type-Options', value: 'nosniff' },
-    ];
+    // Cabeçalhos de segurança e CSP saem do middleware em todas as rotas (Etapa 9B, B.2,
+    // domain/seguranca/cabecalhos). Aqui só os arquivos estáticos, que não passam por ele, e o
+    // noindex das páginas privadas do link público.
     return [
-      { source: '/b/:path*', headers: seguranca },
-      // Landing (Etapa 9.6): os mesmos cabeçalhos e nunca dentro de iframe
       {
-        source: '/',
-        headers: [
-          ...seguranca,
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
-        ],
-      },
-      // A vitrine pode abrir num iframe do próprio painel (prévia do editor); o resto, nunca.
-      {
-        source: '/b/:slug',
-        headers: [
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
-        ],
-      },
-      {
-        source: '/b/:slug/:resto+',
-        headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
-        ],
+        source: '/_next/static/:path*',
+        headers: [{ key: 'X-Content-Type-Options', value: 'nosniff' }],
       },
       { source: '/b/:slug/proposta/:token', headers: [{ key: 'X-Robots-Tag', value: 'noindex' }] },
       { source: '/b/:slug/orcamento', headers: [{ key: 'X-Robots-Tag', value: 'noindex' }] },
@@ -58,4 +35,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Source maps no Sentry só com SENTRY_AUTH_TOKEN (build da Vercel); sem ele, build normal.
+export default process.env.SENTRY_AUTH_TOKEN
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: true,
+      telemetry: false,
+      widenClientFileUpload: true,
+      sourcemaps: { deleteSourcemapsAfterUpload: true },
+    })
+  : nextConfig;

@@ -86,6 +86,12 @@ const config = [
       ],
     },
   },
+  {
+    // Etapa 9B (B.3): log do servidor só pelo logger estruturado (server/log), sem dado pessoal.
+    files: ['src/server/**/*.ts', 'src/app/**/*.ts', 'src/app/**/*.tsx'],
+    ignores: ['src/server/log.ts'],
+    rules: { 'no-console': 'error' },
+  },
 ];
 
 export default config;

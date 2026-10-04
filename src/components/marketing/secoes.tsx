@@ -413,6 +413,9 @@ export function Rodape() {
           <Link href="/privacidade" className="hover:underline">
             Privacidade
           </Link>
+          <Link href="/subprocessadores" className="hover:underline">
+            Subprocessadores
+          </Link>
           {whats && (
             <a href={whats} target="_blank" rel="noopener noreferrer" className="hover:underline">
               WhatsApp

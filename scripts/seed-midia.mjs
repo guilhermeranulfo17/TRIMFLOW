@@ -97,8 +97,10 @@ try {
   }
 
   // capa (1920x840) e fotos dos pacotes (2 por pacote, 1600x1200)
-  const capa = `${DEMO}/capa/${uuidDe('seed:capa')}.webp`;
+  // capa em duas larguras (Etapa 9B): o caminho salvo é o de 1920
+  const capa = `${DEMO}/capa/${uuidDe('seed:capa')}-1920.webp`;
   await enviar(capa, await webp(1920, 840, 7));
+  await enviar(capa.replace(/-1920\.webp$/, '-960.webp'), await webp(960, 420, 7));
   await sql`update public.empresas set capa_path = ${capa} where id = ${DEMO}`;
 
   const pacotes =

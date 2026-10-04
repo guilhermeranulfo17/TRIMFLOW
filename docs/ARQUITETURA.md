@@ -1260,3 +1260,123 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
   os SVGs oficiais entram só nesse arquivo e em `public/marca/`.
 - **Capturas da vitrine** (3 estilos) em `public/landing/`, geradas por
   `scripts/capturas-landing.mjs` (só local; imagens do seed geradas na hora, sem o Storage).
+
+## 63. LGPD (Etapa 9B, PR 1)
+
+- **Papéis:** o buffet é o controlador dos dados dos leads; o Orkestra é o operador (acordo de
+  tratamento dentro dos Termos, `#acordo-de-tratamento`). Para os dados do dono e da equipe, o
+  Orkestra é o controlador. `empresas.origem_cadastro` (UTM) é dado da empresa (Política).
+- **Anonimizar um lead** (`_lgpd_anonimizar_lead`, núcleo; `lgpd_apagar_lead` para o dono,
+  `lgpd_retencao` para o job): nome vira "Titular removido", WhatsApp e e-mail viram `null`
+  (`leads.whatsapp_e164` deixou de ser `not null`), `titular_hash` = sha256 com um valor
+  aleatório descartado (irreversível de propósito: só marca que havia uma pessoa). Notas são
+  apagadas; textos livres zerados (observações, motivo do desconto, descrição da tarefa…); os
+  jsonb (`orcamentos.rascunho/resultado/conteudo`, `atividades.dados`, `avisos.dados`,
+  `auditoria.dados`) passam por `_lgpd_redigir_jsonb`, que troca qualquer string com o nome (e
+  cada nome com 3+ letras, palavra inteira), o e-mail ou os 8 últimos dígitos do telefone por
+  "Titular removido". Status, datas, valores, origem e reservas ficam: Números não muda (teste
+  compara o JSON inteiro antes e depois). Pré-reserva ativa é cancelada; reserva confirmada de
+  festa futura bloqueia (`LGPD_RESERVA_FUTURA`). Menções ao titular em registros de **outros**
+  leads (ex.: "indicada pela Patrícia") não são procuradas.
+- **Exportar um lead:** `lgpd_exportar_lead` (dono) devolve JSON com dados, orçamentos e itens,
+  atividades, visitas, reservas, notas e tarefas, sem ids de usuários; CSV em seções
+  (`domain/lgpd/csv`, separador `;`, BOM, proteção contra fórmula). Grava `lead.exportado`.
+- **Exportar a empresa:** rota `/app/empresa/privacidade/exportar` monta um ZIP (escritor
+  próprio em `server/lgpd/zip.ts`, deflate e CRC do `node:zlib`, sem dependência nova) com um CSV
+  por tabela de `TABELAS_EXPORTACAO`, tudo lido com o RLS do dono (o teste procura ids de outra
+  empresa no conteúdo). Fora: chaves do push e o hash do titular.
+- **Retenção:** `empresas.retencao_leads_meses` (12, 24, 36 ou 60; padrão 24). Job
+  `orkestra-lgpd-retencao` (03:20 SP): lead real sem reserva confirmada (ativa ou realizada),
+  fora de pré-reservado/reservado e parado além do prazo é anonimizado (500 por dia); lead de
+  teste com mais de 30 dias é apagado; `funil_eventos` e `landing_contagem` com mais de 25 meses
+  (Números compara até 366 + 366 dias) e avisos com mais de 90 dias são apagados; entregas
+  concluídas com mais de 30 dias também.
+- **Exclusão da conta:** `solicitar_exclusao_conta` grava `exclusao_agendada_para = +30 dias` e
+  reaproveita a suspensão manual (`suspensa_manual_em`, motivo `exclusao_solicitada`): a conta
+  fica somente leitura sem mexer em `_situacao_conta`. A action cancela a assinatura no Asaas
+  antes. `desistir_exclusao_conta` desfaz (só a suspensão que a exclusão criou). O job
+  `orkestra-lgpd-exclusao` chama `/api/lgpd/processar` (CRON_SECRET); `processarExclusoes`
+  (dependências injetadas) apaga os arquivos do Storage (`{empresa_id}/…`), os usuários do Auth
+  (Admin API) e chama `lgpd_excluir_empresa`, que confere o prazo de novo, apaga
+  `cobranca_eventos` (têm dados do pagador), os usuários e a empresa (cascata) e deixa uma
+  linha sem dado pessoal em `auditoria_interna`. Idempotente se parar no meio.
+- **Aceite versionado:** `VERSAO_DOCUMENTOS` (`domain/legal/versao.ts`) é a versão dos Termos e da
+  Privacidade. `registrar_aceite` grava em `aceites_termos` (histórico) e em
+  `usuarios.termos_versao`. O cadastro (e-mail e Google) registra; o layout do painel e o do
+  onboarding mandam o **dono** com versão diferente para `/app/aceite` (vendedor não: quem
+  contrata é o dono; modo suporte também não). A versão vem na mesma leitura de `lerUsuario`
+  (nenhuma ida a mais). `aceites_termos` fica fora do trigger de somente leitura.
+- **Valem com a conta suspensa:** todas as funções `lgpd_*`, `registrar_aceite` e as da exclusão
+  ligam `orkestra.permitir_escrita` (exportar, apagar a pedido e aceitar termos nunca travam).
+- **Auditoria:** select só do dono (`auditoria_select_dono`).
+
+## 64. Segurança (Etapa 9B, PR 1)
+
+- **Cabeçalhos no middleware** (`domain/seguranca/cabecalhos`): o matcher passou a cobrir tudo
+  menos arquivos estáticos; o Auth continua só nas rotas de antes (`usaSessao`). Páginas
+  dinâmicas: `script-src 'self' 'nonce-…' 'strict-dynamic'` (o Next lê o nonce do cabeçalho CSP
+  da requisição e põe nos scripts). Páginas estáticas (`/`, termos, privacidade,
+  subprocessadores) saem do cache sem nonce: `script-src 'self' 'unsafe-inline'` (sem conteúdo de
+  usuário). `/cadastro` e `/interno/entrar` viraram dinâmicas para ter nonce. APIs, PDFs, ZIP e
+  imagens: `default-src 'none'`. `frame-ancestors 'none'` em tudo, menos a vitrine (`'self'`,
+  prévia do editor). HSTS só em HTTPS; `upgrade-insecure-requests` também. `x-request-id` em
+  toda resposta (e na requisição, para o log).
+- **O que o percurso de CSP achou:** (1) o `next/dynamic` do Next 15 emite
+  `<link rel="preload" as="script">` sem nonce: o wizard usa `React.lazy` + `Suspense` (teste
+  proíbe `next/dynamic`); (2) o Zod 4 testa `Function("")` para o JIT: o `instrumentation-client.ts` liga `jitless` no
+  global que o Zod lê (`globalThis.__zod_globalConfig`), antes do app e sem importar o Zod (um
+  apelido de webpack para um arquivo próprio funcionava, mas desligava a poda: +65 kB no login). A página 404
+  padrão do Next é estática e, em URL desconhecida, recebe a CSP com nonce: aparece sem
+  hidratar (só texto), sem efeito prático.
+- **Limite de tentativas** (`publico.limite_acesso`, só hashes): login 30/h por IP e 10/h por
+  e-mail; cadastro 10/h por IP; recuperar senha 10/h por IP e 5/h por e-mail; webhook do Asaas e
+  rotas do pg_cron contam só tentativas com token errado (20/h por IP), então chamada legítima
+  nunca é barrada. IP de loopback não entra (E2E do CI); na Vercel o `x-forwarded-for` é sempre
+  o IP real. Falha no banco deixa passar (o Supabase Auth tem os limites dele).
+- **MFA do dono:** TOTP do Supabase Auth. Ligar grava `app_metadata.mfa = true` pela Admin API
+  e renova o token; o middleware barra `/app/**` quando a marca está ligada e `aal` não é
+  `aal2` (só claims: `getAuthenticatorAssuranceLevel` no middleware gerava um aviso do
+  supabase-js por requisição). `/login/verificacao` pede o código; marca sem fator (apagado no
+  painel do Supabase) é corrigida lá. Desligar exige um código atual. O "Entrar com outra
+  conta" é `<a>`: um `<Link>` faria prefetch de `/auth/sair` e encerraria a sessão.
+- **RLS e grants** conferidos pelo catálogo (`tests/integration/rls-revisao.test.ts`): RLS em
+  toda tabela de `public` e `publico`, nenhuma policy nem grant para `anon`, escrita direta só
+  em configuração e catálogo (lista explícita), security definer sempre com `search_path`.
+- **Advisors do Supabase (04/10/2026, produção):** zerado `slug_atual_por_antigo` executável por
+  `anon` (revogado; o servidor chama pela conexão administrativa). Justificados:
+  - _RLS sem policy_ (`auditoria_interna`, `cobranca_eventos`, `cupons`, `cupons_usos`,
+    `landing_contagem`, `publico.tentativas`): de propósito, ninguém do navegador lê; só funções
+    e a conexão administrativa.
+  - _search_path mutável_ em `_lead_grupo`/`_lead_ordem`: o `SET` impede o inlining na caixa
+    (38 → 65 ms com 5.000 leads; ver PROXIMOS_PASSOS). São `sql` puras, sem acesso a tabela.
+  - _pg_net em public_: extensão instalada pelo Supabase; mover quebraria o `net.http_post`.
+  - _security definer executável por authenticated_ (59): é a API de escrita do painel, por
+    desenho ("só por funções"); cada função confere empresa, perfil e estado.
+  - _Leaked password protection_: exige plano Pro (passo no LANCAMENTO.md).
+  - _Desempenho_: FKs sem índice (colunas de autoria `criado_por`, `feita_por`… e chaves
+    compostas do catálogo, cujas tabelas são pequenas por empresa; a exclusão de empresa faz uma
+    varredura por tabela filha, uma vez) e índices sem uso (base pequena): reavaliar com uso real.
+- **Dependências:** `pnpm audit --prod --audit-level=high` no CI; `postcss` do Next por override
+  (8.4.31 tinha alertas altos); Dependabot semanal. O CI também confere que nenhum chunk do
+  navegador leva os metadados `max` do libphonenumber (`scripts/conferir-bundle.mjs`).
+
+## 65. Observabilidade (Etapa 9B, PR 1)
+
+- **Log** (`server/log`): `logar(nivel, evento, dados)` escreve JSON numa linha com o id da
+  requisição; `domain/observabilidade/log` descarta chaves pessoais e mascara e-mails e números
+  longos (uuids ficam). Erros entram só com `codigoDoErro` (SQLSTATE, código do Auth ou Asaas):
+  a mensagem do Postgres pode trazer o valor (ex.: e-mail duplicado). ESLint proíbe `console`
+  no servidor.
+- **Sentry** (`@sentry/nextjs`): só em produção e com DSN. Servidor em
+  `instrumentation-node.ts` (importado só no ramo `nodejs`: no Edge o Sentry inflava a
+  instrumentação do middleware de 0,3 para 224 kB); `onRequestError` captura erros de páginas e
+  actions. Navegador em `instrumentation-client.ts`, importado sob demanda (zero byte sem DSN).
+  `sendDefaultPii: false`, 5% de traces, `beforeSend` = `limparEvento` (sem usuário, cookies,
+  cabeçalhos, corpo, query, token da proposta, chaves pessoais; contextos técnicos ficam).
+  Source maps só com `SENTRY_AUTH_TOKEN`, apagados depois do envio. A CSP libera a origem do
+  DSN em `connect-src`.
+- **`GET /api/saude`** (`server/saude/verificar`, `domain/observabilidade/saude`):
+  `public.saude_sistema()` (só servidor) devolve o atraso da fila e os jobs `orkestra-%` com a
+  última execução; ok = banco responde, fila com atraso ≤ 10 min, cada job dentro de 2
+  intervalos + 5 min e sem falha (job ainda sem execução passa), Asaas configurado e
+  `planos_vitrine` com planos. 200 ou 503 com a lista de itens; nada de detalhe técnico.

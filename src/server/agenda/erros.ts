@@ -7,6 +7,7 @@ import { AcessoNegadoError, exigirPerfil } from '@/server/auth/guards';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import type { Perfil } from '@/server/db/schema';
 import type { ResultadoAcao } from '@/server/actions/empresa/comum';
+import { codigoDoErro, logar } from '@/server/log';
 
 /** Erro do banco numa ação da agenda → mensagem simples (nunca a técnica). */
 export function mensagemErroAgenda(erro: unknown): string {
@@ -38,7 +39,8 @@ export async function acaoDaAgenda<T>(
       return { ok: false, erro: 'Só o dono do buffet pode fazer isso.' };
     }
     const mensagem = mensagemErroAgenda(erro);
-    if (mensagem === MENSAGEM_AGENDA_PADRAO) console.error('[agenda]', erro);
+    if (mensagem === MENSAGEM_AGENDA_PADRAO)
+      logar('erro', 'agenda.erro_inesperado', { codigo: codigoDoErro(erro) });
     return { ok: false, erro: mensagem };
   }
 }

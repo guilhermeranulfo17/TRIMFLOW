@@ -4,6 +4,7 @@ import { traduzirErroAgenda } from '@/domain/agenda';
 import { mensagemErroConta } from '@/domain/cobranca/limites';
 import type { ResultadoAcao } from '@/server/actions/empresa/comum';
 import { exigirSessao, type UsuarioAtual } from '@/server/auth/sessao';
+import { logar } from '@/server/log';
 
 /*
  * Ações do vendedor no lead: dono e vendedor ativos. Erros do banco viram mensagens simples
@@ -58,7 +59,7 @@ export async function acaoDoLead<T>(
   } catch (erro) {
     unstable_rethrow(erro);
     const mensagem = mensagemErroLead(erro);
-    if (mensagem === MENSAGEM_LEAD_PADRAO) console.error('[leads] erro inesperado');
+    if (mensagem === MENSAGEM_LEAD_PADRAO) logar('erro', 'leads.erro_inesperado');
     return { ok: false, erro: mensagem };
   }
 }

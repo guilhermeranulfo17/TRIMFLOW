@@ -31,6 +31,7 @@ import {
   planos,
 } from '@/server/db/schema';
 import { type ClienteAsaas, cicloAsaas, ErroAsaas } from './asaas';
+import { logar } from '@/server/log';
 
 /*
  * Fluxos da cobrança. Rodam pela conexão administrativa (sem RLS): quem chama já conferiu o
@@ -422,7 +423,7 @@ export async function assinar(
     return { ok: true, dados: { urlFatura: await faturaEmAberto(d.db, assinaturaId) } };
   } catch (erro) {
     if (erro instanceof ErroAsaas) {
-      console.error('[cobranca] assinar', erro.codigo);
+      logar('erro', 'cobranca.assinar', { codigo: erro.codigo });
       return { ok: false, erro: ERRO_ASAAS, codigo: erro.codigo };
     }
     throw erro;
@@ -656,11 +657,10 @@ export async function reconciliar(d: DepsCobranca): Promise<ResumoReconciliacao>
       }
     } catch (erro) {
       resumo.falhas++;
-      console.error(
-        '[cobranca] reconciliar',
-        a.id,
-        erro instanceof ErroAsaas ? erro.codigo : 'ERRO',
-      );
+      logar('erro', 'cobranca.reconciliar', {
+        assinatura_id: a.id,
+        codigo: erro instanceof ErroAsaas ? erro.codigo : 'ERRO',
+      });
     }
   }
   const avulsas = await d.db
@@ -677,11 +677,10 @@ export async function reconciliar(d: DepsCobranca): Promise<ResumoReconciliacao>
       }
     } catch (erro) {
       resumo.falhas++;
-      console.error(
-        '[cobranca] reconciliar',
-        c.id,
-        erro instanceof ErroAsaas ? erro.codigo : 'ERRO',
-      );
+      logar('erro', 'cobranca.reconciliar', {
+        cobranca_id: c.id,
+        codigo: erro instanceof ErroAsaas ? erro.codigo : 'ERRO',
+      });
     }
   }
   await d.db.execute(sql`select public.atualizar_situacoes()`);

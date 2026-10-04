@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, ChevronDown, LogOut } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import {
@@ -84,6 +84,14 @@ export function UserMenu({
             Minha conta: avisos
           </Link>
         </DropdownMenuItem>
+        {perfil === 'dono' && (
+          <DropdownMenuItem asChild>
+            <Link href="/app/conta/seguranca" className="cursor-pointer">
+              <ShieldCheck aria-hidden />
+              Minha conta: segurança
+            </Link>
+          </DropdownMenuItem>
+        )}
         <form action={sair}>
           <DropdownMenuItem asChild>
             <button type="submit" className="w-full cursor-pointer">

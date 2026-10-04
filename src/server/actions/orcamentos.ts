@@ -26,6 +26,7 @@ import {
   type BaseInterna,
 } from '@/server/orcamentos/carregar';
 import { prepararVersao } from '@/server/proposta/versao';
+import { logar } from '@/server/log';
 
 /*
  * Orçamento interno (dono e vendedor). Mesmo motor do link, canal interno: desconto até o limite
@@ -77,7 +78,7 @@ async function acao<T>(
   } catch (erro) {
     unstable_rethrow(erro);
     const msg = mensagemDoErro(erro);
-    if (msg.startsWith('Não foi possível')) console.error(`[orcamento:${onde}] erro inesperado`);
+    if (msg.startsWith('Não foi possível')) logar('erro', `orcamento.${onde}`);
     return { ok: false, erro: msg };
   }
 }

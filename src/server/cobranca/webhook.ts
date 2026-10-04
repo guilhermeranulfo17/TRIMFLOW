@@ -2,6 +2,7 @@ import 'server-only';
 import { timingSafeEqual } from 'node:crypto';
 import type { Db } from '@/server/db/client';
 import { processarWebhook } from './fluxos';
+import { codigoDoErro, logar } from '@/server/log';
 
 /*
  * Webhook do Asaas, separado da rota para testar sem o Next. Token no header
@@ -41,7 +42,7 @@ export async function tratarWebhook(
     if (resultado === null) return { status: 400, corpo: { ok: false } };
     return { status: 200, corpo: { ok: true, resultado } };
   } catch (erro) {
-    console.error('[cobranca] webhook', (erro as { code?: string }).code ?? 'ERRO');
+    logar('erro', 'cobranca.webhook', { codigo: codigoDoErro(erro) });
     return { status: 500, corpo: { ok: false } };
   }
 }

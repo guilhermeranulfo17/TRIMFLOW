@@ -129,7 +129,8 @@ export const leads = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     empresaId: empresaId(),
     nome: text('nome').notNull(),
-    whatsappE164: text('whatsapp_e164').notNull(),
+    /** null depois da anonimização (LGPD, Etapa 9B) */
+    whatsappE164: text('whatsapp_e164'),
     email: text('email'),
     origem: origemLead('origem').notNull().default('link_direto'),
     status: statusLead('status').notNull().default('novo'),
@@ -149,6 +150,9 @@ export const leads = pgTable(
     statusAntesDePerder: statusLead('status_antes_de_perder'),
     primeiroContatoEm: instante('primeiro_contato_em'),
     ultimaAcaoVendedorEm: instante('ultima_acao_vendedor_em'),
+    // Etapa 9B (LGPD): dados pessoais removidos; o hash é irreversível
+    anonimizadoEm: instante('anonimizado_em'),
+    titularHash: text('titular_hash'),
     criadoEm: instante('criado_em').notNull().defaultNow(),
     atualizadoEm: instante('atualizado_em').notNull().defaultNow(),
   },

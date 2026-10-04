@@ -22,7 +22,11 @@ export type UsuarioAtual = {
     fuso: string;
     /** situação da conta (Etapa 9A): suspenso = painel somente leitura */
     situacao: Situacao;
+    /** exclusão da conta pedida pelo dono (Etapa 9B, LGPD): data da exclusão definitiva */
+    exclusaoAgendadaPara: string | null;
   };
+  /** versão dos Termos e da Privacidade aceita (Etapa 9B); o dono aceita a vigente */
+  termosVersao: string | null;
   /** modo suporte (equipe Orkestra com consentimento do dono): mostra a faixa vermelha */
   suporte: { admin: string } | null;
 };
@@ -66,13 +70,13 @@ export const usuarioAtual = cache(async (): Promise<UsuarioAtual | null> => {
 /** Usuário ativo + empresa pelo id (lido pelo RLS como o próprio usuário), ou null. Uma ida. */
 export async function lerUsuario(alvo: string): Promise<Omit<UsuarioAtual, 'suporte'> | null> {
   const [linhas] = await lerComo(alvo, [
-    sql`select u.id, u.nome, u.email, u.perfil, u.ativo, e.id as empresa_id,
+    sql`select u.id, u.nome, u.email, u.perfil, u.ativo, u.termos_versao, e.id as empresa_id,
                e.nome as empresa_nome, e.slug as empresa_slug, e.fuso as empresa_fuso,
-               e.plano as empresa_situacao
+               e.plano as empresa_situacao, e.exclusao_agendada_para as empresa_exclusao
         from public.usuarios u join public.empresas e on e.id = u.empresa_id
         where u.id = ${alvo} limit 1`,
   ]);
-  const linha = linhas?.[0] as Record<string, string | boolean> | undefined;
+  const linha = linhas?.[0] as Record<string, string | boolean | Date | null> | undefined;
   if (!linha?.ativo) return null;
 
   return {
@@ -86,7 +90,11 @@ export async function lerUsuario(alvo: string): Promise<Omit<UsuarioAtual, 'supo
       slug: String(linha.empresa_slug),
       fuso: String(linha.empresa_fuso),
       situacao: linha.empresa_situacao as Situacao,
+      exclusaoAgendadaPara: linha.empresa_exclusao
+        ? new Date(linha.empresa_exclusao as string | Date).toISOString()
+        : null,
     },
+    termosVersao: (linha.termos_versao as string | null) ?? null,
   };
 }
 

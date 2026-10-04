@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { AppHeader } from '@/components/app/app-header';
 import { SinoAvisos } from '@/components/app/avisos/sino';
@@ -12,13 +13,19 @@ import {
 import { Sidebar } from '@/components/app/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ProvedorToast } from '@/components/app/toast';
+import { FaixaExclusao } from '@/components/app/plano/faixa-exclusao';
 import { FaixaSuporte } from '@/components/app/plano/faixa-suporte';
+import { precisaAceitarTermos } from '@/domain/legal/versao';
 import { exigirSessao } from '@/server/auth/sessao';
 import { lerTema } from '@/server/tema/ler';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // só a identidade bloqueia (redirect); badges, sino e faixas chegam por Suspense
   const [usuario, tema] = await Promise.all([exigirSessao(), lerTema()]);
+  // Termos e Privacidade novos: o dono aceita antes de usar (não no modo suporte)
+  if (precisaAceitarTermos(usuario.perfil, usuario.termosVersao) && !usuario.suporte) {
+    redirect('/app/aceite');
+  }
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -31,6 +38,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex min-w-0 flex-1 flex-col">
             {usuario.suporte && (
               <FaixaSuporte buffet={usuario.empresa.nome} admin={usuario.suporte.admin} />
+            )}
+            {usuario.empresa.exclusaoAgendadaPara && (
+              <FaixaExclusao
+                quando={usuario.empresa.exclusaoAgendadaPara}
+                fuso={usuario.empresa.fuso}
+              />
             )}
             <Suspense fallback={null}>
               <FaixasDoPainel usuario={usuario} />

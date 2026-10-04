@@ -231,7 +231,8 @@ export function ItemTarefa({ tarefa, leadId }: { tarefa: TarefaVista; leadId: st
             href={`/app/leads/${tarefa.lead.id}`}
             className="text-muted-foreground hover:text-foreground text-sm font-semibold underline underline-offset-2"
           >
-            {tarefa.lead.nome} · {tarefa.lead.telefone}
+            {tarefa.lead.nome}
+            {tarefa.lead.telefone ? ` · ${tarefa.lead.telefone}` : ''}
           </Link>
         )}
         {!feita && (

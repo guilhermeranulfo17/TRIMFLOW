@@ -132,16 +132,18 @@ export function OrcamentosDoLead({ grupos }: { grupos: GrupoOrcamento[] }) {
                 <Download className="size-4" aria-hidden />
                 PDF
               </a>
-              <a
-                href={v.linkWhatsapp}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={ACAO}
-                onClick={() => void marcarOrcamentoEnviado(v.id, 'whatsapp')}
-              >
-                <IconeWhatsApp className="size-4" />
-                WhatsApp
-              </a>
+              {v.linkWhatsapp && (
+                <a
+                  href={v.linkWhatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={ACAO}
+                  onClick={() => void marcarOrcamentoEnviado(v.id, 'whatsapp')}
+                >
+                  <IconeWhatsApp className="size-4" />
+                  WhatsApp
+                </a>
+              )}
               <button type="button" className={ACAO} onClick={() => void copiar(v)}>
                 <Copy className="size-4" aria-hidden />
                 Copiar link

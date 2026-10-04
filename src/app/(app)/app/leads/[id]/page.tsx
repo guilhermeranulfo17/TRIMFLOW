@@ -12,6 +12,7 @@ import {
   type ItemTempo,
 } from '@/components/app/leads/blocos-lead';
 import { SeloStatus, Temperatura } from '@/components/app/leads/indicadores';
+import { PrivacidadeLead } from '@/components/app/leads/privacidade-lead';
 import { OrcamentosDoLead } from '@/components/app/orcamento/orcamentos-do-lead';
 import { formatData, formatDataHora, hojeNoFuso } from '@/domain/dates';
 import { descreverAtividade } from '@/domain/leads';
@@ -84,14 +85,16 @@ export default async function LeadPage({ params }: Props) {
           {motivo}
         </p>
         <p className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-sm">
-          <a
-            href={`https://wa.me/${lead.whatsappE164.replace('+', '')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary-texto font-semibold underline-offset-2 hover:underline"
-          >
-            {lead.telefone}
-          </a>
+          {lead.whatsappE164 && (
+            <a
+              href={`https://wa.me/${lead.whatsappE164.replace('+', '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-texto font-semibold underline-offset-2 hover:underline"
+            >
+              {lead.telefone}
+            </a>
+          )}
           {lead.email && <span>{lead.email}</span>}
           <span>Veio de {ROTULO_ORIGEM[lead.origem]}</span>
           {lead.proximoContatoEm && (
@@ -107,6 +110,15 @@ export default async function LeadPage({ params }: Props) {
           eu={usuario.id}
           ehDono={usuario.perfil === 'dono'}
         />
+        {lead.anonimizadoEm && (
+          <p
+            className="rounded-control border-info/30 bg-info/10 text-info border p-3 text-sm"
+            data-testid="lead-anonimizado"
+          >
+            Dados pessoais apagados em {formatData(lead.anonimizadoEm, fuso)} (LGPD). Ficaram só
+            datas, valores e o histórico, sem nada que identifique a pessoa.
+          </p>
+        )}
         {lead.perda && (
           <p
             className="rounded-control border-erro/30 bg-erro/10 text-erro border p-3 text-sm"
@@ -120,15 +132,18 @@ export default async function LeadPage({ params }: Props) {
         )}
       </header>
 
-      <AcoesLead
-        lead={{
-          id: lead.id,
-          nome: lead.nome,
-          email: lead.email,
-          status: lead.status,
-          temPreReserva: lead.reservas.some((r) => r.tipo === 'pre_reserva'),
-        }}
-      />
+      {/* anonimizado (LGPD): sem contato possível, as ações somem */}
+      {!lead.anonimizadoEm && (
+        <AcoesLead
+          lead={{
+            id: lead.id,
+            nome: lead.nome,
+            email: lead.email,
+            status: lead.status,
+            temPreReserva: lead.reservas.some((r) => r.tipo === 'pre_reserva'),
+          }}
+        />
+      )}
 
       {lead.reservas.length > 0 && (
         <section aria-labelledby="titulo-reserva">
@@ -216,6 +231,10 @@ export default async function LeadPage({ params }: Props) {
       </section>
 
       <LinhaDoTempo itens={tempo} leadId={lead.id} />
+
+      {usuario.perfil === 'dono' && !lead.ehTeste && (
+        <PrivacidadeLead leadId={lead.id} anonimizado={!!lead.anonimizadoEm} />
+      )}
     </div>
   );
 }

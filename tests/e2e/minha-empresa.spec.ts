@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { noBanco } from './banco';
 import { cadastrar, emailUnico, esvaziarCatalogo, sair, semRolagemHorizontal } from './helpers';
 
 /*
@@ -21,6 +22,7 @@ async function novaEmpresa(page: Page, buffet: string) {
   await expect(page).toHaveURL(/\/app\/comecar$/);
   // estes testes montam o catálogo do zero
   await esvaziarCatalogo(email);
+  return email;
 }
 
 /** Envia um PNG 1×1 como logo (o navegador converte para WEBP) e espera a tela mostrar. */
@@ -261,5 +263,38 @@ test.describe('minha empresa', () => {
     );
     await novaEmpresa(page, 'Buffet Logo Simulado');
     await enviarLogo(page);
+  });
+
+  test('capa sai em duas larguras (960 e 1920) e a vitrine usa as duas (Storage simulado)', async ({
+    page,
+  }) => {
+    const enviados: string[] = [];
+    await page.route('**/storage/v1/object/midia/**', (rota) => {
+      enviados.push(new URL(rota.request().url()).pathname);
+      return rota.fulfill({ status: 200, contentType: 'application/json', body: '{"Key":"x"}' });
+    });
+    const email = await novaEmpresa(page, 'Buffet Capa Dupla');
+    await page.goto('/app/empresa');
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const campo = page.getByLabel('Escolher Capa');
+    await expect(campo).toBeEnabled();
+    await campo.setInputFiles({ name: 'capa.png', mimeType: 'image/png', buffer: png });
+    await esperarToast(page, 'Capa atualizada.');
+    expect(enviados.filter((c) => c.endsWith('-1920.webp'))).toHaveLength(1);
+    expect(enviados.filter((c) => c.endsWith('-960.webp'))).toHaveLength(1);
+
+    const [empresa] = await noBanco(
+      (sql) => sql<{ slug: string }[]>`select e.slug from public.empresas e
+        join public.usuarios u on u.empresa_id = e.id where u.email = ${email}`,
+    );
+    await page.goto(`/b/${empresa!.slug}`);
+    const srcset = await page
+      .locator('main img[srcset*="-960.webp"]')
+      .first()
+      .getAttribute('srcset');
+    expect(srcset).toMatch(/-960\.webp 960w, .*-1920\.webp 1920w/);
   });
 });
