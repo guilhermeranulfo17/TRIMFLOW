@@ -1,6 +1,6 @@
 import 'server-only';
 import { sql } from 'drizzle-orm';
-import { unstable_cache } from 'next/cache';
+import { unstable_cache, unstable_noStore } from 'next/cache';
 import { hojeNoFuso } from '@/domain/dates';
 import {
   montarExemploSimulador,
@@ -59,7 +59,11 @@ const lerEmCache = unstable_cache(
 
 /**
  * Preços da landing; null se a leitura falhar (a página mostra os cartões sem preço e o
- * WhatsApp de vendas). A falha não entra no cache: a próxima requisição tenta de novo.
+ * WhatsApp de vendas). A falha nunca fica guardada (Etapa 9B, B.0):
+ * - o `unstable_cache` não guarda exceção (a próxima chamada lê de novo);
+ * - a PÁGINA também não: `unstable_noStore()` tira esta renderização do cache estático. No build
+ *   (ex.: migration ainda não aplicada) a rota vira dinâmica e cada requisição tenta de novo; numa
+ *   revalidação em segundo plano a página antiga (com preço) continua sendo servida.
  */
 export async function carregarPrecosVitrine(): Promise<PrecosVitrine | null> {
   try {
@@ -76,8 +80,10 @@ export async function carregarPrecosVitrine(): Promise<PrecosVitrine | null> {
       '[landing] falha ao ler planos_vitrine',
       (e as { code?: string }).code ?? 'sem-codigo',
     );
-    return null;
   }
+  // Fora do try: no build e na revalidação o noStore interrompe a renderização de propósito.
+  unstable_noStore();
+  return null;
 }
 
 /** Exemplo do simulador: o catálogo do modelo infantil (preços fictícios), com "hoje" de SP. */
