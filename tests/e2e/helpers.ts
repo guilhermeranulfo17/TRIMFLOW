@@ -83,3 +83,29 @@ export async function esvaziarCatalogo(email: string) {
     await sql`delete from public.faixas_deslocamento where empresa_id = ${e}`;
   });
 }
+
+/**
+ * Escolhe o tipo de festa e confirma que o clique valeu: logo depois do carregamento a página
+ * ainda pode não estar hidratada e o clique se perde (o "Continuar" fica desabilitado).
+ */
+export async function escolherTipoDeFesta(page: Page, nome = 'Aniversário infantil') {
+  const tipo = page.getByRole('radio', { name: nome });
+  await expect(async () => {
+    await tipo.click();
+    await expect(tipo).toHaveAttribute('aria-checked', 'true', { timeout: 1_000 });
+  }).toPass();
+}
+
+/**
+ * Passo 1 do orçamento no link público: escolhe o tipo e vai ao passo 2, repetindo o que se
+ * perdeu se a página ainda estava terminando de carregar (clique antes da hidratação).
+ */
+export async function irAoPasso2(page: Page, nome = 'Aniversário infantil') {
+  const tipo = page.getByRole('radio', { name: nome });
+  await expect(async () => {
+    if ((await tipo.getAttribute('aria-checked')) !== 'true') await tipo.click();
+    await expect(tipo).toHaveAttribute('aria-checked', 'true', { timeout: 1_000 });
+    await page.getByRole('button', { name: 'Continuar' }).click({ timeout: 2_000 });
+    await expect(page.getByTestId('passo-atual')).toHaveText(/Passo 2 de 6/, { timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+}

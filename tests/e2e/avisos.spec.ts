@@ -7,6 +7,8 @@ import {
   entrar,
   semRolagemHorizontal,
   SENHA_SEED,
+  escolherTipoDeFesta,
+  irAoPasso2,
 } from './helpers';
 
 /*
@@ -60,7 +62,7 @@ async function orcamentoInterno(
   await page.goto('/app/orcamentos/novo');
   await page.getByLabel('WhatsApp do cliente').fill(o.whatsapp);
   await page.getByLabel('Nome do cliente').fill(o.nome);
-  await page.getByRole('radio', { name: 'Aniversário infantil' }).click();
+  await escolherTipoDeFesta(page);
   for (let i = 0; i < o.mesesAFrente; i++) {
     await page.getByRole('button', { name: 'Próximo mês' }).click();
   }
@@ -117,20 +119,15 @@ test('cliente pede pré-reserva pelo link; o sino do dono sobe e o aviso abre o 
   browser,
 }) => {
   await entrar(page, 'dono@demo.local', SENHA_SEED);
-  await expect(page.getByTestId('sino')).toBeVisible();
+  // o sino do esqueleto e o de verdade coexistem por um instante (streaming): espera ficar um só
+  await expect(page.getByTestId('sino')).toHaveCount(1);
   const antes = await contadorDoSino(page);
 
   // Cliente, em outro navegador, monta o orçamento e pré-reserva (mês longe dos outros testes).
   const nome = unico('Priscila Aviso');
   const cliente = await visitante(browser);
   await cliente.goto(`/b/${SLUG}/orcamento`);
-  const tipo = cliente.getByRole('radio', { name: 'Aniversário infantil' });
-  await expect(async () => {
-    await tipo.click();
-    await expect(tipo).toHaveAttribute('aria-checked', 'true', { timeout: 1_000 });
-  }).toPass();
-  await cliente.getByRole('button', { name: 'Continuar' }).click();
-  await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 2 de 6/);
+  await irAoPasso2(cliente);
   // meses 19 a 24 (o calendário vai até 24): nenhum outro teste do Buffet Demo reserva lá
   const meses = 19 + Math.floor(Math.random() * 6);
   for (let i = 0; i < meses; i++) {

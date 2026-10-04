@@ -73,7 +73,10 @@ test('teste acaba, conta fica somente leitura, assina com o cupom de fundador e 
   // escrever volta a funcionar
   await page.goto('/app/empresa/link');
   await page.getByRole('button', { name: 'Já coloquei o link na bio' }).click();
-  await expect(page.getByRole('button', { name: 'Link na bio: feito' })).toBeVisible();
+  // logo depois do pagamento o painel inteiro é recalculado (revalidate do layout): mais folga
+  await expect(page.getByRole('button', { name: 'Link na bio: feito' })).toBeVisible({
+    timeout: 30_000,
+  });
 });
 
 test('/interno exige a lista e o MFA; o suporte só entra com o consentimento do dono', async ({

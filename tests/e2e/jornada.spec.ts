@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { noBanco, zerarLimites } from './banco';
-import { cadastrar, emailUnico, SENHA_SEED, semRolagemHorizontal } from './helpers';
+import { cadastrar, emailUnico, SENHA_SEED, semRolagemHorizontal, irAoPasso2 } from './helpers';
 
 /*
  * Etapa 9B · B.8 "Jornada do buffet", ponta a ponta no celular (375x812), contra o app real e a
@@ -98,18 +98,13 @@ test('jornada do buffet: da landing à assinatura, sem sair do celular', async (
 
   // 4. Um cliente de verdade (outro celular) monta o orçamento e pede a pré-reserva
   await page.goto('/app/leads');
-  await expect(page.getByTestId('sino')).toBeVisible();
+  // o sino do esqueleto e o de verdade coexistem por um instante (streaming): espera ficar um só
+  await expect(page.getByTestId('sino')).toHaveCount(1);
   const antes = await contadorDoSino(page);
   const cliente = await celular(browser);
   const nomeCliente = `Camila Jornada ${sufixo}`;
   await cliente.goto(`/b/${slug}/orcamento`);
-  const tipo = cliente.getByRole('radio', { name: 'Aniversário infantil' });
-  await expect(async () => {
-    await tipo.click();
-    await expect(tipo).toHaveAttribute('aria-checked', 'true', { timeout: 1_000 });
-  }).toPass();
-  await cliente.getByRole('button', { name: 'Continuar' }).click();
-  await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 2 de 6/);
+  await irAoPasso2(cliente);
   await cliente.getByRole('button', { name: 'Próximo mês' }).click();
   const dia = cliente.locator('[data-testid^="data-"]:not([disabled])').first();
   const data = (await dia.getAttribute('data-testid'))!.replace('data-', '');
@@ -215,8 +210,11 @@ test('jornada do buffet: da landing à assinatura, sem sair do celular', async (
 
   // 10. Continua usando: escrever volta a funcionar e o vendedor segue trabalhando
   await page.goto('/app/empresa/link');
+  // logo depois do pagamento o painel inteiro é recalculado (revalidate do layout): mais folga
   await page.getByRole('button', { name: 'Já coloquei o link na bio' }).click();
-  await expect(page.getByRole('button', { name: 'Link na bio: feito' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Link na bio: feito' })).toBeVisible({
+    timeout: 30_000,
+  });
   await vendedor.goto('/app/leads');
   await expect(vendedor.getByTestId('faixa-conta')).toHaveCount(0);
   await vendedor.context().close();
