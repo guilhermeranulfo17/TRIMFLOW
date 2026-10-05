@@ -539,6 +539,10 @@ describe('conta suspensa = somente leitura', () => {
     'registrar_aceite',
     // Etapa 9B (e-mail): boas-vindas logo depois do cadastro (só cria o aviso do próprio dono)
     'avisar_boas_vindas',
+    // Etapa 10: ver o CPF do contrato e registrar o PDF guardado (leitura e arquivo, não mudam
+    // o contrato) seguem com a conta suspensa
+    'ler_cpf_contrato',
+    'contrato_marcar_pdf',
   ];
   const BLOQUEADAS = [
     'alterar_slug',
@@ -582,6 +586,11 @@ describe('conta suspensa = somente leitura', () => {
     'salvar_galeria',
     'salvar_depoimentos',
     'salvar_perguntas',
+    // Etapa 10: contratos
+    'salvar_contrato_modelo',
+    'emitir_contrato',
+    'cancelar_contrato',
+    'novo_link_contrato',
   ];
 
   it('toda função de escrita do painel está classificada', async () => {
