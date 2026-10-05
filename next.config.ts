@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
     '/b/[slug]/proposta/[token]/pdf': ['./src/server/proposta/fontes/**'],
     '/app/orcamentos/[id]/pdf': ['./src/server/proposta/fontes/**'],
     '/app/empresa/proposta-exemplo/pdf': ['./src/server/proposta/fontes/**'],
+    // Etapa 10: PDF do contrato (rota do cliente, do painel e a página que assina e já gera)
+    '/b/[slug]/contrato/[token]': ['./src/server/proposta/fontes/**'],
+    '/b/[slug]/contrato/[token]/pdf': ['./src/server/proposta/fontes/**'],
+    '/app/contratos/[id]/pdf': ['./src/server/proposta/fontes/**'],
   },
   images: {
     // As imagens já chegam redimensionadas e em WEBP (conversão no navegador, Etapa 2).

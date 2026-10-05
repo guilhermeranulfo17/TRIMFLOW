@@ -161,6 +161,7 @@ export * from './schema-agenda';
 export * from './schema-leads';
 export * from './schema-avisos';
 export * from './schema-cobranca';
+export * from './schema-contratos';
 
 // --- Etapa 9.5: página pública (escrita só pelas funções salvar_*; o dono lê) -------------
 

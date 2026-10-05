@@ -62,6 +62,23 @@ export default function Privacidade() {
         seus dados ou apague tudo. Se escrever para o Orkestra, encaminhamos ao buffet.
       </p>
 
+      <h2>Se você assinar um contrato pelo link do buffet</h2>
+      <p>
+        Quando o buffet manda o contrato da festa por um link, registramos, em nome do buffet, o que
+        comprova a sua assinatura eletrônica: nome completo e CPF informados por você, data e hora,
+        um código irreversível (hash) derivado do endereço IP, o tipo de aparelho e navegador e a
+        impressão digital (SHA-256) do texto assinado. Se o buffet pedir o código por e-mail, usamos
+        o seu e-mail só para enviar esse código.
+      </p>
+      <p>
+        O CPF fica guardado de forma cifrada e aparece mascarado no comprovante (por exemplo,
+        ***.456.789-**). A base legal é a execução do contrato e o exercício de direitos em caso de
+        discussão sobre ele. O contrato assinado fica guardado enquanto o buffet precisar comprovar
+        o que foi combinado: em regra, até 5 anos depois da data da festa, e depois os dados
+        pessoais são apagados. Contrato que não foi assinado segue o mesmo prazo dos dados do
+        orçamento.
+      </p>
+
       <h2>Se você usa o painel do Orkestra (buffets e equipes)</h2>
       <ul>
         <li>

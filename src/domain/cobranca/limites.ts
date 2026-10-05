@@ -46,6 +46,8 @@ export const CODIGOS_LIMITE = [
   'LIMITE_PLANO_ESPACOS',
   'LIMITE_PLANO_WHATSAPP',
   'LIMITE_PLANO_FOLLOW_UP',
+  // Etapa 10: contratos enviados por mês (planos.contratos_mes)
+  'LIMITE_PLANO_CONTRATOS',
 ] as const;
 export type CodigoLimite = (typeof CODIGOS_LIMITE)[number];
 
@@ -74,6 +76,8 @@ export function mensagemLimite(codigo: CodigoLimite, p?: RecursosPlano): string 
       return 'Avisos por WhatsApp fazem parte do Profissional. Mude de plano para ligar.';
     case 'LIMITE_PLANO_FOLLOW_UP':
       return 'O follow-up automático faz parte do Profissional. Mude de plano para ligar.';
+    case 'LIMITE_PLANO_CONTRATOS':
+      return 'Você chegou ao limite de contratos do mês no seu plano. Mude de plano para enviar mais.';
   }
 }
 

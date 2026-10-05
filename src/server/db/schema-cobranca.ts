@@ -42,6 +42,8 @@ export const planos = pgTable('planos', {
   whatsappAvisos: boolean('whatsapp_avisos').notNull().default(false),
   followUp: boolean('follow_up').notNull().default(false),
   numerosCompleto: boolean('numeros_completo').notNull().default(false),
+  /** contratos enviados por mês (Etapa 10); null = sem limite */
+  contratosMes: integer('contratos_mes'),
   ordem: smallint('ordem').notNull().default(0),
   ativo: boolean('ativo').notNull().default(true),
   atualizadoEm: instante('atualizado_em').notNull().defaultNow(),

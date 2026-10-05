@@ -68,6 +68,14 @@ export default function Termos() {
         buffet confirma o pagamento do sinal. O contrato da festa é feito entre o Visitante e o
         buffet: o Orkestra fornece a ferramenta e não participa da prestação do serviço do buffet.
       </p>
+      <p>
+        <strong>Contrato digital.</strong> O buffet pode enviar o contrato da festa por um link para
+        o Visitante assinar. É uma assinatura eletrônica simples: as duas partes aceitam o texto, e
+        o Orkestra registra nome, CPF, data, hora, um código do IP e a impressão digital (SHA-256)
+        do documento. Não é certificado digital ICP-Brasil. O Orkestra não é parte do contrato: é a
+        ferramenta de registro. Os modelos de contrato oferecidos são sugestões; o buffet é
+        responsável pelo texto que envia e deve revisá-lo com um advogado.
+      </p>
 
       <h2>5. Dados, exportação e exclusão da conta</h2>
       <ul>
@@ -132,12 +140,15 @@ export default function Termos() {
         </li>
         <li>
           <strong>Retenção:</strong> leads sem reserva e sem atividade pelo prazo escolhido pelo
-          buffet (padrão de 24 meses) são anonimizados automaticamente.
+          buffet (padrão de 24 meses) são anonimizados automaticamente. Contratos assinados ficam
+          guardados (inclusive se o lead pedir a exclusão dos dados) até 5 anos depois da data da
+          festa, para o buffet comprovar o que foi combinado; contratos não assinados seguem a regra
+          do lead.
         </li>
         <li>
           <strong>Fim do contrato:</strong> o buffet pode exportar os dados a qualquer momento; com
-          a exclusão da conta, tudo é apagado em 30 dias (backups do provedor expiram no ciclo
-          deles).
+          a exclusão da conta, tudo é apagado em 30 dias, inclusive os contratos assinados e os PDFs
+          (baixe antes os que precisar guardar). Backups do provedor expiram no ciclo deles.
         </li>
       </ul>
 

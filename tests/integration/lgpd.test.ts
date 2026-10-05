@@ -305,8 +305,8 @@ describe('exclusão da conta', () => {
         db,
         agora: () => new Date(Date.now() + dias * 86_400_000),
         storage: {
-          listar: async (_b: string, prefixo: string) =>
-            arquivos.filter((a) => a.startsWith(prefixo)),
+          listar: async (b: string, prefixo: string) =>
+            b === 'midia' ? arquivos.filter((a) => a.startsWith(prefixo)) : [],
           remover: async (_b: string, caminhos: string[]) => void removidos.push(...caminhos),
         },
         auth: { apagarUsuario: async (id: string) => void apagados.push(id) },

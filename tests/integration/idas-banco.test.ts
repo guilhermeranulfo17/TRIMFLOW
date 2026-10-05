@@ -56,6 +56,8 @@ const LIMITE: Record<string, number> = {
   landing: 2,
   // Etapa 9B: Minha empresa → Privacidade e dados (retenção e exclusão agendada numa leitura)
   privacidade: 2,
+  // Etapa 10: prévia do contrato (orçamento vigente; itens, reserva e modelo juntos)
+  contrato_novo: 4,
 };
 
 describe('idas ao banco por tela', () => {
@@ -142,6 +144,22 @@ describe('idas ao banco por tela', () => {
     const { carregarPrivacidade } = await import('@/server/lgpd/carregar');
     const n = await medir('privacidade', () => carregarPrivacidade(u));
     expect(n).toBeLessThanOrEqual(LIMITE.privacidade!);
+  });
+
+  it('gerar contrato (prévia a partir do orçamento aceito)', async () => {
+    const u = await usuarioDono();
+    const { prepararContrato } = await import('@/server/contratos/emitir');
+    const { comUsuario } = await import('@/server/db/tenant');
+    const { obterDb } = await import('@/server/db/client');
+    const { sql } = await import('drizzle-orm');
+    const [o] = await obterDb().execute<{ id: string }>(
+      sql`select id from public.orcamentos where empresa_id = ${IDS.empresaA}
+        and status = 'aceito' limit 1`,
+    );
+    const n = await medir('contrato_novo', () =>
+      comUsuario(u.id, (tx) => prepararContrato(u, { orcamentoId: o!.id, preencher: {} }, tx)),
+    );
+    expect(n).toBeLessThanOrEqual(LIMITE.contrato_novo!);
   });
 
   it('landing (preços da vitrine)', async () => {

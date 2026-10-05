@@ -22,10 +22,12 @@ type Objeto = Record<string, Json>;
 
 const ehObjeto = (v: Json): v is Objeto => typeof v === 'object' && v !== null && !Array.isArray(v);
 
-/** Caminho sem segredos: token da proposta e query string somem. */
+/** Caminho sem segredos: token da proposta, do contrato (Etapa 10) e query string somem. */
 export function limparUrl(url: string): string {
   const semQuery = url.split(/[?#]/)[0] ?? '';
-  return semQuery.replace(/\/proposta\/[^/]+/g, '/proposta/[token]');
+  return semQuery
+    .replace(/\/proposta\/[^/]+/g, '/proposta/[token]')
+    .replace(/\/contrato\/[^/]+/g, '/contrato/[token]');
 }
 
 /** Remove, em qualquer profundidade, as chaves pessoais; mascara textos. */
