@@ -128,3 +128,54 @@ export function valoresDoContrato(f: FonteContrato): ValoresContrato {
 export function blocosDoContrato(o: OpcoesContrato): BlocosContrato {
   return { uso_imagem: o.usoImagem };
 }
+
+/**
+ * Resumo guardado em contratos.valores (congelado com o texto): o topo da página do cliente,
+ * a lista do painel e a data da festa para a guarda (LGPD: 5 anos depois da festa).
+ */
+export type ResumoContrato = {
+  data: DataCivil | null;
+  horario: string | null;
+  convidados: number | null;
+  espaco: string | null;
+  pacote: string | null;
+  tipoEvento: string | null;
+  totalCentavos: number | null;
+  sinalCentavos: number | null;
+  saldoCentavos: number | null;
+};
+
+export function resumoDoContrato(f: FonteContrato): ResumoContrato {
+  return {
+    data: f.festa.data,
+    horario:
+      f.festa.horaInicio && f.festa.duracaoMin
+        ? horarioDaFesta(f.festa.horaInicio, f.festa.duracaoMin)
+        : null,
+    convidados: f.festa.convidados,
+    espaco: f.festa.espaco,
+    pacote: f.festa.pacote,
+    tipoEvento: f.festa.tipoEvento,
+    totalCentavos: f.valores?.totalCentavos ?? null,
+    sinalCentavos: f.valores?.sinalCentavos ?? null,
+    saldoCentavos: f.valores?.saldoCentavos ?? null,
+  };
+}
+
+/** Lê o resumo guardado (jsonb) sem confiar no formato. */
+export function lerResumo(bruto: unknown): ResumoContrato {
+  const o = (bruto && typeof bruto === 'object' ? bruto : {}) as Record<string, unknown>;
+  const texto = (k: string) => (typeof o[k] === 'string' && o[k] ? (o[k] as string) : null);
+  const inteiro = (k: string) => (Number.isSafeInteger(o[k]) ? (o[k] as number) : null);
+  return {
+    data: texto('data'),
+    horario: texto('horario'),
+    convidados: inteiro('convidados'),
+    espaco: texto('espaco'),
+    pacote: texto('pacote'),
+    tipoEvento: texto('tipoEvento'),
+    totalCentavos: inteiro('totalCentavos'),
+    sinalCentavos: inteiro('sinalCentavos'),
+    saldoCentavos: inteiro('saldoCentavos'),
+  };
+}

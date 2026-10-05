@@ -107,7 +107,7 @@ async function assinar(tx: Tx, token: string, extra: Record<string, unknown> = {
     nome: 'Clara Contratante',
     documento_cifrado: CIFRADO,
     documento_mascarado: '***.982.247-**',
-    hash: c.hash,
+    hash: c.hash as string,
     ip_hash: sha('ip-cliente'),
     user_agent: 'Celular/1.0',
     eh_usuario_empresa: false,

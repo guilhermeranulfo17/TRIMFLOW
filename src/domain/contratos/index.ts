@@ -11,3 +11,4 @@ export * from './montar';
 export * from './opcoes';
 export * from './signatario';
 export * from './variaveis';
+export * from './mensagens';

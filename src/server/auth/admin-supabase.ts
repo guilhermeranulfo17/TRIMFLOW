@@ -112,6 +112,15 @@ export interface StorageAdmin {
   /** Todos os caminhos de arquivos do bucket sob o prefixo (busca recursiva nas pastas). */
   listar(bucket: string, prefixo: string): Promise<string[]>;
   remover(bucket: string, caminhos: string[]): Promise<void>;
+  /** Etapa 10: PDF do contrato no bucket privado (substitui se já existir). */
+  enviar(bucket: string, caminho: string, bytes: Uint8Array, tipo: string): Promise<void>;
+  /** null se o arquivo não existe. */
+  baixar(bucket: string, caminho: string): Promise<Uint8Array | null>;
+}
+
+/** Storage só se a service role estiver configurada (sem ela, o PDF é gerado na hora). */
+export function storageAdminConfigurado(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 export function criarStorageAdmin(): StorageAdmin {
@@ -135,6 +144,17 @@ export function criarStorageAdmin(): StorageAdmin {
         }
       }
       return achados;
+    },
+    async enviar(bucket, caminho, bytes, tipo) {
+      const { error } = await clienteAdmin()
+        .storage.from(bucket)
+        .upload(caminho, bytes, { contentType: tipo, upsert: true, cacheControl: 'no-store' });
+      falhar('enviar', error);
+    },
+    async baixar(bucket, caminho) {
+      const { data, error } = await clienteAdmin().storage.from(bucket).download(caminho);
+      if (error || !data) return null;
+      return new Uint8Array(await data.arrayBuffer());
     },
     async remover(bucket, caminhos) {
       for (let i = 0; i < caminhos.length; i += 100) {

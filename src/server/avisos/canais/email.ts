@@ -1,6 +1,6 @@
 import 'server-only';
 import { montarEmail } from '@/domain/email/modelos';
-import type { ConfigEmail } from '@/server/env';
+import { urlResend, type ConfigEmail } from '@/server/env';
 import type { Canal, EntregaParaEnviar, ResultadoEnvio } from './tipos';
 
 export const URL_RESEND = 'https://api.resend.com/emails';
@@ -25,7 +25,7 @@ export function criarCanalEmail(
       if (!email) return { resultado: 'ignorado', erro: 'SEM_MODELO' };
       let r: Response;
       try {
-        r = await fazerFetch(URL_RESEND, {
+        r = await fazerFetch(urlResend(), {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${config.chave}`,

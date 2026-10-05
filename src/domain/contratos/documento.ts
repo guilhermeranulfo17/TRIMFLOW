@@ -1,3 +1,4 @@
+import { formatInTimeZone } from 'date-fns-tz';
 import { REGEX_FALTA } from './variaveis';
 
 /*
@@ -99,3 +100,20 @@ export function arquivoContrato(d: { codigo: string; buffet: string; cliente?: s
     contentDisposition: `attachment; filename="${simples}"; filename*=UTF-8''${encodeURIComponent(nome)}`,
   };
 }
+
+/** Instante do comprovante no horário de Brasília, com o fuso: "05/10/2026 às 14:32:07 (UTC-03:00)". */
+export function instanteComprovante(iso: string): string {
+  return formatInTimeZone(
+    new Date(iso),
+    'America/Sao_Paulo',
+    "dd/MM/yyyy 'às' HH:mm:ss '(UTC'xxx')'",
+  );
+}
+
+export const FRASE_COMPROVANTE =
+  'Documento assinado eletronicamente por aceite das partes. O Orkestra é a ferramenta de registro e não é parte neste contrato.';
+
+export const ROTULO_METODO = {
+  aceite: 'Aceite eletrônico no link',
+  aceite_com_codigo: 'Aceite eletrônico no link com código enviado por e-mail',
+} as const;

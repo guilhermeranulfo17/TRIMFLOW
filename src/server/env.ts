@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 /**
  * Leitura centralizada de variáveis de ambiente.
  * Só as com prefixo NEXT_PUBLIC_ chegam ao navegador. DATABASE_URL e chaves secretas nunca.
@@ -109,4 +111,27 @@ export function adminsOrkestra(): string[] {
     .split(/[,;\s]+/)
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
+}
+
+const CHAVE_CONTRATOS_DESENVOLVIMENTO = 'orkestra-dev-contratos-nao-use-em-producao';
+
+/**
+ * Chave do CPF dos contratos (Etapa 10): CONTRATOS_CHAVE, 32 bytes em base64 (gerar com
+ * `openssl rand -base64 32`). Fica só na Vercel (e guardada fora dela): sem a chave, os CPFs
+ * cifrados não voltam mais. Em desenvolvimento e nos testes, uma chave fixa. Em produção sem a
+ * variável: null (a assinatura do cliente fica indisponível, com aviso no log).
+ */
+export function chaveContratos(): Buffer | null {
+  const valor = process.env.CONTRATOS_CHAVE?.trim();
+  if (valor) {
+    const chave = Buffer.from(valor, 'base64');
+    return chave.length === 32 ? chave : null;
+  }
+  if (process.env.NODE_ENV === 'production') return null;
+  return createHash('sha256').update(CHAVE_CONTRATOS_DESENVOLVIMENTO).digest();
+}
+
+/** Endereço da API do Resend. RESEND_API_URL só existe para os testes (API falsa do E2E). */
+export function urlResend(): string {
+  return process.env.RESEND_API_URL?.trim() || 'https://api.resend.com/emails';
 }
