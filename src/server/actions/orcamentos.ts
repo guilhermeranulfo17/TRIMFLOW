@@ -19,7 +19,7 @@ import {
 import { exigirSessao } from '@/server/auth/sessao';
 import { carregarDisponibilidade } from '@/server/agenda/carregar';
 import { comUsuario } from '@/server/db/tenant';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import {
   buscarLeadPorWhatsapp,
   carregarBaseInterna,
@@ -187,7 +187,7 @@ export async function salvarOrcamentoInterno(
       ),
     );
     revalidatePath('/app/leads');
-    const link = `${urlDoSite() ?? ''}/b/${usuario.empresa.slug}/proposta/${salvo!.token}`;
+    const link = `${siteUrl()}/b/${usuario.empresa.slug}/proposta/${salvo!.token}`;
     return {
       ok: true,
       dados: {

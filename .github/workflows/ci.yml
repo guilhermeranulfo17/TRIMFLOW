@@ -121,6 +121,8 @@ jobs:
             echo "ASAAS_WEBHOOK_TOKEN=token-falso"
             echo "ASAAS_API_URL=http://localhost:4010/v3"
             echo "ORKESTRA_ADMINS=equipe@orkestra.local"
+            # Etapa 9B: conta de demonstração (botão da landing e /demo/entrar)
+            echo "NEXT_PUBLIC_DEMO_SLUG=demonstracao"
           } >> "$GITHUB_ENV"
           # Chaves VAPID descartáveis, geradas a cada execução (push nos E2E).
           node scripts/vapid.mjs >> "$GITHUB_ENV"

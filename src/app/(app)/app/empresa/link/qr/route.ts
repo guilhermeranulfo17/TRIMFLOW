@@ -5,7 +5,7 @@ import { usuarioAtual } from '@/server/auth/sessao';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { qrPdf, qrPng } from '@/server/divulgacao/qr';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import { urlPublicaMidia } from '@/lib/midia';
 
 export const runtime = 'nodejs';
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
       .where(eq(empresas.id, usuario.empresa.id)),
   );
   if (!empresa) return new NextResponse('Empresa não encontrada.', { status: 404 });
-  const base = `${urlDoSite() ?? new URL(req.url).origin}/b/${empresa.slug}`;
+  const base = `${siteUrl()}/b/${empresa.slug}`;
   const texto = linkComOrigem(base, 'qrcode');
   const nome = `qrcode-${empresa.slug}.${formato}`;
   const cabecalhos = {

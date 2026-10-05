@@ -1,7 +1,8 @@
 import 'server-only';
-import type { CanalExterno, TipoAviso } from '@/domain/avisos/canais';
+import type { CanalEntrega, TipoAviso } from '@/domain/avisos/canais';
 import { concluirEntregaAviso, reservarEntregasAvisos } from '@/server/db/admin';
-import { configVapid, configWhatsapp } from '@/server/env';
+import { configEmail, configVapid, configWhatsapp, siteUrl } from '@/server/env';
+import { criarCanalEmail } from './canais/email';
 import { criarCanalPush } from './canais/push';
 import type { Canal, EntregaParaEnviar, ResultadoEnvio } from './canais/tipos';
 import { criarCanalWhatsapp } from './canais/whatsapp';
@@ -16,7 +17,7 @@ import { logar } from '@/server/log';
 
 type LinhaFila = {
   entrega_id: string;
-  canal: CanalExterno;
+  canal: CanalEntrega;
   tentativas: number;
   aviso_id: string;
   tipo: TipoAviso;
@@ -27,12 +28,17 @@ type LinhaFila = {
   fuso: string;
   whatsapp_numero: string | null;
   inscricoes: { endpoint: string; p256dh: string; auth: string }[] | null;
+  email?: string | null;
 };
 
 export type Resumo = { processadas: number; enviadas: number; erros: number; ignoradas: number };
 
 export function canaisPadrao(): Canal[] {
-  return [criarCanalPush(configVapid()), criarCanalWhatsapp(configWhatsapp())];
+  return [
+    criarCanalPush(configVapid()),
+    criarCanalWhatsapp(configWhatsapp()),
+    criarCanalEmail(configEmail(), { site: siteUrl() }),
+  ];
 }
 
 async function enviarUma(canais: Canal[], e: EntregaParaEnviar): Promise<ResultadoEnvio> {
@@ -70,6 +76,7 @@ export async function processarAvisos(
           fuso: l.fuso,
           whatsappNumero: l.whatsapp_numero,
           inscricoes: l.inscricoes ?? [],
+          email: l.email ?? null,
         });
         await concluirEntregaAviso(
           l.entrega_id,

@@ -2,11 +2,13 @@
 
 import { sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 import { redirect, unstable_rethrow } from 'next/navigation';
 import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { AcessoNegadoError, exigirPerfil } from '@/server/auth/guards';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { cancelarAssinatura } from '@/server/cobranca/fluxos';
+import { processarAvisosSemFalhar } from '@/server/avisos/processar';
 import { depsCobranca } from '@/server/cobranca/deps';
 import { comUsuario } from '@/server/db/tenant';
 import { logar } from '@/server/log';
@@ -107,6 +109,7 @@ export async function solicitarExclusaoDaConta(confirmacao: string): Promise<Res
         return { ok: false, erro: r.erro };
     }
     await comUsuario(dono.id, (tx) => tx.execute(sql`select public.solicitar_exclusao_conta()`));
+    after(processarAvisosSemFalhar);
     revalidatePath('/app', 'layout');
     return {
       ok: true,

@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { usuarioAtual } from '@/server/auth/sessao';
 import { comUsuario } from '@/server/db/tenant';
+import { demoSlug } from '@/server/env';
 
 /** Cookie com o token do orçamento em andamento (retomar o wizard). Um por buffet. */
 export function cookieDoOrcamento(slug: string): string {
@@ -28,6 +29,8 @@ export async function lerTokenDoCookie(slug: string): Promise<string | null> {
  * e a pré-reserva é simulada.
  */
 export async function ehModoTeste(slug: string): Promise<boolean> {
+  // a vitrine da demonstração é sempre modo teste: nada vira lead real (Etapa 9B)
+  if (slug === demoSlug()) return true;
   try {
     const usuario = await usuarioAtual();
     return usuario?.empresa.slug === slug;

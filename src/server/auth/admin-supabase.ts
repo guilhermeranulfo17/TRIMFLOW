@@ -1,5 +1,6 @@
 import 'server-only';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { AuthDemo } from '@/server/demo/recriar';
 import { codigoDoErro, logar } from '@/server/log';
 
 /*
@@ -155,4 +156,54 @@ export async function definirMarcaMfa(id: string, ligada: boolean): Promise<void
     app_metadata: { mfa: ligada },
   });
   falhar('definirMarcaMfa', error);
+}
+
+/**
+ * Usuário único da conta de demonstração (Etapa 9B, B.5): criado já confirmado, com a marca
+ * app_metadata.demo (o middleware limita a sessão a 2 horas). A cada recriação a marca é
+ * regravada e fatores de MFA que alguém tenha cadastrado são apagados.
+ */
+export function criarAuthDemo(): AuthDemo {
+  return {
+    async garantirUsuario(email) {
+      const admin = clienteAdmin().auth.admin;
+      let id: string | null = null;
+      const criado = await admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { nome: 'Visitante da demonstração' },
+        app_metadata: { demo: true },
+      });
+      if (criado.data.user) {
+        id = criado.data.user.id;
+      } else {
+        // já existe: o link mágico (sem envio) devolve o usuário
+        const link = await admin.generateLink({ type: 'magiclink', email });
+        falhar('garantirUsuario', link.error);
+        id = link.data.user?.id ?? null;
+      }
+      if (!id) throw new Error('[auth-admin] garantirUsuario: sem id');
+      const { error } = await admin.updateUserById(id, {
+        email,
+        ban_duration: 'none',
+        app_metadata: { demo: true, mfa: false, trocar_senha: false },
+      });
+      falhar('garantirUsuario', error);
+      const fatores = await admin.mfa.listFactors({ userId: id });
+      for (const f of fatores.data?.factors ?? []) {
+        await admin.mfa.deleteFactor({ id: f.id, userId: id });
+      }
+      return id;
+    },
+    async hashDeEntrada(email) {
+      const { data, error } = await clienteAdmin().auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+      });
+      falhar('hashDeEntrada', error);
+      const hash = data.properties?.hashed_token;
+      if (!hash) throw new Error('[auth-admin] hashDeEntrada: sem token');
+      return hash;
+    },
+  };
 }

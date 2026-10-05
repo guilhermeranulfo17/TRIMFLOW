@@ -35,7 +35,7 @@ import { PacotesPublicos } from '@/components/publico/pagina/pacotes';
 import { RegistroFunil } from '@/components/publico/registro-funil';
 import { RodapePublico } from '@/components/publico/rodape';
 import { urlPublicaMidia } from '@/lib/midia';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import { carregarBuffet, carregarPagina, carregarVitrine } from '@/server/publico/carregar';
 import { ehModoTeste, marcarLinkTestado } from '@/server/publico/sessao';
 import { exigirBuffet } from './buscar';
@@ -57,11 +57,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const descricao =
     buffet.sobre?.slice(0, 160) ??
     `Monte o orçamento da sua festa no ${buffet.nome} em poucos minutos, pelo celular.`;
-  const site = urlDoSite();
   return {
     title: { absolute: titulo },
     description: descricao,
-    alternates: site ? { canonical: `${site}/b/${slug}` } : undefined,
+    alternates: { canonical: `${siteUrl()}/b/${slug}` },
     openGraph: { title: buffet.nome, description: descricao, type: 'website', locale: 'pt_BR' },
   };
 }
@@ -152,10 +151,9 @@ export default async function PaginaPublicaBuffet({ params, searchParams }: Prop
       fotosUrl: p.fotos.map((f) => urlPublicaMidia(f)).filter((u): u is string => !!u),
     }),
   );
-  const site = urlDoSite();
   const jsonLd = jsonLdNegocio({
     nome: buffet.nome,
-    url: `${site ?? ''}/b/${slug}`,
+    url: `${siteUrl()}/b/${slug}`,
     descricao: pagina?.slogan ?? buffet.sobre,
     imagem: buffet.capaUrl ?? buffet.logoUrl,
     telefoneE164: buffet.whatsappE164,

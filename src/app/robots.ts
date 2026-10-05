@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 
 /** Indexáveis: landing, termos, privacidade e a vitrine dos buffets. O resto fica de fora. */
 export default function robots(): MetadataRoute.Robots {
-  const base = urlDoSite() ?? 'http://localhost:3000';
+  const base = siteUrl();
   return {
     rules: [
       {

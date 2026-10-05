@@ -12,9 +12,15 @@ export async function registrarNode() {
     const Sentry = await import('@sentry/nextjs');
     Sentry.init(opcoesSentry(process.env.SENTRY_DSN));
   }
-  const { ipHashSalt, cronSecret, configVapid, configWhatsapp } = await import('./server/env');
+  const { ipHashSalt, cronSecret, configVapid, configWhatsapp, configEmail } =
+    await import('./server/env');
   ipHashSalt();
   if (process.env.NODE_ENV === 'production') {
+    if (!process.env.NEXT_PUBLIC_SITE_URL?.trim()) {
+      console.error(
+        '[site] NEXT_PUBLIC_SITE_URL ausente: links de e-mail, WhatsApp, PDF e QR saem com localhost.',
+      );
+    }
     if (!cronSecret()) {
       console.warn(
         '[avisos] CRON_SECRET ausente: a fila de avisos não roda pelo job (só pelo after()).',
@@ -25,6 +31,9 @@ export async function registrarNode() {
     }
     if (!configWhatsapp()) {
       console.info('[avisos] WhatsApp não configurado: canal desligado.');
+    }
+    if (!configEmail()) {
+      console.warn('[avisos] RESEND_API_KEY ou EMAIL_REMETENTE ausente: e-mails desligados.');
     }
     if (!process.env.SENTRY_DSN) {
       console.info('[observabilidade] SENTRY_DSN ausente: erros só no log da Vercel.');

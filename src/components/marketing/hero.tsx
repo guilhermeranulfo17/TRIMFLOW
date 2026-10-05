@@ -36,17 +36,32 @@ export function Hero({ demoSlug, diasTeste }: { demoSlug: string | null; diasTes
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <BotaoTeste>Testar {diasTeste} dias grátis</BotaoTeste>
             {demoSlug && (
-              <a
-                href={`/b/${demoSlug}`}
-                className="focus-visible:ring-ring/60 inline-flex min-h-13 items-center justify-center rounded-full border px-7 text-base font-semibold transition-colors hover:bg-white/5 focus-visible:ring-[3px] focus-visible:outline-none"
-                data-testid="ver-exemplo"
-              >
-                Ver um buffet de exemplo
-              </a>
+              // POST: entrar na demo abre uma sessão (um prefetch de link nunca pode fazer isso)
+              <form method="post" action="/demo/entrar">
+                <button
+                  type="submit"
+                  className="focus-visible:ring-ring/60 inline-flex min-h-13 w-full items-center justify-center rounded-full border px-7 text-base font-semibold transition-colors hover:bg-white/5 focus-visible:ring-[3px] focus-visible:outline-none sm:w-auto"
+                  data-testid="ver-demo"
+                >
+                  Ver o painel de demonstração
+                </button>
+              </form>
             )}
           </div>
           <p className="text-muted-foreground mt-5 text-sm">
             {diasTeste} dias grátis, sem cartão. Cancele quando quiser.
+            {demoSlug && (
+              <>
+                {' '}
+                <a
+                  href={`/b/${demoSlug}`}
+                  className="text-foreground font-semibold underline underline-offset-2"
+                  data-testid="ver-exemplo"
+                >
+                  Ver o link de um buffet de exemplo
+                </a>
+              </>
+            )}
           </p>
         </div>
         <Composicao />

@@ -8,7 +8,7 @@ import { linkComOrigem } from '../publico/origem';
 export type DadosDivulgacao = {
   /** nome do buffet */
   nome: string;
-  /** link principal, sem parâmetros (ex.: https://orkestra.app/b/buffet-alegria) */
+  /** link principal, sem parâmetros (ex.: {NEXT_PUBLIC_SITE_URL}/b/buffet-alegria) */
   link: string;
   cidade?: string | null;
 };

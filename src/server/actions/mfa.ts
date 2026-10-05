@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { MENSAGEM_DEMO } from '@/domain/auth/demo';
 import { redirect } from 'next/navigation';
 import { destinoSeguro } from '@/server/auth/redirecionamento';
 import { definirMarcaMfa } from '@/server/auth/admin-supabase';
@@ -35,7 +36,9 @@ async function registrar(usuarioId: string, empresaId: string, acao: string) {
 
 /** Começa o cadastro (apaga um cadastro anterior não confirmado). */
 export async function iniciarMfaConta(): Promise<CadastroIniciado> {
-  await exigirPerfil('dono');
+  const dono = await exigirPerfil('dono');
+  // a demo tem um usuário para todos: ninguém liga a verificação nele
+  if (dono.empresa.demo) return { ok: false, erro: MENSAGEM_DEMO };
   const supabase = await criarClienteSupabase();
   const { data: fatores } = await supabase.auth.mfa.listFactors();
   if (fatores?.totp.some((f) => f.status === 'verified')) {

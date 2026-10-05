@@ -4,6 +4,7 @@ import {
   cadastrar,
   confirmarPrecosNoOnboarding,
   emailUnico,
+  irAoPasso2,
   semRolagemHorizontal,
 } from './helpers';
 
@@ -46,8 +47,7 @@ async function visitante(browser: Browser): Promise<Page> {
 async function festaEData(page: Page, opcoes: { data?: string; pularTipo?: boolean } = {}) {
   if (!opcoes.pularTipo) {
     await expect(page.getByTestId('passo-atual')).toHaveText(/Passo 1 de 6/);
-    await page.getByRole('radio', { name: 'Aniversário infantil' }).click();
-    await page.getByRole('button', { name: 'Continuar' }).click();
+    await irAoPasso2(page);
   }
   await expect(page.getByTestId('passo-atual')).toHaveText(/Passo 2 de 6/);
   await page.getByRole('button', { name: 'Próximo mês' }).click();

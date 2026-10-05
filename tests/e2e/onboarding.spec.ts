@@ -1,6 +1,13 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { noBanco, zerarLimites } from './banco';
-import { cadastrar, emailUnico, entrar, semRolagemHorizontal, SENHA_SEED } from './helpers';
+import {
+  cadastrar,
+  emailUnico,
+  entrar,
+  semRolagemHorizontal,
+  SENHA_SEED,
+  irAoPasso2,
+} from './helpers';
 
 /*
  * Etapa 8: onboarding guiado, checklist, Link e divulgação (QR) e Números, no celular (375x812).
@@ -110,9 +117,7 @@ test('cadastro → onboarding digitando só os preços → link no ar com os pre
   const slug = link.split('/b/')[1]!;
   const cliente = await visitante(browser);
   await cliente.goto(`/b/${slug}/orcamento`);
-  await cliente.getByRole('radio', { name: 'Aniversário infantil' }).click();
-  await cliente.getByRole('button', { name: 'Continuar' }).click();
-  await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 2 de 6/);
+  await irAoPasso2(cliente);
   await cliente.getByRole('button', { name: 'Próximo mês' }).click();
   await cliente.getByRole('button', { name: 'Próximo mês' }).click();
   const domingo = domingosDaqui(2).find(() => true)!;

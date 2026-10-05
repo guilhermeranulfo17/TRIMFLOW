@@ -1380,3 +1380,77 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
   última execução; ok = banco responde, fila com atraso ≤ 10 min, cada job dentro de 2
   intervalos + 5 min e sem falha (job ainda sem execução passa), Asaas configurado e
   `planos_vitrine` com planos. 200 ou 503 com a lista de itens; nada de detalhe técnico.
+
+## 66. E-mail transacional (Etapa 9B, PR 2)
+
+- **Canal da fila, não envio direto.** E-mail é o canal `email` de `avisos_entregas`: nasce na
+  transação do evento por `_aviso_criar` quando `_aviso_email(tipo)` (espelho de
+  `domain/avisos/canais.recebeEmail`, teste de equivalência) e o destinatário é dono ativo. Sai
+  pelo mesmo `reservar_entregas` → canal → `concluir_entrega` (1/5/15/60 min, `falhou` na 5ª).
+  `reservar_entregas` passou a devolver `email` (drop + create: mudou o tipo de retorno; o código
+  anterior lê por nome).
+- **Tipos novos** `boas_vindas` (cadastro e conta pelo Google, `avisar_boas_vindas`, uma vez por
+  empresa), `exportacao_pronta` (em `lgpd_registrar_exportacao`, chave por minuto) e
+  `exclusao_agendada` (em `solicitar_exclusao_conta`). São "avisos da conta" como os de cobrança:
+  só para o dono, push sempre, não configuráveis, chegam com a conta suspensa.
+- **Sem duplicar:** aviso único pela chave, entrega única por (aviso, canal) e
+  `Idempotency-Key` = id da entrega no Resend (nova tentativa depois de um tempo esgotado não
+  vira outro e-mail). 4xx (menos 429) = `ignorado` com o código; 429/5xx/rede = nova tentativa.
+- **Modelos** em `domain/email/modelos` (puro): o texto é o do aviso (`textoAviso`), em HTML de
+  tabela com estilo inline (grafite, limão, gelo), versão em texto puro, nome do buffet escapado,
+  todo link absoluto a partir do site, botão da fatura só com `https://`.
+- **Sem configuração** (`RESEND_API_KEY`/`EMAIL_REMETENTE`): a entrega fica `ignorado`
+  (`CANAL_DESLIGADO`), aviso no boot. O SMTP do Supabase Auth usa o Resend com outra chave
+  (valores no `docs/LANCAMENTO.md`).
+
+## 67. Conta de demonstração (Etapa 9B, PR 2)
+
+- **Empresa `eh_demo`** (no máximo uma, índice parcial) com slug = `NEXT_PUBLIC_DEMO_SLUG`.
+  `demo_recriar` (service_role) apaga a anterior inteira e cria empresa + usuário único (perfil
+  dono, termos vigentes); o servidor grava o modelo infantil com `gravarModelo` na mesma
+  transação (como o dono, com RLS); `demo_popular` gera 60 dias de dados (funil, ~54 leads,
+  orçamentos com conteúdo congelado, perdas, atendimento, reservas, uma pré-reserva, visita,
+  tarefas, nota) e confirma os preços. Recusa o slug de uma empresa real.
+- **Recriação:** job `orkestra-demo-recriar` às 06:00 UTC (03:00 em Brasília) → pg_net →
+  `/api/demo/recriar` (CRON_SECRET); e na entrada, se faltar ou se os Termos mudaram.
+- **Entrada sem senha:** formulário POST `/demo/entrar` (nunca GET: prefetch) → Admin API gera
+  um link mágico (sem e-mail) → `verifyOtp` no servidor → cookie `orkestra_demo` com o fim da
+  sessão (2 h); o middleware manda a sessão vencida para `/auth/sair?motivo=demo-fim` (cadastro).
+  Usuário marcado com `app_metadata.demo`; sair encerra só a sessão local (`scope: 'local'`), para
+  não derrubar os outros visitantes; MFA e troca de senha recusadas para ele; a recriação limpa
+  fatores de MFA.
+- **Somente leitura no banco:** `_exigir_escrita` confere a demo **antes** da liberação
+  `orkestra.permitir_escrita` (LGPD, aceite) e `_exigir_nao_demo` cobre as tabelas que ficam
+  graváveis com a conta suspensa (avisos, push, auditoria, cobrança…): com `auth.uid()` numa
+  empresa demo → `DEMO_SOMENTE_LEITURA` ("Esta é uma demonstração. Crie sua conta grátis…", com
+  o botão no toast). Storage com política restritiva. Só a montagem (GUC
+  `orkestra.demo_montagem`, ligada pelas funções de service_role) escreve.
+- **Modo teste e métricas:** `ehModoTeste` é sempre verdadeiro no slug da demo e o trigger
+  `_demo_eh_teste` marca `eh_teste` em lead e orçamento criados fora da montagem; a demo nunca
+  manda e-mail (`_demo_sem_email`); fica fora do `/interno`; o botão da landing não é
+  `data-cta-teste` (não conta como "Testar grátis") e a demo não passa pelo cadastro (sem origem).
+
+## 68. Domínio próprio (Etapa 9B, PR 2)
+
+- **Uma fonte:** `siteUrl()` (`server/env`) = `NEXT_PUBLIC_SITE_URL` (desenvolvimento:
+  `http://localhost:3000`) para e-mails, avisos, mensagens prontas, proposta, QR, Open Graph,
+  canonical, sitemap, robots, JSON-LD e links do Auth (antes, o Host da requisição). Um teste
+  procura domínio fixo e montagem pelo Host no código. Exceção: o retorno do Google usa a origem
+  da página (o verificador PKCE fica no cookie dessa origem).
+- **308 do domínio antigo** (`domain/seguranca/dominio`, primeiro passo do middleware): host em
+  `DOMINIOS_ANTIGOS` e diferente do de `NEXT_PUBLIC_SITE_URL` → mesmo caminho e query no novo.
+  `/api/` fica de fora até o webhook do Asaas e o Vault apontarem para o novo (POST com
+  redirecionamento não é seguido por eles). Testado chamando o middleware.
+
+## 69. Backup e jornada E2E (Etapa 9B, PR 2)
+
+- **Backup:** diário pelo plano pago do Supabase (decisão do dono); cópia manual pelo workflow
+  `backup.yml` (`supabase db dump` de schema, papéis e dados → tar → gpg AES-256 com
+  `BACKUP_SENHA` → artefato de 7 dias). O texto puro vive só no disco temporário do runner, é
+  apagado com `shred` e o upload confere que o arquivo está criptografado. Restauração e
+  simulado: `docs/BACKUP.md`.
+- **Jornada do buffet** (`tests/e2e/jornada.spec.ts`, 375x812, em todo PR): landing com UTM →
+  cadastro → onboarding → testar como cliente → cliente pede pré-reserva → sino → vendedor
+  criado pelo dono confirma o sinal → Agenda → Números → teste acaba (somente leitura) → assina
+  pela API falsa do Asaas → continua usando. O ciclo inadimplente → suspensa → paga → ativa,
+  com os e-mails, fica na integração (`cobranca.test.ts`).

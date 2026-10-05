@@ -237,6 +237,61 @@ describe('eventos do Asaas', () => {
     });
   });
 
+  it('ciclo inteiro (Etapa 9B): teste, inadimplente, suspensa e volta ao pagar, com e-mails', async () => {
+    await emTransacao(sql, async (tx) => {
+      const e = await novaEmpresa(tx, { trialDias: 14 });
+      expect(await plano(tx, e.id)).toBe('trial');
+      const a = await novaAssinatura(tx, e.id);
+      const pago = (asaasId: string, vencimento: string) =>
+        evento({
+          tipo: 'PAYMENT_RECEIVED',
+          cobranca: {
+            asaas_id: asaasId,
+            assinatura_asaas_id: a.asaas,
+            valor_centavos: 9700,
+            vencimento,
+            status: 'recebida',
+          },
+        });
+      const [venc] =
+        await tx`select ((${await hojeSP(tx, -2)}::date - interval '1 month')::date)::text as d`;
+      // mês anterior pago (cobriu até 2 dias atrás) e a fatura deste mês venceu sem pagamento
+      await registrar(tx, pago('pay_ciclo1', venc!.d));
+
+      await registrar(
+        tx,
+        evento({
+          tipo: 'PAYMENT_OVERDUE',
+          cobranca: {
+            asaas_id: 'pay_ciclo2',
+            assinatura_asaas_id: a.asaas,
+            valor_centavos: 9700,
+            vencimento: await hojeSP(tx, -2),
+            status: 'vencida',
+          },
+        }),
+      );
+      expect(await plano(tx, e.id)).toBe('inadimplente');
+      await tx`select public._atualizar_situacao(${e.id}, now() + interval '7 days')`;
+      expect(await plano(tx, e.id)).toBe('suspenso');
+
+      // pagou a fatura atrasada: volta a ativa na hora
+      await registrar(tx, pago('pay_ciclo2', await hojeSP(tx, -2)));
+      expect(await plano(tx, e.id)).toBe('ativo');
+
+      // cada passo avisou o dono também por e-mail (uma entrega por aviso, sem repetir)
+      const emails = await tx`select a.tipo::text as tipo, count(*)::int as n
+        from public.avisos_entregas en join public.avisos a on a.id = en.aviso_id
+        where en.empresa_id = ${e.id} and en.canal = 'email' group by 1 order by 1`;
+      expect(emails.map((r) => r.tipo)).toEqual(
+        expect.arrayContaining(['conta_suspensa', 'pagamento_confirmado', 'pagamento_falhou']),
+      );
+      // um e-mail por aviso: os dois pagamentos confirmados, nada repetido
+      expect(emails.find((r) => r.tipo === 'pagamento_confirmado')!.n).toBe(2);
+      expect(emails.find((r) => r.tipo === 'conta_suspensa')!.n).toBe(1);
+    });
+  });
+
   it('assinatura cancelada no Asaas: acesso até o fim do período pago', async () => {
     await emTransacao(sql, async (tx) => {
       const e = await novaEmpresa(tx, { trialDias: -20 });
@@ -482,6 +537,8 @@ describe('conta suspensa = somente leitura', () => {
     'solicitar_exclusao_conta',
     'desistir_exclusao_conta',
     'registrar_aceite',
+    // Etapa 9B (e-mail): boas-vindas logo depois do cadastro (só cria o aviso do próprio dono)
+    'avisar_boas_vindas',
   ];
   const BLOQUEADAS = [
     'alterar_slug',

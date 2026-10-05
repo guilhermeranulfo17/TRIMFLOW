@@ -125,12 +125,11 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   `acaoDoDono`).
 - ~~Modo "acessar conta do cliente" com auditoria~~ (Etapa 9A: consentimento de 7 dias,
   sessão de suporte de 2 h, faixa vermelha, `dados.suporte` na auditoria).
-- SMTP próprio no Supabase Cloud (o SMTP padrão tem limite baixo de envios por hora): Etapa 9B,
-  PR 2 (Resend).
+- ~~SMTP próprio no Supabase Cloud~~ (Etapa 9B, PR 2: Resend; valores no `docs/LANCAMENTO.md`).
 - ~~Reduzir o bundle do cadastro~~ (Etapa 9.5: metadados `min` com a regra do Brasil explícita,
   equivalência com `max` testada).
 - ~~CSP e headers de segurança; rate limit próprio no cadastro/login~~ (Etapa 9B).
-- Conta demo somente leitura: Etapa 9B, PR 2.
+- ~~Conta demo somente leitura~~ (Etapa 9B, PR 2).
 - ~~Restringir leitura de `auditoria` ao dono~~ (Etapa 9B).
 
 ## Depois da Etapa 9A (pendências percebidas)
@@ -197,15 +196,11 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Edição de planos e cupons pelo /interno (quando existir, invalidar a tag `planos-vitrine`).
 - Página por segmento, blog, vídeo, chat e teste A/B seguem fora do escopo.
 
-## Etapa 9B · PR 2 (lançamento): a fazer nesta mesma etapa
+## Etapa 9B · PR 2 (lançamento): feito
 
-- B.4 e-mail transacional (Resend) como canal `email` da fila de avisos; SMTP do Supabase Auth.
-- B.5 conta demo (`eh_demo`, recriada às 03:00, painel somente leitura, link em modo teste).
-- B.6 domínio próprio: links absolutos só de `NEXT_PUBLIC_SITE_URL`; 308 do domínio antigo.
-- B.7 backup: política e workflow manual de dump criptografado.
-- B.8 E2E da jornada inteira do buffet; B.9 roteiro completo do `docs/LANCAMENTO.md`.
-- E-mail "exportação pronta" e "conta será excluída" (a exportação do PR 1 é síncrona, um
-  download na hora; avaliar fila se alguma empresa passar de ~50 mil linhas).
+- ~~B.4 e-mail (Resend) como canal `email` da fila; SMTP do Supabase Auth~~; ~~B.5 conta demo~~;
+  ~~B.6 domínio (links só de `NEXT_PUBLIC_SITE_URL`, 308 do antigo)~~; ~~B.7 backup criptografado~~;
+  ~~B.8 E2E da jornada~~; ~~B.9 roteiro do lançamento~~; ~~e-mails "exportação" e "exclusão"~~.
 
 ## Depois da Etapa 9B · PR 1 (pendências percebidas)
 
@@ -226,3 +221,21 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   segundo plano e mandar por e-mail (PR 2 traz o e-mail).
 - **MFA do vendedor** (hoje só o dono liga) e códigos de recuperação da MFA.
 - **Prévias da Vercel** com banco separado (branches do Supabase, plano pago).
+
+## Depois da Etapa 9B · PR 2 (pendências percebidas)
+
+- **Fora do escopo (decidido):** NFS-e automática, app nativo, domínio próprio por buffet,
+  programa de indicação, multi-idioma, mensagens automáticas ao cliente final, troca de
+  identidade visual.
+- **E-mail:** webhook do Resend (devolvido, marcado como spam) para marcar o e-mail do dono como
+  inválido e avisar no painel; preferência "não quero e-mails de cobrança" (hoje sempre vão).
+- **Domínio antigo:** as rotas `/api/` ainda respondem em `trimflow-tau.vercel.app` (webhook do
+  Asaas, pg_cron). Depois de trocar tudo para o domínio novo (roteiro, passo 7), incluir `/api/`
+  no 308 e, mais tarde, remover o domínio antigo da Vercel.
+- **Backup do Storage** (logos e fotos): hoje fora do backup do banco. Avaliar cópia periódica
+  do bucket `midia` quando houver muitos clientes.
+- **Demo:** sessão de 2 horas contada por cookie (o visitante pode estender apagando o cookie de
+  propósito; o efeito é só continuar vendo dados fictícios). Se a demo virar alvo de abuso,
+  limitar entradas por IP com uma ação própria em `publico.limite_acesso` (hoje usa a do login).
+- **E2E da jornada** cobre o Asaas pela API falsa; um teste manual mensal no sandbox de verdade
+  continua no checklist do lançamento.

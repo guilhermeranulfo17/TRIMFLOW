@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { noBanco, zerarLimites } from './banco';
-import { entrar, semRolagemHorizontal, SENHA_SEED } from './helpers';
+import { entrar, semRolagemHorizontal, SENHA_SEED, escolherTipoDeFesta } from './helpers';
 
 /*
  * Etapa 5: orçamento interno, proposta (web e PDF), versões, rastreio de aberturas e validade.
@@ -31,7 +31,7 @@ async function montarOrcamento(
   await page.goto('/app/orcamentos/novo');
   await page.getByLabel('WhatsApp do cliente').fill(o.whatsapp);
   await page.getByLabel('Nome do cliente').fill(o.nome);
-  await page.getByRole('radio', { name: 'Aniversário infantil' }).click();
+  await escolherTipoDeFesta(page);
   for (let i = 0; i < o.mesesAFrente; i++) {
     await page.getByRole('button', { name: 'Próximo mês' }).click();
   }

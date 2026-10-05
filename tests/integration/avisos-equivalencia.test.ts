@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { CANAIS_EXTERNOS, canaisDoTipo, TIPOS_AVISO } from '@/domain/avisos/canais';
+import { CANAIS_EXTERNOS, canaisDoTipo, recebeEmail, TIPOS_AVISO } from '@/domain/avisos/canais';
 import { agendarAviso } from '@/domain/avisos/silencio';
 import {
   avaliarRegra,
@@ -79,6 +79,15 @@ describe('canais', () => {
         expect(r!.c, `${t} ${JSON.stringify(p)}`).toEqual(canaisDoTipo(t, p));
       }
     }
+  });
+
+  it('_aviso_email = recebeEmail (Etapa 9B) e o enum do banco tem todos os tipos', async () => {
+    for (const t of TIPOS_AVISO) {
+      const [r] = await sql`select public._aviso_email(${t}::public.tipo_aviso) as e`;
+      expect(r!.e, t).toBe(recebeEmail(t));
+    }
+    const enumBanco = await sql`select unnest(enum_range(null::public.tipo_aviso))::text as t`;
+    expect(enumBanco.map((r) => r.t).sort()).toEqual([...TIPOS_AVISO].sort());
   });
 });
 

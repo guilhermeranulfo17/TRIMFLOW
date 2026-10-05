@@ -1,8 +1,10 @@
 'use server';
 
 import { sql } from 'drizzle-orm';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
+import { after } from 'next/server';
 import { redirect } from 'next/navigation';
+import { ehSessaoDemo, MENSAGEM_DEMO } from '@/domain/auth/demo';
 import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
 import { modeloDoSegmento } from '@/domain/modelos';
@@ -23,12 +25,13 @@ import {
   type CompletarInput,
 } from '@/domain/validacao/cadastro';
 import { criarAuthAdmin } from '@/server/auth/admin-supabase';
+import { processarAvisosSemFalhar } from '@/server/avisos/processar';
 import { destinoSeguro, precisaTrocarSenha } from '@/server/auth/redirecionamento';
 import { criarClienteSupabase } from '@/server/auth/supabase-server';
 import { gravarModelo } from '@/server/catalogo/gravar-modelo';
 import { auditoria } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import { mensagemDeErroAuth } from '@/server/erros';
 import { codigoDoErro, logar } from '@/server/log';
 import { dentroDoLimite, MENSAGEM_LIMITE } from '@/server/seguranca/limite';
@@ -37,13 +40,9 @@ export type ResultadoAcao = { ok: true; mensagem?: string } | { ok: false; erro:
 
 const DADOS_INVALIDOS: ResultadoAcao = { ok: false, erro: 'Confira os campos destacados.' };
 
+/** Links do Auth (confirmação, nova senha) sempre no domínio configurado, nunca no do Host. */
 async function origemDoSite(): Promise<string> {
-  const configurada = urlDoSite();
-  if (configurada) return configurada;
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
-  const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
-  return `${proto}://${host}`;
+  return siteUrl();
 }
 
 /**
@@ -76,7 +75,10 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
   });
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };
   // aceite dos Termos e da Privacidade (versão e data), mesmo sem sessão (confirmação por e-mail)
-  if (data.user) await registrarAceite(data.user.id);
+  if (data.user) {
+    await registrarAceite(data.user.id);
+    await avisarBoasVindas(data.user.id);
+  }
 
   // Com confirmação de e-mail ligada no projeto, o signup não devolve sessão.
   if (!data.session) {
@@ -121,6 +123,7 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
     return { ok: false, erro: 'Não foi possível criar sua conta agora. Tente novamente.' };
   }
   await registrarAceite(user.id);
+  await avisarBoasVindas(user.id);
   await aplicarModeloDoCadastro(user.id, dados.segmento);
   await registrarOrigem(user.id);
   redirect('/app/comecar');
@@ -139,6 +142,19 @@ async function registrarAceite(usuarioId: string) {
     logar('aviso', 'cadastro.aceite_nao_registrado', {
       codigo: (e as { code?: string }).code ?? 'sem-codigo',
     });
+  }
+}
+
+/**
+ * Boas-vindas (Etapa 9B, B.4): aviso no painel e e-mail com o link do buffet. Uma vez por empresa;
+ * falhar aqui nunca impede o cadastro.
+ */
+async function avisarBoasVindas(usuarioId: string) {
+  try {
+    await comUsuario(usuarioId, (tx) => tx.execute(sql`select public.avisar_boas_vindas()`));
+    after(processarAvisosSemFalhar);
+  } catch (e) {
+    logar('aviso', 'cadastro.boas_vindas_falhou', { codigo: codigoDoErro(e) });
   }
 }
 
@@ -201,7 +217,10 @@ export async function entrar(input: LoginInput, next?: string | null): Promise<R
 
 export async function sair(): Promise<void> {
   const supabase = await criarClienteSupabase();
-  await supabase.auth.signOut();
+  // demo: um usuário para todos os visitantes, então só esta sessão sai
+  const { data } = await supabase.auth.getClaims();
+  const demo = ehSessaoDemo(data?.claims?.app_metadata as Record<string, unknown> | undefined);
+  await supabase.auth.signOut({ scope: demo ? 'local' : 'global' });
   redirect('/login');
 }
 
@@ -235,6 +254,7 @@ export async function definirNovaSenha(input: NovaSenhaInput): Promise<Resultado
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, erro: 'Seu link expirou. Peça um novo em "Esqueci minha senha".' };
+  if (ehSessaoDemo(user.app_metadata)) return { ok: false, erro: MENSAGEM_DEMO };
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.senha });
   if (error) return { ok: false, erro: mensagemDeErroAuth(error) };

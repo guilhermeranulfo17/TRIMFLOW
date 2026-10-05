@@ -47,6 +47,8 @@ src/
                      proposta-exemplo, link (divulgação + qr: PNG e PDF + editor da página
                      pública com prévia, Etapa 9.5)
     api/avisos/      processar (POST, Bearer CRON_SECRET) e contagem (GET, sino)
+    api/demo/        recriar (POST, Bearer CRON_SECRET): conta de demonstração do dia
+    demo/entrar      POST da landing: entra na demo sem senha (sessão de 2 h)
     api/lgpd/        processar (POST, Bearer CRON_SECRET): exclusão definitiva das contas
     api/saude/       GET público para o monitor de disponibilidade (200/503)
     api/landing/     contar (POST, visitas e cliques agregados da landing)
@@ -109,8 +111,9 @@ src/
     marketing/       landing: preços da vitrine (desconto anual, itens), faixa do FUNDADOR, origem
                      do cadastro (UTM), JSON-LD, simulador (mesmo calcularOrcamento)
     legal/           versão vigente dos Termos e da Privacidade (VERSAO_DOCUMENTOS)
+    email/           modelos dos e-mails da conta (HTML + texto, links absolutos)
     lgpd/            CSV das exportações
-    seguranca/       CSP, nonce e cabeçalhos (middleware)
+    seguranca/       CSP, nonce e cabeçalhos (middleware), 308 do domínio antigo
     observabilidade/ log estruturado (mascaramento), limpeza do Sentry, avaliação da saúde
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario, lerComo,
@@ -143,6 +146,7 @@ src/
     lgpd/            exportações (ZIP próprio), exclusão definitiva (deps injetadas), Privacidade
     seguranca/       limite de tentativas (publico.limite_acesso)
     saude/           dados do /api/saude (deps injetadas)
+    demo/            conta de demonstração: recriar (deps injetadas) e entrada
     log.ts, cron.ts  log estruturado (logar, codigoDoErro) e autorização das rotas do pg_cron
     env.ts, erros.ts
   lib/               utilitários de UI (cn), opções do Sentry
@@ -225,6 +229,16 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   Silêncio, canais, destinatários e follow-up existem no SQL e em `domain/avisos` e
   `domain/follow-up`, com teste de equivalência: mudou uma, mude a outra. Nenhuma mensagem
   automática ao cliente final. Logs da fila só com ids e códigos.
+- **E-mail (Etapa 9B, §66):** canal `email` da mesma fila, só para o dono e só os avisos da
+  conta (`_aviso_email` = `recebeEmail`, equivalência). Resend por `fetch` com
+  `Idempotency-Key` = id da entrega; sem `RESEND_API_KEY`/`EMAIL_REMETENTE`, entrega ignorada.
+  Nunca envie e-mail fora da fila.
+- **Conta demo (Etapa 9B, §67):** empresa `eh_demo` recriada às 03:00; o banco recusa toda
+  escrita com sessão de usuário nela (`DEMO_SOMENTE_LEITURA`, antes de `permitir_escrita`).
+  **Tabela nova com `empresa_id`** recebe `_exigir_escrita` (o teste da demo confere que toda
+  tabela tem a trava). Link público da demo = modo teste; fora do /interno e das métricas.
+- **Links absolutos (Etapa 9B, §68):** só `siteUrl()` (`NEXT_PUBLIC_SITE_URL`); nunca o Host da
+  requisição nem domínio fixo (teste procura). O domínio antigo redireciona 308 no middleware.
 - **Preço confirmado (Etapa 8):** pacote e opcional só vão ao link com
   `preco_confirmado_em` preenchido (`publico.contexto_preco` e `pendenciasDoLinkPublico`). Um
   trigger confirma sempre que um preço é gravado, menos na gravação do modelo (`gravarModelo`
@@ -375,15 +389,17 @@ faturas pagas e uma em aberto), o Buffet Teste B tem o teste acabando em 2 dias,
 Buffet Demo tem a página pública preenchida (frase, diferenciais, 6 fotos, 3 depoimentos
 marcados "(seed)" e 3 perguntas); `pnpm db:seed:midia` envia as imagens (geradas, sem fotos de
 terceiros) ao Storage local. Página pública:
-http://localhost:3000/b/buffet-demo (logado como dono, abre em modo teste). E-mails locais (recuperação de senha): http://127.0.0.1:54324.
+http://localhost:3000/b/buffet-demo (logado como dono, abre em modo teste). Conta de demonstração
+(Etapa 9B): com `NEXT_PUBLIC_DEMO_SLUG=demonstracao` no `.env.local`, o botão "Ver o painel de
+demonstração" da landing monta a demo na primeira entrada (precisa de `SUPABASE_SERVICE_ROLE_KEY`). E-mails locais (recuperação de senha): http://127.0.0.1:54324.
 
 Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 `TEST_DB_SHIM=1 TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/orkestra_test pnpm test:integration`.
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 8, o visual escuro e a Etapa 9A
-  (PRs #1 a #11) na `main`. Região das funções na Vercel: `gru1` (`vercel.json`).
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 9.6 e a Etapa 9B PR 1 na `main`;
+  Etapa 9B PR 2 (lançamento) na branch `etapa-9b2-lancamento`. Região das funções na Vercel: `gru1` (`vercel.json`).
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região
@@ -411,6 +427,10 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
   `NEXT_PUBLIC_EMAIL_CONTATO` e `NEXT_PUBLIC_RAZAO_SOCIAL` (rodapé). Desde a Etapa 9B (todas
   opcionais, só Production): `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`,
   `SENTRY_ORG`, `SENTRY_PROJECT`; previews, sessão, MFA, monitor e LGPD em `docs/LANCAMENTO.md`.
+  Desde a Etapa 9B PR 2: `RESEND_API_KEY` (secreta) e `EMAIL_REMETENTE` (sem elas, e-mail
+  desligado) e `NEXT_PUBLIC_DEMO_SLUG` passa a ligar a conta de demonstração. Secreto novo no
+  GitHub: `BACKUP_SENHA` (workflow de backup, `docs/BACKUP.md`). **Roteiro do lançamento, na
+  ordem:** `docs/LANCAMENTO.md`.
   - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.
 - **Auth:** confirmação de e-mail desligada no Supabase por enquanto.

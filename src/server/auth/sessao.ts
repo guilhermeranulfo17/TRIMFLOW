@@ -24,6 +24,8 @@ export type UsuarioAtual = {
     situacao: Situacao;
     /** exclusão da conta pedida pelo dono (Etapa 9B, LGPD): data da exclusão definitiva */
     exclusaoAgendadaPara: string | null;
+    /** conta de demonstração (Etapa 9B): tudo somente leitura, faixa com "Criar conta grátis" */
+    demo: boolean;
   };
   /** versão dos Termos e da Privacidade aceita (Etapa 9B); o dono aceita a vigente */
   termosVersao: string | null;
@@ -72,7 +74,8 @@ export async function lerUsuario(alvo: string): Promise<Omit<UsuarioAtual, 'supo
   const [linhas] = await lerComo(alvo, [
     sql`select u.id, u.nome, u.email, u.perfil, u.ativo, u.termos_versao, e.id as empresa_id,
                e.nome as empresa_nome, e.slug as empresa_slug, e.fuso as empresa_fuso,
-               e.plano as empresa_situacao, e.exclusao_agendada_para as empresa_exclusao
+               e.plano as empresa_situacao, e.exclusao_agendada_para as empresa_exclusao,
+               e.eh_demo as empresa_demo
         from public.usuarios u join public.empresas e on e.id = u.empresa_id
         where u.id = ${alvo} limit 1`,
   ]);
@@ -93,6 +96,7 @@ export async function lerUsuario(alvo: string): Promise<Omit<UsuarioAtual, 'supo
       exclusaoAgendadaPara: linha.empresa_exclusao
         ? new Date(linha.empresa_exclusao as string | Date).toISOString()
         : null,
+      demo: linha.empresa_demo === true,
     },
     termosVersao: (linha.termos_versao as string | null) ?? null,
   };

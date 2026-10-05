@@ -1,3 +1,4 @@
+import { MENSAGEM_DEMO } from '../auth/demo';
 import type { Situacao } from './situacao';
 
 /*
@@ -82,6 +83,7 @@ export const MENSAGEM_SOMENTE_LEITURA =
 /** Código de erro do banco ligado à conta (suspensa ou limite) → mensagem; senão null. */
 export function mensagemErroConta(codigo: string | null | undefined): string | null {
   if (codigo === 'CONTA_SOMENTE_LEITURA') return MENSAGEM_SOMENTE_LEITURA;
+  if (codigo === 'DEMO_SOMENTE_LEITURA') return MENSAGEM_DEMO;
   if ((CODIGOS_LIMITE as readonly string[]).includes(codigo ?? '')) {
     return mensagemLimite(codigo as CodigoLimite);
   }

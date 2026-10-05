@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { exigirSessao } from '@/server/auth/sessao';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { urlDoSite } from '@/server/env';
+import { siteUrl } from '@/server/env';
 import { FormDadosProposta } from './form-dados-proposta';
 import { FormIdentidade } from './form-identidade';
 import { FormSlug } from './form-slug';
@@ -50,11 +50,7 @@ export default async function IdentidadePage() {
         logoPath={empresa.logoPath}
         capaPath={empresa.capaPath}
       />
-      <FormSlug
-        somenteLeitura={somenteLeitura}
-        slugAtual={empresa.slug}
-        urlSite={urlDoSite() ?? ''}
-      />
+      <FormSlug somenteLeitura={somenteLeitura} slugAtual={empresa.slug} urlSite={siteUrl()} />
     </div>
   );
 }

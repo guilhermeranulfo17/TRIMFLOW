@@ -13,6 +13,7 @@ import {
 import { Sidebar } from '@/components/app/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ProvedorToast } from '@/components/app/toast';
+import { FaixaDemo } from '@/components/app/plano/faixa-demo';
 import { FaixaExclusao } from '@/components/app/plano/faixa-exclusao';
 import { FaixaSuporte } from '@/components/app/plano/faixa-suporte';
 import { precisaAceitarTermos } from '@/domain/legal/versao';
@@ -39,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {usuario.suporte && (
               <FaixaSuporte buffet={usuario.empresa.nome} admin={usuario.suporte.admin} />
             )}
+            {usuario.empresa.demo && <FaixaDemo />}
             {usuario.empresa.exclusaoAgendadaPara && (
               <FaixaExclusao
                 quando={usuario.empresa.exclusaoAgendadaPara}

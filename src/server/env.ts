@@ -23,6 +23,15 @@ export function urlDoSite(): string | undefined {
   return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '') || undefined;
 }
 
+/**
+ * Base de TODO link absoluto (e-mails, avisos, WhatsApp, PDF, QR, Open Graph, sitemap, JSON-LD,
+ * links do Auth): só NEXT_PUBLIC_SITE_URL, nunca o host da requisição nem um domínio fixo
+ * (Etapa 9B, B.6). Sem a variável (só em desenvolvimento), http://localhost:3000.
+ */
+export function siteUrl(): string {
+  return urlDoSite() ?? 'http://localhost:3000';
+}
+
 const SAL_DESENVOLVIMENTO = 'orkestra-dev-nao-use-em-producao';
 
 /**
@@ -66,6 +75,29 @@ export function configWhatsapp(): ConfigWhatsapp | null {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
   if (!token || !phoneNumberId) return null;
   return { token, phoneNumberId };
+}
+
+/**
+ * Slug da conta de demonstração (Etapa 9B): NEXT_PUBLIC_DEMO_SLUG. Vazio ou inválido = demo
+ * desligada (a landing esconde os botões e /demo/entrar volta para a landing).
+ */
+export function demoSlug(): string | null {
+  const s = process.env.NEXT_PUBLIC_DEMO_SLUG?.trim().toLowerCase();
+  return s && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) && s.length >= 3 && s.length <= 60 ? s : null;
+}
+
+export type ConfigEmail = { chave: string; remetente: string };
+
+/**
+ * E-mail transacional (Resend, por fetch). RESEND_API_KEY e EMAIL_REMETENTE
+ * ("Orkestra <avisos@seudominio.com.br>", domínio verificado no Resend). Vazias = canal desligado:
+ * as entregas de e-mail viram "ignorado" e nada quebra.
+ */
+export function configEmail(): ConfigEmail | null {
+  const chave = process.env.RESEND_API_KEY?.trim();
+  const remetente = process.env.EMAIL_REMETENTE?.trim();
+  if (!chave || !remetente) return null;
+  return { chave, remetente };
 }
 
 /**
