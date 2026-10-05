@@ -65,6 +65,15 @@ export default defineConfig({
             url: `${BASE_URL}/login`,
             reuseExistingServer: !CI,
             timeout: 180_000,
+            // e-mails (código do contrato, Etapa 10) vão para a API falsa, não para o Resend
+            env: {
+              RESEND_API_KEY: process.env.RESEND_API_KEY ?? 're_falso_e2e',
+              EMAIL_REMETENTE: process.env.EMAIL_REMETENTE ?? 'Orkestra <avisos@orkestra.test>',
+              RESEND_API_URL: process.env.RESEND_API_URL ?? 'http://localhost:4010/resend/emails',
+              // chave do CPF do contrato (só de teste; em produção vem da Vercel)
+              CONTRATOS_CHAVE:
+                process.env.CONTRATOS_CHAVE ?? 'ZTJlLW9ya2VzdHJhLWNvbnRyYXRvcy1jaGF2ZS0zMmI=',
+            },
           },
         ]),
   ],

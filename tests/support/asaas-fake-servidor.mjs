@@ -16,10 +16,29 @@ const falso = criarAsaasFalso({
   },
 });
 
+// E-mails do Resend (Etapa 10): o app aponta RESEND_API_URL para cá; o E2E lê o último
+// e-mail de um destinatário (código do contrato) em GET /resend/ultimo?para=…
+const emails = [];
+
 createServer(async (req, res) => {
   const partes = [];
   for await (const c of req) partes.push(c);
   const corpo = Buffer.concat(partes);
+  const url = new URL(req.url ?? '/', urlPublica);
+  if (url.pathname === '/resend/emails' && req.method === 'POST') {
+    const email = JSON.parse(corpo.toString() || '{}');
+    emails.push({ ...email, chave: req.headers['idempotency-key'] ?? null });
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ id: `email_${emails.length}` }));
+    return;
+  }
+  if (url.pathname === '/resend/ultimo' && req.method === 'GET') {
+    const para = url.searchParams.get('para');
+    const achado = [...emails].reverse().find((e) => (e.to ?? []).includes(para));
+    res.writeHead(achado ? 200 : 404, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(achado ?? null));
+    return;
+  }
   const cabecalhos = new Headers();
   for (const [k, v] of Object.entries(req.headers)) {
     if (typeof v === 'string') cabecalhos.set(k, v);

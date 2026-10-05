@@ -18,7 +18,8 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { empresas, segmentoEmpresa, usuarios } from './schema';
+import type { Segmento } from '@/domain/segmento';
+import { empresas, usuarios } from './schema';
 
 const instante = (nome: string) => timestamp(nome, { withTimezone: true });
 const empresaId = () =>
@@ -44,7 +45,9 @@ export const contratoModelos = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     empresaId: empresaId(),
     titulo: text('titulo').notNull(),
-    segmento: segmentoEmpresa('segmento').notNull(),
+    // enum segmento_empresa no banco; aqui texto tipado (o enum de ./schema ainda não existe
+    // quando este módulo é avaliado: import circular)
+    segmento: text('segmento').$type<Segmento>().notNull(),
     texto: text('texto').notNull(),
     opcoes: jsonb('opcoes').notNull().default({}),
     origem: text('origem'),

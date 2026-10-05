@@ -14,3 +14,12 @@ export function mascaraTelefoneBR(entrada: string): string {
   const corte = resto.length === 9 ? 5 : 4;
   return `(${ddd}) ${resto.slice(0, corte)}-${resto.slice(corte)}`;
 }
+
+/** Máscara de CPF durante a digitação: "52998224725" → "529.982.247-25". */
+export function mascaraCpf(entrada: string): string {
+  const d = entrada.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}

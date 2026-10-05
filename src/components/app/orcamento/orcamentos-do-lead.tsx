@@ -1,6 +1,14 @@
 'use client';
 
-import { CalendarCheck, Copy, Download, ExternalLink, FilePen, Loader2 } from 'lucide-react';
+import {
+  CalendarCheck,
+  Copy,
+  Download,
+  ExternalLink,
+  FilePen,
+  FileSignature,
+  Loader2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -50,7 +58,14 @@ function Itens({ v }: { v: VersaoDoLead }) {
 }
 
 /** Orçamentos do lead: a versão vigente com as ações e as anteriores com o que mudou. */
-export function OrcamentosDoLead({ grupos }: { grupos: GrupoOrcamento[] }) {
+export function OrcamentosDoLead({
+  grupos,
+  podeGerarContrato = false,
+}: {
+  grupos: GrupoOrcamento[];
+  /** só o dono envia contrato (Etapa 10), a partir do orçamento aceito (pré-reservado) */
+  podeGerarContrato?: boolean;
+}) {
   const toast = useToast();
   const router = useRouter();
   const [reservando, setReservando] = useState<string | null>(null);
@@ -152,6 +167,16 @@ export function OrcamentosDoLead({ grupos }: { grupos: GrupoOrcamento[] }) {
                 <FilePen className="size-4" aria-hidden />
                 Nova versão
               </Link>
+              {podeGerarContrato && v.status === 'aceito' && (
+                <Link
+                  href={`/app/contratos/novo?orcamento=${v.id}`}
+                  className={ACAO}
+                  data-testid="gerar-contrato"
+                >
+                  <FileSignature className="size-4" aria-hidden />
+                  Gerar contrato
+                </Link>
+              )}
               {podeReservar && (
                 <button
                   type="button"

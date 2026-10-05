@@ -75,6 +75,8 @@ describe('limparEvento (beforeSend do Sentry)', () => {
 
   it('URL sem query e sem token', () => {
     expect(limparUrl('/b/x/proposta/abc/pdf?x=1#y')).toBe('/b/x/proposta/[token]/pdf');
+    expect(limparUrl('/b/x/contrato/abcDEF_123/pdf')).toBe('/b/x/contrato/[token]/pdf');
+    expect(limparUrl('/app/contratos/novo')).toBe('/app/contratos/novo');
     expect(limparUrl('/app/leads?busca=maria')).toBe('/app/leads');
   });
 });

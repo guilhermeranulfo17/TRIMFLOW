@@ -306,12 +306,6 @@ export async function carregarOrigemDoOrcamento(
 ): Promise<OrigemContrato | null> {
   if (!/^[0-9a-f-]{36}$/i.test(orcamentoId)) return null;
   return naTransacao(usuario.id, tx, async (t) => {
-    const [pedido] = await t
-      .select({ numero: orcamentos.numero, empresaId: orcamentos.empresaId })
-      .from(orcamentos)
-      .where(eq(orcamentos.id, orcamentoId))
-      .limit(1);
-    if (!pedido) return null;
     const [linha] = await t
       .select({
         o: orcamentos,
@@ -331,10 +325,11 @@ export async function carregarOrigemDoOrcamento(
       .leftJoin(turnos, eq(turnos.id, orcamentos.turnoId))
       .leftJoin(espacos, eq(espacos.id, orcamentos.espacoId))
       .leftJoin(pacotes, eq(pacotes.id, orcamentos.pacoteId))
+      // a versão vigente do mesmo número (RLS: só da empresa do usuário), numa ida só
       .where(
         and(
-          eq(orcamentos.empresaId, pedido.empresaId),
-          eq(orcamentos.numero, pedido.numero),
+          sql`(${orcamentos.empresaId}, ${orcamentos.numero}) = (select o2.empresa_id, o2.numero
+            from public.orcamentos o2 where o2.id = ${orcamentoId}::uuid)`,
           ne(orcamentos.status, 'substituido'),
           ne(orcamentos.status, 'em_montagem'),
         ),

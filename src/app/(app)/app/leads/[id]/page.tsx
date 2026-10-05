@@ -224,7 +224,10 @@ export default async function LeadPage({ params }: Props) {
           )}
         </div>
         {lead.orcamentos.length > 0 ? (
-          <OrcamentosDoLead grupos={lead.orcamentos} />
+          <OrcamentosDoLead
+            grupos={lead.orcamentos}
+            podeGerarContrato={usuario.perfil === 'dono'}
+          />
         ) : (
           <p className="text-muted-foreground mt-1 text-sm">Nenhum orçamento concluído ainda.</p>
         )}
