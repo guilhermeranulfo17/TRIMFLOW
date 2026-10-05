@@ -3,7 +3,7 @@
  * andam juntos: mudou um, suba a versão (data da publicação, `yyyy-MM-dd` ou `yyyy-MM-dd.N`). No
  * próximo acesso o dono aceita de novo (o painel redireciona para /app/aceite).
  */
-export const VERSAO_DOCUMENTOS = '2026-10-04';
+export const VERSAO_DOCUMENTOS = '2026-10-05';
 
 /** Data da versão para mostrar nas páginas ("4/10/2026"). */
 export function dataDaVersao(versao = VERSAO_DOCUMENTOS): string {

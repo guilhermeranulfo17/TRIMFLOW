@@ -1454,3 +1454,74 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
   criado pelo dono confirma o sinal → Agenda → Números → teste acaba (somente leitura) → assina
   pela API falsa do Asaas → continua usando. O ciclo inadimplente → suspensa → paga → ativa,
   com os e-mails, fica na integração (`cobranca.test.ts`).
+
+## 70. Contrato digital (Etapa 10, PR 1)
+
+- **O que é:** assinatura eletrônica simples (aceite das duas partes com registro de evidências).
+  Sem serviço externo. O Orkestra não é parte do contrato; os modelos são sugestões (faixa "Peça
+  a um advogado para revisar" no painel, nunca no texto do cliente). Não é ICP-Brasil.
+- **Tabelas** (`20261015000002_contratos.sql`): `contrato_modelos` (cópias da empresa; o modelo do
+  sistema fica no código, `domain/contratos/modelos`, com versão `infantil@1`), `contratos`,
+  `contrato_assinaturas` (uma por parte) e `contrato_codigos`. RLS: o dono lê; ninguém do
+  navegador lê os códigos; escrita só por funções. Todas com `_exigir_escrita` (conta suspensa e
+  demo). `reservas` ganhou `unique (id, empresa_id)` para a FK composta.
+- **Status:** `enviado` → `concluido` (assinatura do cliente) | `recusado` (pedir ajuste) |
+  `expirado` (link vencido, na leitura e no job `orkestra-contratos` 03:30 SP) | `cancelado`.
+  O dono assina ao enviar, então `assinado_cliente` fica reservado (testemunhas no futuro).
+  Regra em `domain/contratos/estados` e nas funções SQL.
+- **Imutável depois do envio** (trigger `_contrato_imutavel`): texto, valores, variáveis, hash,
+  número, versão, partes e e-mail não mudam; concluído e cancelado não mudam de status; o hash é
+  sempre `sha256(texto)` (calculado no banco; o domínio tem `hashTexto`, teste de equivalência,
+  inclusive com acentos e emojis). Assinatura nunca muda. Só a anonimização da LGPD (GUC
+  `orkestra.lgpd`, ligada e desligada dentro de `_contrato_anonimizar`) reescreve. Refazer =
+  cancelar e emitir outro (`substitui_contrato_id`, versão + 1, número novo).
+- **Texto:** o servidor monta a partir do orçamento vigente (`carregarOrigemDoOrcamento`, RLS),
+  preenche o modelo (`preencherModelo`) e normaliza (`normalizarTexto`) antes de gravar. Do
+  navegador só entram os valores que faltavam (o dono completa na prévia), a validade e "exigir
+  código". Variável sem valor bloqueia o envio (no servidor e no banco: `{{`/`[[FALTA:` são
+  recusados). O número do contrato (2026-0007) fica fora do texto (cabeçalho), porque nasce no
+  banco na mesma transação. O CPF não está no texto: a cláusula diz "informado na assinatura
+  eletrônica (ver comprovante)".
+- **Link:** token de 256 bits (43 caracteres base64url) gerado no servidor; o banco guarda o
+  `sha256`. `/b/[slug]/contrato/[token]`: token inexistente, de outro buffet, vencido, cancelado
+  ou anonimizado dão a MESMA resposta (`{estado: indisponivel}`). "Reenviar" gera outro token
+  (`novo_link_contrato`): o antigo para de abrir. `noindex`, `referrer: no-referrer`, CSP com
+  nonce (página dinâmica) e `frame-ancestors 'none'`; o Sentry troca o token por `[token]`.
+- **Assinatura do cliente:** nome completo (2 palavras), CPF (dígitos verificadores), "li e
+  concordo" e, se pedido, o código. O navegador manda o hash do texto que leu; outro hash =
+  `CONTRATO_MUDOU`. Modo teste (usuário do próprio buffet, pela sessão) não assina.
+- **CPF:** cifrado no servidor com AES-256-GCM (`server/contratos/segredos`), chave
+  `CONTRATOS_CHAVE` (32 bytes base64, só na Vercel; em dev/teste, chave fixa), com o hash do
+  contrato como AAD (o cifrado não serve em outro contrato). Formato `v1:` + base64url(iv | tag |
+  texto). Banco e backup nunca têm a chave. Mostrado mascarado (`***.456.789-**`);
+  `ler_cpf_contrato` (dono) devolve o cifrado e grava `contrato.cpf_visto` na auditoria.
+  Decisão: cifrar no app em vez de pgcrypto + Vault (a chave fica fora do banco e os testes rodam
+  sem o Vault). Perder a chave = perder os CPFs: guardar cópia fora da Vercel.
+- **Código por e-mail:** 6 dígitos, `hash(contrato + código + sal)` no banco, 10 minutos, 5
+  tentativas (a 5ª errada bloqueia; pedir outro invalida o anterior), no máximo 5 pedidos por
+  hora por contrato e 10 por IP. Exceção aprovada à regra "e-mail só pela fila": o código sai na
+  hora pelo Resend (`server/contratos/email`, `Idempotency-Key` = id do código), só a pedido do
+  cliente. Modelo em `domain/email/contrato`. Sem e-mail no lead, não dá para exigir código.
+- **Limites (publico.tentativas, chave `contrato`):** abrir 120/h por IP, código 10/h por IP e
+  5/h por contrato, assinar 20/15, recusar 5/3, PDF 30/30.
+- **PDF:** `@react-pdf/renderer` como a proposta (mesma Manrope), desenho em
+  `server/contratos/pdf`: cabeçalho do buffet, texto em blocos (`blocosDoTexto`, o mesmo da web),
+  assinaturas e a página de comprovante (número, versão, hash em blocos, por parte: nome, CPF
+  mascarado, data e hora em Brasília com offset, 16 primeiros caracteres do hash do IP, forma de
+  aceite e "texto assinado confere"). Bucket privado `contratos` (`{empresa_id}/{id}.pdf`, sem
+  policy: só a service role). Gerado depois da assinatura (`after()` na action) e guardado uma
+  vez (`pdf_gerado_em`); se o Storage falhar, sai gerado na hora a partir do texto congelado.
+  Rotas: `/b/[slug]/contrato/[token]/pdf` (cliente, limite) e `/app/contratos/[id]/pdf` (dono).
+  Entrega pela própria rota (sem URL do Storage no navegador).
+- **Plano:** `planos.contratos_mes` (Essencial 10 por mês; Profissional e teste sem limite).
+  `LIMITE_PLANO_CONTRATOS` no banco; lead de teste não conta.
+- **LGPD:** lead anonimizado (pedido ou retenção) → os contratos NÃO concluídos dele são
+  anonimizados junto (trigger em `leads.anonimizado_em`). Contrato concluído fica inteiro (prova
+  do buffet) até 5 anos depois da festa (`valores.data`; sem data, a conclusão); depois o job
+  anonimiza e `/api/lgpd/processar` apaga o PDF. Exportação do lead inclui os contratos (CPF
+  mascarado). Exclusão da conta apaga também o bucket `contratos`. Termos e Privacidade
+  atualizados (`VERSAO_DOCUMENTOS` = 2026-10-05).
+- **Painel (mínimo do PR 1):** "Gerar contrato" no orçamento aceito (dono) →
+  `/app/contratos/novo?orcamento=` (prévia com o que falta destacado, exigir código, validade) →
+  "Assinar e enviar" → link, WhatsApp com mensagem pronta e copiar. Lista, detalhe, modelos,
+  avisos e Números ficam no PR 2.

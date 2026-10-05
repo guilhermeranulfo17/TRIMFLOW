@@ -1121,5 +1121,5 @@ $$;
 
 -- Etapa 9B (LGPD): os usuários do seed já aceitaram os Termos e a Privacidade vigentes
 -- (src/domain/legal/versao.ts; um teste unitário confere que a versão é a mesma).
-update public.usuarios set termos_versao = '2026-10-04', termos_aceitos_em = now()
-where termos_versao is distinct from '2026-10-04';
+update public.usuarios set termos_versao = '2026-10-05', termos_aceitos_em = now()
+where termos_versao is distinct from '2026-10-05';

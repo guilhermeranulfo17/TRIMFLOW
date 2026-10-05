@@ -150,7 +150,7 @@ jobs:
       - name: Estabilidade dos E2E de salvar e atualizar (5 vezes, sem retry)
         run: >-
           pnpm exec playwright test --project=celular --repeat-each=5 --retries=0
-          -g "identidade e vê a confirmação|logo salvo aparece|capa sai em duas larguras|checklist: \"Fiz\""
+          -g "identidade e vê a confirmação|logo salvo aparece|capa sai em duas larguras|checklist: \"Fiz\"|contrato digital"
 
       - name: Relatório do Playwright
         if: failure()

@@ -57,6 +57,7 @@ Vercel → projeto `trimflow` → **Settings → Environment Variables**. Para c
 | `CRON_SECRET`                                                                               | gere (64 caracteres). O mesmo valor vai no Vault (Referência → Avisos)                                                         | sim, secreta    | ✅         | ❌      |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`                        | já cadastradas na Etapa 7 (push no celular). Só confira que existem                                                            | recomendadas    | ✅         | ❌      |
 | `RESEND_API_KEY`, `EMAIL_REMETENTE`                                                         | passo 5                                                                                                                        | recomendadas    | ✅         | ❌      |
+| `CONTRATOS_CHAVE`                                                                           | gere com `openssl rand -base64 32` e guarde uma cópia no gerenciador de senhas (sem ela os CPFs dos contratos não voltam)      | sim, secreta    | ✅         | ✅      |
 | `ASAAS_API_KEY`, `ASAAS_AMBIENTE`, `ASAAS_WEBHOOK_TOKEN`                                    | passo 4                                                                                                                        | para cobrar     | ✅         | ❌      |
 | `ORKESTRA_ADMINS`                                                                           | seus e-mails da equipe, separados por vírgula                                                                                  | para o /interno | ✅         | ✅      |
 | `NEXT_PUBLIC_LOGIN_GOOGLE`                                                                  | `1` (só depois do passo 3)                                                                                                     | não             | ✅         | ✅      |
@@ -66,7 +67,7 @@ Vercel → projeto `trimflow` → **Settings → Environment Variables**. Para c
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`                                                | [WHATSAPP_MODELOS.md](WHATSAPP_MODELOS.md)                                                                                     | não             | ✅         | ❌      |
 | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | passo 6                                                                                                                        | não             | ✅         | ❌      |
 
-Nunca cadastre `ASAAS_API_URL` em produção (só os testes usam). Preview usa o **mesmo banco**:
+Nunca cadastre `ASAAS_API_URL` nem `RESEND_API_URL` em produção (só os testes usam). `CONTRATOS_CHAVE` é a mesma em Production e Preview (mesmo banco). Preview usa o **mesmo banco**:
 deixe as prévias protegidas (Referência → Previews da Vercel). **Redeploy** no fim.
 
 ## 3. Login com o Google

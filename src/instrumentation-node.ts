@@ -12,7 +12,7 @@ export async function registrarNode() {
     const Sentry = await import('@sentry/nextjs');
     Sentry.init(opcoesSentry(process.env.SENTRY_DSN));
   }
-  const { ipHashSalt, cronSecret, configVapid, configWhatsapp, configEmail } =
+  const { ipHashSalt, cronSecret, configVapid, configWhatsapp, configEmail, chaveContratos } =
     await import('./server/env');
   ipHashSalt();
   if (process.env.NODE_ENV === 'production') {
@@ -34,6 +34,11 @@ export async function registrarNode() {
     }
     if (!configEmail()) {
       console.warn('[avisos] RESEND_API_KEY ou EMAIL_REMETENTE ausente: e-mails desligados.');
+    }
+    if (!chaveContratos()) {
+      console.error(
+        '[contratos] CONTRATOS_CHAVE ausente ou inválida: o cliente não consegue assinar contratos.',
+      );
     }
     if (!process.env.SENTRY_DSN) {
       console.info('[observabilidade] SENTRY_DSN ausente: erros só no log da Vercel.');

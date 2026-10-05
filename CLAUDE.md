@@ -40,7 +40,8 @@ src/
     (app)/app/       área logada: leads (caixa) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
                      [id]/editar, [id]/pdf), avisos (histórico), conta/avisos e conta/seguranca
-                     (Minha conta: avisos e MFA), numeros (Números), leads/[id]/exportar (LGPD)
+                     (Minha conta: avisos e MFA), numeros (Números), leads/[id]/exportar (LGPD),
+                     contratos (novo: prévia e envio; [id]/pdf)
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, follow-up, usuarios, plano (assinar, faturas,
                      cancelar, acesso do suporte), simulador, privacidade (+ exportar: ZIP),
@@ -59,7 +60,7 @@ src/
     manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)
     auth/            rotas técnicas: confirm (link do e-mail), callback (Google), sair
     b/[slug]/        página pública do buffet (vitrine com estilo), orcamento (wizard),
-                     proposta/[token] (+ /pdf), opengraph-image
+                     proposta/[token] (+ /pdf), contrato/[token] (+ /pdf), opengraph-image
     (legal)/         privacidade, termos (com o acordo de operador) e subprocessadores (modelos)
   components/
     ui/              shadcn (não misture regra de negócio aqui)
@@ -79,6 +80,7 @@ src/
     interno/         formulários e ações do /interno
     orcamento/       peças compartilhadas do wizard e do orçamento interno (contador)
     proposta/        proposta na web (desenha o ModeloProposta)
+    contrato/        texto do contrato (web e prévia) e o bloco "Assinar" do cliente
     publico/         vitrine (cabeçalho, carrossel, pacotes com gaveta, galeria com lightbox),
                      fontes dos estilos, cor da marca, rodapé
     auth/            peças dos formulários de autenticação
@@ -96,6 +98,8 @@ src/
     leads/           caixa e ações: prioridade (grupo e motivo, = regra do SQL), filtros da URL,
                      mensagens prontas, motivos de perda, adiar, temperatura por inatividade,
                      linha do tempo
+    contratos/       contrato digital: variáveis do modelo, valores por extenso, status, hash
+                     (= SQL), CPF e nome, modelos padrão (infantil, domicílio, eventos)
     proposta/        modelo único da proposta (web e PDF), conteúdo congelado, abertura,
                      diferenças entre versões, validade, temperatura (= regra do SQL), arquivo,
                      festa de exemplo
@@ -130,6 +134,8 @@ src/
     pagina/          leitura do editor da página pública (RLS do dono)
     leads/           leituras da caixa (caixa_leads, resumo_hoje) e do detalhe do lead, erros
     tarefas/         leituras da tela de Tarefas
+    contratos/       contrato: carregar (link e painel), emitir, assinar, cifra do CPF e
+                     token, e-mail do código, PDF com comprovante e Storage privado
     proposta/        carregador da proposta (público e painel), versão a gravar, PDF, fontes,
                      proposta de exemplo
     orcamentos/      leituras do orçamento interno (base de preço, lead por WhatsApp, edição)
@@ -333,6 +339,14 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `CATALOGO_ITEM_EM_USO`; telas usam `carregarEmUso`).
 - Temperatura por aberturas existe no SQL (`_temperatura_aberturas`) e em
   `domain/proposta/temperatura`, com teste de equivalência: mudou uma, mude a outra.
+- **Contratos (Etapa 10, §70):** escrita só por funções (`emitir_contrato`, `cancelar_contrato`,
+  `novo_link_contrato`, `salvar_contrato_modelo`, `publico.contrato_*`). Texto e hash congelados
+  no envio (trigger); para mudar, cancelar e emitir outro. O texto é montado no servidor
+  (`server/contratos/emitir`); o navegador só manda o que faltava. Token do link só como hash;
+  resposta igual para token inexistente, vencido ou cancelado. CPF só cifrado
+  (`CONTRATOS_CHAVE`, `server/contratos/segredos`) e mascarado; nunca em log nem no Sentry.
+  E-mail ao cliente final só o do contrato (código), direto pelo Resend. Hash do banco =
+  `hashTexto` do domínio (equivalência).
 - **Agenda:** `reservas` e `bloqueios` só são escritos pelas funções SQL (`criar_reserva`,
   `criar_bloqueio`…), que travam a empresa e checam conflito. Nunca escreva nessas tabelas pelo
   Drizzle. A regra de ocupação existe no SQL e em `domain/agenda`, com teste de equivalência:
@@ -398,8 +412,8 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 
 ## Ambiente
 
-- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 9.6 e a Etapa 9B PR 1 na `main`;
-  Etapa 9B PR 2 (lançamento) na branch `etapa-9b2-lancamento`. Região das funções na Vercel: `gru1` (`vercel.json`).
+- **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 9B na `main`; Etapa 10 PR 1
+  (contrato digital: base) na branch `etapa-10a-contrato-base`. Região das funções na Vercel: `gru1` (`vercel.json`).
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
   https://trimflow-tau.vercel.app.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região
@@ -429,7 +443,9 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
   `SENTRY_ORG`, `SENTRY_PROJECT`; previews, sessão, MFA, monitor e LGPD em `docs/LANCAMENTO.md`.
   Desde a Etapa 9B PR 2: `RESEND_API_KEY` (secreta) e `EMAIL_REMETENTE` (sem elas, e-mail
   desligado) e `NEXT_PUBLIC_DEMO_SLUG` passa a ligar a conta de demonstração. Secreto novo no
-  GitHub: `BACKUP_SENHA` (workflow de backup, `docs/BACKUP.md`). **Roteiro do lançamento, na
+  GitHub: `BACKUP_SENHA` (workflow de backup, `docs/BACKUP.md`). Desde a Etapa 10:
+  `CONTRATOS_CHAVE` (secreta, obrigatória para o cliente assinar; mesma em Production e Preview;
+  guardar cópia fora da Vercel). **Roteiro do lançamento, na
   ordem:** `docs/LANCAMENTO.md`.
   - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.

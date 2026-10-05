@@ -22,21 +22,35 @@ async function cliente(browser: Browser): Promise<Page> {
   return ctx.newPage();
 }
 
-/** Um orçamento aceito do Buffet Demo, com nome e e-mail do cliente conhecidos. */
+/**
+ * Um cliente novo com um orçamento aceito, copiado de um do Buffet Demo: cada teste (e cada
+ * repetição em paralelo) tem o seu, então ninguém muda o e-mail do outro.
+ */
 async function orcamentoAceito(email: string | null): Promise<{ id: string; nome: string }> {
   return noBanco(async (sql) => {
-    const [o] = await sql<{ id: string; lead_id: string }[]>`
-      select o.id, o.lead_id from public.orcamentos o
-      join public.leads l on l.id = o.lead_id
-      join public.empresas e on e.id = o.empresa_id
-      where e.slug = 'buffet-demo' and o.status = 'aceito' and not l.eh_teste
-        and l.anonimizado_em is null
-      order by o.criado_em limit 1`;
-    await sql`update public.leads set email = ${email} where id = ${o!.lead_id}`;
-    const [l] = await sql<
-      { nome: string }[]
-    >`select nome from public.leads where id = ${o!.lead_id}`;
-    return { id: o!.id, nome: l!.nome };
+    const sufixo = String(Math.floor(Math.random() * 1e8)).padStart(8, '0');
+    const nome = `Cliente Contrato ${sufixo}`;
+    const [o] = await sql<{ id: string }[]>`
+      with base as (
+        select o.* from public.orcamentos o
+        join public.empresas e on e.id = o.empresa_id
+        join public.leads l on l.id = o.lead_id
+        where e.slug = 'buffet-demo' and o.status = 'aceito' and not l.eh_teste
+          and o.resultado is not null
+        order by o.criado_em limit 1
+      ), lead as (
+        insert into public.leads (empresa_id, nome, whatsapp_e164, email, origem, status)
+        select b.empresa_id, ${nome}, ${'+55349' + sufixo}, ${email}, 'link_direto', 'pre_reservado'
+        from base b returning id
+      )
+      insert into public.orcamentos
+      select (jsonb_populate_record(null::public.orcamentos, to_jsonb(b) || jsonb_build_object(
+        'id', gen_random_uuid(), 'lead_id', l.id, 'numero', 800000 + ${Number(sufixo) % 100000},
+        'versao', 1, 'token', replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')
+      ))).*
+      from base b, lead l
+      returning id`;
+    return { id: o!.id, nome };
   });
 }
 
@@ -67,6 +81,10 @@ async function preencherAssinatura(c: Page, nome: string) {
 
 test.describe('contrato digital', () => {
   test.describe.configure({ mode: 'serial' });
+  // todo o E2E sai do mesmo IP: zera só os limites do contrato (nenhum outro teste usa)
+  test.beforeEach(() =>
+    noBanco((sql) => sql`delete from publico.tentativas where acao like 'contrato%'`),
+  );
 
   test('dono envia, cliente assina pelo celular e baixa o PDF com comprovante', async ({
     page,
