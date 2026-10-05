@@ -104,6 +104,9 @@ describe('canal de e-mail na fila', () => {
 
   it('sem RESEND_API_KEY: entrega ignorada com código, nada lança', async () => {
     const { processarAvisos } = await import('@/server/avisos/processar');
+    // os avisos da conta respeitam o silêncio do dono (22:00 às 07:00): à noite nascem para as 07:00
+    await sql`update public.avisos_entregas set proximo_envio_em = now()
+      where empresa_id = ${e.empresaId} and status = 'pendente'`;
     await processarAvisos({
       canais: [
         desligado('push'),
