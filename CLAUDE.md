@@ -84,8 +84,9 @@ src/
     publico/         vitrine (cabeçalho, carrossel, pacotes com gaveta, galeria com lightbox),
                      fontes dos estilos, cor da marca, rodapé
     auth/            peças dos formulários de autenticação
-    marca/           símbolo do Orkestra (SVG pela construção do manual; troca pelos oficiais aqui)
-    marketing/       seções e ilhas da landing (cabeçalho, simulador, preços, abas, contagem/origem)
+    marca/           logotipo (traçado da arte oficial) e símbolo (o "O" sobre o limão)
+    marketing/       seções e ilhas da landing (cabeçalho, simulador, preços, abas, contagem/origem,
+                     holofote e contador); landing toda escura, animações `ld-*` em globals.css
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
                      conversao (campos), senha, forca-senha, tema, imagem, plano
     auth/            destino depois do login (destinoPosLogin, destinoSeguro)
@@ -190,8 +191,8 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - **Termos fixos do produto:** Lead, Orçamento, Proposta, Pré-reserva, Reserva, Pacote,
   Opcional, Turno, Espaço.
 - **ids:** sempre uuid. Nunca expor ids sequenciais.
-- **Identidade e temas (Etapa 9.5, `docs/ARQUITETURA.md` §59):** grafite + limão; **nada de
-  roxo** (teste `sem-roxo`). Painel com tema escolhido no menu da conta (cookie `orkestra_tema`:
+- **Identidade e temas (Etapa 9.5, `docs/ARQUITETURA.md` §59 e §71):** grafite + limão
+  `#B2F759` (o da logo); **nada de roxo** (teste `sem-roxo`). Painel com tema escolhido no menu da conta (cookie `orkestra_tema`:
   escuro padrão, claro, sistema) via `data-painel data-tema`; telas de acesso sempre no escuro
   (`data-acesso`); termos e privacidade no claro da marca (`data-orkestra-claro`); link público e
   proposta no claro neutro com a cor do buffet (padrão `#0F766E`). Use só tokens (`bg-card`,

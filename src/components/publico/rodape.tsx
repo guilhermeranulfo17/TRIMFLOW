@@ -22,7 +22,7 @@ export function RodapePublico({ comEspaco = false }: { comEspaco?: boolean }) {
       </nav>
       <p className="flex items-center gap-1.5">
         Feito com
-        <span className="rounded-full bg-[#161616] px-2 py-0.5 font-bold text-[#3EE42E]">
+        <span className="rounded-full bg-[#161616] px-2 py-0.5 font-bold text-[#B2F759]">
           Orkestra
         </span>
       </p>
