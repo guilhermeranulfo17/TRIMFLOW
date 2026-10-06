@@ -17,7 +17,7 @@ export function PainelMarca() {
       className="relative hidden overflow-hidden border-r p-12 lg:flex lg:flex-col lg:justify-between"
       style={{
         background:
-          'radial-gradient(60% 50% at 20% 15%, rgb(62 228 46 / 0.16), transparent 70%), radial-gradient(50% 40% at 90% 90%, rgb(62 228 46 / 0.08), transparent 70%), var(--background)',
+          'radial-gradient(60% 50% at 20% 15%, rgb(178 247 89 / 0.16), transparent 70%), radial-gradient(50% 40% at 90% 90%, rgb(178 247 89 / 0.08), transparent 70%), var(--background)',
       }}
     >
       <Logo />

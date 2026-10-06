@@ -23,7 +23,7 @@ export function SimuladorDemo({ exemplo }: { exemplo: ExemploSimulador }) {
   );
 
   return (
-    <div className="bg-card rounded-card grid overflow-hidden border shadow-xl lg:grid-cols-[1.2fr_1fr]">
+    <div className="ld-vidro grid overflow-hidden rounded-[28px] shadow-[0_40px_100px_-40px_rgb(0_0_0/0.9)] lg:grid-cols-[1.2fr_1fr]">
       <div className="space-y-7 p-6 md:p-8">
         <fieldset>
           <legend className="mb-3 text-sm font-bold">Tipo de festa</legend>
@@ -92,25 +92,31 @@ export function SimuladorDemo({ exemplo }: { exemplo: ExemploSimulador }) {
       </div>
 
       {/* resultado no visual da vitrine (claro neutro, verde-petróleo do buffet de exemplo) */}
-      <div className="tema-claro bg-secondary text-foreground flex flex-col justify-between gap-6 p-6 md:p-8">
+      <div className="bg-primary text-primary-foreground m-2 flex flex-col justify-between gap-6 rounded-[22px] p-6 md:p-8">
         <div aria-live="polite">
-          <p className="text-muted-foreground text-sm">Valor estimado da festa</p>
-          <p className="mt-1 text-4xl font-extrabold tabular-nums" data-testid="simulador-total">
+          <p className="text-sm font-semibold opacity-75">Valor estimado da festa</p>
+          <p
+            className="mt-1 text-5xl font-extrabold tracking-[-0.04em] tabular-nums"
+            data-testid="simulador-total"
+          >
             {r.ok ? formatBRL(r.totalCentavos) : '—'}
           </p>
           {r.ok ? (
-            <ul className="text-muted-foreground mt-3 space-y-1 text-sm">
+            <ul className="mt-3 space-y-1 text-sm font-medium opacity-80">
               <li>{formatBRL(r.porConvidadoCentavos)} por convidado</li>
               <li>Sinal de {formatBRL(r.sinalCentavos)} para reservar a data</li>
               <li>Sábado à tarde, no salão do buffet</li>
             </ul>
           ) : (
-            <p className="text-muted-foreground mt-3 text-sm">{r.erros[0]?.mensagem}</p>
+            <p className="mt-3 text-sm font-medium opacity-80">{r.erros[0]?.mensagem}</p>
           )}
         </div>
         <div className="space-y-3">
-          <p className="text-muted-foreground text-xs">Exemplo com preços fictícios.</p>
-          <BotaoTeste tamanho="medio" className="w-full">
+          <p className="text-xs font-medium opacity-75">Exemplo com preços fictícios.</p>
+          <BotaoTeste
+            tamanho="medio"
+            className="min-h-12 w-full bg-[#0c0c0c] text-[#f4f4f2] hover:bg-black"
+          >
             Quer isso com os seus preços? Teste grátis
           </BotaoTeste>
         </div>
@@ -140,8 +146,8 @@ function Opcao({
         'has-[:focus-visible]:ring-ring/60 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border px-4 text-sm font-semibold transition-colors has-[:focus-visible]:ring-[3px]',
         largo && 'w-full',
         marcado
-          ? 'bg-destaque text-destaque-foreground border-transparent'
-          : 'hover:bg-accent bg-card',
+          ? 'bg-primary text-primary-foreground border-transparent'
+          : 'border-white/15 bg-white/[0.03] hover:bg-white/[0.08]',
       )}
     >
       <input

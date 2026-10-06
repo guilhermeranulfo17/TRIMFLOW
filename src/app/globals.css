@@ -7,8 +7,8 @@
  *   cor do buffet por cima (components/publico/marca.ts);
  * - [data-acesso]: login, cadastro e afins, sempre no escuro da marca;
  * - [data-orkestra-claro]: termos e privacidade, no claro da marca;
- * - [data-landing]: a landing (Etapa 9.6), no claro da marca com fundo off-white quente; as seções
- *   escuras usam a classe .dark (tokens do escuro da marca só naquele trecho);
+ * - [data-landing]: a landing, toda no escuro da marca (desde a landing nova, out/2026) com um
+ *   fundo um pouco mais fundo;
  * - [data-painel][data-tema]: o painel, no tema escolhido (cookie orkestra_tema: escuro, claro ou
  *   sistema; padrão escuro). O marcador fica no servidor: nada pisca.
  * Os blocos de tokens se repetem dentro do @media do "sistema": tests/unit/tema/contraste.test.ts
@@ -21,6 +21,7 @@
     .dark,
     .dark *,
     :root:has([data-acesso]) *,
+    :root:has([data-landing]) *,
     :root:has([data-painel]:not([data-tema='claro'], [data-tema='sistema'])) *
   ) {
     @slot;
@@ -86,6 +87,7 @@
 /* Escuro da marca: grafite, cartões arredondados, verde-limão de destaque, botões em pílula */
 .dark,
 :root:has([data-acesso]),
+:root:has([data-landing]),
 :root:has([data-painel]:not([data-tema='claro'], [data-tema='sistema'])) {
   color-scheme: dark;
   --radius-card: 22px;
@@ -100,10 +102,10 @@
   --popover: #1f1f1f;
   --popover-foreground: #f4f4f2;
 
-  --primary: #3ee42e;
-  --primary-hover: #5cec4f;
+  --primary: #b2f759;
+  --primary-hover: #c2fa7a;
   --primary-foreground: #0c0c0c;
-  --primary-texto: #3ee42e;
+  --primary-texto: #b2f759;
 
   --secondary: #2a2a2a;
   --secondary-foreground: #f4f4f2;
@@ -117,11 +119,11 @@
   --destructive: #ef5350;
   --destructive-foreground: #0c0c0c;
 
-  --success: #3ee42e;
+  --success: #b2f759;
 
   --border: #2c2c2c;
   --input: #3a3a3a;
-  --ring: #3ee42e;
+  --ring: #b2f759;
 
   --sidebar: #141414;
   --sidebar-foreground: #f4f4f2;
@@ -138,7 +140,6 @@
 
 /* Claro da marca: fundo gelo, cartão branco, botão limão com texto grafite, textos em verde escuro */
 :root:has([data-orkestra-claro]),
-:root:has([data-landing]),
 :root:has([data-painel][data-tema='claro']) {
   color-scheme: light;
   --radius-card: 22px;
@@ -153,10 +154,10 @@
   --popover: #ffffff;
   --popover-foreground: #161616;
 
-  --primary: #3ee42e;
-  --primary-hover: #34cc25;
+  --primary: #b2f759;
+  --primary-hover: #a3ec45;
   --primary-foreground: #0c0c0c;
-  --primary-texto: #1a7f12;
+  --primary-texto: #3f6d0a;
 
   --secondary: #eceeea;
   --secondary-foreground: #161616;
@@ -174,7 +175,7 @@
 
   --border: #e1e4de;
   --input: #c9cdc4;
-  --ring: #1a7f12;
+  --ring: #3f6d0a;
 
   --sidebar: #ffffff;
   --sidebar-foreground: #161616;
@@ -189,10 +190,10 @@
   --quente: #9a3412;
 }
 
-/* Landing (Etapa 9.6): o claro da marca com o fundo off-white da marca (#F7F6F2) */
+/* Landing: o escuro da marca com o fundo quase preto das referências */
 :root:has([data-landing]) {
-  --background: #f7f6f2;
-  --landing-fundo: #f7f6f2;
+  --background: #070707;
+  --landing-fundo: #070707;
 }
 
 /* "Seguir o sistema": os mesmos blocos, escolhidos pelo aparelho */
@@ -208,10 +209,10 @@
     --card-foreground: #f4f4f2;
     --popover: #1f1f1f;
     --popover-foreground: #f4f4f2;
-    --primary: #3ee42e;
-    --primary-hover: #5cec4f;
+    --primary: #b2f759;
+    --primary-hover: #c2fa7a;
     --primary-foreground: #0c0c0c;
-    --primary-texto: #3ee42e;
+    --primary-texto: #b2f759;
     --secondary: #2a2a2a;
     --secondary-foreground: #f4f4f2;
     --muted: #232323;
@@ -220,10 +221,10 @@
     --accent-foreground: #f4f4f2;
     --destructive: #ef5350;
     --destructive-foreground: #0c0c0c;
-    --success: #3ee42e;
+    --success: #b2f759;
     --border: #2c2c2c;
     --input: #3a3a3a;
-    --ring: #3ee42e;
+    --ring: #b2f759;
     --sidebar: #141414;
     --sidebar-foreground: #f4f4f2;
     --destaque: #f4f4f2;
@@ -248,10 +249,10 @@
     --card-foreground: #161616;
     --popover: #ffffff;
     --popover-foreground: #161616;
-    --primary: #3ee42e;
-    --primary-hover: #34cc25;
+    --primary: #b2f759;
+    --primary-hover: #a3ec45;
     --primary-foreground: #0c0c0c;
-    --primary-texto: #1a7f12;
+    --primary-texto: #3f6d0a;
     --secondary: #eceeea;
     --secondary-foreground: #161616;
     --muted: #edefeb;
@@ -263,7 +264,7 @@
     --success: #15803d;
     --border: #e1e4de;
     --input: #c9cdc4;
-    --ring: #1a7f12;
+    --ring: #3f6d0a;
     --sidebar: #ffffff;
     --sidebar-foreground: #161616;
     --destaque: #161616;
@@ -444,4 +445,281 @@ dialog.lightbox::backdrop {
 }
 dialog.lightbox::backdrop {
   background: rgb(0 0 0 / 0.9);
+}
+
+/*
+ * Landing nova (out/2026): escuro com o limão da logo. Tudo em CSS (transform, clip-path e
+ * offset-path; opacidade só no que é decoração), desligado com movimento reduzido. O título
+ * (LCP) entra rápido e nunca fica transparente.
+ */
+@keyframes ld-subir {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes ld-flutuar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+@keyframes ld-celular {
+  0%,
+  100% {
+    transform: perspective(1400px) rotateY(-14deg) rotateX(6deg) rotateZ(2deg) translateY(0);
+  }
+  50% {
+    transform: perspective(1400px) rotateY(-10deg) rotateX(4deg) rotateZ(1deg) translateY(-12px);
+  }
+}
+@keyframes ld-chegar {
+  from {
+    transform: translate3d(var(--de-x, 40px), var(--de-y, 0), 0) scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes ld-orbita {
+  to {
+    offset-distance: 100%;
+  }
+}
+@keyframes ld-tracejado {
+  to {
+    stroke-dashoffset: -400;
+  }
+}
+@keyframes ld-desenhar {
+  from {
+    stroke-dashoffset: var(--comprimento, 1000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes ld-faixa {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes ld-pulso {
+  0% {
+    box-shadow: 0 0 0 0 rgb(178 247 89 / 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgb(178 247 89 / 0);
+  }
+}
+@keyframes ld-brilho {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, -4%, 0) scale(1.12);
+  }
+}
+@keyframes ld-girar-preco {
+  from {
+    transform: translateY(0.6em) rotateX(-70deg);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes ld-paralaxe {
+  from {
+    transform: translateY(18%) scale(0.94);
+  }
+  to {
+    transform: translateY(-6%) scale(1);
+  }
+}
+@keyframes ld-revelar {
+  from {
+    transform: translateY(48px);
+    clip-path: inset(0 0 30% 0 round 28px);
+  }
+  to {
+    transform: none;
+    clip-path: inset(0 0 0 0 round 28px);
+  }
+}
+
+/* grade de fundo, apagando nas bordas */
+.ld-grade {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, #000 30%, transparent 75%);
+}
+.ld-brilho {
+  background: radial-gradient(closest-side, rgb(178 247 89 / 0.22), transparent);
+  filter: blur(20px);
+}
+.ld-vidro {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.025));
+  border: 1px solid rgb(255 255 255 / 0.09);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+.ld-flutuante {
+  background: rgb(20 20 20 / 0.88);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 24px 60px -18px rgb(0 0 0 / 0.9);
+}
+.ld-texto-limao {
+  color: var(--primary);
+}
+.ld-contorno {
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(255 255 255 / 0.12);
+}
+
+/* holofote: um brilho limão segue o ponteiro (variáveis --x/--y do Holofote) */
+.ld-holofote {
+  position: relative;
+  isolation: isolate;
+}
+.ld-holofote::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    360px circle at var(--x, 50%) var(--y, -40%),
+    rgb(178 247 89 / 0.13),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.ld-holofote:hover::before {
+  opacity: 1;
+}
+
+/* palavras do título: cada uma sobe de dentro da própria linha */
+.ld-palavra {
+  display: inline-block;
+  overflow: clip;
+  overflow-clip-margin: 0.12em;
+  vertical-align: top;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.ld-palavra > span {
+  display: inline-block;
+}
+
+/* passos 01/02/03: o destaque limão vai para o cartão que está sob o ponteiro */
+.ld-passo {
+  transition:
+    background-color 0.35s,
+    color 0.35s,
+    transform 0.35s;
+}
+.ld-passo[data-destaque],
+.ld-passos:hover .ld-passo:hover {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.ld-passos:hover .ld-passo[data-destaque]:not(:hover) {
+  background-color: transparent;
+  color: var(--foreground);
+}
+.ld-passo .ld-passo-texto {
+  color: var(--muted-foreground);
+  transition: color 0.35s;
+}
+.ld-passo[data-destaque] .ld-passo-texto,
+.ld-passos:hover .ld-passo:hover .ld-passo-texto {
+  color: rgb(12 12 12 / 0.78);
+}
+.ld-passos:hover .ld-passo[data-destaque]:not(:hover) .ld-passo-texto {
+  color: var(--muted-foreground);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ld-palavra > span {
+    animation: ld-subir 0.7s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+    animation-delay: calc(var(--i, 0) * 45ms + 60ms);
+  }
+  .ld-subir {
+    animation: ld-subir 0.8s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+    animation-delay: var(--atraso, 0ms);
+  }
+  .ld-celular {
+    animation: ld-celular 7s ease-in-out infinite;
+  }
+  .ld-flutuar {
+    animation: ld-flutuar 6s ease-in-out infinite;
+    animation-delay: var(--atraso, 0ms);
+  }
+  .ld-chegar {
+    animation: ld-chegar 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: var(--atraso, 0ms);
+  }
+  .ld-orbita {
+    animation: ld-orbita var(--duracao, 9s) linear infinite;
+    animation-delay: var(--atraso, 0ms);
+  }
+  .ld-tracejado {
+    animation: ld-tracejado 14s linear infinite;
+  }
+  .ld-faixa {
+    animation: ld-faixa 38s linear infinite;
+  }
+  .ld-faixa-pai:hover .ld-faixa {
+    animation-play-state: paused;
+  }
+  .ld-pulso {
+    animation: ld-pulso 1.8s ease-out infinite;
+  }
+  .ld-brilho {
+    animation: ld-brilho 14s ease-in-out infinite;
+  }
+  .ld-preco-novo {
+    display: inline-block;
+    transform-origin: 50% 100%;
+    animation: ld-girar-preco 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .ld-cartao {
+    transition:
+      transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 0.3s;
+  }
+  .ld-cartao:hover {
+    transform: translateY(-6px);
+  }
+  @supports (animation-timeline: view()) {
+    .ld-paralaxe {
+      animation: ld-paralaxe linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 55%;
+    }
+    .ld-revelar {
+      animation: ld-revelar linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+    .ld-desenhar {
+      animation: ld-desenhar linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 45%;
+    }
+  }
 }

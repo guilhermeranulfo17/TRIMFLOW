@@ -24,7 +24,7 @@ function temSessao(): boolean {
 }
 
 /**
- * Cabeçalho fixo (transparente sobre o hero, com fundo depois de rolar) e, no celular, a barra
+ * Cabeçalho flutuante em pílula (transparente sobre o hero, vidro escuro depois de rolar) e, no celular, a barra
  * "Testar grátis" depois do hero. Dois marcadores no HTML e IntersectionObserver: nada de
  * listener de scroll.
  */
@@ -56,29 +56,33 @@ export function CascaLanding() {
   return (
     <>
       <header
-        className={cn(
-          'dark text-foreground fixed inset-x-0 top-0 z-40 transition-[background-color,box-shadow] duration-200',
-          rolou ? 'bg-background/90 shadow-lg backdrop-blur' : 'bg-transparent',
-        )}
+        className="text-foreground fixed inset-x-0 top-0 z-40 px-3 pt-3 md:pt-4"
         data-testid="cabecalho-landing"
         data-rolou={rolou}
       >
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 md:px-6">
+        <div
+          className={cn(
+            'mx-auto flex h-14 max-w-5xl items-center gap-3 rounded-full pr-2 pl-5 transition-[background-color,box-shadow,border-color] duration-300',
+            rolou
+              ? 'border border-white/10 bg-[#0c0c0c]/90 shadow-[0_20px_50px_-20px_rgb(0_0_0/0.9)] backdrop-blur-xl'
+              : 'border border-transparent bg-transparent',
+          )}
+        >
           <Link href="/" aria-label="Orkestra, início" className="rounded-md">
             <Logo />
           </Link>
-          <nav aria-label="Seções" className="ml-6 hidden items-center gap-1 lg:flex">
+          <nav aria-label="Seções" className="ml-4 hidden items-center gap-0.5 lg:flex">
             {ANCORAS.map((a) => (
               <a
                 key={a.href}
                 href={a.href}
-                className="text-muted-foreground hover:text-foreground rounded-full px-3 py-2 text-sm font-medium"
+                className="text-muted-foreground hover:text-foreground rounded-full px-3.5 py-2 text-sm font-medium transition-colors hover:bg-white/5"
               >
                 {a.rotulo}
               </a>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1.5">
             {logado ? (
               <Link
                 href="/app/leads"
@@ -91,7 +95,7 @@ export function CascaLanding() {
               <>
                 <Link
                   href="/login"
-                  className="hover:bg-accent inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold"
+                  className="inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold hover:bg-white/5"
                 >
                   Entrar
                 </Link>
@@ -102,7 +106,7 @@ export function CascaLanding() {
             )}
             <details className="relative lg:hidden">
               <summary
-                className="hover:bg-accent grid size-10 cursor-pointer list-none place-items-center rounded-full [&::-webkit-details-marker]:hidden"
+                className="grid size-10 cursor-pointer list-none place-items-center rounded-full hover:bg-white/5 [&::-webkit-details-marker]:hidden"
                 aria-label="Abrir o menu de seções"
               >
                 <Menu className="size-5" aria-hidden />
@@ -129,8 +133,8 @@ export function CascaLanding() {
       {/* celular: depois do hero, o botão fica sempre à mão */}
       <div
         className={cn(
-          'dark fixed inset-x-0 bottom-0 z-40 border-t p-3 transition-transform duration-200 sm:hidden',
-          'bg-background/95 backdrop-blur',
+          'fixed inset-x-0 bottom-0 z-40 border-t p-3 transition-transform duration-200 sm:hidden',
+          'bg-background/90 backdrop-blur-xl',
           passouHero && !logado ? 'translate-y-0' : 'pointer-events-none translate-y-full',
         )}
         // escondida: fora do foco e do leitor de tela (inert), não só invisível

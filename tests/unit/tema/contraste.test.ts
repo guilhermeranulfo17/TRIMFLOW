@@ -101,12 +101,12 @@ describe('tokens do tema', () => {
   }
 });
 
-describe('landing (Etapa 9.6): claro da marca sobre o off-white', () => {
-  const t = { ...TEMAS['claro da marca'], ...bloco(':root:has([data-landing]) {') };
+describe('landing: escuro da marca sobre o fundo quase preto', () => {
+  const t = { ...TEMAS['escuro da marca'], ...bloco(':root:has([data-landing]) {') };
 
   it('o bloco só troca o fundo', () => {
-    expect(t.background).toBe('#f7f6f2');
-    expect(t['landing-fundo']).toBe('#f7f6f2');
+    expect(t.background).toBe('#070707');
+    expect(t['landing-fundo']).toBe('#070707');
   });
 
   it.each(TEXTO.filter(([, fundo]) => fundo === 'background'))(

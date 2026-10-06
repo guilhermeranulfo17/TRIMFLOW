@@ -1,4 +1,5 @@
 import {
+  ArrowUpRight,
   BarChart3,
   BellRing,
   CalendarCheck,
@@ -13,31 +14,53 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { Logo } from '@/components/app/logo';
+import { Logotipo } from '@/components/marca/logotipo';
 import { planoDoRecurso, type PlanoVitrine } from '@/domain/marketing';
 import { cn } from '@/lib/utils';
 import { BotaoTeste, BotaoWhatsappVendas, linkWhatsappVendas } from './ctas';
 
-/** Título de seção: um "sobretítulo" curto em verde e o título. */
+/** Título de seção: um sobretítulo curto com o traço limão e o título grande. */
 export function TituloSecao({
   id,
   sobre,
   titulo,
+  destaque,
   texto,
   centro = false,
 }: {
   id: string;
   sobre: string;
   titulo: string;
+  /** final do título em limão (opcional) */
+  destaque?: string;
   texto?: string;
   centro?: boolean;
 }) {
   return (
-    <div className={cn('max-w-2xl', centro && 'mx-auto text-center')}>
-      <p className="text-primary-texto text-sm font-bold tracking-wide uppercase">{sobre}</p>
-      <h2 id={id} className="mt-2 text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
+    <div className={cn('max-w-3xl', centro && 'mx-auto text-center')}>
+      <p
+        className={cn(
+          'text-primary-texto inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.18em] uppercase',
+        )}
+      >
+        <span aria-hidden className="bg-primary h-px w-8" />
+        {sobre}
+      </p>
+      <h2
+        id={id}
+        className="mt-4 text-[2.1rem] leading-[1.06] font-extrabold tracking-[-0.03em] text-balance sm:text-5xl"
+      >
         {titulo}
+        {destaque && (
+          <>
+            {' '}
+            <span className="ld-texto-limao">{destaque}</span>
+          </>
+        )}
       </h2>
-      {texto && <p className="text-muted-foreground mt-4 text-lg text-pretty">{texto}</p>}
+      {texto && (
+        <p className="text-muted-foreground mt-5 text-lg leading-relaxed text-pretty">{texto}</p>
+      )}
     </div>
   );
 }
@@ -62,19 +85,26 @@ const DORES = [
 
 export function Problema() {
   return (
-    <section className="entrada py-20 md:py-28" aria-labelledby="titulo-problema">
+    <section className="relative py-24 md:py-32" aria-labelledby="titulo-problema">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-problema"
           sobre="Conhece essa rotina?"
-          titulo="O telefone não para, mas a agenda não enche"
+          titulo="O telefone não para,"
+          destaque="mas a agenda não enche."
         />
-        <ul className="mt-12 grid gap-4 md:grid-cols-3">
-          {DORES.map((d) => (
-            <li key={d.titulo} className="bg-card rounded-card border p-6">
-              <d.icone className="text-primary-texto size-7" aria-hidden />
-              <h3 className="mt-4 text-lg font-bold">{d.titulo}</h3>
-              <p className="text-muted-foreground mt-2">{d.texto}</p>
+        <ul className="mt-14 grid gap-4 md:grid-cols-3">
+          {DORES.map((d, i) => (
+            <li
+              key={d.titulo}
+              className="ld-vidro ld-holofote ld-cartao ld-revelar rounded-[28px] p-7"
+              style={{ animationRangeStart: `entry ${i * 10}%` }}
+            >
+              <span className="grid size-12 place-items-center rounded-2xl border border-white/10 bg-white/5">
+                <d.icone className="text-primary-texto size-6" aria-hidden />
+              </span>
+              <h3 className="mt-6 text-xl leading-snug font-bold">{d.titulo}</h3>
+              <p className="text-muted-foreground mt-3 leading-relaxed">{d.texto}</p>
             </li>
           ))}
         </ul>
@@ -98,33 +128,31 @@ const PASSOS = [
   },
 ];
 
+/** Passos 01/02/03: o do meio começa em limão e o destaque segue o ponteiro (CSS). */
 export function ComoFunciona() {
   return (
     <section
       id="como-funciona"
-      className="entrada scroll-mt-20 py-20 md:py-28"
+      className="relative scroll-mt-24 py-24 md:py-32"
       aria-labelledby="titulo-como"
     >
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-como"
           sobre="Como funciona"
-          titulo="Três passos, do link à festa marcada"
+          titulo="Três passos, do link"
+          destaque="à festa marcada."
         />
-        <ol className="mt-12 grid gap-6 md:grid-cols-3">
+        <ol className="ld-passos ld-revelar mt-14 grid overflow-hidden rounded-[28px] border border-white/10 md:grid-cols-3">
           {PASSOS.map((p, i) => (
-            <li key={p.titulo} className="relative">
-              <span className="bg-destaque text-destaque-foreground grid size-11 place-items-center rounded-full text-lg font-extrabold">
-                {i + 1}
-              </span>
-              {i < PASSOS.length - 1 && (
-                <span
-                  aria-hidden
-                  className="bg-border absolute top-5 left-14 hidden h-px w-[calc(100%-4rem)] md:block"
-                />
-              )}
-              <h3 className="mt-5 text-lg font-bold">{p.titulo}</h3>
-              <p className="text-muted-foreground mt-2">{p.texto}</p>
+            <li
+              key={p.titulo}
+              className="ld-passo flex min-h-64 flex-col border-white/10 p-8 not-last:border-b md:not-last:border-r md:not-last:border-b-0"
+              data-destaque={i === 1 || undefined}
+            >
+              <span className="text-4xl font-extrabold tracking-tight tabular-nums">0{i + 1}.</span>
+              <h3 className="mt-auto pt-10 text-xl leading-snug font-bold">{p.titulo}</h3>
+              <p className="ld-passo-texto mt-3 leading-relaxed">{p.texto}</p>
             </li>
           ))}
         </ol>
@@ -139,11 +167,6 @@ export function Funcionalidades({ planos }: { planos: PlanoVitrine[] }) {
   const avisos = profissional('followUp') ?? profissional('whatsappAvisos');
   const numeros = profissional('numerosCompleto');
   const itens = [
-    {
-      icone: Link2,
-      titulo: 'Link de orçamento automático',
-      texto: 'O cliente vê o valor na hora, calculado com os seus pacotes, preços e regras.',
-    },
     {
       icone: CalendarCheck,
       titulo: 'Pré-reserva sem conflito de data',
@@ -168,34 +191,114 @@ export function Funcionalidades({ planos }: { planos: PlanoVitrine[] }) {
       titulo: 'Propostas em PDF com a sua marca',
       texto: 'Proposta na web e em PDF, com validade, condições e o cardápio do pacote.',
     },
-    {
-      icone: BarChart3,
-      titulo: 'Números do mês',
-      texto: 'Quantos abriram o link, quantos pediram orçamento e quantos fecharam.',
-      etiqueta: numeros ? `Completo no ${numeros}` : null,
-    },
   ];
   return (
-    <section className="entrada py-20 md:py-28" aria-labelledby="titulo-funcoes">
+    <section className="relative py-24 md:py-32" aria-labelledby="titulo-funcoes">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-funcoes"
           sobre="O que vem junto"
-          titulo="Tudo o que o buffet precisa para vender, num lugar só"
+          titulo="Tudo o que o buffet precisa para vender,"
+          destaque="num lugar só."
         />
-        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-14 grid gap-4 md:grid-cols-6">
+          {/* o link: cartão grande, com o valor sendo calculado */}
+          <li className="ld-vidro ld-holofote ld-revelar relative overflow-hidden rounded-[28px] p-7 md:col-span-4 md:row-span-2 md:p-9">
+            <Link2 className="text-primary-texto size-7" aria-hidden />
+            <h3 className="mt-6 text-2xl font-bold">Link de orçamento automático</h3>
+            <p className="text-muted-foreground mt-3 max-w-md leading-relaxed">
+              O cliente vê o valor na hora, calculado com os seus pacotes, preços e regras. De dia,
+              de noite e no fim de semana.
+            </p>
+            <div aria-hidden className="mt-10 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div className="space-y-2.5">
+                {[
+                  ['Pacote Super', '60 convidados'],
+                  ['Mesa de doces', 'opcional'],
+                  ['Hora extra', '1 h'],
+                ].map(([a, b]) => (
+                  <div
+                    key={a}
+                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm"
+                  >
+                    <span className="font-semibold">{a}</span>
+                    <span className="text-white/55">{b}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-primary text-primary-foreground rounded-3xl px-6 py-5">
+                <p className="text-xs font-semibold opacity-75">Total na hora</p>
+                <p className="text-3xl font-extrabold tracking-tight tabular-nums">R$ 4.900</p>
+              </div>
+            </div>
+          </li>
+          {/* números: gráfico desenhando ao rolar */}
+          <li className="ld-vidro ld-holofote ld-revelar relative overflow-hidden rounded-[28px] p-7 md:col-span-2 md:row-span-2">
+            <div className="flex items-start justify-between gap-3">
+              <BarChart3 className="text-primary-texto size-7" aria-hidden />
+              {numeros && (
+                <span className="rounded-full border border-white/15 px-2.5 py-1 text-xs font-bold">
+                  Completo no {numeros}
+                </span>
+              )}
+            </div>
+            <h3 className="mt-6 text-xl font-bold">Números do mês</h3>
+            <p className="text-muted-foreground mt-3 leading-relaxed">
+              Quantos abriram o link, quantos pediram orçamento e quantos fecharam.
+            </p>
+            <svg aria-hidden viewBox="0 0 240 120" className="mt-8 w-full overflow-visible">
+              <defs>
+                <linearGradient id="ld-area" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stopColor="#B2F759" stopOpacity="0.28" />
+                  <stop offset="1" stopColor="#B2F759" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0 100 C 30 96, 45 70, 75 74 S 120 92, 145 60 S 200 20, 240 14 L 240 120 L 0 120 Z"
+                fill="url(#ld-area)"
+              />
+              <path
+                d="M0 100 C 30 96, 45 70, 75 74 S 120 92, 145 60 S 200 20, 240 14"
+                fill="none"
+                stroke="#B2F759"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="400"
+                className="ld-desenhar"
+                style={{ ['--comprimento' as string]: 400 }}
+              />
+              {[
+                [75, 74],
+                [145, 60],
+                [240, 14],
+              ].map(([x, y]) => (
+                <circle
+                  key={x}
+                  cx={x}
+                  cy={y}
+                  r="4.5"
+                  fill="#070707"
+                  stroke="#B2F759"
+                  strokeWidth="2"
+                />
+              ))}
+            </svg>
+          </li>
           {itens.map((f) => (
-            <li key={f.titulo} className="bg-card rounded-card border p-6">
+            <li
+              key={f.titulo}
+              className="ld-vidro ld-holofote ld-cartao ld-revelar rounded-[28px] p-7 md:col-span-3"
+            >
               <div className="flex items-start justify-between gap-3">
                 <f.icone className="text-primary-texto size-7" aria-hidden />
                 {f.etiqueta && (
-                  <span className="bg-destaque text-destaque-foreground rounded-full px-2.5 py-1 text-xs font-bold">
+                  <span className="rounded-full border border-white/15 px-2.5 py-1 text-xs font-bold">
                     {f.etiqueta}
                   </span>
                 )}
               </div>
-              <h3 className="mt-4 text-lg font-bold">{f.titulo}</h3>
-              <p className="text-muted-foreground mt-2">{f.texto}</p>
+              <h3 className="mt-6 text-xl font-bold">{f.titulo}</h3>
+              <p className="text-muted-foreground mt-3 leading-relaxed">{f.texto}</p>
             </li>
           ))}
         </ul>
@@ -214,31 +317,48 @@ const ESTILOS = [
   { chave: 'limpo', nome: 'Limpo', texto: 'Direto e leve, para qualquer buffet.' },
 ] as const;
 
+const INCLINACAO = [
+  'md:-rotate-6 md:translate-y-8',
+  'md:-translate-y-2',
+  'md:rotate-6 md:translate-y-8',
+];
+
 export function SuaPagina() {
   return (
-    <section className="entrada py-20 md:py-28" aria-labelledby="titulo-pagina">
-      <div className="mx-auto max-w-6xl px-4 md:px-6">
+    <section className="relative overflow-hidden py-24 md:py-32" aria-labelledby="titulo-pagina">
+      <div
+        aria-hidden
+        className="ld-brilho pointer-events-none absolute top-1/2 left-1/2 size-[46rem] -translate-x-1/2 rounded-full opacity-70"
+      />
+      <div className="relative mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-pagina"
           sobre="Sua página, sua cara"
-          titulo="O seu cliente vê uma página bonita, com a cor e as fotos do seu buffet"
+          titulo="O seu cliente vê uma página bonita,"
+          destaque="com a cor e as fotos do seu buffet."
           texto="Logo, capa, pacotes, galeria, perguntas frequentes e o botão de orçamento. Você escolhe o estilo e muda quando quiser."
+          centro
         />
-        <ul className="-mx-4 mt-12 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0">
-          {ESTILOS.map((e) => (
-            <li key={e.chave} className="w-64 shrink-0 snap-center md:w-auto">
-              <div className="mx-auto w-full max-w-[17rem] overflow-hidden rounded-[2rem] border-[6px] border-[#1a1a1a] bg-white shadow-xl">
+        <ul className="-mx-4 mt-16 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-6 md:mx-0 md:grid md:grid-cols-3 md:gap-2 md:overflow-visible md:px-0">
+          {ESTILOS.map((e, i) => (
+            <li key={e.chave} className="group w-64 shrink-0 snap-center md:w-auto md:hover:z-10">
+              <div
+                className={cn(
+                  'mx-auto w-full max-w-[16.5rem] overflow-hidden rounded-[2.2rem] border-[7px] border-[#1c1c1c] bg-white shadow-[0_40px_90px_-30px_rgb(0_0_0/0.95)] ring-1 ring-white/10 transition-transform duration-500 md:group-hover:translate-y-0 md:group-hover:scale-105 md:group-hover:rotate-0',
+                  INCLINACAO[i],
+                )}
+              >
                 <Image
                   src={`/landing/vitrine-${e.chave}-640.webp`}
                   alt={`Página de um buffet no estilo ${e.nome.toLowerCase()}, vista no celular`}
                   width={640}
                   height={1280}
-                  sizes="(min-width: 768px) 272px, 256px"
+                  sizes="(min-width: 768px) 264px, 256px"
                   loading="lazy"
                   className="h-auto w-full"
                 />
               </div>
-              <p className="mt-4 text-center font-bold">{e.nome}</p>
+              <p className="mt-6 text-center font-bold md:mt-14">{e.nome}</p>
               <p className="text-muted-foreground text-center text-sm">{e.texto}</p>
             </li>
           ))}
@@ -323,31 +443,35 @@ export function Perguntas({ planos, diasTeste }: { planos: PlanoVitrine[]; diasT
   return (
     <section
       id="perguntas"
-      className="entrada scroll-mt-20 py-20 md:py-28"
+      className="relative scroll-mt-24 py-24 md:py-32"
       aria-labelledby="titulo-perguntas"
     >
-      <div className="mx-auto max-w-3xl px-4 md:px-6">
-        <TituloSecao
-          id="titulo-perguntas"
-          sobre="Perguntas frequentes"
-          titulo="Ficou alguma dúvida?"
-        />
-        <div className="rounded-card bg-card mt-10 divide-y border">
+      <div className="mx-auto grid max-w-6xl gap-12 px-4 md:px-6 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          <TituloSecao
+            id="titulo-perguntas"
+            sobre="Perguntas frequentes"
+            titulo="Ficou alguma"
+            destaque="dúvida?"
+            texto="Se a sua não estiver aqui, chame a gente no WhatsApp."
+          />
+        </div>
+        <div className="space-y-3">
           {perguntas.map((q) => (
             <details
               key={q.p}
-              className="group px-5 py-1 [&_summary::-webkit-details-marker]:hidden"
+              className="group ld-vidro rounded-3xl px-6 py-1 transition-colors open:border-[rgb(178_247_89/0.35)] [&_summary::-webkit-details-marker]:hidden"
             >
-              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 text-base font-semibold">
+              <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-3 text-base font-semibold">
                 {q.p}
                 <span
                   aria-hidden
-                  className="text-primary-texto text-2xl leading-none transition-transform group-open:rotate-45"
+                  className="group-open:bg-primary group-open:text-primary-foreground grid size-8 shrink-0 place-items-center rounded-full border border-white/15 text-xl leading-none transition-[transform,background-color] duration-300 group-open:rotate-45"
                 >
                   +
                 </span>
               </summary>
-              <p className="text-muted-foreground max-w-prose pb-5 leading-relaxed">{q.r}</p>
+              <p className="text-muted-foreground max-w-prose pb-6 leading-relaxed">{q.r}</p>
             </details>
           ))}
         </div>
@@ -359,29 +483,33 @@ export function Perguntas({ planos, diasTeste }: { planos: PlanoVitrine[]; diasT
 export function ChamadaFinal({ diasTeste }: { diasTeste: number }) {
   return (
     <section
-      className="dark bg-background text-foreground py-20 md:py-28"
-      style={{
-        backgroundImage:
-          'radial-gradient(50% 60% at 50% 100%, rgb(62 228 46 / 0.14), transparent 70%)',
-      }}
+      className="relative overflow-hidden px-3 py-16 md:py-24"
       aria-labelledby="titulo-final"
     >
-      <div className="mx-auto max-w-3xl px-4 text-center md:px-6">
-        <h2
-          id="titulo-final"
-          className="text-3xl font-extrabold tracking-tight text-balance sm:text-5xl"
-        >
-          Seu próximo cliente já está pedindo orçamento.
-        </h2>
-        <p className="text-muted-foreground mt-5 text-lg">Deixe o link responder por você.</p>
-        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <BotaoTeste>Testar {diasTeste} dias grátis</BotaoTeste>
-          <BotaoWhatsappVendas className="min-h-13 px-7 text-base" />
+      <div className="bg-primary text-primary-foreground ld-revelar relative mx-auto max-w-6xl overflow-hidden rounded-[36px] px-6 py-16 text-center md:px-12 md:py-24">
+        <Logotipo
+          titulo=""
+          className="pointer-events-none absolute -bottom-6 left-1/2 w-[140%] max-w-none -translate-x-1/2 text-black/[0.07]"
+        />
+        <div className="relative">
+          <h2
+            id="titulo-final"
+            className="mx-auto max-w-3xl text-4xl leading-[1.04] font-extrabold tracking-[-0.035em] text-balance sm:text-6xl"
+          >
+            Seu próximo cliente já está pedindo orçamento.
+          </h2>
+          <p className="mt-5 text-lg font-medium opacity-80">Deixe o link responder por você.</p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <BotaoTeste className="bg-[#0c0c0c] text-[#f4f4f2] hover:bg-black">
+              Testar {diasTeste} dias grátis
+            </BotaoTeste>
+            <BotaoWhatsappVendas className="min-h-13 border-black/25 px-7 text-base hover:bg-black/5" />
+          </div>
+          <p className="mt-7 flex items-center justify-center gap-2 text-sm font-semibold opacity-80">
+            <Clock className="size-4" aria-hidden />
+            Seu link fica pronto em minutos.
+          </p>
         </div>
-        <p className="text-muted-foreground mt-6 flex items-center justify-center gap-2 text-sm">
-          <Clock className="size-4" aria-hidden />
-          Seu link fica pronto em minutos.
-        </p>
       </div>
     </section>
   );
@@ -392,45 +520,59 @@ export function Rodape() {
   const email = process.env.NEXT_PUBLIC_EMAIL_CONTATO || null;
   const razao = process.env.NEXT_PUBLIC_RAZAO_SOCIAL || null;
   return (
-    <footer className="dark bg-background text-foreground border-t pt-12 pb-24 sm:pb-12">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 md:flex-row md:items-start md:justify-between md:px-6">
-        <div className="space-y-3">
+    <footer className="bg-background text-foreground relative overflow-hidden border-t border-white/10 pt-14 pb-24 sm:pb-14">
+      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 md:flex-row md:items-start md:justify-between md:px-6">
+        <div className="space-y-4">
           <Logo />
           <p className="text-muted-foreground max-w-xs text-sm">
             Orçamento que vira festa marcada. Feito no Brasil para buffets de festas.
           </p>
         </div>
-        <nav aria-label="Rodapé" className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
-          <Link href="/login" className="hover:underline">
+        <nav aria-label="Rodapé" className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm">
+          <Link href="/login" className="hover:text-primary-texto transition-colors">
             Entrar
           </Link>
-          <Link href="/cadastro" className="hover:underline" data-cta-teste>
+          <Link
+            href="/cadastro"
+            className="hover:text-primary-texto transition-colors"
+            data-cta-teste
+          >
             Testar grátis
           </Link>
-          <Link href="/termos" className="hover:underline">
+          <Link href="/termos" className="hover:text-primary-texto transition-colors">
             Termos de uso
           </Link>
-          <Link href="/privacidade" className="hover:underline">
+          <Link href="/privacidade" className="hover:text-primary-texto transition-colors">
             Privacidade
           </Link>
-          <Link href="/subprocessadores" className="hover:underline">
+          <Link href="/subprocessadores" className="hover:text-primary-texto transition-colors">
             Subprocessadores
           </Link>
           {whats && (
-            <a href={whats} target="_blank" rel="noopener noreferrer" className="hover:underline">
+            <a
+              href={whats}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary-texto inline-flex items-center gap-1 transition-colors"
+            >
               WhatsApp
+              <ArrowUpRight className="size-3.5" aria-hidden />
             </a>
           )}
           {email && (
-            <a href={`mailto:${email}`} className="hover:underline">
+            <a href={`mailto:${email}`} className="hover:text-primary-texto transition-colors">
               {email}
             </a>
           )}
         </nav>
       </div>
-      <p className="text-muted-foreground mx-auto mt-10 max-w-6xl px-4 text-xs md:px-6">
+      <p className="text-muted-foreground mx-auto mt-12 max-w-6xl px-4 text-xs md:px-6">
         © {new Date().getFullYear()} Orkestra{razao ? ` · ${razao}` : ''}
       </p>
+      <Logotipo
+        titulo=""
+        className="pointer-events-none mx-auto mt-10 block w-[92%] max-w-6xl text-white/[0.04]"
+      />
     </footer>
   );
 }

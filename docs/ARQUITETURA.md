@@ -1525,3 +1525,31 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
   `/app/contratos/novo?orcamento=` (prévia com o que falta destacado, exigir código, validade) →
   "Assinar e enviar" → link, WhatsApp com mensagem pronta e copiar. Lista, detalhe, modelos,
   avisos e Números ficam no PR 2.
+
+## 71. Marca nova e landing nova (outubro de 2026)
+
+Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing.
+
+- **Cor do produto = grafite + limão `#B2F759`** (tirado da arte oficial do logotipo), no lugar do
+  `#3EE42E`. Escuro: `--primary` e `--primary-texto` `#B2F759`, hover `#C2FA7A`, texto preto por
+  cima. Claro: botão `#B2F759` com texto preto, hover `#A3EC45`, e texto/anel na cor da marca em
+  `#3F6D0A` (o limão sobre branco não passa no AA; o teste de contraste confere). Vale também para
+  e-mails, OG, ícones do app e o selo "Orkestra" do rodapé público e da proposta.
+- **Logotipo** (`components/marca/logotipo.tsx`): o nome em caixa alta com o E de três barras,
+  traçado da arte oficial (contorno vetorial, sem fonte, `currentColor`); cópia em
+  `public/marca/orkestra-logotipo.svg`. `Logo` usa o logotipo; `Logo compacto` (cabeçalho do
+  celular) usa o **símbolo**: o "O" do logotipo em preto sobre o limão. Ícones do PWA, apple-icon e
+  favicon saem do símbolo por `node scripts/icones.mjs`.
+- **Landing toda escura** (`[data-landing]` usa os tokens do escuro da marca, com fundo `#070707`).
+  Hero com grade e brilho limão, título entrando palavra por palavra (só `transform`, o LCP nunca
+  fica transparente), celular em 3D com órbitas (`offset-path`) e os avisos do buffet chegando;
+  faixa limão inclinada com os recursos; passos 01/02/03 com o destaque limão seguindo o ponteiro;
+  bento de funcionalidades; vitrines em leque; preços em cartões de vidro sobre a palavra "Preços"
+  gigante (paralaxe por `animation-timeline: view()`), com o valor girando ao trocar mensal/anual;
+  chamada final num bloco limão.
+- **Animação só com CSS** (classes `ld-*` em `globals.css`), tudo dentro de
+  `prefers-reduced-motion: no-preference`; opacidade só em decoração. Duas ilhas pequenas:
+  `Holofote` (um ouvinte de ponteiro para o brilho que segue o mouse nos cartões) e
+  `ContadorValor` (o total do celular correndo). Nenhuma dependência nova.
+- Nada inventado continua valendo: os números do hero e do bento são "Dados de exemplo"
+  (decoração com `aria-hidden`), preços só de `planos_vitrine`.

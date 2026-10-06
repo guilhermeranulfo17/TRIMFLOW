@@ -35,7 +35,7 @@ export function AbasSegmento({ segmentos }: { segmentos: Segmento[] }) {
       <div
         role="tablist"
         aria-label="Tipos de buffet"
-        className="bg-card -mx-1 flex gap-1 overflow-x-auto rounded-full border p-1"
+        className="ld-vidro -mx-1 flex gap-1 overflow-x-auto rounded-full p-1"
       >
         {segmentos.map((s, i) => (
           <button
@@ -53,7 +53,7 @@ export function AbasSegmento({ segmentos }: { segmentos: Segmento[] }) {
             onKeyDown={(e) => teclado(e, i)}
             className={cn(
               'focus-visible:ring-ring/60 min-h-11 flex-1 shrink-0 rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:outline-none',
-              ativo === i ? 'bg-destaque text-destaque-foreground' : 'hover:bg-accent',
+              ativo === i ? 'bg-primary text-primary-foreground' : 'hover:bg-white/5',
             )}
           >
             {s.rotulo}
@@ -68,9 +68,9 @@ export function AbasSegmento({ segmentos }: { segmentos: Segmento[] }) {
           aria-labelledby={`${id}-aba-${i}`}
           hidden={ativo !== i}
           tabIndex={0}
-          className="bg-card rounded-card mt-4 border p-6 md:p-8"
+          className="ld-vidro ld-holofote mt-4 rounded-[28px] p-7 md:p-10"
         >
-          <h3 className="text-xl font-bold">{s.titulo}</h3>
+          <h3 className="text-2xl font-bold tracking-tight">{s.titulo}</h3>
           <ul className="mt-5 space-y-3">
             {s.frases.map((f) => (
               <li key={f} className="flex items-start gap-3">

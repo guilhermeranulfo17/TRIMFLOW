@@ -15,7 +15,7 @@ export function AppHeader({
   return (
     <header className="bg-background/90 sticky top-0 z-20 flex h-16 items-center justify-between gap-3 px-4 backdrop-blur md:px-8">
       <div className="flex min-w-0 items-center gap-3">
-        <Logo className="md:hidden [&>span:last-child]:sr-only" />
+        <Logo compacto className="md:hidden" />
         <p className="truncate text-base font-bold" data-testid="nome-buffet">
           {nomeBuffet}
         </p>

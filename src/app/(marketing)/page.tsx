@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { CascaLanding } from '@/components/marketing/casca';
 import { BotaoWhatsappVendas } from '@/components/marketing/ctas';
-import { Hero } from '@/components/marketing/hero';
+import { FaixaRecursos, Hero } from '@/components/marketing/hero';
+import { Holofote } from '@/components/marketing/holofote';
 import { Precos } from '@/components/marketing/precos';
 import { RastreioLanding } from '@/components/marketing/rastreio';
 import {
@@ -93,18 +94,20 @@ export default async function Landing() {
       <CascaLanding />
       <main>
         <Hero demoSlug={demoSlug} diasTeste={DIAS_TESTE_GRATIS} />
+        <FaixaRecursos />
         <Problema />
         <ComoFunciona />
 
-        <section className="entrada py-20 md:py-28" aria-labelledby="titulo-demo">
+        <section className="relative py-24 md:py-32" aria-labelledby="titulo-demo">
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <TituloSecao
               id="titulo-demo"
               sobre="Experimente agora"
-              titulo="É isso que o seu cliente vê"
+              titulo="É isso que o seu"
+              destaque="cliente vê."
               texto="Mexa nas opções: o valor muda na hora, do mesmo jeito que no link do seu buffet."
             />
-            <div className="mt-10">
+            <div className="ld-revelar mt-14">
               <SimuladorDemo exemplo={exemplo} />
             </div>
           </div>
@@ -114,14 +117,15 @@ export default async function Landing() {
 
         <section
           id="para-quem"
-          className="entrada scroll-mt-20 py-20 md:py-28"
+          className="relative scroll-mt-24 py-24 md:py-32"
           aria-labelledby="titulo-para-quem"
         >
           <div className="mx-auto max-w-4xl px-4 md:px-6">
             <TituloSecao
               id="titulo-para-quem"
               sobre="Para quem é"
-              titulo="Feito para quem vive de festa"
+              titulo="Feito para quem"
+              destaque="vive de festa."
             />
             <AbasSegmento segmentos={SEGMENTOS} />
           </div>
@@ -131,25 +135,39 @@ export default async function Landing() {
 
         <section
           id="precos"
-          className="dark bg-background text-foreground scroll-mt-16 py-20 md:py-28"
+          className="relative scroll-mt-20 overflow-hidden py-24 md:py-32"
           aria-labelledby="titulo-precos"
         >
           <div className="mx-auto max-w-6xl px-4 md:px-6">
-            <TituloSecao
+            <p className="text-primary-texto text-center text-xs font-bold tracking-[0.18em] uppercase">
+              Comece grátis. Assine só se fizer sentido.
+            </p>
+            <p className="text-muted-foreground mx-auto mt-3 max-w-xl text-center">
+              {DIAS_TESTE_GRATIS} dias com todos os recursos, sem cartão. Depois, escolha o plano.
+            </p>
+            {/* a palavra gigante fica atrás dos cartões de vidro (o desfoque aparece nela) */}
+            <h2
               id="titulo-precos"
-              sobre="Preços"
-              titulo="Comece grátis. Assine só se fizer sentido."
-              texto={`${DIAS_TESTE_GRATIS} dias com todos os recursos, sem cartão. Depois, escolha o plano.`}
-              centro
-            />
-            <Precos
-              planos={planos}
-              selo={seloAnual(planos)}
-              fundador={fundador}
-              implantacaoCentavos={VALOR_IMPLANTACAO_CENTAVOS}
-              diasTeste={DIAS_TESTE_GRATIS}
-              semDados={!precos || planos.length === 0}
-            />
+              className="ld-paralaxe pointer-events-none relative mt-2 pb-[0.14em] text-center text-[25vw] leading-[0.86] font-extrabold tracking-[-0.07em] select-none lg:text-[15.5rem]"
+              style={{
+                backgroundImage: 'linear-gradient(180deg, #ffffff 35%, rgb(255 255 255 / 0.32) 92%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              Preços
+            </h2>
+            <div className="relative -mt-[3vw] lg:-mt-10">
+              <Precos
+                planos={planos}
+                selo={seloAnual(planos)}
+                fundador={fundador}
+                implantacaoCentavos={VALOR_IMPLANTACAO_CENTAVOS}
+                diasTeste={DIAS_TESTE_GRATIS}
+                semDados={!precos || planos.length === 0}
+              />
+            </div>
             {(!precos || planos.length === 0) && (
               <div className="mt-6 flex justify-center">
                 <BotaoWhatsappVendas>Ver preços no WhatsApp</BotaoWhatsappVendas>
@@ -163,6 +181,7 @@ export default async function Landing() {
       </main>
       <Rodape />
       <RastreioLanding />
+      <Holofote />
       <script
         type="application/ld+json"
         // JSON montado no servidor a partir dos planos (sem texto do usuário)
