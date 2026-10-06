@@ -150,7 +150,8 @@ export default async function Landing() {
               id="titulo-precos"
               className="ld-paralaxe pointer-events-none relative mt-2 pb-[0.14em] text-center text-[25vw] leading-[0.86] font-extrabold tracking-[-0.07em] select-none lg:text-[15.5rem]"
               style={{
-                backgroundImage: 'linear-gradient(180deg, #ffffff 35%, rgb(255 255 255 / 0.32) 92%)',
+                backgroundImage:
+                  'linear-gradient(180deg, #ffffff 35%, rgb(255 255 255 / 0.32) 92%)',
                 WebkitBackgroundClip: 'text',
                 backgroundClip: 'text',
                 color: 'transparent',
