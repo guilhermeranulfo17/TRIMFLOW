@@ -171,7 +171,7 @@ function FormVisita({ leadId, fechar }: { leadId: string; fechar: () => void }) 
   );
 }
 
-function FormPerdido({
+export function FormPerdido({
   leadId,
   temPreReserva,
   fechar,

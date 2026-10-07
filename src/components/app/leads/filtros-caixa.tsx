@@ -102,23 +102,26 @@ function Controles({
           )}
         </div>
       </fieldset>
-      <fieldset>
-        <legend className="mb-1.5 text-sm font-semibold">Status</legend>
-        <div className="flex flex-wrap gap-2">
-          {STATUS_LEAD.map((s: StatusLead) => (
-            <Chip
-              key={s}
-              ativo={!!f.status?.includes(s)}
-              onClick={() => mudar({ status: alternar(f.status, s) })}
-            >
-              {ROTULO_STATUS_LEAD[s]}
-            </Chip>
-          ))}
-        </div>
-        <p className="text-muted-foreground mt-1 text-xs">
-          Sem status marcado, a caixa mostra só os leads em negociação.
-        </p>
-      </fieldset>
+      {/* no funil a coluna já é a etapa: o filtro de status não se aplica */}
+      {f.visao !== 'funil' && (
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-semibold">Status</legend>
+          <div className="flex flex-wrap gap-2">
+            {STATUS_LEAD.map((s: StatusLead) => (
+              <Chip
+                key={s}
+                ativo={!!f.status?.includes(s)}
+                onClick={() => mudar({ status: alternar(f.status, s) })}
+              >
+                {ROTULO_STATUS_LEAD[s]}
+              </Chip>
+            ))}
+          </div>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Sem status marcado, a caixa mostra só os leads em negociação.
+          </p>
+        </fieldset>
+      )}
       <fieldset>
         <legend className="mb-1.5 text-sm font-semibold">Temperatura</legend>
         <div className="flex flex-wrap gap-2">
@@ -286,7 +289,7 @@ export function FiltrosCaixa({
           <button
             type="button"
             className="text-primary-texto inline-flex min-h-9 items-center gap-1 font-semibold"
-            onClick={() => ir({})}
+            onClick={() => ir({ visao: filtros.visao })}
           >
             <X className="size-4" aria-hidden />
             Limpar
@@ -313,7 +316,9 @@ export function FiltrosCaixa({
           <Button
             type="button"
             variant="outline"
-            onClick={() => setRascunho({ busca: filtros.busca, atalho: filtros.atalho })}
+            onClick={() =>
+              setRascunho({ busca: filtros.busca, atalho: filtros.atalho, visao: filtros.visao })
+            }
           >
             Limpar
           </Button>

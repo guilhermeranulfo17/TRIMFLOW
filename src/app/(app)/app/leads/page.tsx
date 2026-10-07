@@ -1,16 +1,25 @@
-import { Inbox, ListTodo, UsersRound } from 'lucide-react';
+import { Columns3, Inbox, List, ListTodo, UsersRound } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { EmptyState } from '@/components/app/empty-state';
 import { ChecklistPainel } from '@/components/app/onboarding/checklist-painel';
 import { FiltrosCaixa } from '@/components/app/leads/filtros-caixa';
+import { FunilLeads } from '@/components/app/leads/funil-leads';
 import { ListaCaixa } from '@/components/app/leads/lista-caixa';
 import { TopoHoje } from '@/components/app/leads/topo-hoje';
-import { contarFiltros, filtrosDaUrl, filtrosParaUrl } from '@/domain/leads/filtros';
+import { podeEscrever } from '@/domain/cobranca/situacao';
+import {
+  contarFiltros,
+  filtrosDaUrl,
+  filtrosParaUrl,
+  type FiltrosCaixa as Filtros,
+} from '@/domain/leads/filtros';
+import { cn } from '@/lib/utils';
 import { exigirSessao } from '@/server/auth/sessao';
 import { comUsuario } from '@/server/db/tenant';
 import { listarCaixa, resumoHoje, usuariosDaEmpresa } from '@/server/leads/carregar';
+import { carregarFunil } from '@/server/leads/funil';
 import { carregarChecklist } from '@/server/onboarding/carregar';
 
 export const metadata: Metadata = { title: 'Leads' };
@@ -34,21 +43,27 @@ export default async function LeadsPage({ searchParams }: Props) {
   // (PendenteLink) e nos filtros (transição).
   // Tudo numa transação só (uma leva em pipeline). A página não usa o contexto do painel: ele
   // fica no layout, atrás de Suspense.
-  const [resumo, pagina, usuarios, checklist] = await comUsuario(usuario.id, (tx) =>
+  const funil = filtros.visao === 'funil';
+  const [resumo, pagina, colunas, usuarios, checklist] = await comUsuario(usuario.id, (tx) =>
     Promise.all([
       resumoHoje(usuario, tx),
-      listarCaixa(usuario, filtros, null, 30, tx),
+      funil ? null : listarCaixa(usuario, filtros, null, 30, tx),
+      funil ? carregarFunil(usuario, filtros, tx) : null,
       usuariosDaEmpresa(usuario, tx),
       carregarChecklist(usuario, tx),
     ]),
   );
   const semFiltro = contarFiltros(filtros) === 0 && !filtros.busca && !filtros.atalho;
-  const vazioTotal = semFiltro && pagina.cartoes.length === 0;
+  const vazioTotal = semFiltro && (pagina ? pagina.cartoes.length === 0 : false);
+  const somenteLeitura = usuario.empresa.demo || !podeEscrever(usuario.empresa.situacao);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight">Leads</h1>
+    <div className={cn('mx-auto flex flex-col gap-4', funil ? 'max-w-7xl' : 'max-w-3xl')}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-extrabold tracking-tight">Leads</h1>
+          <AlternarVisao filtros={filtros} />
+        </div>
         <div className="flex gap-2">
           {/* no celular Clientes não cabe na barra de baixo: o atalho fica aqui */}
           <Link
@@ -74,9 +89,11 @@ export default async function LeadsPage({ searchParams }: Props) {
         </div>
       </div>
       <ChecklistPainel usuario={usuario} checklist={checklist} />
-      <TopoHoje resumo={resumo} filtros={filtros} />
+      {!funil && <TopoHoje resumo={resumo} filtros={filtros} />}
       <FiltrosCaixa filtros={filtros} usuarios={usuarios} />
-      {vazioTotal ? (
+      {colunas ? (
+        <FunilLeads colunas={colunas} somenteLeitura={somenteLeitura} />
+      ) : vazioTotal || !pagina ? (
         <EmptyState icone={Inbox} titulo="Caixa em dia">
           Nenhum lead em negociação agora. Quando alguém montar um orçamento pelo seu link, ou você
           criar um pelo botão <strong>+ Orçamento</strong>, ele aparece aqui na ordem de quem
@@ -94,5 +111,41 @@ export default async function LeadsPage({ searchParams }: Props) {
         <ListaCaixa key={filtrosParaUrl(filtros)} inicial={pagina} filtros={filtros} />
       )}
     </div>
+  );
+}
+
+/** Lista (quem atender primeiro) ou Funil (onde está cada negociação), com os mesmos filtros. */
+function AlternarVisao({ filtros }: { filtros: Filtros }) {
+  const opcoes = [
+    { visao: undefined, rotulo: 'Lista', Icone: List },
+    { visao: 'funil' as const, rotulo: 'Funil', Icone: Columns3 },
+  ];
+  return (
+    <nav aria-label="Visão dos leads" className="bg-muted flex rounded-full p-0.5">
+      {opcoes.map(({ visao, rotulo, Icone }) => {
+        const ativo = filtros.visao === visao;
+        // o atalho do topo "Hoje" só existe na lista
+        const qs = filtrosParaUrl({
+          ...filtros,
+          visao,
+          atalho: visao ? undefined : filtros.atalho,
+        });
+        return (
+          <Link
+            key={rotulo}
+            href={`/app/leads${qs ? `?${qs}` : ''}`}
+            aria-current={ativo ? 'page' : undefined}
+            className={cn(
+              'inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold',
+              ativo ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+            data-testid={`visao-${visao ?? 'lista'}`}
+          >
+            <Icone className="size-4" aria-hidden />
+            {rotulo}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
