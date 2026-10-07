@@ -249,3 +249,10 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Recibo em PDF do pagamento para o cliente.
 - Despesas da festa (fornecedores, equipe) e lucro por festa; exportar o financeiro em planilha.
 - Cartão do financeiro em Números (recebido por mês, inadimplência).
+
+## Depois da Etapa 12 (clientes)
+
+- Aviso ao vendedor (tarefa automática) quando um cliente entra em "hora de chamar de novo".
+- Data de aniversário do aniversariante (campo próprio), em vez de usar a data da festa.
+- Juntar à mão dois cadastros da mesma pessoa (WhatsApp trocado) e editar o contato do cliente.
+- Exportar a lista de clientes em planilha.

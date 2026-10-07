@@ -66,6 +66,10 @@ const LIMITE: Record<string, number> = {
   // Etapa 11: Financeiro (reservas, parcelas e recebimentos em pipeline) e a festa
   financeiro: 3,
   financeiro_festa: 3,
+  // Etapa 12: Clientes (uma consulta) e a ficha (festas; contratos, planos, recebimentos e lead
+  // em pipeline)
+  clientes: 2,
+  cliente: 3,
 };
 
 describe('idas ao banco por tela', () => {
@@ -208,6 +212,23 @@ describe('idas ao banco por tela', () => {
     expect(
       await medir('financeiro_festa', () => carregarFinanceiroDaFesta(u, r!.id)),
     ).toBeLessThanOrEqual(LIMITE.financeiro_festa!);
+  });
+
+  it('clientes: lista e ficha', async () => {
+    const u = await usuarioDono();
+    const { carregarClientes, carregarFichaCliente } = await import('@/server/clientes/carregar');
+    const { obterDb } = await import('@/server/db/client');
+    const { sql } = await import('drizzle-orm');
+    const [r] = await obterDb().execute<{ id: string }>(
+      sql`select id from public.reservas where empresa_id = ${IDS.empresaA}
+        and tipo = 'confirmada' and status in ('ativa', 'realizada') limit 1`,
+    );
+    expect(await medir('clientes', () => carregarClientes(u))).toBeLessThanOrEqual(
+      LIMITE.clientes!,
+    );
+    expect(await medir('cliente', () => carregarFichaCliente(u, r!.id))).toBeLessThanOrEqual(
+      LIMITE.cliente!,
+    );
   });
 
   it('landing (preços da vitrine)', async () => {

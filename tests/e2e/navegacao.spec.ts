@@ -8,6 +8,8 @@ type Area = {
   vazio?: string;
   botao?: string;
   lista?: string;
+  /** fora da barra do celular (o acesso lá é por atalho) */
+  soMenuLateral?: boolean;
 };
 
 const AREAS: Area[] = [
@@ -19,6 +21,14 @@ const AREAS: Area[] = [
     url: /\/app\/contratos$/,
     titulo: 'Contratos',
     lista: 'filtros-contratos',
+  },
+  // Etapa 12: clientes (reservas confirmadas do seed); no celular o acesso é pelo atalho de Leads
+  {
+    rotulo: 'Clientes',
+    url: /\/app\/clientes$/,
+    titulo: 'Clientes',
+    lista: 'lista-clientes',
+    soMenuLateral: true,
   },
   // Números do Buffet Demo vêm do seed (Etapa 8): confere os cartões.
   { rotulo: 'Números', url: /\/app\/numeros$/, titulo: 'Números', lista: 'cartoes-numeros' },
@@ -32,7 +42,7 @@ const AREAS: Area[] = [
   { rotulo: 'Leads', url: /\/app\/leads$/, titulo: 'Leads', lista: 'lista-leads' },
 ];
 
-test('navega pelas áreas do menu sem rolagem horizontal', async ({ page }) => {
+test('navega pelas áreas do menu sem rolagem horizontal', async ({ page }, info) => {
   await entrar(page, 'dono@demo.local', SENHA_SEED);
   await expect(page.getByTestId('nome-buffet')).toHaveText('Buffet Demo');
 
@@ -40,6 +50,7 @@ test('navega pelas áreas do menu sem rolagem horizontal', async ({ page }) => {
   await expect(nav).toBeVisible();
 
   for (const area of AREAS) {
+    if (area.soMenuLateral && info.project.name === 'celular') continue;
     await nav.getByRole('link', { name: area.rotulo }).click();
     await expect(page).toHaveURL(area.url);
     await expect(page.getByRole('heading', { name: area.titulo, level: 1 })).toBeVisible();

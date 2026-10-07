@@ -1627,3 +1627,27 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   receber, atrasados, vence em 30 dias, quitados, todos; festas do último ano em diante) e
   `/app/financeiro/[reservaId]` (resumo, parcelas, montar ou editar o plano, registrar pagamento,
   estornar). Menu lateral só do dono; no celular, atalho na Agenda e "Pagamentos da festa" no lead.
+
+## 73. Clientes (Etapa 12)
+
+- **O que é:** a lista de quem já fechou festa, com todas as festas de cada pessoa, e o lembrete
+  de chamar de novo quando a festa faz um ano (aniversário infantil se repete todo ano). Sem
+  migration: só leitura das tabelas que já existem (reservas e leads, RLS da empresa).
+- **Quem é cliente** (`domain/clientes`, puro e testado): pessoa com pelo menos uma reserva
+  confirmada, ativa ou realizada. As festas se juntam pelo lead; a reserva feita direto na
+  Agenda (sem lead) entra no lead do mesmo WhatsApp e, sem lead, fica agrupada pelo próprio
+  WhatsApp (sem WhatsApp, a reserva é um cliente sozinha). Lead de teste e lead anonimizado
+  (LGPD) ficam de fora. O id da ficha é o do lead ou, sem lead, o da reserva mais recente
+  (`/app/clientes/[id]` aceita os dois); assim não há tabela nova nem telefone na URL.
+- **Hora de chamar de novo:** sem festa marcada, o aniversário da última festa (1, 2, 3… anos)
+  cai entre 30 dias atrás e 60 dias à frente, e o lead não está negociando de novo (novo, em
+  andamento ou pré-reservado). A mensagem pronta (`mensagemFestaDeNovo`) só abre o WhatsApp:
+  nada é enviado sozinho.
+- **Telas:** `/app/clientes` (busca por nome sem acento ou 4+ dígitos do telefone; filtros hora
+  de chamar, com festa marcada, todos; 50 por vez com "Mostrar mais") e `/app/clientes/[id]`
+  (resumo, festas com contrato e pagamento, chamar no WhatsApp, "Nova festa" abre o orçamento
+  com nome e WhatsApp, pelo lead ou pela reserva: `/app/orcamentos/novo?reserva=`). Dono e
+  vendedor veem; valores, contrato e pagamentos só o dono. Menu lateral; no celular, atalho em
+  Leads.
+- **Idas ao banco:** a lista é uma consulta (agrupamento em memória: um buffet tem centenas de
+  festas por ano, não milhares); a ficha soma contratos, planos, recebimentos e lead em pipeline.
