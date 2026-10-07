@@ -564,7 +564,9 @@ describe('LGPD e rotina diária', () => {
       const aberto = await emitir(tx, b, { exigeCodigo: true });
       const fechado = await emitir(tx, b);
       expect((await assinar(tx, fechado.token)).ok).toBe(true);
-      await tx`update public.reservas set data = current_date - 1 where lead_id = ${b.lead}`;
+      // ontem no fuso da empresa (o banco confere "reserva futura" nele; current_date é UTC)
+      await tx`update public.reservas
+        set data = (now() at time zone 'America/Sao_Paulo')::date - 1 where lead_id = ${b.lead}`;
 
       const exportado = await como(tx, IDS.donoA, async () => {
         const [l] = await tx`select public.lgpd_exportar_lead(${b.lead}) as j`;

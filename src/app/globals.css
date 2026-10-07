@@ -723,3 +723,49 @@ dialog.lightbox::backdrop {
     }
   }
 }
+
+/*
+ * Telas de acesso (login, cadastro, recuperar e nova senha): cartão de vidro sobre o fundo
+ * animado (components/auth/fundo-acesso), entrada suave e pontos limão subindo.
+ */
+[data-acesso] [data-slot='card'] {
+  background: linear-gradient(180deg, rgb(26 26 26 / 0.78), rgb(16 16 16 / 0.82));
+  border-color: rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    0 40px 100px -30px rgb(0 0 0 / 0.95),
+    0 0 0 1px rgb(178 247 89 / 0.04);
+}
+@keyframes fa-subir {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  to {
+    transform: translateY(-105vh) scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes fa-entrar {
+  from {
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    transform: none;
+  }
+}
+.fa-ponto {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fa-ponto {
+    animation: fa-subir var(--duracao, 10s) linear infinite;
+  }
+  .fa-entrar {
+    animation: fa-entrar 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}

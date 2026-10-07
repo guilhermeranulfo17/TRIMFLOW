@@ -10,11 +10,12 @@ import { semRolagemHorizontal } from './helpers';
 test.describe('no PC (1440)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('login mostra a promessa do produto ao lado do formulário', async ({ page }) => {
+  test('login: logotipo e formulário no cartão central, com o e-mail em foco', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByRole('heading', { name: /Orçamento que vira/ })).toBeVisible();
-    await expect(page.getByText('Você só entra quando ele quer reservar.')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Orkestra, início' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Entrar' })).toBeVisible();
     await expect(page.getByLabel('E-mail')).toBeFocused();
+    await expect(page.getByLabel('Senha', { exact: true })).toHaveAttribute('type', 'password');
     expect(await semRolagemHorizontal(page)).toBe(true);
   });
 
