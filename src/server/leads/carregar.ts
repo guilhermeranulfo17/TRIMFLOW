@@ -1,4 +1,5 @@
 import 'server-only';
+import { carregarContratosDoLead, type LinhaContrato } from '@/server/contratos/painel';
 import type { SituacaoMensagem } from '@/domain/leads/mensagens';
 import { and, asc, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import { diaDaSemana, formatData, hojeNoFuso } from '@/domain/dates';
@@ -343,6 +344,8 @@ export type DetalheLead = {
   tarefas: TarefaDoLead[];
   notas: NotaDoLead[];
   reservas: ReservaAgenda[];
+  /** Etapa 10: contratos do lead (só o dono; vazio para o vendedor) */
+  contratos: LinhaContrato[];
   atividades: AtividadeDoLead[];
   /** usuários ativos da empresa (atribuir responsável) */
   usuarios: { id: string; nome: string }[];
@@ -396,6 +399,7 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
       listaAtividades,
       equipe,
       reservasDoLead,
+      contratosDoLead,
     ] = await Promise.all([
       tx
         .select({ l: leads, responsavelNome: usuarios.nome })
@@ -448,6 +452,7 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
         .where(eq(usuarios.ativo, true))
         .orderBy(asc(usuarios.nome)),
       reservasAtivasDoLead(usuario, id, tx),
+      carregarContratosDoLead(usuario, id, tx),
     ]);
     if (!l) return null;
     return {
@@ -460,6 +465,7 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
       listaAtividades,
       equipe,
       reservasDoLead,
+      contratosDoLead,
     };
   });
   if (!dados) return null;
@@ -473,6 +479,7 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
     listaAtividades,
     equipe,
     reservasDoLead,
+    contratosDoLead,
   } = dados;
   const l = linha.l;
 
@@ -594,6 +601,7 @@ export async function carregarLead(usuario: UsuarioAtual, id: string): Promise<D
       };
     }),
     reservas: reservasDoLead,
+    contratos: contratosDoLead,
     atividades: listaAtividades.map(({ a, quem }) => ({
       id: a.id,
       tipo: a.tipo,

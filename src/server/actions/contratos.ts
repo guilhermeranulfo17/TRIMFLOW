@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
 import { z } from 'zod';
+import { opcoesContratoSchema } from '@/domain/contratos/opcoes';
 import { analisarModelo, TAMANHO_MAXIMO_MODELO } from '@/domain/contratos/variaveis';
 import { mensagemEnvioContrato, mensagemLembreteContrato } from '@/domain/contratos/mensagens';
 import { linkWhatsApp } from '@/domain/publico/whatsapp';
@@ -229,6 +230,7 @@ export const modeloSchema = z.object({
     .regex(/^[a-z_]+@[0-9]{1,4}$/)
     .nullish(),
   ativo: z.boolean().default(true),
+  opcoes: opcoesContratoSchema,
 });
 
 /** Salva o modelo da empresa (novo = cópia do modelo do sistema). Variáveis conferidas aqui. */
@@ -250,6 +252,7 @@ export async function salvarModeloContrato(
         texto: v.dados.texto.replace(/\r\n/g, '\n'),
         origem: v.dados.origem ?? null,
         ativo: v.dados.ativo,
+        opcoes: v.dados.opcoes,
       };
       const id = await comUsuario(dono.id, async (tx) => {
         const [l] = await tx.execute<{ id: string }>(

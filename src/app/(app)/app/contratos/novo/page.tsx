@@ -6,6 +6,7 @@ import { TituloPagina } from '@/components/app/titulo-pagina';
 import { AVISO_MODELO, VARIAVEIS } from '@/domain/contratos';
 import { exigirPerfil } from '@/server/auth/guards';
 import { preparoSchema, prepararContrato } from '@/server/contratos/emitir';
+import { carregarDetalheContrato } from '@/server/contratos/painel';
 import { comUsuario } from '@/server/db/tenant';
 
 export const metadata: Metadata = { title: 'Gerar contrato' };
@@ -20,9 +21,15 @@ export default async function NovoContratoPage({ searchParams }: Props) {
   const busca = await searchParams;
   const dono = await exigirPerfil('dono');
   const entrada = preparoSchema.safeParse({ orcamentoId: busca.orcamento });
-  const prep = entrada.success
-    ? await comUsuario(dono.id, (tx) => prepararContrato(dono, entrada.data, tx))
-    : null;
+  const substituiId = typeof busca.substitui === 'string' ? busca.substitui : null;
+  const [prep, anterior] = entrada.success
+    ? await comUsuario(dono.id, (tx) =>
+        Promise.all([
+          prepararContrato(dono, entrada.data, tx),
+          substituiId ? carregarDetalheContrato(dono, substituiId, tx) : null,
+        ]),
+      )
+    : [null, null];
 
   if (!prep) {
     return (
@@ -58,6 +65,11 @@ export default async function NovoContratoPage({ searchParams }: Props) {
         completaveis={prep.completaveis}
         rotulos={rotulos}
         usoImagem={prep.modelo.opcoes.usoImagem}
+        substitui={
+          anterior && anterior.leadId === prep.origem.leadId
+            ? { id: anterior.id, codigo: anterior.codigo }
+            : null
+        }
       />
     </>
   );

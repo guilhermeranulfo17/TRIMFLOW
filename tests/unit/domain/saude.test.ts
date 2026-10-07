@@ -28,6 +28,7 @@ const OK: DadosSaude = {
   ],
   asaasConfigurado: true,
   planosVitrine: true,
+  contratosChave: true,
 };
 
 describe('intervaloMinutos', () => {
@@ -61,7 +62,22 @@ describe('avaliarSaude', () => {
     expect(avaliarSaude({ ...OK, asaasConfigurado: false }, AGORA).ok).toBe(false);
     const fora = avaliarSaude({ ...OK, banco: false, filaAtrasoMin: null, jobs: null }, AGORA);
     expect(fora.ok).toBe(false);
-    expect(fora.itens.map((i) => i.item)).toEqual(['banco', 'asaas', 'planos_vitrine']);
+    expect(fora.itens.map((i) => i.item)).toEqual([
+      'banco',
+      'asaas',
+      'planos_vitrine',
+      'contratos_chave',
+    ]);
+  });
+
+  it('sem CONTRATOS_CHAVE = falha (o cliente não consegue assinar)', () => {
+    const s = avaliarSaude({ ...OK, contratosChave: false }, AGORA);
+    expect(s.ok).toBe(false);
+    expect(s.itens.find((i) => i.item === 'contratos_chave')).toEqual({
+      item: 'contratos_chave',
+      ok: false,
+      detalhe: 'CONTRATOS_CHAVE ausente ou inválida',
+    });
   });
 
   it('job atrasado, desligado ou com falha; sem execução ainda passa', () => {

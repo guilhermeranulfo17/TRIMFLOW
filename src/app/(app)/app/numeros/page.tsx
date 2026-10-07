@@ -5,6 +5,7 @@ import { LinhaDoLink } from '@/components/app/divulgacao/linha-do-link';
 import { EmptyState } from '@/components/app/empty-state';
 import { Atendimento } from '@/components/app/numeros/atendimento';
 import { CartoesDono, CartoesVendedor } from '@/components/app/numeros/cartoes';
+import { ContratosNumeros } from '@/components/app/numeros/contratos';
 import { Funil } from '@/components/app/numeros/funil';
 import { DatasLivres, Ocupacao } from '@/components/app/numeros/ocupacao';
 import { MotivosDePerda, PorOrigem } from '@/components/app/numeros/origem-motivos';
@@ -55,7 +56,13 @@ async function ConteudoNumeros({
   const dono = usuario.perfil === 'dono';
   const link = `${siteUrl()}/b/${usuario.empresa.slug}`;
   // Essencial: cartões e funil; o resto é do Profissional (teste = Profissional)
-  const { numeros: n, ocupacao, usuarios, recursos } = await carregarTelaNumeros(usuario, de, ate);
+  const {
+    numeros: n,
+    ocupacao,
+    usuarios,
+    recursos,
+    contratos,
+  } = await carregarTelaNumeros(usuario, de, ate);
   const completo = recursos.numerosCompleto;
   const nomes = new Map(usuarios.map((u) => [u.id, u.nome]));
   const vazio = n.resumo.visitas === 0 && n.resumo.leads === 0 && n.resumo.reservas === 0;
@@ -127,6 +134,7 @@ async function ConteudoNumeros({
           {ocupacao && <DatasLivres o={ocupacao} buffet={usuario.empresa.nome} link={link} />}
         </div>
       )}
+      {dono && contratos && <ContratosNumeros m={contratos} />}
       {!dono && <Atendimento total={n.atendimento.total} porVendedor={[]} nomes={nomes} />}
     </>
   );

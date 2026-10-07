@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
+import { SeloStatusContrato } from '@/components/app/contratos/selo-contrato';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -232,6 +233,30 @@ export default async function LeadPage({ params }: Props) {
           <p className="text-muted-foreground mt-1 text-sm">Nenhum orçamento concluído ainda.</p>
         )}
       </section>
+
+      {lead.contratos.length > 0 && (
+        <section aria-labelledby="titulo-contratos">
+          <h2 id="titulo-contratos" className="font-bold">
+            Contratos
+          </h2>
+          <ul className="divide-y" data-testid="contratos-lead">
+            {lead.contratos.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/app/contratos/${c.id}`}
+                  className="hover:bg-accent/50 flex min-h-11 flex-wrap items-center justify-between gap-2 py-2"
+                >
+                  <span className="text-sm font-semibold tabular-nums">
+                    Contrato {c.codigo}
+                    {c.versao > 1 && <span className="text-muted-foreground"> · v{c.versao}</span>}
+                  </span>
+                  <SeloStatusContrato status={c.status} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <LinhaDoTempo itens={tempo} leadId={lead.id} />
 

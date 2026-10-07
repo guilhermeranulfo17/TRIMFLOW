@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { avaliarSaude, type JobCron, type Saude } from '@/domain/observabilidade/saude';
 import { configAsaas } from '@/server/cobranca/config';
 import { obterDb } from '@/server/db/client';
+import { chaveContratos } from '@/server/env';
 import { lerPrecosVitrine } from '@/server/marketing/carregar';
 
 /*
@@ -15,6 +16,7 @@ export type DepsSaude = {
   lerBanco: () => Promise<{ fila_atraso_min: number; jobs: JobCron[] | null }>;
   lerPlanos: () => Promise<{ planos: unknown[] }>;
   asaasConfigurado: () => boolean;
+  contratosChave?: () => boolean;
   agora?: () => Date;
 };
 
@@ -27,6 +29,7 @@ export const depsSaude = (): DepsSaude => ({
   },
   lerPlanos: () => lerPrecosVitrine(),
   asaasConfigurado: () => configAsaas() !== null,
+  contratosChave: () => chaveContratos() !== null,
 });
 
 async function tentar<T>(fn: () => Promise<T>, ms = 5000): Promise<T | null> {
@@ -49,6 +52,7 @@ export async function verificarSaude(d: DepsSaude): Promise<Saude> {
       jobs: banco?.jobs ?? null,
       asaasConfigurado: d.asaasConfigurado(),
       planosVitrine: !!planos && planos.planos.length > 0,
+      contratosChave: d.contratosChave?.() ?? true,
     },
     d.agora?.() ?? new Date(),
   );

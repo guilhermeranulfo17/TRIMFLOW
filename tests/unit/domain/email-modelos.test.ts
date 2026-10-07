@@ -16,6 +16,11 @@ const DADOS: Record<string, Record<string, unknown>> = {
   conta_suspensa: {},
   exportacao_pronta: {},
   exclusao_agendada: { exclusao_em: '2026-11-03T12:00:00Z' },
+  contrato_assinado: {
+    lead_nome: 'Ana <Lima>',
+    contrato: '2026-0007',
+    contrato_id: '7f1c6a2e-1b1a-4c55-9d3e-2a8f1e0c9b11',
+  },
 };
 
 describe('modelos de e-mail', () => {
@@ -29,6 +34,15 @@ describe('modelos de e-mail', () => {
     expect(e.texto).toContain(SITE);
     expect(e.html).not.toMatch(/undefined|null|NaN/);
     expect(e.texto).not.toMatch(/undefined|null|NaN/);
+  });
+
+  it('contrato assinado leva ao contrato no painel e escapa o nome', () => {
+    const e = montarEmail('contrato_assinado', DADOS.contrato_assinado!, { site: SITE })!;
+    expect(e.html).toContain(
+      'https://orkestra.app/app/contratos/7f1c6a2e-1b1a-4c55-9d3e-2a8f1e0c9b11',
+    );
+    expect(e.html).toContain('Ana &lt;Lima&gt;');
+    expect(e.assunto).toBe('Contrato assinado: Ana <Lima>');
   });
 
   it('boas-vindas leva o link do buffet e escapa o nome', () => {

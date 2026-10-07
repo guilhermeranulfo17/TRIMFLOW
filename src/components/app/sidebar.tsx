@@ -6,11 +6,18 @@ import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import { BadgePendencia } from './badge-pendencia';
 import { PendenteLink } from './pendente-link';
-import { itemAtivo, ITENS_NAV } from './nav-items';
+import { itemAtivo, itensNav } from './nav-items';
 
 /** Navegação lateral (desktop, ≥ md). */
-export function Sidebar({ badges = {} }: { badges?: Record<string, number> }) {
+export function Sidebar({
+  badges = {},
+  dono = false,
+}: {
+  badges?: Record<string, number>;
+  dono?: boolean;
+}) {
   const pathname = usePathname();
+  const itens = itensNav(dono);
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col p-3 md:flex">
       <div className="bg-sidebar rounded-card flex flex-1 flex-col px-3 py-5">
@@ -18,7 +25,7 @@ export function Sidebar({ badges = {} }: { badges?: Record<string, number> }) {
           <Logo />
         </Link>
         <nav aria-label="Principal" className="flex flex-col gap-1">
-          {ITENS_NAV.map(({ href, rotulo, icone: Icone }) => {
+          {itens.map(({ href, rotulo, icone: Icone }) => {
             const ativo = itemAtivo(pathname, href);
             return (
               <Link

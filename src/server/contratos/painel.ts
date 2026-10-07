@@ -2,9 +2,11 @@ import 'server-only';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import {
   MODELOS_PADRAO,
+  lerOpcoes,
   lerResumo,
   numeroContrato,
   origemModelo,
+  type OpcoesContrato,
   type ResumoContrato,
   type StatusContrato,
 } from '@/domain/contratos';
@@ -368,6 +370,7 @@ export type ModeloEdicao = {
   origem: string | null;
   versao: number;
   ativo: boolean;
+  opcoes: OpcoesContrato;
 };
 
 /** Um modelo da empresa para editar, ou uma cópia nova do modelo do sistema (id null). */
@@ -386,6 +389,7 @@ export async function carregarModeloParaEditar(
       origem: origemModelo(p),
       versao: 1,
       ativo: true,
+      opcoes: p.opcoes,
     };
   }
   if (!/^[0-9a-f-]{36}$/i.test(ref.id)) return null;
@@ -404,6 +408,7 @@ export async function carregarModeloParaEditar(
           origem: m.origem,
           versao: m.versao,
           ativo: m.ativo,
+          opcoes: lerOpcoes(m.opcoes),
         }
       : null;
   });

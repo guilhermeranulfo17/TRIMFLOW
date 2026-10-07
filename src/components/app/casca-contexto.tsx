@@ -20,11 +20,11 @@ async function badgesDe(usuario: UsuarioAtual) {
 }
 
 export async function SidebarComBadges({ usuario }: { usuario: UsuarioAtual }) {
-  return <Sidebar badges={await badgesDe(usuario)} />;
+  return <Sidebar badges={await badgesDe(usuario)} dono={usuario.perfil === 'dono'} />;
 }
 
 export async function BottomNavComBadges({ usuario }: { usuario: UsuarioAtual }) {
-  return <BottomNav badges={await badgesDe(usuario)} />;
+  return <BottomNav badges={await badgesDe(usuario)} dono={usuario.perfil === 'dono'} />;
 }
 
 export async function SinoComContagem({ usuario }: { usuario: UsuarioAtual }) {
