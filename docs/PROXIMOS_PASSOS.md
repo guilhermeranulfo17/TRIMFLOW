@@ -256,3 +256,11 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Data de aniversário do aniversariante (campo próprio), em vez de usar a data da festa.
 - Juntar à mão dois cadastros da mesma pessoa (WhatsApp trocado) e editar o contato do cliente.
 - Exportar a lista de clientes em planilha.
+
+## Depois da Etapa 13 (funil)
+
+- Etapas personalizadas por buffet (o dono criar e renomear colunas), conciliando com as regras
+  automáticas de status.
+- Lembrar a visão escolhida (Lista ou Funil) por usuário.
+- Arrastar também no celular (toque longo) e reordenar dentro da coluna.
+- Taxa de conversão entre etapas e tempo médio em cada uma (em Números).

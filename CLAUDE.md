@@ -37,7 +37,7 @@ src/
     (aceite)/app/aceite/  aceite dos Termos e da Privacidade novos (Etapa 9B)
     (marketing)/     landing em `/` (Etapa 9.6): página de vendas estática, imagem de compartilhamento
     (onboarding)/app/comecar/  onboarding guiado em 5 passos (tela cheia, sem menu)
-    (app)/app/       área logada: leads (caixa) e leads/[id] (detalhe com ações), tarefas, agenda
+    (app)/app/       área logada: leads (caixa em Lista ou Funil) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
                      [id]/editar, [id]/pdf), avisos (histórico), conta/avisos e conta/seguranca
                      (Minha conta: avisos e MFA), numeros (Números), leads/[id]/exportar (LGPD),
@@ -99,6 +99,7 @@ src/
                      status do lead (= regra do SQL), página (estilo, perguntas automáticas,
                      limites e diferenciais = regra do SQL, JSON-LD)
     leads/           caixa e ações: prioridade (grupo e motivo, = regra do SQL), filtros da URL,
+                     funil (etapa = regra do SQL, movimentos),
                      mensagens prontas, motivos de perda, adiar, temperatura por inatividade,
                      linha do tempo
     contratos/       contrato digital: variáveis do modelo, valores por extenso, status, hash
@@ -285,7 +286,9 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   são travados juntos, a ordem é sempre agenda → lead.
 - **Caixa de leads:** grupo e ordem existem no SQL (`_lead_grupo`, `_lead_ordem`) e em
   `domain/leads/prioridade`; temperatura por inatividade em `_temperatura_inatividade` e
-  `domain/leads/temperatura`. Testes de equivalência: mudou uma, mude a outra. Componente
+  `domain/leads/temperatura`; etapa do funil (Etapa 13, §74) em `_funil_etapa` e
+  `domain/leads/funil` (mover o card chama a ação de verdade, nunca grava status). Testes de
+  equivalência: mudou uma, mude a outra. Componente
   cliente de Leads importa módulos específicos de `domain/leads` (nunca o índice) e nunca
   `domain/phone`: o telefone chega formatado do servidor.
 - **Sessão (Etapa 9.5):** `getClaims()` (JWT validado localmente) no middleware e em

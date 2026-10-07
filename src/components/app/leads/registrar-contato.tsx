@@ -29,26 +29,7 @@ export function BotaoRegistrarContato({
   onVolta?: () => void;
   className?: string;
 }) {
-  const toast = useToast();
   const [aberto, setAberto] = useState(false);
-  const [resumo, setResumo] = useState('');
-  const [, iniciar] = useTransition();
-
-  function registrar(canal: (typeof CANAIS)[number]['valor']) {
-    setAberto(false);
-    onOtimista?.();
-    iniciar(async () => {
-      const r = await registrarContato(leadId, { canal, resumo });
-      if (r.ok) {
-        toast.sucesso(r.mensagem);
-        setResumo('');
-      } else {
-        onVolta?.();
-        toast.erro(r.erro);
-      }
-    });
-  }
-
   return (
     <>
       <button
@@ -61,6 +42,55 @@ export function BotaoRegistrarContato({
       >
         Registrar contato
       </button>
+      <FolhaRegistrarContato
+        leadId={leadId}
+        aberto={aberto}
+        onAbertoChange={setAberto}
+        onOtimista={onOtimista}
+        onVolta={onVolta}
+      />
+    </>
+  );
+}
+
+/** A folha do "Registrar contato" (também aberta pelo funil ao mover o card). */
+export function FolhaRegistrarContato({
+  leadId,
+  aberto,
+  onAbertoChange: setAberto,
+  onOtimista,
+  onVolta,
+  onOk,
+}: {
+  leadId: string;
+  aberto: boolean;
+  onAbertoChange: (v: boolean) => void;
+  onOtimista?: () => void;
+  onVolta?: () => void;
+  onOk?: () => void;
+}) {
+  const toast = useToast();
+  const [resumo, setResumo] = useState('');
+  const [, iniciar] = useTransition();
+
+  function registrar(canal: (typeof CANAIS)[number]['valor']) {
+    setAberto(false);
+    onOtimista?.();
+    iniciar(async () => {
+      const r = await registrarContato(leadId, { canal, resumo });
+      if (r.ok) {
+        toast.sucesso(r.mensagem);
+        setResumo('');
+        onOk?.();
+      } else {
+        onVolta?.();
+        toast.erro(r.erro);
+      }
+    });
+  }
+
+  return (
+    <>
       <Folha
         aberto={aberto}
         onAbertoChange={setAberto}

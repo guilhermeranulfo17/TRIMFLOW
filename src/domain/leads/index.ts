@@ -198,6 +198,7 @@ export function descreverAtividade(
 export * from './adiar';
 export * from './exibicao';
 export * from './filtros';
+export * from './funil';
 export * from './mensagens';
 export * from './motivos-perda';
 export * from './prioridade';
