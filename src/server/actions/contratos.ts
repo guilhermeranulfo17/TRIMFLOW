@@ -201,6 +201,8 @@ export async function verCpfContrato(id: string): Promise<ResultadoAcao<{ cpf: s
       return l ? decifrarCpf(l.doc, l.hash) : null;
     });
     if (!cpf) return { ok: false, erro: 'Não foi possível abrir o CPF deste contrato.' };
+    // o histórico do contrato ganha "viu o CPF completo"
+    revalidatePath(`/app/contratos/${id}`);
     const d = cpf.replace(/\D/g, '');
     return {
       ok: true,

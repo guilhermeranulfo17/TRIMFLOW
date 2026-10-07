@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type postgres from 'postgres';
 import { afterAll, describe, expect, it } from 'vitest';
+import { CANAIS_PADRAO, TIPOS_CONFIGURAVEIS } from '@/domain/avisos/canais';
 import { normalizarTexto } from '@/domain/contratos/integridade';
 import { contratoDeExemplo } from '@/domain/contratos/exemplo';
 import { metricasContratos } from '@/domain/numeros/contratos';
@@ -185,6 +186,23 @@ describe('assinatura imutável', () => {
             where contrato_id = ${a.id} and parte = 'buffet'`,
         ),
       ).rejects.toThrow('CONTRATO_IMUTAVEL');
+    });
+  });
+});
+
+describe('preferências de aviso', () => {
+  it('o banco aceita todo tipo configurável do domínio (inclusive os do contrato)', async () => {
+    await emTransacao(sql, async (tx) => {
+      const canais = Object.fromEntries(TIPOS_CONFIGURAVEIS.map((t) => [t, CANAIS_PADRAO[t]]));
+      await como(
+        tx,
+        IDS.donoA,
+        () =>
+          tx`select public.salvar_preferencias_avisos(${tx.json(canais)}, '22:00', '07:00', false)`,
+      );
+      const [p] =
+        await tx`select canais from public.preferencias_avisos where usuario_id = ${IDS.donoA}`;
+      expect(Object.keys(p!.canais as object).sort()).toEqual([...TIPOS_CONFIGURAVEIS].sort());
     });
   });
 });
