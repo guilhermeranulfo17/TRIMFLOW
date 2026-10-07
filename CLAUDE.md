@@ -41,7 +41,8 @@ src/
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
                      [id]/editar, [id]/pdf), avisos (histórico), conta/avisos e conta/seguranca
                      (Minha conta: avisos e MFA), numeros (Números), leads/[id]/exportar (LGPD),
-                     contratos (novo: prévia e envio; [id]/pdf)
+                     contratos (lista com filtros, [id] detalhe com ações e
+                     histórico, [id]/pdf, novo: prévia e envio, modelos)
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, follow-up, usuarios, plano (assinar, faturas,
                      cancelar, acesso do suporte), simulador, privacidade (+ exportar: ZIP),
@@ -340,7 +341,10 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `CATALOGO_ITEM_EM_USO`; telas usam `carregarEmUso`).
 - Temperatura por aberturas existe no SQL (`_temperatura_aberturas`) e em
   `domain/proposta/temperatura`, com teste de equivalência: mudou uma, mude a outra.
-- **Contratos (Etapa 10, §70):** escrita só por funções (`emitir_contrato`, `cancelar_contrato`,
+- **Contratos (Etapa 10, §70):** painel só do dono (menu "Contratos"; vendedor vê só o selo na
+  Agenda por `status_contrato_da_reserva`). Avisos do contrato nascem da auditoria (trigger
+  `_contrato_avisar`, nunca na demo nem em teste); `numeros_contratos` = `metricasContratos`
+  (equivalência). Escrita só por funções (`emitir_contrato`, `cancelar_contrato`,
   `novo_link_contrato`, `salvar_contrato_modelo`, `publico.contrato_*`). Texto e hash congelados
   no envio (trigger); para mudar, cancelar e emitir outro. O texto é montado no servidor
   (`server/contratos/emitir`); o navegador só manda o que faltava. Token do link só como hash;

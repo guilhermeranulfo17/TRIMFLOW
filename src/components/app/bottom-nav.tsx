@@ -23,13 +23,14 @@ export function BottomNav({
       className="bg-sidebar fixed inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <ul className={cn('grid', itens.length > 4 ? 'grid-cols-5' : 'grid-cols-4')}>
-        {itens.map(({ href, rotulo, icone: Icone }) => {
+        {itens.map(({ href, rotulo, curto, icone: Icone }) => {
           const ativo = itemAtivo(pathname, href);
           return (
             <li key={href}>
               <Link
                 href={href}
                 aria-current={ativo ? 'page' : undefined}
+                aria-label={rotulo}
                 className={cn(
                   'flex h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] leading-tight font-semibold',
                   ativo ? 'text-foreground' : 'text-muted-foreground',
@@ -48,7 +49,7 @@ export function BottomNav({
                   />
                 </span>
                 <span className="flex max-w-full items-center gap-1 truncate">
-                  {rotulo}
+                  {itens.length > 4 ? (curto ?? rotulo) : rotulo}
                   <PendenteLink className="size-3" />
                 </span>
               </Link>

@@ -606,6 +606,8 @@ describe('LGPD e rotina diária', () => {
       const [st] = await tx`select status from public.contratos where id = ${a.id}`;
       expect(st!.status).toBe('expirado');
 
+      // só os contratos deste teste (a demo pode ter um contrato concluído de exemplo)
+      await tx`delete from public.contratos where empresa_id <> ${IDS.empresaA}`;
       // festa (valores.data = 2026-12-12) + 5 anos e 1 dia
       const [r2] = await tx`select public.contratos_rotina('2031-12-14T12:00:00Z') as r`;
       expect(r2!.r).toMatchObject({ anonimizados: 1 });

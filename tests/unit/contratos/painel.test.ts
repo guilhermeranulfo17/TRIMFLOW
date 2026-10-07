@@ -202,5 +202,17 @@ describe('contrato de exemplo da demo', () => {
     });
     expect(c.modeloOrigem).toBe('infantil@1');
     expect(hashTexto(c.texto)).toMatch(/^[0-9a-f]{64}$/);
+    // sem WhatsApp na reserva: nada faltando mesmo assim
+    const s = contratoDeExemplo({
+      buffet: 'B',
+      cliente: 'C D',
+      whatsappE164: null,
+      data: '2026-11-14',
+      convidados: null,
+      totalCentavos: 100000,
+      sinalCentavos: 30000,
+      hoje: '2026-10-07',
+    });
+    expect(s.texto).not.toMatch(/\[\[FALTA:|\{\{/);
   });
 });

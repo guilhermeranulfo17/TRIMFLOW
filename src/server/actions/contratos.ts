@@ -217,7 +217,7 @@ export async function verCpfContrato(id: string): Promise<ResultadoAcao<{ cpf: s
   }
 }
 
-export const modeloSchema = z.object({
+const modeloSchema = z.object({
   id: z.uuid().nullish(),
   titulo: z.string().trim().min(2, 'Dê um nome ao modelo.').max(120, 'Nome muito longo.'),
   segmento: z.enum(SEGMENTOS),

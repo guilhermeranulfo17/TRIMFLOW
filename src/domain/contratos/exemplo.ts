@@ -34,7 +34,7 @@ export function contratoDeExemplo(r: ReservaExemplo): {
   const modelo = MODELOS_PADRAO.infantil;
   const fonte: FonteContrato = {
     hoje: r.hoje,
-    cliente: { nome: r.cliente, whatsappE164: r.whatsappE164, email: null },
+    cliente: { nome: r.cliente, whatsappE164: r.whatsappE164 ?? '+5534997000000', email: null },
     buffet: {
       nome: r.buffet,
       razaoSocial: `${r.buffet} Festas Ltda.`,
@@ -50,7 +50,7 @@ export function contratoDeExemplo(r: ReservaExemplo): {
       horaInicio: '15:00',
       duracaoMin: 240,
       espaco: 'Salão principal',
-      convidados: r.convidados,
+      convidados: r.convidados ?? 60,
       pacote: 'Encanto',
       itens: ['Pacote Encanto', 'Decoração temática', 'Monitores de recreação'],
       naoIncluso: 'Bolo e lembrancinhas.',

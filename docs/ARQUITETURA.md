@@ -1524,7 +1524,41 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
 - **Painel (mínimo do PR 1):** "Gerar contrato" no orçamento aceito (dono) →
   `/app/contratos/novo?orcamento=` (prévia com o que falta destacado, exigir código, validade) →
   "Assinar e enviar" → link, WhatsApp com mensagem pronta e copiar. Lista, detalhe, modelos,
-  avisos e Números ficam no PR 2.
+  avisos e Números: §70.1.
+
+## 70.1 Contrato no painel (Etapa 10, PR 2)
+
+- **Telas (só o dono):** `/app/contratos` (filtros na URL: aguardando, assinados, pediram
+  ajuste, link vencido, cancelados; status efetivo: enviado e vencido conta como vencido),
+  `/app/contratos/[id]` (resumo, faixa do status, ações, assinaturas com "Ver CPF completo",
+  histórico a partir da auditoria e o texto com a impressão digital) e `/app/contratos/modelos`
+  (modelos do Orkestra, cópias do buffet, editor com variáveis conferidas na hora pelo mesmo
+  `analisarModelo` do servidor, multas, remarcação e uso de imagem; ligar/desligar). Menu
+  "Contratos" só para o dono (na barra do celular, 5 itens: "Minha empresa" vira "Empresa").
+  Contratos do lead no detalhe do lead.
+- **Ações:** lembrar o cliente = link novo (o banco só tem o hash, então o link antigo nunca é
+  mostrado de novo e para de abrir), cancelar com motivo, refazer (`novo?orcamento=&substitui=`:
+  o anterior é cancelado ao enviar o novo, versão + 1). Conta suspensa e demo: só leitura.
+- **Avisos ao dono** (`contrato_aberto`, `contrato_assinado`, `contrato_ajuste`,
+  `contrato_vencendo`): o trigger `auditoria_contrato_avisos` transforma os eventos do link
+  (gravados sem usuário) em avisos por `_aviso_criar`; o vencendo sai da rotina das 03:30 (até 2
+  dias antes, uma vez por link) e some quando o contrato não está mais aberto
+  (`_aviso_ainda_vale`). Só push; o assinado também por e-mail (`_aviso_email` = `recebeEmail`).
+  Caminho do aviso: `/app/contratos/{id}`. O vendedor não recebe nem configura.
+- **Cópia ao cliente:** o dono marca no envio (`enviar_copia_email`, só com e-mail no lead).
+  Depois da assinatura (`after()`), o servidor gera o PDF e `publico.contrato_copia_email`
+  devolve o e-mail e marca o envio na mesma chamada (uma vez só); o e-mail sai direto pelo Resend
+  com o PDF em anexo (`Idempotency-Key` = `copia-{id}`). Mesma exceção do código: e-mail ao
+  cliente final só o do contrato.
+- **Agenda:** selo do contrato na reserva (`status_contrato_da_reserva`, security definer: o
+  vendedor vê só o status). **Números:** cartão "Contratos" do dono (enviados, assinados e tempo
+  médio até assinar), `numeros_contratos` = `metricasContratos` com teste de equivalência.
+- **Demo:** a recriação monta um contrato concluído da primeira festa confirmada
+  (`contratoDeExemplo` + `demo_contrato_exemplo`), com histórico e sem aviso.
+- **Correção:** a assinatura aceitava só a LGPD; o "set null" do usuário apagado (exclusão da
+  conta, recriação da demo) era recusado e travava a exclusão. Agora essa única mudança passa.
+  Índice novo `auditoria_entidade_idx` (histórico do contrato e "abriu de novo" do link).
+- **/api/saude:** item `contratos_chave` (sem `CONTRATOS_CHAVE` válida o cliente não assina).
 
 ## 71. Marca nova e landing nova (outubro de 2026)
 

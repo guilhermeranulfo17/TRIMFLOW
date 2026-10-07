@@ -310,7 +310,11 @@ export async function carregarDetalheContrato(
           acao: e.acao,
           criadoEm: new Date(e.criadoEm).toISOString(),
           usuarioNome: e.usuarioNome,
-          dados: e.dados,
+          // o motivo do cancelamento fica no contrato (a auditoria do PR 1 não o guarda)
+          dados:
+            e.acao === 'contrato.cancelado' && !e.dados.motivo && b.cancelamentoMotivo
+              ? { ...e.dados, motivo: b.cancelamentoMotivo }
+              : e.dados,
         })),
       ),
     };

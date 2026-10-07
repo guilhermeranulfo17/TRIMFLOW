@@ -169,6 +169,33 @@ begin
 end;
 $$;
 
+-- Assinatura: a única mudança aceita (além da LGPD) é o usuário que assinou virar null quando o
+-- usuário é apagado (FK "on delete set null": exclusão da conta e recriação da demo). Antes, essa
+-- atualização em cascata era recusada e travava a exclusão da empresa.
+create or replace function public._contrato_assinatura_imutavel()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'DELETE' then
+    if auth.uid() is not null then
+      raise exception 'CONTRATO_IMUTAVEL' using errcode = 'check_violation';
+    end if;
+    return old;
+  end if;
+  if coalesce(current_setting('orkestra.lgpd', true), '') = '1' then
+    return new;
+  end if;
+  if new.usuario_id is null and old.usuario_id is not null
+     and (to_jsonb(new) - 'usuario_id') = (to_jsonb(old) - 'usuario_id') then
+    return new;
+  end if;
+  raise exception 'CONTRATO_IMUTAVEL' using errcode = 'check_violation';
+end;
+$$;
+
 -- Linha do tempo do contrato (e a checagem de "abriu de novo" do link): auditoria por entidade
 create index if not exists auditoria_entidade_idx on public.auditoria (entidade_id, criado_em desc)
   where entidade_id is not null;
