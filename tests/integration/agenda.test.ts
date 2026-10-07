@@ -257,13 +257,13 @@ describe('transições', () => {
       await reservar(tx, c.espaco, c.turnos.Tarde!, data);
       // Etapa 9B: só o dono lê a auditoria; aqui a conferência é como administrador
       await tx`reset role`;
-      const auditoria =
-        await tx`select acao from public.auditoria where entidade_id = ${id} order by criado_em`;
-      expect(auditoria.map((a) => a.acao)).toEqual([
-        'reserva.pre_reservada',
-        'reserva.prazo_estendido',
-        'reserva.confirmada',
+      // tudo na mesma transação: criado_em (now()) é igual nas quatro, então a ordem não vale
+      const auditoria = await tx`select acao from public.auditoria where entidade_id = ${id}`;
+      expect(auditoria.map((a) => a.acao).sort()).toEqual([
         'reserva.cancelada',
+        'reserva.confirmada',
+        'reserva.prazo_estendido',
+        'reserva.pre_reservada',
       ]);
     });
   });
