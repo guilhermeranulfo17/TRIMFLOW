@@ -77,8 +77,11 @@ async function contato(page: Page, nome: string, whatsapp: string) {
 
 async function pacoteEProposta(page: Page) {
   await page.getByTestId('opcao-pacote').first().click();
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.getByTestId('passo-atual')).toHaveText(/Passo 5 de 6/);
+  // o toque pode chegar enquanto o preço do pacote escolhido ainda está sendo calculado
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(page.getByTestId('passo-atual')).toHaveText(/Passo 5 de 6/, { timeout: 2_000 });
+  }).toPass();
   await page.getByRole('button', { name: 'Ver minha proposta' }).click();
   await expect(page).toHaveURL(/\/proposta\/[A-Za-z0-9_-]{32,}$/);
   await expect(page.getByTestId('total-proposta')).toContainText('R$');

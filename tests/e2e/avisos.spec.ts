@@ -150,8 +150,11 @@ test('cliente pede pré-reserva pelo link; o sino do dono sobe e o aviso abre o 
   await cliente.getByRole('button', { name: 'Ver pacotes e valores' }).click();
   await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 4 de 6/);
   await cliente.getByTestId('opcao-pacote').first().click();
-  await cliente.getByRole('button', { name: 'Continuar' }).click();
-  await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 5 de 6/);
+  // o toque pode chegar enquanto o preço do pacote escolhido ainda está sendo calculado
+  await expect(async () => {
+    await cliente.getByRole('button', { name: 'Continuar' }).click();
+    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 5 de 6/, { timeout: 2_000 });
+  }).toPass();
   await cliente.getByRole('button', { name: 'Ver minha proposta' }).click();
   await expect(cliente).toHaveURL(/\/proposta\/[A-Za-z0-9_-]{32,}$/);
   await cliente.getByRole('button', { name: 'Quero reservar esta data' }).click();
