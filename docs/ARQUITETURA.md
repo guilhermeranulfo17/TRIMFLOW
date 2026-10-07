@@ -1553,3 +1553,9 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   `ContadorValor` (o total do celular correndo). Nenhuma dependência nova.
 - Nada inventado continua valendo: os números do hero e do bento são "Dados de exemplo"
   (decoração com `aria-hidden`), preços só de `planos_vitrine`.
+- **Telas de acesso** (login, cadastro, recuperar e nova senha): o fundo é animado
+  (`components/auth/fundo-acesso`: grade, brilhos limão, logotipo em contorno e pontos subindo, só
+  CSS e parado com movimento reduzido), e o formulário fica num cartão de vidro no centro (CSS de
+  `[data-acesso] [data-slot='card']`). O painel lateral com a promessa saiu. No login, os campos
+  têm ícone (o `FormControl` fica no `input`, para a etiqueta continuar ligada ao campo). Vídeo de
+  fundo só se for um arquivo nosso (a CSP não aceita mídia de fora).
