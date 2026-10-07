@@ -1,4 +1,4 @@
-import { Inbox, ListTodo } from 'lucide-react';
+import { Inbox, ListTodo, UsersRound } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -49,18 +49,29 @@ export default async function LeadsPage({ searchParams }: Props) {
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold tracking-tight">Leads</h1>
-        <Link
-          href="/app/tarefas"
-          className="rounded-control hover:bg-accent inline-flex min-h-11 items-center gap-2 border px-3 text-sm font-semibold"
-        >
-          <ListTodo className="size-4" aria-hidden />
-          Tarefas
-          {resumo.atrasadas + resumo.tarefasHoje > 0 && (
-            <span className="bg-primary text-primary-foreground rounded-full px-1.5 text-xs tabular-nums">
-              {resumo.atrasadas + resumo.tarefasHoje}
-            </span>
-          )}
-        </Link>
+        <div className="flex gap-2">
+          {/* no celular Clientes não cabe na barra de baixo: o atalho fica aqui */}
+          <Link
+            href="/app/clientes"
+            className="rounded-control hover:bg-accent inline-flex min-h-11 items-center gap-2 border px-3 text-sm font-semibold md:hidden"
+            data-testid="atalho-clientes"
+          >
+            <UsersRound className="size-4" aria-hidden />
+            Clientes
+          </Link>
+          <Link
+            href="/app/tarefas"
+            className="rounded-control hover:bg-accent inline-flex min-h-11 items-center gap-2 border px-3 text-sm font-semibold"
+          >
+            <ListTodo className="size-4" aria-hidden />
+            Tarefas
+            {resumo.atrasadas + resumo.tarefasHoje > 0 && (
+              <span className="bg-primary text-primary-foreground rounded-full px-1.5 text-xs tabular-nums">
+                {resumo.atrasadas + resumo.tarefasHoje}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
       <ChecklistPainel usuario={usuario} checklist={checklist} />
       <TopoHoje resumo={resumo} filtros={filtros} />

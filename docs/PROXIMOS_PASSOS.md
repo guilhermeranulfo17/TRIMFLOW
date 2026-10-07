@@ -239,3 +239,20 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   limitar entradas por IP com uma ação própria em `publico.limite_acesso` (hoje usa a do login).
 - **E2E da jornada** cobre o Asaas pela API falsa; um teste manual mensal no sandbox de verdade
   continua no checklist do lançamento.
+
+## Depois da Etapa 11 (financeiro)
+
+- Cobrança automática do cliente final (Pix com QR e baixa automática, boleto), com conta do
+  próprio buffet num provedor de pagamento.
+- Aviso ao dono de parcela vencendo e atrasada (hoje só a tela mostra) e mensagem pronta de
+  cobrança para o WhatsApp.
+- Recibo em PDF do pagamento para o cliente.
+- Despesas da festa (fornecedores, equipe) e lucro por festa; exportar o financeiro em planilha.
+- Cartão do financeiro em Números (recebido por mês, inadimplência).
+
+## Depois da Etapa 12 (clientes)
+
+- Aviso ao vendedor (tarefa automática) quando um cliente entra em "hora de chamar de novo".
+- Data de aniversário do aniversariante (campo próprio), em vez de usar a data da festa.
+- Juntar à mão dois cadastros da mesma pessoa (WhatsApp trocado) e editar o contato do cliente.
+- Exportar a lista de clientes em planilha.

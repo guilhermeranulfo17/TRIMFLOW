@@ -243,3 +243,4 @@ export const aceitesTermos = pgTable(
     index('aceites_termos_empresa_idx').on(t.empresaId),
   ],
 );
+export * from './schema-financeiro';

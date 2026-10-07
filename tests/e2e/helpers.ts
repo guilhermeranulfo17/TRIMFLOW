@@ -102,10 +102,30 @@ export async function escolherTipoDeFesta(page: Page, nome = 'Aniversário infan
  */
 export async function irAoPasso2(page: Page, nome = 'Aniversário infantil') {
   const tipo = page.getByRole('radio', { name: nome });
+  const passo = page.getByTestId('passo-atual');
   await expect(async () => {
-    if ((await tipo.getAttribute('aria-checked')) !== 'true') await tipo.click();
+    // a volta anterior pode ter avançado depois do tempo de espera: já está no passo 2
+    if (/Passo 2 de 6/.test((await passo.textContent()) ?? '')) return;
+    if ((await tipo.getAttribute('aria-checked', { timeout: 2_000 })) !== 'true')
+      await tipo.click();
     await expect(tipo).toHaveAttribute('aria-checked', 'true', { timeout: 1_000 });
     await page.getByRole('button', { name: 'Continuar' }).click({ timeout: 2_000 });
-    await expect(page.getByTestId('passo-atual')).toHaveText(/Passo 2 de 6/, { timeout: 2_000 });
+    await expect(passo).toHaveText(/Passo 2 de 6/, { timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+}
+
+/**
+ * Toca "Continuar" no wizard até chegar ao passo `n`. O toque pode chegar antes de o passo
+ * terminar de calcular (o botão ainda desligado): tenta de novo, e não toca de novo se a volta
+ * anterior já avançou.
+ */
+export async function continuarAte(page: Page, n: number) {
+  const passo = page.getByTestId('passo-atual');
+  const alvo = new RegExp(`Passo ${n} de 6`);
+  await expect(async () => {
+    if (!alvo.test((await passo.textContent()) ?? '')) {
+      await page.getByRole('button', { name: 'Continuar' }).click({ timeout: 2_000 });
+    }
+    await expect(passo).toHaveText(alvo, { timeout: 2_000 });
   }).toPass({ timeout: 20_000 });
 }

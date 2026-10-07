@@ -6,6 +6,7 @@ import {
   emailUnico,
   irAoPasso2,
   semRolagemHorizontal,
+  continuarAte,
 } from './helpers';
 
 /*
@@ -60,7 +61,7 @@ async function festaEData(page: Page, opcoes: { data?: string; pularTipo?: boole
   await page.locator('[data-testid="turno"]:not([disabled])').first().click();
   await page.getByRole('spinbutton', { name: 'Adultos' }).fill('40');
   await expect(page.getByTestId('motivo')).toHaveText('');
-  await page.getByRole('button', { name: 'Continuar' }).click();
+  await continuarAte(page, 3);
   return data;
 }
 
@@ -77,8 +78,7 @@ async function contato(page: Page, nome: string, whatsapp: string) {
 
 async function pacoteEProposta(page: Page) {
   await page.getByTestId('opcao-pacote').first().click();
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.getByTestId('passo-atual')).toHaveText(/Passo 5 de 6/);
+  await continuarAte(page, 5);
   await page.getByRole('button', { name: 'Ver minha proposta' }).click();
   await expect(page).toHaveURL(/\/proposta\/[A-Za-z0-9_-]{32,}$/);
   await expect(page.getByTestId('total-proposta')).toContainText('R$');

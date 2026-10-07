@@ -16,7 +16,7 @@ export function BottomNav({
   dono?: boolean;
 }) {
   const pathname = usePathname();
-  const itens = itensNav(dono);
+  const itens = itensNav(dono, true);
   return (
     <nav
       aria-label="Principal"

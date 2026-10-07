@@ -1,4 +1,4 @@
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Wallet } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EmptyState } from '@/components/app/empty-state';
@@ -49,7 +49,20 @@ export default async function AgendaPage({ searchParams }: Props) {
 
   return (
     <>
-      <TituloPagina>Agenda</TituloPagina>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <TituloPagina>Agenda</TituloPagina>
+        {usuario.perfil === 'dono' && (
+          // no celular o Financeiro não cabe na barra de baixo: o atalho fica aqui
+          <Link
+            href="/app/financeiro"
+            className="rounded-control hover:bg-accent inline-flex min-h-11 items-center gap-2 border px-4 text-sm font-semibold md:hidden"
+            data-testid="atalho-financeiro"
+          >
+            <Wallet className="size-4" aria-hidden />
+            Financeiro
+          </Link>
+        )}
+      </div>
       <AgendaCliente
         base={base}
         hoje={hoje}

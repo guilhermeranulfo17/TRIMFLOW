@@ -7,7 +7,11 @@ import { TituloPagina } from '@/components/app/titulo-pagina';
 import { montarVitrine } from '@/domain/publico';
 import { estadoDaVersao, ORIGENS_INTERNAS } from '@/domain/validacao/orcamento-interno';
 import { exigirSessao } from '@/server/auth/sessao';
-import { carregarBaseInterna, carregarClienteDoLead } from '@/server/orcamentos/carregar';
+import {
+  carregarBaseInterna,
+  carregarClienteDaReserva,
+  carregarClienteDoLead,
+} from '@/server/orcamentos/carregar';
 
 export const metadata: Metadata = { title: 'Novo orçamento' };
 
@@ -18,9 +22,15 @@ export default async function NovoOrcamentoPage({ searchParams }: Props) {
   const busca = await searchParams;
   const usuario = await exigirSessao();
   const leadId = typeof busca.lead === 'string' ? busca.lead : null;
+  // "Nova festa" na ficha do cliente sem lead (Etapa 12): nome e WhatsApp da festa anterior
+  const reservaId = !leadId && typeof busca.reserva === 'string' ? busca.reserva : null;
   const [base, lead] = await Promise.all([
     carregarBaseInterna(usuario),
-    leadId ? carregarClienteDoLead(usuario, leadId) : null,
+    leadId
+      ? carregarClienteDoLead(usuario, leadId)
+      : reservaId
+        ? carregarClienteDaReserva(usuario, reservaId)
+        : null,
   ]);
   const vitrine = base ? montarVitrine(base.ctx, {}, base.hoje) : null;
 
@@ -61,7 +71,9 @@ export default async function NovoOrcamentoPage({ searchParams }: Props) {
             : null
         }
         estadoInicial={estadoDaVersao(null)}
-        chaveRascunho={lead && leadId ? `lead:${leadId}` : 'novo'}
+        chaveRascunho={
+          lead && leadId ? `lead:${leadId}` : lead && reservaId ? `reserva:${reservaId}` : 'novo'
+        }
       />
     </>
   );

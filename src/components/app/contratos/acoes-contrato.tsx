@@ -232,6 +232,7 @@ export function AcoesContrato(p: {
 /** "Ver CPF completo": só o dono, fica no histórico do contrato. */
 export function VerCpf({ id }: { id: string }) {
   const toast = useToast();
+  const router = useRouter();
   const [cpf, setCpf] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
   if (cpf) {
@@ -248,8 +249,11 @@ export function VerCpf({ id }: { id: string }) {
       onClick={() =>
         iniciar(async () => {
           const r = await verCpfContrato(id);
-          if (r.ok && r.dados) setCpf(r.dados.cpf);
-          else if (!r.ok) toast.erro(r.erro);
+          if (r.ok && r.dados) {
+            setCpf(r.dados.cpf);
+            // o histórico ganha "viu o CPF completo"
+            router.refresh();
+          } else if (!r.ok) toast.erro(r.erro);
         })
       }
       disabled={pendente}

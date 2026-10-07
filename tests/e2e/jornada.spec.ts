@@ -1,6 +1,13 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { noBanco, zerarLimites } from './banco';
-import { cadastrar, emailUnico, SENHA_SEED, semRolagemHorizontal, irAoPasso2 } from './helpers';
+import {
+  cadastrar,
+  emailUnico,
+  SENHA_SEED,
+  semRolagemHorizontal,
+  irAoPasso2,
+  continuarAte,
+} from './helpers';
 
 /*
  * Etapa 9B · B.8 "Jornada do buffet", ponta a ponta no celular (375x812), contra o app real e a
@@ -112,10 +119,7 @@ test('jornada do buffet: da landing à assinatura, sem sair do celular', async (
   await cliente.locator('[data-testid="turno"]:not([disabled])').first().click();
   await cliente.getByRole('spinbutton', { name: 'Adultos' }).fill('40');
   await expect(cliente.getByTestId('preco-resumo')).toContainText('R$');
-  await expect(async () => {
-    await cliente.getByRole('button', { name: 'Continuar' }).click();
-    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 3 de 6/, { timeout: 2_000 });
-  }).toPass();
+  await continuarAte(cliente, 3);
   await cliente.getByLabel('Seu nome').fill(nomeCliente);
   await cliente.getByLabel('Seu WhatsApp').fill(`349${String(Date.now()).slice(-8)}`);
   await cliente.getByRole('checkbox').check();
@@ -123,7 +127,7 @@ test('jornada do buffet: da landing à assinatura, sem sair do celular', async (
   await cliente.getByRole('button', { name: 'Ver pacotes e valores' }).click();
   await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 4 de 6/);
   await cliente.getByTestId('opcao-pacote').filter({ hasText: 'Alegria' }).click();
-  await cliente.getByRole('button', { name: 'Continuar' }).click();
+  await continuarAte(cliente, 5);
   await cliente.getByRole('button', { name: 'Ver minha proposta' }).click();
   await expect(cliente).toHaveURL(/\/proposta\/[A-Za-z0-9_-]{32,}$/);
   await cliente.getByRole('button', { name: 'Quero reservar esta data' }).click();

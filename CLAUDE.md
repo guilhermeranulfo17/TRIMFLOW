@@ -42,7 +42,8 @@ src/
                      [id]/editar, [id]/pdf), avisos (histórico), conta/avisos e conta/seguranca
                      (Minha conta: avisos e MFA), numeros (Números), leads/[id]/exportar (LGPD),
                      contratos (lista com filtros, [id] detalhe com ações e
-                     histórico, [id]/pdf, novo: prévia e envio, modelos)
+                     histórico, [id]/pdf, novo: prévia e envio, modelos), financeiro (+ [reservaId]),
+                     clientes (+ [id]: ficha com as festas)
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, follow-up, usuarios, plano (assinar, faturas,
                      cancelar, acesso do suporte), simulador, privacidade (+ exportar: ZIP),
@@ -112,6 +113,8 @@ src/
     onboarding/      passos, checklist (percentual), preços do passo 3 (faixas proporcionais)
     divulgacao/      textos prontos (bio, WhatsApp Business, post, status) com a origem certa
     numeros/         período, métricas, funil, ocupação e datas livres (= funções SQL de Números)
+    financeiro/      plano de pagamento sugerido, situação da festa (parcelas pagas/atrasadas), resumo
+    clientes/        quem é cliente (festas por lead ou WhatsApp), hora de chamar de novo, busca
     cobranca/        situação da conta (= _situacao_conta), limites (= _codigo_plano), CPF/CNPJ,
                      preços e cupom, eventos do Asaas (status monotônico = SQL), MRR, motivos
     marketing/       landing: preços da vitrine (desconto anual, itens), faixa do FUNDADOR, origem
@@ -136,6 +139,7 @@ src/
     pagina/          leitura do editor da página pública (RLS do dono)
     leads/           leituras da caixa (caixa_leads, resumo_hoje) e do detalhe do lead, erros
     tarefas/         leituras da tela de Tarefas
+    clientes/        leituras da aba Clientes (lista e ficha)
     contratos/       contrato: carregar (link e painel), emitir, assinar, cifra do CPF e
                      token, e-mail do código, PDF com comprovante e Storage privado
     proposta/        carregador da proposta (público e painel), versão a gravar, PDF, fontes,
@@ -352,6 +356,12 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   (`CONTRATOS_CHAVE`, `server/contratos/segredos`) e mascarado; nunca em log nem no Sentry.
   E-mail ao cliente final só o do contrato (código), direto pelo Resend. Hash do banco =
   `hashTexto` do domínio (equivalência).
+- **Financeiro (Etapa 11, §72):** só o dono; `reserva_parcelas` e `recebimentos` só por
+  `salvar_plano_pagamento`, `registrar_recebimento` e `estornar_recebimento`. Recebimento nunca é
+  apagado (estorno). A situação (pago, atrasado) é calculada em `domain/financeiro`.
+- **Clientes (Etapa 12, §73):** só leitura (sem tabela nova); agrupamento e "hora de chamar"
+  em `domain/clientes`. Lead de teste e anonimizado fora. Valores, contrato e pagamentos só o
+  dono.
 - **Agenda:** `reservas` e `bloqueios` só são escritos pelas funções SQL (`criar_reserva`,
   `criar_bloqueio`…), que travam a empresa e checam conflito. Nunca escreva nessas tabelas pelo
   Drizzle. A regra de ocupação existe no SQL e em `domain/agenda`, com teste de equivalência:

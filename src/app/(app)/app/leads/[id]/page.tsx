@@ -152,6 +152,19 @@ export default async function LeadPage({ params }: Props) {
             {lead.reservas.some((r) => r.tipo === 'confirmada') ? 'Reserva' : 'Pré-reserva'}
           </h2>
           <ReservaDoLead reservas={lead.reservas} hoje={hojeNoFuso(fuso)} />
+          {usuario.perfil === 'dono' &&
+            lead.reservas
+              .filter((r) => r.tipo === 'confirmada')
+              .map((r) => (
+                <Link
+                  key={r.id}
+                  href={`/app/financeiro/${r.id}`}
+                  className="text-primary-texto mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold underline-offset-2 hover:underline"
+                  data-testid="pagamentos-da-festa"
+                >
+                  Pagamentos da festa
+                </Link>
+              ))}
         </section>
       )}
 
