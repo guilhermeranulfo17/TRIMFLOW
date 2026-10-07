@@ -1,33 +1,26 @@
-import { Logotipo } from '@/components/marca/logotipo';
+import { VideoFundo } from './video-fundo';
 
 /**
- * Fundo das telas de acesso: grade, brilhos limão que se movem devagar, o logotipo em contorno e
- * pontos subindo. Só CSS (classes ld-* e fa-* em globals.css), parado com movimento reduzido e
- * sem nada externo (a CSP não aceita vídeo de fora; um vídeo próprio entraria aqui).
+ * Fundo das telas de acesso: o vídeo da recepção do Orkestra (arquivo nosso em public/acesso;
+ * a CSP só aceita mídia do próprio site), escurecido para o cartão ficar legível. No PC o escuro
+ * fica à direita, onde está o formulário; no celular, por igual. Pontos limão subindo por cima.
  */
 const PONTOS = [
-  { x: '8%', t: '9s', d: '0s', s: 'size-1.5' },
-  { x: '22%', t: '12s', d: '-4s', s: 'size-1' },
-  { x: '37%', t: '10s', d: '-7s', s: 'size-2' },
-  { x: '55%', t: '14s', d: '-2s', s: 'size-1' },
-  { x: '68%', t: '11s', d: '-9s', s: 'size-1.5' },
-  { x: '83%', t: '13s', d: '-5s', s: 'size-1' },
-  { x: '93%', t: '9s', d: '-1s', s: 'size-2' },
+  { x: '58%', t: '11s', d: '0s', s: 'size-1.5' },
+  { x: '67%', t: '13s', d: '-4s', s: 'size-1' },
+  { x: '76%', t: '10s', d: '-7s', s: 'size-2' },
+  { x: '85%', t: '14s', d: '-2s', s: 'size-1' },
+  { x: '94%', t: '12s', d: '-9s', s: 'size-1.5' },
 ];
 
 export function FundoAcesso() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
-      <div className="ld-grade absolute inset-0" />
-      <div className="ld-brilho absolute -top-48 -left-48 size-[44rem] rounded-full" />
-      <div
-        className="ld-brilho absolute -right-56 -bottom-56 size-[40rem] rounded-full opacity-70"
-        style={{ animationDelay: '-7s' }}
-      />
-      <Logotipo
-        titulo=""
-        className="absolute top-1/2 left-1/2 w-[150vw] max-w-none -translate-x-1/2 -translate-y-1/2 text-transparent lg:w-[110vw] [&_path]:stroke-white/[0.045] [&_path]:[stroke-width:0.5]"
-      />
+    <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden bg-black">
+      <VideoFundo className="absolute inset-0 size-full object-cover object-[38%_center] lg:object-[30%_center]" />
+      {/* celular: escurece por igual; PC: claro à esquerda (a recepcionista), escuro à direita */}
+      <div className="absolute inset-0 bg-black/70 lg:bg-transparent lg:bg-[linear-gradient(90deg,rgb(0_0_0/0.15)_0%,rgb(0_0_0/0.35)_45%,rgb(0_0_0/0.85)_75%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
+      <div className="ld-brilho absolute -right-56 -bottom-56 size-[40rem] rounded-full opacity-60" />
       {PONTOS.map((p) => (
         <span
           key={p.x}
@@ -35,8 +28,6 @@ export function FundoAcesso() {
           style={{ left: p.x, ['--duracao' as string]: p.t, animationDelay: p.d }}
         />
       ))}
-      {/* escurece as bordas para o cartão ficar no centro da atenção */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgb(0_0_0/0.65)_100%)]" />
     </div>
   );
 }
