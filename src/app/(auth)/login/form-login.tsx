@@ -1,12 +1,13 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 import { AvisoForm } from '@/components/auth/aviso-form';
-import { CampoSenha } from '@/components/auth/campo-senha';
+import { CampoSenha, IconeCampo } from '@/components/auth/campo-senha';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -46,9 +47,21 @@ export function FormLogin({ next, avisoInicial }: { next: string | null; avisoIn
           render={({ field }) => (
             <FormItem>
               <FormLabel>E-mail</FormLabel>
-              <FormControl>
-                <Input type="email" autoComplete="email" inputMode="email" autoFocus {...field} />
-              </FormControl>
+              <div className="relative">
+                <IconeCampo>
+                  <Mail />
+                </IconeCampo>
+                <FormControl>
+                  <Input
+                    type="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    autoFocus
+                    className="pl-10"
+                    {...field}
+                  />
+                </FormControl>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -68,13 +81,17 @@ export function FormLogin({ next, avisoInicial }: { next: string | null; avisoIn
                 </Link>
               </div>
               <FormControl>
-                <CampoSenha autoComplete="current-password" {...field} />
+                <CampoSenha autoComplete="current-password" icone={<Lock />} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={enviando}>
+        <Button
+          type="submit"
+          className="h-12 w-full shadow-[0_0_32px_-8px_rgb(178_247_89/0.6)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_0_40px_-6px_rgb(178_247_89/0.75)] disabled:translate-y-0"
+          disabled={enviando}
+        >
           {enviando ? 'Entrando…' : 'Entrar'}
         </Button>
       </form>

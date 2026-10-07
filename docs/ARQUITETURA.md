@@ -1549,7 +1549,24 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   chamada final num bloco limão.
 - **Animação só com CSS** (classes `ld-*` em `globals.css`), tudo dentro de
   `prefers-reduced-motion: no-preference`; opacidade só em decoração. Duas ilhas pequenas:
-  `Holofote` (um ouvinte de ponteiro para o brilho que segue o mouse nos cartões) e
-  `ContadorValor` (o total do celular correndo). Nenhuma dependência nova.
+  `Holofote` (um ouvinte de ponteiro para o brilho que segue o mouse nos cartões) e o seletor
+  mensal/anual dos preços. Nenhuma dependência nova.
 - Nada inventado continua valendo: os números do hero e do bento são "Dados de exemplo"
   (decoração com `aria-hidden`), preços só de `planos_vitrine`.
+- **Telas de acesso** (login, cadastro, recuperar e nova senha): o fundo é animado
+  (`components/auth/fundo-acesso`: grade, brilhos limão, logotipo em contorno e pontos subindo, só
+  CSS e parado com movimento reduzido), e o formulário fica num cartão de vidro no centro (CSS de
+  `[data-acesso] [data-slot='card']`). O painel lateral com a promessa saiu. No login, os campos
+  têm ícone (o `FormControl` fica no `input`, para a etiqueta continuar ligada ao campo).
+- **Vídeo de fundo do acesso** (out/2026): a recepção do Orkestra, arquivo nosso em
+  `public/acesso` (WebM e MP4 sem som, ~0,5 MB, e o poster em WEBP; a CSP só aceita mídia do
+  próprio site). `VideoFundo` deixa parado no poster com movimento reduzido ou economia de dados.
+  No PC o cartão fica à direita (a recepcionista à esquerda) e o escuro é um degradê; no celular,
+  escuro por igual.
+- **Hero com foto** (out/2026): a equipe de um buffet com o uniforme do Orkestra
+  (`public/landing/hero-equipe.webp`, arquivo nosso, ~70 KB) ocupa a tela e é o LCP (`priority`,
+  só aproxima de leve ao abrir). O texto fica na sombra da esquerda, curto e em caixa alta (o h1
+  continua "O cliente monta o orçamento sozinho."; a caixa alta é só CSS). No notebook a foto
+  encosta à direita para as pessoas aparecerem inteiras; no celular ela fica em cima e o texto
+  embaixo. A imagem é decorativa (`alt` vazio): não é cliente nem depoimento. O celular com
+  órbitas saiu (e com ele `ContadorValor`).
