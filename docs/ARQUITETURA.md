@@ -1651,3 +1651,26 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   Leads.
 - **Idas ao banco:** a lista é uma consulta (agrupamento em memória: um buffet tem centenas de
   festas por ano, não milhares); a ficha soma contratos, planos, recebimentos e lead em pipeline.
+
+## 74. Funil de leads (Etapa 13)
+
+- **O que é:** um botão **Lista | Funil** no topo de Leads (`?visao=funil`, com os mesmos
+  filtros e a mesma busca). A lista responde "quem atender primeiro"; o funil, "onde está cada
+  negociação". Colunas: Novo, Em conversa, Proposta, Pré-reserva, Reservado e a faixa recolhida
+  Perdidos e frios. O total de leads e a soma das propostas aparecem no topo de cada coluna.
+- **Etapa derivada, nada gravado** (`20261018000001_funil_leads.sql`, só funções):
+  `_funil_etapa(status, status do orçamento vigente)` = `etapaDoFunil` em `domain/leads/funil`
+  (teste de equivalência). Novo e abandonou → Novo; em andamento com orçamento enviado ou
+  visualizado → Proposta, sem → Em conversa; frio, perdido e cancelado → Perdidos; realizado fica
+  de fora (está em Clientes). `funil_leads(filtros, limite)` devolve até 50 cards por etapa
+  (os mais recentes), já com o total e a soma da etapa, numa ida, com o RLS do usuário.
+- **Mover nunca troca o status direto** (`acaoDoMovimento`): para Em conversa = registrar
+  contato; para Proposta = montar ou enviar o orçamento; para Pré-reserva = pré-reservar a
+  proposta vigente (ou montar uma); para Reservado = confirmar o sinal no lead; para Perdidos =
+  motivo da perda; dos perdidos só se volta para Em conversa (reabrir, contato ou orçamento
+  novo). Voltar etapa, reservado para perdido e qualquer coisa para Novo são recusados com uma
+  frase simples. As ações são as mesmas do detalhe do lead (mesmas funções e auditoria).
+- **Celular e PC:** no PC as colunas ficam lado a lado e o card é arrastado com o arrastar
+  nativo do navegador (sem biblioteca). No celular cada etapa é uma aba e o card tem "Mover
+  para". Uma estrutura só para os dois tamanhos (no celular aparece só a coluna da aba). Conta
+  suspensa e demo não movem.

@@ -70,6 +70,8 @@ const LIMITE: Record<string, number> = {
   // em pipeline)
   clientes: 2,
   cliente: 3,
+  // Etapa 13: funil de leads (uma consulta, cards por etapa já limitados no banco)
+  funil: 2,
 };
 
 describe('idas ao banco por tela', () => {
@@ -229,6 +231,12 @@ describe('idas ao banco por tela', () => {
     expect(await medir('cliente', () => carregarFichaCliente(u, r!.id))).toBeLessThanOrEqual(
       LIMITE.cliente!,
     );
+  });
+
+  it('funil de leads', async () => {
+    const u = await usuarioDono();
+    const { carregarFunil } = await import('@/server/leads/funil');
+    expect(await medir('funil', () => carregarFunil(u, {}))).toBeLessThanOrEqual(LIMITE.funil!);
   });
 
   it('landing (preços da vitrine)', async () => {
