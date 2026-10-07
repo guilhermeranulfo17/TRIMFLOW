@@ -317,11 +317,8 @@ const ESTILOS = [
   { chave: 'limpo', nome: 'Limpo', texto: 'Direto e leve, para qualquer buffet.' },
 ] as const;
 
-const INCLINACAO = [
-  'md:-rotate-6 md:translate-y-8',
-  'md:-translate-y-2',
-  'md:rotate-6 md:translate-y-8',
-];
+/** Posição de cada celular no PC: o do meio um pouco acima (as imagens já vêm inclinadas). */
+const DESLOCAMENTO = ['md:translate-y-10', 'md:-translate-y-2', 'md:translate-y-10'];
 
 export function SuaPagina() {
   return (
@@ -339,30 +336,31 @@ export function SuaPagina() {
           texto="Logo, capa, pacotes, galeria, perguntas frequentes e o botão de orçamento. Você escolhe o estilo e muda quando quiser."
           centro
         />
-        <ul className="-mx-4 mt-16 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-6 md:mx-0 md:grid md:grid-cols-3 md:gap-2 md:overflow-visible md:px-0">
+        <ul className="-mx-4 mt-12 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-6 md:mx-0 md:grid md:grid-cols-3 md:gap-0 md:overflow-visible md:px-0">
           {ESTILOS.map((e, i) => (
-            <li key={e.chave} className="group w-64 shrink-0 snap-center md:w-auto md:hover:z-10">
-              <div
-                className={cn(
-                  'mx-auto w-full max-w-[16.5rem] overflow-hidden rounded-[2.2rem] border-[7px] border-[#1c1c1c] bg-white shadow-[0_40px_90px_-30px_rgb(0_0_0/0.95)] ring-1 ring-white/10 transition-transform duration-500 md:group-hover:translate-y-0 md:group-hover:scale-105 md:group-hover:rotate-0',
-                  INCLINACAO[i],
-                )}
-              >
+            <li
+              key={e.chave}
+              className={cn(
+                'group w-72 shrink-0 snap-center mix-blend-lighten md:w-auto',
+                DESLOCAMENTO[i],
+              )}
+            >
+              <div className="ld-flutuar" style={{ ['--atraso' as string]: `${i * -2}s` }}>
                 <Image
-                  src={`/landing/vitrine-${e.chave}-640.webp`}
-                  alt={`Página de um buffet no estilo ${e.nome.toLowerCase()}, vista no celular`}
-                  width={640}
-                  height={1280}
-                  sizes="(min-width: 768px) 264px, 256px"
+                  src={`/landing/estilo-${e.chave}-1120.webp`}
+                  alt={`Página de um buffet de exemplo no estilo ${e.nome.toLowerCase()}, vista no celular`}
+                  width={1120}
+                  height={1400}
+                  sizes="(min-width: 1024px) 368px, (min-width: 768px) 33vw, 288px"
                   loading="lazy"
-                  className="h-auto w-full"
+                  className="h-auto w-full transition-transform duration-500 group-hover:-translate-y-2 group-hover:scale-[1.03]"
                 />
               </div>
-              <p className="mt-6 text-center font-bold md:mt-14">{e.nome}</p>
-              <p className="text-muted-foreground text-center text-sm">{e.texto}</p>
+              <p className="text-muted-foreground relative text-center text-sm">{e.texto}</p>
             </li>
           ))}
         </ul>
+        <p className="text-muted-foreground/80 mt-6 text-center text-xs">Buffets de exemplo</p>
       </div>
     </section>
   );
