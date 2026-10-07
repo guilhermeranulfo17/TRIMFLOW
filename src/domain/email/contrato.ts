@@ -53,3 +53,29 @@ export function emailCodigoContrato(d: {
   const texto = `${titulo}\n\nUse este código para assinar o contrato ${d.contrato} do ${d.buffet}: ${d.codigo}\n\nEle vale por 10 minutos. Se você não pediu este código, pode ignorar este e-mail.\n\n--\nEnviado pelo Orkestra a pedido do ${d.buffet}.\n`;
   return { assunto, html, texto };
 }
+
+/** Cópia do contrato assinado (PDF em anexo), quando o dono marcou no envio. */
+export function emailCopiaContrato(d: {
+  buffet: string;
+  contrato: string;
+  cliente: string | null;
+}): EmailMontado {
+  const assunto = `Seu contrato ${d.contrato} com o ${d.buffet} (cópia assinada)`;
+  const titulo = 'Contrato assinado';
+  const ola = d.cliente ? `Olá, ${d.cliente.split(' ')[0]}!` : 'Olá!';
+  const p = (t: string) =>
+    `<p style="margin:0 0 16px;font-size:16px;line-height:24px;color:${GRAFITE}">${t}</p>`;
+  const html = moldura(
+    titulo,
+    [
+      p(escaparHtml(ola)),
+      p(
+        `O contrato ${escaparHtml(d.contrato)} com o ${escaparHtml(d.buffet)} foi assinado pelas duas partes. A cópia em PDF, com o comprovante das assinaturas, está em anexo.`,
+      ),
+      p('Guarde este e-mail. Qualquer dúvida sobre a festa, fale direto com o buffet.'),
+    ].join('\n'),
+    `Enviado pelo Orkestra a pedido do ${escaparHtml(d.buffet)}.`,
+  );
+  const texto = `${titulo}\n\n${ola}\n\nO contrato ${d.contrato} com o ${d.buffet} foi assinado pelas duas partes. A cópia em PDF, com o comprovante das assinaturas, está em anexo.\n\nGuarde este e-mail. Qualquer dúvida sobre a festa, fale direto com o buffet.\n\n--\nEnviado pelo Orkestra a pedido do ${d.buffet}.\n`;
+  return { assunto, html, texto };
+}

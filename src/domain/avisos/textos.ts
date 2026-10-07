@@ -136,6 +136,18 @@ function variaveis(tipo: TipoAviso, d: DadosAviso, agora: Date, fuso: string) {
       const em = instante(d.exclusao_em);
       return { em: em ? formatInTimeZone(em, fuso, 'dd/MM/yyyy') : null };
     }
+    case 'contrato_aberto':
+    case 'contrato_assinado':
+    case 'contrato_ajuste':
+      return { nome, contrato: txt(d.contrato) };
+    case 'contrato_vencendo': {
+      const expira = instante(d.expira_em);
+      return {
+        nome,
+        contrato: txt(d.contrato),
+        quando: expira ? quandoCurto(expira, agora, fuso) : 'em breve',
+      };
+    }
   }
 }
 
@@ -147,17 +159,20 @@ export function textoAviso(
 ): TextoAviso {
   const agora = o.agora ?? new Date();
   const fuso = o.fuso ?? FUSO_PADRAO;
-  const caminho = o.leadId
-    ? `/app/leads/${o.leadId}`
-    : tipo === 'teste'
-      ? '/app/avisos'
-      : tipo === 'boas_vindas'
-        ? '/app/comecar'
-        : tipo === 'exportacao_pronta' || tipo === 'exclusao_agendada'
-          ? '/app/empresa/privacidade'
-          : ehAvisoCobranca(tipo)
-            ? '/app/empresa/plano'
-            : '/app/leads';
+  const contratoId = txt(dados.contrato_id);
+  const caminho = contratoId
+    ? `/app/contratos/${contratoId}`
+    : o.leadId
+      ? `/app/leads/${o.leadId}`
+      : tipo === 'teste'
+        ? '/app/avisos'
+        : tipo === 'boas_vindas'
+          ? '/app/comecar'
+          : tipo === 'exportacao_pronta' || tipo === 'exclusao_agendada'
+            ? '/app/empresa/privacidade'
+            : ehAvisoCobranca(tipo)
+              ? '/app/empresa/plano'
+              : '/app/leads';
   const v = variaveis(tipo, dados, agora, fuso) as Record<string, string | number | null>;
   const mais = o.agrupados && o.agrupados > 1 ? ` (${o.agrupados} vezes)` : '';
   switch (tipo) {
@@ -293,6 +308,30 @@ export function textoAviso(
       return {
         titulo: 'Sua conta será excluída',
         corpo: `A exclusão da conta foi pedida e acontece em ${v.em ?? '30 dias'}. Até lá a conta fica somente leitura e você pode baixar os dados ou desistir.`,
+        caminho,
+      };
+    case 'contrato_aberto':
+      return {
+        titulo: `${v.nome} abriu o contrato`,
+        corpo: `${v.nome} abriu o contrato${v.contrato ? ` ${v.contrato}` : ''} pela primeira vez.`,
+        caminho,
+      };
+    case 'contrato_assinado':
+      return {
+        titulo: `Contrato assinado: ${v.nome}`,
+        corpo: `${v.nome} assinou o contrato${v.contrato ? ` ${v.contrato}` : ''}. O PDF com o comprovante já está no painel.`,
+        caminho,
+      };
+    case 'contrato_ajuste':
+      return {
+        titulo: `${v.nome} pediu ajuste no contrato`,
+        corpo: `${v.nome} pediu um ajuste no contrato${v.contrato ? ` ${v.contrato}` : ''}. Veja o pedido e refaça o contrato.`,
+        caminho,
+      };
+    case 'contrato_vencendo':
+      return {
+        titulo: `Contrato vencendo: ${v.nome}`,
+        corpo: `O link do contrato${v.contrato ? ` ${v.contrato}` : ''} de ${v.nome} vence ${v.quando} sem assinatura. Lembre o cliente ou mande um link novo.`,
         caminho,
       };
   }

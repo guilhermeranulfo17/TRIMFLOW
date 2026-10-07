@@ -33,6 +33,7 @@ const ROTULO_BOTAO: Partial<Record<TipoAviso, string>> = {
   conta_suspensa: 'Assinar e voltar',
   exportacao_pronta: 'Abrir Privacidade e dados',
   exclusao_agendada: 'Baixar dados ou desistir',
+  contrato_assinado: 'Ver o contrato',
 };
 
 /** Monta o e-mail de um aviso de conta. null se o tipo não vai por e-mail. */

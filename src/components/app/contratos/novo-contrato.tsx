@@ -5,6 +5,8 @@ import { useMemo, useState, useTransition } from 'react';
 import { TextoContrato } from '@/components/contrato/texto-contrato';
 import { useToast } from '@/components/app/toast';
 import { IconeWhatsApp } from '@/components/publico/icone-whatsapp';
+import Link from 'next/link';
+import { PendenteLink } from '@/components/app/pendente-link';
 import { Button } from '@/components/ui/button';
 import { formatData } from '@/domain/dates';
 import { enviarContrato, type ContratoEnviado } from '@/server/actions/contratos';
@@ -29,12 +31,15 @@ export function NovoContrato(p: {
   completaveis: Completavel[];
   rotulos: Record<string, string>;
   usoImagem: boolean;
+  /** refazer: o contrato anterior é cancelado e o novo leva versão + 1 */
+  substitui?: { id: string; codigo: string } | null;
 }) {
   const toast = useToast();
   const [valores, setValores] = useState<Record<string, string>>(() =>
     Object.fromEntries(p.completaveis.map((c) => [c.nome, c.valor])),
   );
   const [exigeCodigo, setExigeCodigo] = useState(p.clienteTemEmail);
+  const [copiaEmail, setCopiaEmail] = useState(p.clienteTemEmail);
   const [validadeDias, setValidadeDias] = useState(14);
   const [erro, setErro] = useState<string | null>(null);
   const [enviado, setEnviado] = useState<ContratoEnviado | null>(null);
@@ -54,6 +59,8 @@ export function NovoContrato(p: {
         preencher: valores,
         exigeCodigo,
         validadeDias,
+        enviarCopiaEmail: copiaEmail,
+        substituiContratoId: p.substitui?.id ?? null,
       });
       if (r.ok && r.dados) {
         setEnviado(r.dados);
@@ -109,6 +116,10 @@ export function NovoContrato(p: {
           <Copy className="size-4" aria-hidden />
           Copiar link
         </button>
+        <Link href={`/app/contratos/${enviado.id}`} className={ACAO}>
+          Ver o contrato
+          <PendenteLink />
+        </Link>
       </div>
     );
   }
@@ -125,6 +136,11 @@ export function NovoContrato(p: {
 
       <aside className="bg-card rounded-card flex flex-col gap-4 border p-4 lg:sticky lg:top-6">
         <h2 className="font-bold">Enviar para {p.cliente}</h2>
+        {p.substitui && (
+          <p className="bg-info/10 text-info border-info/30 rounded-control border p-3 text-sm">
+            Este contrato substitui o {p.substitui.codigo}, que será cancelado ao enviar.
+          </p>
+        )}
         {p.completaveis.length > 0 && (
           <div className="flex flex-col gap-3">
             <p className="text-sm">Complete o que o orçamento não trouxe:</p>
@@ -160,6 +176,25 @@ export function NovoContrato(p: {
               {p.clienteTemEmail
                 ? 'O cliente recebe um código de 6 números para confirmar a assinatura.'
                 : 'O cliente não tem e-mail no cadastro: a assinatura segue sem o código.'}
+            </span>
+          </span>
+        </label>
+
+        <label className="flex min-h-11 items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            className="accent-primary mt-0.5 size-5"
+            checked={copiaEmail}
+            disabled={!p.clienteTemEmail}
+            onChange={(e) => setCopiaEmail(e.target.checked)}
+            data-testid="copia-email"
+          />
+          <span>
+            <span className="font-semibold">Mandar a cópia assinada por e-mail</span>
+            <span className="text-muted-foreground block">
+              {p.clienteTemEmail
+                ? 'Depois da assinatura, o cliente recebe o PDF com o comprovante no e-mail.'
+                : 'O cliente não tem e-mail no cadastro: ele baixa a cópia pelo próprio link.'}
             </span>
           </span>
         </label>

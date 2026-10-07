@@ -7,6 +7,7 @@ import { classeCampo } from '@/components/app/form/estilos';
 import {
   ROTULO_TIPO_AVISO,
   TIPOS_CONFIGURAVEIS,
+  ehAvisoContrato,
   type CanalExterno,
   type TipoAviso,
 } from '@/domain/avisos/canais';
@@ -69,7 +70,8 @@ export function PreferenciasAvisos({
             </tr>
           </thead>
           <tbody className="divide-y">
-            {TIPOS_CONFIGURAVEIS.map((t) => (
+            {/* avisos do contrato: só o dono recebe */}
+            {TIPOS_CONFIGURAVEIS.filter((t) => dono || !ehAvisoContrato(t)).map((t) => (
               <tr key={t}>
                 <td className="py-1 pr-2 font-medium">{ROTULO_TIPO_AVISO[t]}</td>
                 <td className="text-muted-foreground text-center text-xs">sempre</td>

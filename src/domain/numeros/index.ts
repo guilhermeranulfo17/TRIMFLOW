@@ -3,3 +3,4 @@ export * from './mediana';
 export * from './metricas';
 export * from './ocupacao';
 export * from './periodo';
+export * from './contratos';

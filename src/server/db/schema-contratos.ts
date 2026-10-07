@@ -102,6 +102,9 @@ export const contratos = pgTable(
     criadoPor: uuid('criado_por').references(() => usuarios.id, { onDelete: 'set null' }),
     criadoEm: instante('criado_em').notNull().defaultNow(),
     atualizadoEm: instante('atualizado_em').notNull().defaultNow(),
+    // Etapa 10 PR 2 (20261016000002): cópia do PDF assinado ao e-mail do cliente
+    enviarCopiaEmail: boolean('enviar_copia_email').notNull().default(false),
+    copiaEmailEnviadaEm: instante('copia_email_enviada_em'),
   },
   (t) => [
     unique().on(t.id, t.empresaId),

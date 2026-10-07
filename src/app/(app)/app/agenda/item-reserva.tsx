@@ -1,5 +1,6 @@
 'use client';
 
+import { SeloStatusContrato } from '@/components/app/contratos/selo-contrato';
 import { useState, useTransition } from 'react';
 import { SeloEstado } from '@/components/app/agenda/estados';
 import Link from 'next/link';
@@ -53,6 +54,7 @@ export function ItemReserva({
         <p className="font-semibold break-words">{reserva.clienteNome}</p>
         <span className="flex items-center gap-1.5">
           {reserva.veioDoLink && <SeloLink />}
+          {reserva.contratoStatus && <SeloStatusContrato status={reserva.contratoStatus} curto />}
           <SeloEstado estado={pre ? 'pre_reservado' : 'reservado'} />
         </span>
       </div>

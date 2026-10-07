@@ -2,6 +2,7 @@ import 'server-only';
 import { formatPhoneBR } from '@/domain/phone';
 import { and, asc, between, eq, gt, isNotNull, lte, or, sql } from 'drizzle-orm';
 import type { EstadoSlot, StatusReserva, TipoReserva } from '@/domain/agenda';
+import type { StatusContrato } from '@/domain/contratos/estados';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { bloqueios, espacos, leads, reservas, tiposEvento, turnos } from '@/server/db/schema';
 import { comUsuario, naTransacao, type Tx } from '@/server/db/tenant';
@@ -59,6 +60,8 @@ export type ReservaAgenda = {
   leadNome: string | null;
   /** lead ligado à reserva (abre o detalhe do lead) */
   leadId: string | null;
+  /** Etapa 10: status do contrato mais recente da reserva (ou do orçamento dela) */
+  contratoStatus: StatusContrato | null;
 };
 
 export type BloqueioAgenda = {
@@ -173,13 +176,15 @@ async function reservasTx(tx: Tx, filtro: ReturnType<typeof and>): Promise<Reser
       r: reservas,
       tipoEventoNome: tiposEvento.nome,
       leadNome: leads.nome,
+      // função da empresa do usuário (o vendedor vê só o status, não o contrato)
+      contratoStatus: sql<StatusContrato | null>`public.status_contrato_da_reserva(${reservas.id}, ${reservas.orcamentoId})`,
     })
     .from(reservas)
     .leftJoin(tiposEvento, eq(tiposEvento.id, reservas.tipoEventoId))
     .leftJoin(leads, eq(leads.id, reservas.leadId))
     .where(and(ocupando(), filtro))
     .orderBy(asc(reservas.inicio));
-  return linhas.map(({ r, tipoEventoNome, leadNome }) => ({
+  return linhas.map(({ r, tipoEventoNome, leadNome, contratoStatus }) => ({
     id: r.id,
     data: r.data,
     turnoId: r.turnoId,
@@ -200,6 +205,7 @@ async function reservasTx(tx: Tx, filtro: ReturnType<typeof and>): Promise<Reser
     veioDoLink: r.origem === 'link_publico',
     leadNome,
     leadId: r.leadId,
+    contratoStatus,
   }));
 }
 

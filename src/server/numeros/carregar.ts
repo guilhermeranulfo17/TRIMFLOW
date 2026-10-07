@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 import type {
   Contagem,
+  MetricasContratos,
   LinhaAtendimento,
   LinhaMotivo,
   LinhaOrigem,
@@ -70,12 +71,27 @@ async function ocupacaoTx(tx: Tx): Promise<OcupacaoTela> {
   return { ...(camel(linha!.o) as Omit<OcupacaoTela, 'turnos'>), turnos: [...turnos] };
 }
 
+async function contratosTx(tx: Tx, de: string, ate: string): Promise<MetricasContratos | null> {
+  const [linha] = await tx.execute<{ c: Record<string, number | null> | null }>(
+    sql`select public.numeros_contratos(${de}::date, ${ate}::date) as c`,
+  );
+  const c = linha?.c;
+  if (!c) return null;
+  return {
+    enviados: Number(c.enviados ?? 0),
+    assinados: Number(c.assinados ?? 0),
+    tempoMedioMin: c.tempo_medio_min ?? null,
+  };
+}
+
 export type TelaNumeros = {
   numeros: NumerosPeriodo;
   /** null quando não é o dono ou o plano não tem Números completo */
   ocupacao: OcupacaoTela | null;
   usuarios: { id: string; nome: string }[];
   recursos: RecursosPlano;
+  /** Etapa 10: só o dono (null para o vendedor) */
+  contratos: MetricasContratos | null;
 };
 
 /**
@@ -94,7 +110,7 @@ export function carregarTelaNumeros(
   return unstable_cache(
     async () =>
       comUsuario(usuario.id, async (tx) => {
-        const [numeros, ocupacao, usuarios, [plano]] = await Promise.all([
+        const [numeros, ocupacao, usuarios, [plano], contratos] = await Promise.all([
           numerosTx(tx, de, ate),
           dono ? ocupacaoTx(tx) : null,
           tx.execute<{ id: string; nome: string }>(
@@ -103,6 +119,7 @@ export function carregarTelaNumeros(
           tx.execute<{ p: Record<string, unknown> | null }>(
             sql`select public.plano_vigente_da_empresa() as p`,
           ),
+          dono ? contratosTx(tx, de, ate) : null,
         ]);
         const recursos = recursosDoPlano(plano?.p ?? {});
         return {
@@ -110,6 +127,7 @@ export function carregarTelaNumeros(
           ocupacao: recursos.numerosCompleto ? ocupacao : null,
           usuarios: [...usuarios],
           recursos,
+          contratos,
         };
       }),
     ['tela-numeros', usuario.empresa.id, usuario.id, de, ate],

@@ -2,6 +2,8 @@
 
 import { headers } from 'next/headers';
 import { after } from 'next/server';
+import { arquivoContrato } from '@/domain/contratos/documento';
+import { emailCopiaContrato } from '@/domain/email/contrato';
 import { slugValido } from '@/domain/slug';
 import { lerBuffet } from '@/server/publico/carregar';
 import { obterPdfContrato } from '@/server/contratos/arquivo';
@@ -13,6 +15,7 @@ import {
   type Resultado,
 } from '@/server/contratos/assinatura';
 import { carregarComprovantePublico } from '@/server/contratos/carregar';
+import { enviarEmailContrato } from '@/server/contratos/email';
 import { comAnon } from '@/server/db/anon';
 import { codigoDoErro, logar } from '@/server/log';
 import { ehModoTeste } from '@/server/publico/sessao';
@@ -60,8 +63,9 @@ export async function assinarContrato(
   const d = await deps(slug);
   const r = await assinar(slug, token, entrada, d);
   if (r.ok) {
-    // o PDF final é gerado e guardado logo depois da resposta: o download sai pronto
-    after(() => prepararPdf(slug, token, d.ipHash));
+    // o PDF final é gerado e guardado logo depois da resposta (o download sai pronto) e, se o
+    // dono marcou, a cópia vai para o e-mail do cliente
+    after(() => posAssinatura(slug, token, d.ipHash));
   }
   return r;
 }
@@ -80,27 +84,48 @@ export async function recusarContrato(
   }
 }
 
-async function prepararPdf(slug: string, token: string, ipHash: string): Promise<void> {
+async function posAssinatura(slug: string, token: string, ipHash: string): Promise<void> {
   try {
     const c = await carregarComprovantePublico(slug, token, ipHash);
-    if (!c || c === 'limite' || c.pdfGeradoEm) return;
+    if (!c || c === 'limite') return;
     const buffet = await lerBuffet(slug);
-    await obterPdfContrato(
-      c,
-      {
-        nome: buffet?.nome ?? '',
-        logoUrl: buffet?.logoUrl ?? null,
-        corMarca: buffet?.corMarca ?? null,
+    const identidade = {
+      nome: buffet?.nome ?? '',
+      logoUrl: buffet?.logoUrl ?? null,
+      corMarca: buffet?.corMarca ?? null,
+    };
+    const pdf = await obterPdfContrato(c, identidade, {
+      marcar: async () => {
+        await comAnon((tx) =>
+          tx.execute(sql`select publico.contrato_marcar_pdf(${slug}, ${token})`),
+        );
       },
+    });
+    // cópia por e-mail: o banco devolve o e-mail e marca o envio de uma vez (nunca duas)
+    const [linha] = await comAnon((tx) =>
+      tx.execute<{ c: { id: string; email: string } | null }>(
+        sql`select publico.contrato_copia_email(${slug}, ${token}) as c`,
+      ),
+    );
+    const copia = linha?.c;
+    if (!copia) return;
+    const cliente = c.assinaturas.find((a) => a.parte === 'cliente')?.nome ?? null;
+    const r = await enviarEmailContrato(
+      copia.email,
+      emailCopiaContrato({ buffet: identidade.nome, contrato: c.codigo, cliente }),
+      `copia-${copia.id}`,
       {
-        marcar: async () => {
-          await comAnon((tx) =>
-            tx.execute(sql`select publico.contrato_marcar_pdf(${slug}, ${token})`),
-          );
-        },
+        tag: 'contrato_copia',
+        anexos: [
+          {
+            arquivo: arquivoContrato({ codigo: c.codigo, buffet: identidade.nome, cliente }).nome,
+            conteudo: pdf,
+          },
+        ],
       },
     );
+    if (!r.ok) logar('aviso', 'contrato.copia_email_falhou', { contratoId: c.id, codigo: r.erro });
   } catch (erro) {
-    logar('aviso', 'contrato.pdf_preparar_falhou', { codigo: codigoDoErro(erro) });
+    logar('aviso', 'contrato.pos_assinatura_falhou', { codigo: codigoDoErro(erro) });
   }
 }

@@ -42,6 +42,8 @@ export const emissaoSchema = preparoSchema.extend({
   exigeCodigo: z.boolean().default(false),
   validadeDias: z.number().int().min(1).max(60).default(14),
   substituiContratoId: z.uuid().nullish(),
+  /** mandar a cópia do PDF assinado ao e-mail do cliente (só com e-mail no lead) */
+  enviarCopiaEmail: z.boolean().default(false),
 });
 
 export type EntradaPreparo = z.input<typeof preparoSchema>;
@@ -142,6 +144,7 @@ export async function emitirContrato(
     validade_dias: entrada.validadeDias,
     token_hash: hash,
     substitui_contrato_id: entrada.substituiContratoId ?? null,
+    enviar_copia_email: entrada.enviarCopiaEmail && Boolean(origem.clienteEmail),
     ip_hash: o.ipHash,
     user_agent: o.userAgent?.slice(0, 400) ?? null,
   };

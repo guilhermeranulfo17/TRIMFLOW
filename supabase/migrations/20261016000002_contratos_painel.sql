@@ -9,6 +9,38 @@ alter table public.contratos
   add column if not exists enviar_copia_email boolean not null default false;
 comment on column public.contratos.enviar_copia_email is
   'O dono pediu para mandar a cópia do PDF assinado ao e-mail do cliente (só com e-mail no lead).';
+alter table public.contratos
+  add column if not exists copia_email_enviada_em timestamptz;
+comment on column public.contratos.copia_email_enviada_em is
+  'Quando a cópia do PDF assinado saiu para o e-mail do cliente (uma vez só).';
+
+/**
+ * Cópia do PDF ao cliente, logo depois da assinatura: devolve o e-mail e marca o envio na mesma
+ * chamada (uma vez só, mesmo com duas abas). Só o servidor chama, com o token do link.
+ */
+create or replace function publico.contrato_copia_email(p_slug text, p_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_c public.contratos;
+begin
+  v_c := publico._contrato(p_slug, p_token, true);
+  if v_c.id is null or v_c.status <> 'concluido' or not v_c.enviar_copia_email
+     or v_c.email_cliente is null or v_c.copia_email_enviada_em is not null
+     or v_c.anonimizado_em is not null or v_c.eh_teste then
+    return null;
+  end if;
+  update public.contratos set copia_email_enviada_em = now() where id = v_c.id;
+  insert into public.auditoria (empresa_id, usuario_id, acao, entidade, entidade_id, dados)
+  values (v_c.empresa_id, null, 'contrato.copia_email', 'contrato', v_c.id, '{}'::jsonb);
+  return jsonb_build_object('id', v_c.id, 'email', v_c.email_cliente);
+end;
+$$;
+revoke all on function publico.contrato_copia_email(text, text) from public, authenticated;
+grant execute on function publico.contrato_copia_email(text, text) to anon;
 
 -- emitir_contrato: igual à da Etapa 10 PR 1, agora com enviar_copia_email
 create or replace function public.emitir_contrato(p jsonb)
@@ -137,6 +169,10 @@ begin
 end;
 $$;
 
+-- Linha do tempo do contrato (e a checagem de "abriu de novo" do link): auditoria por entidade
+create index if not exists auditoria_entidade_idx on public.auditoria (entidade_id, criado_em desc)
+  where entidade_id is not null;
+
 -- ---------------------------------------------------------------------------------------------
 -- 2. Avisos ao dono: abriu (primeira vez), assinou, pediu ajuste, vence em 2 dias
 -- ---------------------------------------------------------------------------------------------
@@ -180,7 +216,8 @@ begin
     return null;
   end if;
   select * into v_c from public.contratos c where c.id = new.entidade_id;
-  if v_c.id is null or v_c.eh_teste then
+  if v_c.id is null or v_c.eh_teste
+     or exists (select 1 from public.empresas e where e.id = v_c.empresa_id and e.eh_demo) then
     return null;
   end if;
   select coalesce(nullif(btrim(l.nome), ''), 'Cliente') into v_nome
@@ -368,43 +405,48 @@ set search_path = ''
 as $$
 declare
   v_e    public.empresas;
-  v_lead uuid;
-  v_orc  uuid;
-  v_res  uuid;
+  v_r    public.reservas;
   v_dono public.usuarios;
   v_id   uuid;
   v_hash text := encode(sha256(convert_to(p ->> 'texto', 'UTF8')), 'hex');
+  v_env  timestamptz := now() - interval '3 days';
+  v_fim  timestamptz := now() - interval '2 days';
 begin
   select * into v_e from public.empresas e where e.id = p_empresa;
   if v_e.id is null or not v_e.eh_demo then
     raise exception 'DEMO_INVALIDA' using errcode = 'check_violation';
   end if;
-  select r.lead_id, r.orcamento_id, r.id into v_lead, v_orc, v_res
-  from public.reservas r
-  where r.empresa_id = p_empresa and r.tipo = 'confirmada' and r.status = 'ativa' and r.lead_id is not null
-  order by r.data limit 1;
-  if v_lead is null then
+  select * into v_r from public.reservas r
+  where r.id = nullif(p ->> 'reserva_id', '')::uuid and r.empresa_id = p_empresa and r.lead_id is not null;
+  if v_r.id is null then
     return null;
   end if;
   select * into v_dono from public.usuarios u where u.empresa_id = p_empresa and u.perfil = 'dono' limit 1;
   insert into public.contratos (empresa_id, ano, numero, lead_id, orcamento_id, reserva_id, modelo_origem,
     titulo, status, texto, hash, valores, variaveis, token_hash, expira_em, enviado_em, enviado_por,
     visualizado_em, concluido_em, criado_por)
-  values (p_empresa, extract(year from now())::integer, 1, v_lead, v_orc, v_res, 'infantil@1',
-    coalesce(p ->> 'titulo', 'Contrato de prestação de serviços de festa infantil'), 'concluido',
+  values (p_empresa, extract(year from now())::integer, 1, v_r.lead_id, v_r.orcamento_id, v_r.id,
+    nullif(p ->> 'modelo_origem', ''),
+    coalesce(nullif(p ->> 'titulo', ''), 'Contrato de prestação de serviços de festa infantil'), 'concluido',
     p ->> 'texto', v_hash, coalesce(p -> 'valores', '{}'::jsonb), '{}'::jsonb,
     encode(sha256(convert_to(gen_random_uuid()::text, 'UTF8')), 'hex'),
-    now() + interval '14 days', now() - interval '3 days', v_dono.id,
-    now() - interval '3 days' + interval '2 hours', now() - interval '2 days', v_dono.id)
+    v_env + interval '14 days', v_env, v_dono.id, v_env + interval '2 hours', v_fim, v_dono.id)
   returning id into v_id;
   insert into public.contrato_assinaturas (empresa_id, contrato_id, parte, nome, representa,
     documento_mascarado, usuario_id, assinado_em, hash_documento, metodo)
-  values (p_empresa, v_id, 'buffet', v_dono.nome, v_e.nome, null, v_dono.id,
-          now() - interval '3 days', v_hash, 'aceite');
+  values (p_empresa, v_id, 'buffet', v_dono.nome, v_e.nome, null, v_dono.id, v_env, v_hash, 'aceite');
   insert into public.contrato_assinaturas (empresa_id, contrato_id, parte, nome, documento_mascarado,
     assinado_em, hash_documento, metodo, codigo_verificado)
-  values (p_empresa, v_id, 'cliente', coalesce(p ->> 'cliente', 'Cliente da demonstração'),
-          '***.123.456-**', now() - interval '2 days', v_hash, 'aceite', false);
+  values (p_empresa, v_id, 'cliente', coalesce(nullif(p ->> 'cliente', ''), v_r.cliente_nome),
+          '***.123.456-**', v_fim, v_hash, 'aceite', false);
+  -- linha do tempo do exemplo (a demo nunca gera aviso: _contrato_avisar ignora a demo)
+  insert into public.auditoria (empresa_id, usuario_id, acao, entidade, entidade_id, dados, criado_em)
+  values
+    (p_empresa, v_dono.id, 'contrato.enviado', 'contrato', v_id, jsonb_build_object('versao', 1), v_env),
+    (p_empresa, null, 'contrato.visualizado', 'contrato', v_id, jsonb_build_object('primeira', true),
+     v_env + interval '2 hours'),
+    (p_empresa, null, 'contrato.assinado', 'contrato', v_id,
+     jsonb_build_object('parte', 'cliente', 'metodo', 'aceite'), v_fim);
   return v_id;
 end;
 $$;
