@@ -21,7 +21,7 @@ test('é a landing (sem redirecionar) e não chama o Auth', async ({ page }) => 
   await page.goto('/');
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'O cliente monta o orçamento sozinho. Você só entra quando ele quer reservar.',
+    'O cliente monta o orçamento sozinho.',
   );
   await page.waitForLoadState('networkidle');
   expect(auth).toEqual([]);

@@ -449,8 +449,8 @@ dialog.lightbox::backdrop {
 
 /*
  * Landing nova (out/2026): escuro com o limão da logo. Tudo em CSS (transform, clip-path e
- * offset-path; opacidade só no que é decoração), desligado com movimento reduzido. O título
- * (LCP) entra rápido e nunca fica transparente.
+ * offset-path; opacidade só no que é decoração), desligado com movimento reduzido. A foto da
+ * hero (LCP) só aproxima de leve; nada de opacidade nela nem no título.
  */
 @keyframes ld-subir {
   from {
@@ -469,15 +469,6 @@ dialog.lightbox::backdrop {
     transform: translateY(-14px);
   }
 }
-@keyframes ld-celular {
-  0%,
-  100% {
-    transform: perspective(1400px) rotateY(-14deg) rotateX(6deg) rotateZ(2deg) translateY(0);
-  }
-  50% {
-    transform: perspective(1400px) rotateY(-10deg) rotateX(4deg) rotateZ(1deg) translateY(-12px);
-  }
-}
 @keyframes ld-chegar {
   from {
     transform: translate3d(var(--de-x, 40px), var(--de-y, 0), 0) scale(0.92);
@@ -488,14 +479,12 @@ dialog.lightbox::backdrop {
     opacity: 1;
   }
 }
-@keyframes ld-orbita {
-  to {
-    offset-distance: 100%;
+@keyframes ld-foto {
+  from {
+    transform: scale(1.08);
   }
-}
-@keyframes ld-tracejado {
   to {
-    stroke-dashoffset: -400;
+    transform: none;
   }
 }
 @keyframes ld-desenhar {
@@ -555,14 +544,6 @@ dialog.lightbox::backdrop {
   }
 }
 
-/* grade de fundo, apagando nas bordas */
-.ld-grade {
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, #000 30%, transparent 75%);
-}
 .ld-brilho {
   background: radial-gradient(closest-side, rgb(178 247 89 / 0.22), transparent);
   filter: blur(20px);
@@ -572,13 +553,6 @@ dialog.lightbox::backdrop {
   border: 1px solid rgb(255 255 255 / 0.09);
   backdrop-filter: blur(22px) saturate(140%);
   -webkit-backdrop-filter: blur(22px) saturate(140%);
-}
-.ld-flutuante {
-  background: rgb(20 20 20 / 0.88);
-  border: 1px solid rgb(255 255 255 / 0.1);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 24px 60px -18px rgb(0 0 0 / 0.9);
 }
 .ld-texto-limao {
   color: var(--primary);
@@ -662,8 +636,8 @@ dialog.lightbox::backdrop {
     animation: ld-subir 0.8s cubic-bezier(0.2, 0.7, 0.1, 1) both;
     animation-delay: var(--atraso, 0ms);
   }
-  .ld-celular {
-    animation: ld-celular 7s ease-in-out infinite;
+  .ld-foto {
+    animation: ld-foto 2.4s cubic-bezier(0.2, 0.7, 0.1, 1) both;
   }
   .ld-flutuar {
     animation: ld-flutuar 6s ease-in-out infinite;
@@ -672,13 +646,6 @@ dialog.lightbox::backdrop {
   .ld-chegar {
     animation: ld-chegar 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     animation-delay: var(--atraso, 0ms);
-  }
-  .ld-orbita {
-    animation: ld-orbita var(--duracao, 9s) linear infinite;
-    animation-delay: var(--atraso, 0ms);
-  }
-  .ld-tracejado {
-    animation: ld-tracejado 14s linear infinite;
   }
   .ld-faixa {
     animation: ld-faixa 38s linear infinite;
