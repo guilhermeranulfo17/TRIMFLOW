@@ -43,6 +43,8 @@ export type FiltrosCaixa = {
   busca?: string;
   teste?: boolean;
   atalho?: AtalhoCaixa;
+  /** Etapa 13: as mesmas negociações em colunas (o padrão é a lista) */
+  visao?: 'funil';
 };
 
 type Parametros = Record<string, string | string[] | undefined> | URLSearchParams;
@@ -89,12 +91,14 @@ export function filtrosDaUrl(p: Parametros): FiltrosCaixa {
   if (atalho && (ATALHOS_CAIXA as readonly string[]).includes(atalho)) {
     f.atalho = atalho as AtalhoCaixa;
   }
+  if (ler(p, 'visao') === 'funil') f.visao = 'funil';
   return f;
 }
 
 /** Query string (sem "?"), na mesma ordem sempre: links iguais para filtros iguais. */
 export function filtrosParaUrl(f: FiltrosCaixa): string {
   const p = new URLSearchParams();
+  if (f.visao) p.set('visao', f.visao);
   if (f.atalho) p.set('ver', f.atalho);
   if (f.busca) p.set('q', f.busca);
   if (f.status?.length) p.set('status', f.status.join(','));
