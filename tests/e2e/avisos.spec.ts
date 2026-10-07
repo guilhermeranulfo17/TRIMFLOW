@@ -9,6 +9,7 @@ import {
   SENHA_SEED,
   escolherTipoDeFesta,
   irAoPasso2,
+  continuarAte,
 } from './helpers';
 
 /*
@@ -139,10 +140,7 @@ test('cliente pede pré-reserva pelo link; o sino do dono sobe e o aviso abre o 
   await cliente.getByRole('spinbutton', { name: 'Adultos' }).fill('40');
   await expect(cliente.getByTestId('motivo')).toHaveText('');
   await expect(cliente.getByTestId('preco-resumo')).toContainText('R$');
-  await expect(async () => {
-    await cliente.getByRole('button', { name: 'Continuar' }).click();
-    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 3 de 6/, { timeout: 2_000 });
-  }).toPass();
+  await continuarAte(cliente, 3);
   await cliente.getByLabel('Seu nome').fill(nome);
   await cliente.getByLabel('Seu WhatsApp').fill(whatsappNovo());
   await cliente.getByRole('checkbox').check();
@@ -150,11 +148,7 @@ test('cliente pede pré-reserva pelo link; o sino do dono sobe e o aviso abre o 
   await cliente.getByRole('button', { name: 'Ver pacotes e valores' }).click();
   await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 4 de 6/);
   await cliente.getByTestId('opcao-pacote').first().click();
-  // o toque pode chegar enquanto o preço do pacote escolhido ainda está sendo calculado
-  await expect(async () => {
-    await cliente.getByRole('button', { name: 'Continuar' }).click();
-    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 5 de 6/, { timeout: 2_000 });
-  }).toPass();
+  await continuarAte(cliente, 5);
   await cliente.getByRole('button', { name: 'Ver minha proposta' }).click();
   await expect(cliente).toHaveURL(/\/proposta\/[A-Za-z0-9_-]{32,}$/);
   await cliente.getByRole('button', { name: 'Quero reservar esta data' }).click();

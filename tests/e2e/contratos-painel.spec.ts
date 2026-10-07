@@ -101,7 +101,9 @@ test.describe('contrato no painel', () => {
     await expect(page.getByTestId('assinaturas')).toContainText('***.982.247-**');
     await page.getByTestId('ver-cpf').click();
     await expect(page.getByTestId('cpf-completo')).toHaveText('529.982.247-25');
-    await expect(historico).toContainText('viu o CPF completo');
+    // a visualização do CPF fica registrada no histórico do contrato
+    await page.reload();
+    await expect(page.getByTestId('historico-contrato')).toContainText('viu o CPF completo');
     expect(await semRolagemHorizontal(page)).toBe(true);
     const href = await page.getByTestId('baixar-pdf-contrato').getAttribute('href');
     const pdf = await page.request.get(href!);

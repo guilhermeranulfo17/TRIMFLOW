@@ -6,6 +6,7 @@ import {
   SENHA_SEED,
   escolherTipoDeFesta,
   irAoPasso2,
+  continuarAte,
 } from './helpers';
 
 /*
@@ -57,10 +58,7 @@ async function leadNovoPeloLink(browser: Browser, nome: string, whatsapp: string
   // espera a prévia do servidor (sem motivo de bloqueio e com o preço) antes de continuar
   await expect(cliente.getByTestId('motivo')).toHaveText('');
   await expect(cliente.getByTestId('preco-resumo')).toContainText('R$');
-  await expect(async () => {
-    await cliente.getByRole('button', { name: 'Continuar' }).click();
-    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 3 de 6/, { timeout: 2_000 });
-  }).toPass();
+  await continuarAte(cliente, 3);
   await cliente.getByLabel('Seu nome').fill(nome);
   await cliente.getByLabel('Seu WhatsApp').fill(whatsapp);
   await cliente.getByRole('checkbox').check();

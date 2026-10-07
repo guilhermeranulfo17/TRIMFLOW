@@ -7,6 +7,7 @@ import {
   semRolagemHorizontal,
   SENHA_SEED,
   irAoPasso2,
+  continuarAte,
 } from './helpers';
 
 /*
@@ -125,11 +126,7 @@ test('cadastro → onboarding digitando só os preços → link no ar com os pre
   await cliente.locator('[data-testid="turno"]:not([disabled])').first().click();
   await cliente.getByRole('spinbutton', { name: 'Adultos' }).fill('20');
   await expect(cliente.getByTestId('preco-resumo')).toContainText('R$');
-  // o primeiro toque pode chegar antes de o passo terminar de calcular: tenta até avançar
-  await expect(async () => {
-    await cliente.getByRole('button', { name: 'Continuar' }).click();
-    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 3 de 6/, { timeout: 2_000 });
-  }).toPass();
+  await continuarAte(cliente, 3);
   await cliente.getByLabel('Seu nome').fill('Cliente do Teste');
   await cliente.getByLabel('Seu WhatsApp').fill('34992223399');
   await cliente.getByRole('checkbox').check();
@@ -137,11 +134,7 @@ test('cadastro → onboarding digitando só os preços → link no ar com os pre
   await cliente.getByRole('button', { name: 'Ver pacotes e valores' }).click();
   await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 4 de 6/);
   await cliente.getByTestId('opcao-pacote').filter({ hasText: 'Alegria' }).click();
-  // o toque pode chegar enquanto o preço do pacote escolhido ainda está sendo calculado
-  await expect(async () => {
-    await cliente.getByRole('button', { name: 'Continuar' }).click();
-    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 5 de 6/, { timeout: 2_000 });
-  }).toPass();
+  await continuarAte(cliente, 5);
   await cliente.getByRole('button', { name: 'Ver minha proposta' }).click();
   await expect(cliente.getByTestId('total-proposta')).toContainText('R$ 3.333,00');
   await cliente.context().close();
