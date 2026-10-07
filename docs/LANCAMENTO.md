@@ -38,7 +38,8 @@ A senha do banco e o token do Supabase ficaram expostos. Troque os dois antes de
    continua publicando normalmente. (Repositório privado no plano gratuito do GitHub tem 2.000
    minutos de Actions por mês: cada PR gasta uns 20.)
 6. **Confira:** GitHub → **Actions → Migrations em produção → Run workflow**. Ficou verde = senha
-   e token novos funcionando. Abra `https://trimflow-tau.vercel.app/api/saude`: `"ok": true`.
+   e token novos funcionando. Abra `https://trimflow-tau.vercel.app/api/saude`: `"ok": true` (desde a Etapa 10 o item
+   `contratos_chave` só fica verde com a `CONTRATOS_CHAVE` cadastrada).
 
 ## 2. Variáveis da Vercel
 

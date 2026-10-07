@@ -33,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <ProvedorToast>
         {/* data-painel + data-tema escolhem os tokens do painel (globals.css, ARQUITETURA §59) */}
         <div className="flex min-h-dvh" data-painel data-tema={tema}>
-          <Suspense fallback={<Sidebar />}>
+          <Suspense fallback={<Sidebar dono={usuario.perfil === 'dono'} />}>
             <SidebarComBadges usuario={usuario} />
           </Suspense>
           <div className="flex min-w-0 flex-1 flex-col">
@@ -63,7 +63,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
         <BotaoOrcamento />
-        <Suspense fallback={<BottomNav />}>
+        <Suspense fallback={<BottomNav dono={usuario.perfil === 'dono'} />}>
           <BottomNavComBadges usuario={usuario} />
         </Suspense>
       </ProvedorToast>

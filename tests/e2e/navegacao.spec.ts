@@ -13,6 +13,13 @@ type Area = {
 const AREAS: Area[] = [
   // A agenda do Buffet Demo já tem eventos (seed): confere o botão principal em vez do vazio.
   { rotulo: 'Agenda', url: /\/app\/agenda$/, titulo: 'Agenda', botao: 'Registrar evento' },
+  // Etapa 10: contratos (só o dono); os filtros aparecem mesmo sem contrato
+  {
+    rotulo: 'Contratos',
+    url: /\/app\/contratos$/,
+    titulo: 'Contratos',
+    lista: 'filtros-contratos',
+  },
   // Números do Buffet Demo vêm do seed (Etapa 8): confere os cartões.
   { rotulo: 'Números', url: /\/app\/numeros$/, titulo: 'Números', lista: 'cartoes-numeros' },
   {
@@ -25,7 +32,7 @@ const AREAS: Area[] = [
   { rotulo: 'Leads', url: /\/app\/leads$/, titulo: 'Leads', lista: 'lista-leads' },
 ];
 
-test('navega pelas 4 áreas sem rolagem horizontal', async ({ page }) => {
+test('navega pelas áreas do menu sem rolagem horizontal', async ({ page }) => {
   await entrar(page, 'dono@demo.local', SENHA_SEED);
   await expect(page.getByTestId('nome-buffet')).toHaveText('Buffet Demo');
 

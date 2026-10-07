@@ -1,4 +1,5 @@
 import 'server-only';
+import { contratoDeExemplo } from '@/domain/contratos/exemplo';
 import { sql } from 'drizzle-orm';
 import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { modeloDoSegmento } from '@/domain/modelos';
@@ -65,6 +66,49 @@ export async function recriarDemo(d: DepsDemo): Promise<{ empresaId: string; lea
     const [p] = (await tx.execute(
       sql`select public.demo_popular(${empresaId}::uuid) as n`,
     )) as unknown as { n: number }[];
+
+    // Etapa 10: um contrato já assinado, da primeira festa confirmada da demo
+    const [rx] = (await tx.execute(sql`
+      select r.id, r.cliente_nome, r.cliente_whatsapp_e164, r.data::text as data, r.convidados,
+        coalesce(r.valor_total_centavos, 0) as total, coalesce(r.sinal_centavos, 0) as sinal,
+        e.nome as buffet, (now() at time zone e.fuso)::date::text as hoje
+      from public.reservas r join public.empresas e on e.id = r.empresa_id
+      where r.empresa_id = ${empresaId}::uuid and r.tipo = 'confirmada' and r.status = 'ativa'
+        and r.lead_id is not null and coalesce(r.valor_total_centavos, 0) > 0
+      order by r.data limit 1`)) as unknown as {
+      id: string;
+      cliente_nome: string;
+      cliente_whatsapp_e164: string | null;
+      data: string;
+      convidados: number | null;
+      total: number;
+      sinal: number;
+      buffet: string;
+      hoje: string;
+    }[];
+    if (rx) {
+      const c = contratoDeExemplo({
+        buffet: rx.buffet,
+        cliente: rx.cliente_nome,
+        whatsappE164: rx.cliente_whatsapp_e164,
+        data: rx.data,
+        convidados: rx.convidados,
+        totalCentavos: Number(rx.total),
+        sinalCentavos: Number(rx.sinal),
+        hoje: rx.hoje,
+      });
+      const dados = {
+        reserva_id: rx.id,
+        titulo: c.titulo,
+        texto: c.texto,
+        valores: c.valores,
+        modelo_origem: c.modeloOrigem,
+        cliente: rx.cliente_nome,
+      };
+      await tx.execute(
+        sql`select public.demo_contrato_exemplo(${empresaId}::uuid, ${JSON.stringify(dados)}::jsonb)`,
+      );
+    }
     return { empresaId, leads: Number(p?.n ?? 0) };
   });
 }

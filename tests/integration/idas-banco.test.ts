@@ -58,6 +58,11 @@ const LIMITE: Record<string, number> = {
   privacidade: 2,
   // Etapa 10: prévia do contrato (orçamento vigente; itens, reserva e modelo juntos)
   contrato_novo: 4,
+  // Etapa 10 PR 2: lista (contratos + contagem), detalhe (contrato, assinaturas, histórico e
+  // ligados em pipeline) e modelos
+  contratos: 2,
+  contrato: 3,
+  contrato_modelos: 2,
 };
 
 describe('idas ao banco por tela', () => {
@@ -160,6 +165,28 @@ describe('idas ao banco por tela', () => {
       comUsuario(u.id, (tx) => prepararContrato(u, { orcamentoId: o!.id, preencher: {} }, tx)),
     );
     expect(n).toBeLessThanOrEqual(LIMITE.contrato_novo!);
+  });
+
+  it('contratos: lista, detalhe e modelos', async () => {
+    const u = await usuarioDono();
+    const { carregarListaContratos, carregarDetalheContrato, carregarModelos } =
+      await import('@/server/contratos/painel');
+    const { obterDb } = await import('@/server/db/client');
+    const { sql } = await import('drizzle-orm');
+    const [c] = await obterDb().execute<{ id: string }>(
+      sql`select id from public.contratos where empresa_id = ${IDS.empresaA} limit 1`,
+    );
+    expect(await medir('contratos', () => carregarListaContratos(u, 'todos'))).toBeLessThanOrEqual(
+      LIMITE.contratos!,
+    );
+    expect(
+      await medir('contrato', () =>
+        carregarDetalheContrato(u, c?.id ?? '00000000-0000-4000-8000-000000000000'),
+      ),
+    ).toBeLessThanOrEqual(LIMITE.contrato!);
+    expect(await medir('contrato_modelos', () => carregarModelos(u))).toBeLessThanOrEqual(
+      LIMITE.contrato_modelos!,
+    );
   });
 
   it('landing (preços da vitrine)', async () => {

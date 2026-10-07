@@ -15,7 +15,13 @@ export async function enviarEmailContrato(
   para: string,
   email: EmailMontado,
   chaveIdempotencia: string,
-  o: { config?: ConfigEmail | null; fetch?: typeof fetch; tag?: string } = {},
+  o: {
+    config?: ConfigEmail | null;
+    fetch?: typeof fetch;
+    tag?: string;
+    /** anexos (o PDF da cópia do contrato), em base64 */
+    anexos?: { arquivo: string; conteudo: Uint8Array }[];
+  } = {},
 ): Promise<ResultadoEmail> {
   const config = o.config === undefined ? configEmail() : o.config;
   if (!config) return { ok: false, erro: 'CANAL_DESLIGADO' };
@@ -35,8 +41,16 @@ export async function enviarEmailContrato(
         html: email.html,
         text: email.texto,
         tags: [{ name: 'tipo', value: o.tag ?? 'contrato' }],
+        ...(o.anexos?.length
+          ? {
+              attachments: o.anexos.map((a) => ({
+                filename: a.arquivo,
+                content: Buffer.from(a.conteudo).toString('base64'),
+              })),
+            }
+          : {}),
       }),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(o.anexos?.length ? 20_000 : 10_000),
     });
   } catch {
     return { ok: false, erro: 'EMAIL_REDE' };

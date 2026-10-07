@@ -125,7 +125,11 @@ test('cadastro → onboarding digitando só os preços → link no ar com os pre
   await cliente.locator('[data-testid="turno"]:not([disabled])').first().click();
   await cliente.getByRole('spinbutton', { name: 'Adultos' }).fill('20');
   await expect(cliente.getByTestId('preco-resumo')).toContainText('R$');
-  await cliente.getByRole('button', { name: 'Continuar' }).click();
+  // o primeiro toque pode chegar antes de o passo terminar de calcular: tenta até avançar
+  await expect(async () => {
+    await cliente.getByRole('button', { name: 'Continuar' }).click();
+    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 3 de 6/, { timeout: 2_000 });
+  }).toPass();
   await cliente.getByLabel('Seu nome').fill('Cliente do Teste');
   await cliente.getByLabel('Seu WhatsApp').fill('34992223399');
   await cliente.getByRole('checkbox').check();

@@ -21,6 +21,11 @@ export const TIPOS_AVISO = [
   'boas_vindas',
   'exportacao_pronta',
   'exclusao_agendada',
+  // Etapa 10: contrato digital (só para o dono)
+  'contrato_aberto',
+  'contrato_assinado',
+  'contrato_ajuste',
+  'contrato_vencendo',
 ] as const;
 export type TipoAviso = (typeof TIPOS_AVISO)[number];
 
@@ -61,6 +66,7 @@ export const TIPOS_COM_EMAIL = [
   'conta_suspensa',
   'exportacao_pronta',
   'exclusao_agendada',
+  'contrato_assinado',
 ] as const satisfies readonly TipoAviso[];
 
 export const recebeEmail = (tipo: TipoAviso): boolean =>
@@ -93,6 +99,10 @@ export const CANAIS_PADRAO: Record<TipoAviso, CanalExterno[]> = {
   boas_vindas: ['push'],
   exportacao_pronta: ['push'],
   exclusao_agendada: ['push'],
+  contrato_aberto: ['push'],
+  contrato_assinado: ['push'],
+  contrato_ajuste: ['push'],
+  contrato_vencendo: ['push'],
 };
 
 export const ROTULO_TIPO_AVISO: Record<TipoAviso, string> = {
@@ -113,7 +123,22 @@ export const ROTULO_TIPO_AVISO: Record<TipoAviso, string> = {
   boas_vindas: 'Boas-vindas',
   exportacao_pronta: 'Exportação dos dados',
   exclusao_agendada: 'Exclusão da conta',
+  contrato_aberto: 'Cliente abriu o contrato',
+  contrato_assinado: 'Contrato assinado',
+  contrato_ajuste: 'Cliente pediu ajuste no contrato',
+  contrato_vencendo: 'Link do contrato vencendo',
 };
+
+/** Avisos do contrato (Etapa 10): só para o dono (o vendedor não vê contratos). */
+export const TIPOS_CONTRATO = [
+  'contrato_aberto',
+  'contrato_assinado',
+  'contrato_ajuste',
+  'contrato_vencendo',
+] as const satisfies readonly TipoAviso[];
+
+export const ehAvisoContrato = (tipo: TipoAviso): boolean =>
+  (TIPOS_CONTRATO as readonly TipoAviso[]).includes(tipo);
 
 /** Só estes tipos têm modelo aprovado no WhatsApp (docs/WHATSAPP_MODELOS.md). */
 export const TIPOS_COM_WHATSAPP: TipoAviso[] = [

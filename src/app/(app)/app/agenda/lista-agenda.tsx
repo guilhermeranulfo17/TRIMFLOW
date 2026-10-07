@@ -1,5 +1,6 @@
 'use client';
 
+import { SeloStatusContrato } from '@/components/app/contratos/selo-contrato';
 import { ChevronRight, Lock } from 'lucide-react';
 import { SeloEstado } from '@/components/app/agenda/estados';
 import { prazoRestante } from '@/domain/agenda';
@@ -70,6 +71,7 @@ export function ListaAgenda({
                     </span>
                     <span className="flex items-center gap-1.5">
                       {r.veioDoLink && <SeloLink />}
+                      {r.contratoStatus && <SeloStatusContrato status={r.contratoStatus} curto />}
                       <SeloEstado
                         estado={r.tipo === 'pre_reserva' ? 'pre_reservado' : 'reservado'}
                       />

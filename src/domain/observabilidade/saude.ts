@@ -20,6 +20,8 @@ export type DadosSaude = {
   jobs: JobCron[] | null;
   asaasConfigurado: boolean;
   planosVitrine: boolean;
+  /** Etapa 10: CONTRATOS_CHAVE válida (sem ela, o cliente não consegue assinar) */
+  contratosChave: boolean;
 };
 
 export type ItemSaude = { item: string; ok: boolean; detalhe?: string };
@@ -68,5 +70,10 @@ export function avaliarSaude(d: DadosSaude, agora = new Date()): Saude {
     ...(d.asaasConfigurado ? {} : { detalhe: 'não configurado' }),
   });
   itens.push({ item: 'planos_vitrine', ok: d.planosVitrine });
+  itens.push({
+    item: 'contratos_chave',
+    ok: d.contratosChave,
+    ...(d.contratosChave ? {} : { detalhe: 'CONTRATOS_CHAVE ausente ou inválida' }),
+  });
   return { ok: itens.every((i) => i.ok), itens };
 }
