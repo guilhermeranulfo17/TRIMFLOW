@@ -1674,3 +1674,17 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   nativo do navegador (sem biblioteca). No celular cada etapa é uma aba e o card tem "Mover
   para". Uma estrutura só para os dois tamanhos (no celular aparece só a coluna da aba). Conta
   suspensa e demo não movem.
+
+## 75. PDF em produção (correção)
+
+- **O que aconteceu:** todo PDF (proposta no painel e do cliente, contrato, proposta de exemplo e
+  QR) dava erro 500 na Vercel, com o CI verde. Na Vercel cada rota leva só os arquivos que o
+  rastreio do Next encontra; o pdfkit (dentro do `@react-pdf/renderer`) carrega a fonte padrão
+  (`pdfkit/js/standard-fonts/*.cjs`) por `require` dinâmico, que o rastreio não vê. Em
+  `next start` e no CI o `node_modules` inteiro está no disco, então lá funcionava.
+- **Correção:** `next.config.ts` inclui as fontes da proposta e `pdfkit/js/**` em todas as rotas
+  de `ROTAS_PDF`. Reproduzido e conferido com `output: 'standalone'` (o mesmo rastreio da Vercel)
+  rodando fora da pasta do projeto: antes 500 com `Cannot find module …/Helvetica.cjs`, depois
+  `%PDF-`.
+- **Guarda:** `tests/unit/config/pdf-rastreio.test.ts` falha se uma rota que gera PDF ficar fora
+  de `ROTAS_PDF` ou se o glob do pdfkit não achar a versão instalada.
