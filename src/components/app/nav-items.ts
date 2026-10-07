@@ -4,6 +4,7 @@ import {
   CalendarDays,
   FileSignature,
   Inbox,
+  UsersRound,
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -15,12 +16,13 @@ export type ItemNav = {
   soDono?: boolean;
   /** rótulo na barra do celular (5 itens não cabem com o nome longo) */
   curto?: string;
-  /** fora da barra do celular (cabem 5): o acesso no celular é pela Agenda e pelo lead */
+  /** fora da barra do celular (cabem 5): o acesso no celular é por atalho (Leads, Agenda, lead) */
   soMenuLateral?: boolean;
 };
 
 export const ITENS_NAV: readonly ItemNav[] = [
   { href: '/app/leads', rotulo: 'Leads', icone: Inbox },
+  { href: '/app/clientes', rotulo: 'Clientes', icone: UsersRound, soMenuLateral: true },
   { href: '/app/agenda', rotulo: 'Agenda', icone: CalendarDays },
   { href: '/app/contratos', rotulo: 'Contratos', icone: FileSignature, soDono: true },
   {

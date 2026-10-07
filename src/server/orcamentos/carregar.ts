@@ -6,7 +6,14 @@ import type { ContextoPreco, Id } from '@/domain/preco';
 import type { TextosComerciais } from '@/domain/proposta';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { carregarContexto } from '@/server/catalogo/carregar';
-import { leads, orcamentos, regrasComerciais, tiposEvento, usuarios } from '@/server/db/schema';
+import {
+  leads,
+  orcamentos,
+  regrasComerciais,
+  reservas,
+  tiposEvento,
+  usuarios,
+} from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 
 /*
@@ -137,4 +144,20 @@ export async function carregarClienteDoLead(usuario: UsuarioAtual, leadId: strin
   );
   // lead anonimizado (LGPD): sem WhatsApp, o "+ Orçamento" começa do zero
   return l?.whatsapp ? { ...l, whatsapp: l.whatsapp } : null;
+}
+
+/**
+ * Cliente de uma festa feita direto na Agenda, sem lead ("Nova festa" na ficha do cliente,
+ * Etapa 12). Só o nome e o WhatsApp da reserva; o orçamento cria o lead ao salvar.
+ */
+export async function carregarClienteDaReserva(usuario: UsuarioAtual, reservaId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(reservaId)) return null;
+  const [r] = await comUsuario(usuario.id, (tx) =>
+    tx
+      .select({ whatsapp: reservas.clienteWhatsappE164, nome: reservas.clienteNome })
+      .from(reservas)
+      .where(eq(reservas.id, reservaId))
+      .limit(1),
+  );
+  return r?.whatsapp ? { whatsapp: r.whatsapp, nome: r.nome, origem: 'outro' as const } : null;
 }
