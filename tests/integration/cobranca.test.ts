@@ -591,6 +591,10 @@ describe('conta suspensa = somente leitura', () => {
     'emitir_contrato',
     'cancelar_contrato',
     'novo_link_contrato',
+    // Etapa 11: financeiro
+    'salvar_plano_pagamento',
+    'registrar_recebimento',
+    'estornar_recebimento',
   ];
 
   it('toda função de escrita do painel está classificada', async () => {
