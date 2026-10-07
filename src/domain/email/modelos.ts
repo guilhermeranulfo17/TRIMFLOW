@@ -11,7 +11,7 @@ import { recebeEmail, type TipoAviso } from '../avisos/canais';
 export type EmailMontado = { assunto: string; html: string; texto: string };
 
 const GRAFITE = '#0c0c0c';
-const LIMAO = '#3ee42e';
+const LIMAO = '#b2f759';
 const GELO = '#f6f7f5';
 const CINZA = '#55575a';
 
