@@ -1604,3 +1604,26 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   encosta à direita para as pessoas aparecerem inteiras; no celular ela fica em cima e o texto
   embaixo. A imagem é decorativa (`alt` vazio): não é cliente nem depoimento. O celular com
   órbitas saiu (e com ele `ContadorValor`).
+
+## 72. Financeiro da festa (Etapa 11)
+
+- **O que é:** o controle do dinheiro de cada festa confirmada: plano de pagamento (sinal e
+  parcelas) e os pagamentos recebidos. Não cobra o cliente (sem Pix automático nem boleto): o
+  dono lança o que recebeu. Cobrança automática fica para depois (`PROXIMOS_PASSOS`).
+- **Tabelas** (`20261017000001_financeiro.sql`): `reserva_parcelas` (o plano, trocado inteiro) e
+  `recebimentos` (nunca apagados; erro vira estorno, que fica riscado no histórico). Só o dono lê
+  (RLS) e escreve, só por `salvar_plano_pagamento`, `registrar_recebimento` e
+  `estornar_recebimento` (reserva confirmada, auditoria, `_exigir_escrita`: conta suspensa e demo).
+  Recebimento com data no futuro é recusado.
+- **Situação calculada no servidor** (`domain/financeiro`, sem espelho em SQL): os recebimentos
+  quitam as parcelas em ordem de vencimento; parcela com falta e vencimento antes de hoje (fuso
+  da empresa) = atrasada; vence hoje ainda está em dia. Status da festa: sem plano, em dia,
+  atrasado, quitado. Recebido acima do total aparece como aviso (pode ser lançamento em dobro).
+- **Plano sugerido:** sinal da reserva (vence na data em que foi pago, ou hoje) e o saldo nas
+  parcelas das regras do buffet (o mesmo `calcularParcelas` do orçamento). A soma do plano vira o
+  valor total da reserva. Na primeira vez que o plano é salvo, o sinal marcado como pago na
+  Agenda vira um recebimento (antes disso, as telas já o contam como recebido).
+- **Telas:** `/app/financeiro` (recebido no mês, vence em 30 dias, atrasado, saldo; filtros a
+  receber, atrasados, vence em 30 dias, quitados, todos; festas do último ano em diante) e
+  `/app/financeiro/[reservaId]` (resumo, parcelas, montar ou editar o plano, registrar pagamento,
+  estornar). Menu lateral só do dono; no celular, atalho na Agenda e "Pagamentos da festa" no lead.

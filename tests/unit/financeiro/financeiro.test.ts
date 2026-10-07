@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   filtroFinanceiroDaUrl,
   noFiltro,
+  recebimentosComSinalDaAgenda,
   resumoFinanceiro,
   situacaoFinanceira,
   sugerirPlano,
@@ -155,5 +156,18 @@ describe('validarPlano, filtros e resumo', () => {
       atrasadoCentavos: 125000,
       saldoTotalCentavos: 300000,
     });
+  });
+});
+
+describe('sinal da Agenda antes do plano', () => {
+  it('conta só sem plano e sem recebimentos', () => {
+    const sinal = { centavos: 150000, pagoEm: '2026-09-10' };
+    expect(recebimentosComSinalDaAgenda([], false, sinal)).toEqual([rec(150000)]);
+    expect(recebimentosComSinalDaAgenda([], true, sinal)).toEqual([]);
+    expect(recebimentosComSinalDaAgenda([rec(1)], false, sinal)).toEqual([rec(1)]);
+    expect(recebimentosComSinalDaAgenda([], false, { centavos: 0, pagoEm: '2026-09-10' })).toEqual(
+      [],
+    );
+    expect(recebimentosComSinalDaAgenda([], false, { centavos: 100, pagoEm: null })).toEqual([]);
   });
 });

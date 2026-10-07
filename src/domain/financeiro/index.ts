@@ -175,6 +175,26 @@ export const MENSAGEM_ERRO_PLANO: Record<ErroPlano, string> = {
   data: 'Confira as datas de vencimento.',
 };
 
+/**
+ * Antes de montar o plano, o sinal marcado como pago na Agenda conta como recebido (ao salvar o
+ * plano pela primeira vez, o banco grava esse recebimento de verdade: salvar_plano_pagamento).
+ */
+export function recebimentosComSinalDaAgenda(
+  recebimentos: Recebimento[],
+  temPlano: boolean,
+  sinal: { centavos: number | null; pagoEm: DataCivil | null },
+): Recebimento[] {
+  if (
+    temPlano ||
+    recebimentos.length > 0 ||
+    !sinal.pagoEm ||
+    !sinal.centavos ||
+    sinal.centavos <= 0
+  )
+    return recebimentos;
+  return [{ valorCentavos: sinal.centavos, recebidoEm: sinal.pagoEm, estornado: false }];
+}
+
 // ---------------------------------------------------------------------------------------------
 // Tela do Financeiro: filtros e resumo do período
 // ---------------------------------------------------------------------------------------------

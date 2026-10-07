@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { hojeNoFuso, somarDias } from '@/domain/dates';
 import {
   noFiltro,
+  recebimentosComSinalDaAgenda,
   resumoFinanceiro,
   situacaoFinanceira,
   sugerirPlano,
@@ -73,6 +74,8 @@ export async function carregarFinanceiro(
           anonimizado: leads.anonimizadoEm,
           data: reservas.data,
           total: reservas.valorTotalCentavos,
+          sinal: reservas.sinalCentavos,
+          sinalPagoEm: reservas.sinalPagoEm,
           tipoEvento: tiposEvento.nome,
         })
         .from(reservas)
@@ -121,7 +124,11 @@ export async function carregarFinanceiro(
       recDe.set(r.reservaId, l);
     }
     const todas = lista.map((r) => {
-      const rs = recDe.get(r.id) ?? [];
+      const plano = planoDe.get(r.id) ?? [];
+      const rs = recebimentosComSinalDaAgenda(recDe.get(r.id) ?? [], plano.length > 0, {
+        centavos: r.sinal,
+        pagoEm: r.sinalPagoEm,
+      });
       return {
         festa: {
           reservaId: r.id,
@@ -129,7 +136,7 @@ export async function carregarFinanceiro(
           cliente: r.anonimizado ? 'Titular removido' : (r.leadNome ?? r.cliente),
           data: r.data,
           tipoEvento: r.tipoEvento,
-          situacao: situacaoFinanceira(planoDe.get(r.id) ?? [], rs, hoje, r.total),
+          situacao: situacaoFinanceira(plano, rs, hoje, r.total),
         },
         recebimentos: rs,
       };
@@ -174,6 +181,8 @@ export type FinanceiroDaFesta = {
   /** plano salvo ou, sem plano, a sugestão (sinal + parcelas das regras) */
   plano: ParcelaPlano[];
   situacao: SituacaoFinanceira;
+  /** sinal marcado como pago na Agenda, ainda sem plano (vira recebimento ao salvar o plano) */
+  sinalDaAgenda: { centavos: number; pagoEm: string } | null;
   recebimentos: RecebimentoTela[];
 };
 
@@ -265,14 +274,22 @@ export async function carregarFinanceiroDaFesta(
       plano: salvo.length ? salvo : sugestao,
       situacao: situacaoFinanceira(
         salvo,
-        lista.map((x) => ({
-          valorCentavos: x.valorCentavos,
-          recebidoEm: x.recebidoEm,
-          estornado: !!x.estornadoEm,
-        })),
+        recebimentosComSinalDaAgenda(
+          lista.map((x) => ({
+            valorCentavos: x.valorCentavos,
+            recebidoEm: x.recebidoEm,
+            estornado: !!x.estornadoEm,
+          })),
+          salvo.length > 0,
+          { centavos: r.sinal, pagoEm: r.sinalPagoEm },
+        ),
         hoje,
         r.total,
       ),
+      sinalDaAgenda:
+        salvo.length === 0 && lista.length === 0 && r.sinalPagoEm && (r.sinal ?? 0) > 0
+          ? { centavos: r.sinal!, pagoEm: r.sinalPagoEm }
+          : null,
       recebimentos: lista,
     };
   });

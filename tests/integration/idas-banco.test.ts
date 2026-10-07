@@ -63,6 +63,9 @@ const LIMITE: Record<string, number> = {
   contratos: 2,
   contrato: 3,
   contrato_modelos: 2,
+  // Etapa 11: Financeiro (reservas, parcelas e recebimentos em pipeline) e a festa
+  financeiro: 3,
+  financeiro_festa: 3,
 };
 
 describe('idas ao banco por tela', () => {
@@ -187,6 +190,24 @@ describe('idas ao banco por tela', () => {
     expect(await medir('contrato_modelos', () => carregarModelos(u))).toBeLessThanOrEqual(
       LIMITE.contrato_modelos!,
     );
+  });
+
+  it('financeiro: tela e festa', async () => {
+    const u = await usuarioDono();
+    const { carregarFinanceiro, carregarFinanceiroDaFesta } =
+      await import('@/server/financeiro/carregar');
+    const { obterDb } = await import('@/server/db/client');
+    const { sql } = await import('drizzle-orm');
+    const [r] = await obterDb().execute<{ id: string }>(
+      sql`select id from public.reservas where empresa_id = ${IDS.empresaA}
+        and tipo = 'confirmada' and status = 'ativa' limit 1`,
+    );
+    expect(await medir('financeiro', () => carregarFinanceiro(u, 'abertos'))).toBeLessThanOrEqual(
+      LIMITE.financeiro!,
+    );
+    expect(
+      await medir('financeiro_festa', () => carregarFinanceiroDaFesta(u, r!.id)),
+    ).toBeLessThanOrEqual(LIMITE.financeiro_festa!);
   });
 
   it('landing (preços da vitrine)', async () => {

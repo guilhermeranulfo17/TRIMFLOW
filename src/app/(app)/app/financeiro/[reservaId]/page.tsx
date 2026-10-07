@@ -153,6 +153,8 @@ export default async function FinanceiroFestaPage({ params }: Props) {
 
       {escrever && (
         <RegistrarPagamento
+          // nova sugestão (plano salvo, pagamento lançado): o formulário recomeça com ela
+          key={`${s.proxima?.faltaCentavos ?? ''}-${s.saldoCentavos}`}
           reservaId={f.reservaId}
           hoje={f.hoje}
           sugestaoCentavos={s.proxima?.faltaCentavos ?? (s.saldoCentavos || null)}
@@ -163,7 +165,12 @@ export default async function FinanceiroFestaPage({ params }: Props) {
         <h2 id="titulo-recebidos" className="mb-2 font-bold">
           Pagamentos recebidos
         </h2>
-        {f.recebimentos.length === 0 ? (
+        {f.sinalDaAgenda ? (
+          <p className="text-sm" data-testid="sinal-da-agenda">
+            Sinal de {formatBRL(f.sinalDaAgenda.centavos)} marcado como pago na Agenda em{' '}
+            {formatData(f.sinalDaAgenda.pagoEm)}. Ele entra aqui quando você salvar o plano.
+          </p>
+        ) : f.recebimentos.length === 0 ? (
           <p className="text-muted-foreground text-sm">Nenhum pagamento registrado ainda.</p>
         ) : (
           <ul className="divide-y" data-testid="recebimentos">
