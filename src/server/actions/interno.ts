@@ -1,7 +1,7 @@
 'use server';
 
 import { sql } from 'drizzle-orm';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { redirect, unstable_rethrow } from 'next/navigation';
 import { z } from 'zod';
 import { mensagemDeErroAuth } from '@/server/erros';
@@ -9,7 +9,6 @@ import { criarClienteSupabase } from '@/server/auth/supabase-server';
 import { depsCobranca } from '@/server/cobranca/deps';
 import { aplicarCupom, criarImplantacao, mudarPlano } from '@/server/cobranca/fluxos';
 import { obterDb } from '@/server/db/client';
-import { TAG_PLANOS } from '@/server/marketing/cache';
 import { ehAdminOrkestra, exigirAdmin, type AdminAtual } from '@/server/interno/guard';
 import {
   abrirSessaoSuporte,
@@ -185,7 +184,6 @@ export async function aplicarCupomInterno(
     if (!deps) return { ok: false, erro: COBRANCA_DESLIGADA };
     const r = await aplicarCupom(deps, { empresaId, codigo, admin: admin.email });
     if (!r.ok) return { ok: false, erro: r.erro };
-    revalidateTag(TAG_PLANOS); // vagas do FUNDADOR na landing
     return { ok: true, mensagem: 'Cupom aplicado.' };
   }, empresaId);
 }

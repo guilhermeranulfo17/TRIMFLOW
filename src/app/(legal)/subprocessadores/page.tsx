@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Empresas que ajudam o Orkestra a operar o serviço e quais dados cada uma trata.',
 };
 
-/** MODELO (Etapa 9B): conferir com advogado e com os contratos de cada provedor. */
+/** Revisado pelo advogado (outubro de 2026). Provedor novo entra aqui e na Privacidade. */
 const LISTA = [
   {
     nome: 'Supabase',

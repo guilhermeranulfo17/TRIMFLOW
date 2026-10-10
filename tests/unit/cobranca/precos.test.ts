@@ -18,8 +18,8 @@ const pro = {
   precoAnualCentavos: 247000,
 };
 const ess = { ...pro, codigo: 'essencial', precoMensalCentavos: 14700, precoAnualCentavos: 147000 };
-const fundador: Cupom = {
-  codigo: 'FUNDADOR',
+const cupom97: Cupom = {
+  codigo: 'TESTE97',
   planoCodigo: 'profissional',
   ciclo: 'mensal',
   descontoCentavos: 15000,
@@ -39,31 +39,31 @@ describe('preços', () => {
     expect(precoDoCiclo(pro, 'anual')).toBe(247000);
   });
 
-  it('cupom de fundador: R$ 97/mês por 12 meses', () => {
-    expect(valorDaAssinatura(pro, 'mensal', fundador)).toBe(9700);
+  it('cupom de R$ 150 de desconto: R$ 97/mês por 12 meses', () => {
+    expect(valorDaAssinatura(pro, 'mensal', cupom97)).toBe(9700);
     expect(valorDaAssinatura(pro, 'mensal', null)).toBe(24700);
-    expect(valorDaAssinatura(ess, 'mensal', { ...fundador, descontoCentavos: 99999 })).toBe(0);
+    expect(valorDaAssinatura(ess, 'mensal', { ...cupom97, descontoCentavos: 99999 })).toBe(0);
     expect(fimDoCupom('2026-11-10', 12)).toBe('2027-11-09');
   });
 
   it('validação do cupom', () => {
     const v = (c: Cupom | null, o: Partial<Parameters<typeof validarCupom>[1]> = {}) =>
       validarCupom(c, { plano: 'profissional', ciclo: 'mensal', agora, jaUsou: false, ...o });
-    expect(v(fundador).ok).toBe(true);
+    expect(v(cupom97).ok).toBe(true);
     expect(v(null)).toEqual({ ok: false, erro: 'Cupom não encontrado.' });
-    expect(v({ ...fundador, ativo: false }).ok).toBe(false);
-    expect(v({ ...fundador, usos: 10 })).toMatchObject({ erro: expect.stringContaining('vagas') });
-    expect(v({ ...fundador, validoAte: new Date('2026-11-01') })).toMatchObject({
+    expect(v({ ...cupom97, ativo: false }).ok).toBe(false);
+    expect(v({ ...cupom97, usos: 10 })).toMatchObject({ erro: expect.stringContaining('vagas') });
+    expect(v({ ...cupom97, validoAte: new Date('2026-11-01') })).toMatchObject({
       erro: 'Este cupom expirou.',
     });
-    expect(v(fundador, { jaUsou: true })).toMatchObject({
+    expect(v(cupom97, { jaUsou: true })).toMatchObject({
       erro: expect.stringContaining('já usou'),
     });
-    expect(v(fundador, { ciclo: 'anual' })).toMatchObject({
+    expect(v(cupom97, { ciclo: 'anual' })).toMatchObject({
       erro: 'Este cupom vale só para o plano Profissional mensal.',
     });
-    expect(v(fundador, { plano: 'essencial' }).ok).toBe(false);
-    expect(normalizarCodigoCupom(' fundador! ')).toBe('FUNDADOR');
+    expect(v(cupom97, { plano: 'essencial' }).ok).toBe(false);
+    expect(normalizarCodigoCupom(' teste97! ')).toBe('TESTE97');
   });
 
   it('período coberto e 1º vencimento', () => {

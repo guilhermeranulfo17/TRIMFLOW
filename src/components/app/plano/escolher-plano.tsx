@@ -134,12 +134,7 @@ export function EscolherPlano({ planos, atual, dados, emailPadrao }: Props) {
 
       {!atual && (
         <>
-          <Campo
-            id="cupom"
-            rotulo="Cupom (opcional)"
-            erro={erros.cupom}
-            dica="Fundador: R$ 97/mês por 12 meses no Profissional mensal."
-          >
+          <Campo id="cupom" rotulo="Cupom (opcional)" erro={erros.cupom}>
             <input
               id="cupom"
               className={cn(classeCampo, 'uppercase')}

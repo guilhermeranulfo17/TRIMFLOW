@@ -18,11 +18,11 @@ const sql = conectar();
 afterAll(() => sql.end());
 
 describe('publico.planos_vitrine', () => {
-  it('anon lê só as colunas públicas dos planos ativos e o FUNDADOR sem ids', async () => {
+  it('anon lê só as colunas públicas dos planos ativos, sem ids e sem cupom', async () => {
     const v = await emTransacao(sql, async (tx) => {
       await assumirAnon(tx);
       const [{ v }] = (await tx`select publico.planos_vitrine() as v`) as unknown as [
-        { v: { planos: Record<string, unknown>[]; fundador: Record<string, unknown> } },
+        { v: Record<string, unknown> & { planos: Record<string, unknown>[] } },
       ];
       return v;
     });
@@ -41,14 +41,7 @@ describe('publico.planos_vitrine', () => {
       ].sort(),
     );
     expect(v.planos[1]).toMatchObject({ preco_mensal_centavos: 24700, max_espacos: null });
-    expect(v.fundador).toMatchObject({
-      plano_codigo: 'profissional',
-      desconto_centavos: 15000,
-      duracao_meses: 12,
-      max_usos: 10,
-      ativo: true,
-    });
-    expect(v.fundador).not.toHaveProperty('id');
+    expect(Object.keys(v)).toEqual(['planos']);
   });
 
   it('plano desativado some da vitrine', async () => {

@@ -63,7 +63,7 @@ src/
     auth/            rotas técnicas: confirm (link do e-mail), callback (Google), sair
     b/[slug]/        página pública do buffet (vitrine com estilo), orcamento (wizard),
                      proposta/[token] (+ /pdf), contrato/[token] (+ /pdf), opengraph-image
-    (legal)/         privacidade, termos (com o acordo de operador) e subprocessadores (modelos)
+    (legal)/         privacidade, termos (com o acordo de operador) e subprocessadores (revisados pelo advogado)
   components/
     ui/              shadcn (não misture regra de negócio aqui)
     app/             painel: sidebar, bottom-nav, header, empty states, toast
@@ -118,7 +118,7 @@ src/
     clientes/        quem é cliente (festas por lead ou WhatsApp), hora de chamar de novo, busca
     cobranca/        situação da conta (= _situacao_conta), limites (= _codigo_plano), CPF/CNPJ,
                      preços e cupom, eventos do Asaas (status monotônico = SQL), MRR, motivos
-    marketing/       landing: preços da vitrine (desconto anual, itens), faixa do FUNDADOR, origem
+    marketing/       landing: preços da vitrine (desconto anual, itens), origem
                      do cadastro (UTM), JSON-LD, simulador (mesmo calcularOrcamento)
     legal/           versão vigente dos Termos e da Privacidade (VERSAO_DOCUMENTOS)
     email/           modelos dos e-mails da conta (HTML + texto, links absolutos)
@@ -298,8 +298,9 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `/auth/callback` → `decidirVoltaExterna` (`server/auth/volta-externa.ts`, regra em
   `domain/auth/destino`); conta nova completa em `/cadastro/completar` (`completar_conta_dono`).
 - **Landing (Etapa 9.6, §62):** `/` estática (ISR 5 min) e fora do middleware (não toca no
-  Auth). Preços, limites, desconto anual e vagas do FUNDADOR só de `publico.planos_vitrine`
-  (nunca valor fixo no código); quem mudar plano ou cupom invalida a tag `planos-vitrine`. Nada de
+  Auth). Preços, limites e desconto anual só de `publico.planos_vitrine`
+  (nunca valor fixo no código; sem preço de fundador); quem mudar plano invalida a tag
+  `planos-vitrine`. Nada de
   depoimento, logo de cliente, nota ou número inventado. Simulador usa o `calcularOrcamento` do
   domínio com preços fictícios. Origem do anúncio (utm_, ref) só por `registrar_origem_cadastro`;
   contagem agregada só por `publico.landing_contar` (sem nada pessoal).
