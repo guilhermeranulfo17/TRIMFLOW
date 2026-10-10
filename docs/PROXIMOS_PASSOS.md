@@ -40,8 +40,8 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   Quando a cobrança mudar o plano, nada a fazer no cache (a identidade do buffet não é cacheada).
 - Agenda de visitas (confirmar, remarcar) e lembrete; hoje a visita é só um pedido no lead.
 - Captcha se os limites e o honeypot não bastarem; QR code do link; domínio próprio do buffet.
-- ~~Exportar e apagar os dados de um lead a pedido~~ (Etapa 9B). Revisão jurídica dos textos de
-  privacidade e termos (continuam modelos, marcados na página).
+- ~~Exportar e apagar os dados de um lead a pedido~~ (Etapa 9B). ~~Revisão jurídica dos textos de
+  privacidade e termos~~ (feita em outubro de 2026; a faixa de modelo saiu da página).
 - Painel de métricas do funil (`funil_eventos`) em Números.
 - Fotos de pacote na página pública usam `<img>`/`next/image` sem otimizador (como na Etapa 2).
 
@@ -187,8 +187,7 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 
 - **Logo oficial:** trocar `components/marca/simbolo.tsx` (e o nome em texto do `Logo`) pelos
   SVGs entregues; gerar de novo favicon, ícones do PWA e a imagem de compartilhamento.
-- **Textos jurídicos:** Termos e Privacidade ainda são texto-modelo (faixa amarela na página);
-  revisão jurídica antes de anunciar.
+- ~~**Textos jurídicos:** revisão jurídica de Termos e Privacidade~~ (feita em outubro de 2026).
 - **Fotos reais** de festa (com direito de uso) no hero e em "Sua página" (hoje capturas do
   Buffet Demo com ilustrações geradas).
 - **Tela dos números da landing** no /interno (visitas, cliques e cadastros por origem): hoje só

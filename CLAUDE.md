@@ -63,7 +63,7 @@ src/
     auth/            rotas técnicas: confirm (link do e-mail), callback (Google), sair
     b/[slug]/        página pública do buffet (vitrine com estilo), orcamento (wizard),
                      proposta/[token] (+ /pdf), contrato/[token] (+ /pdf), opengraph-image
-    (legal)/         privacidade, termos (com o acordo de operador) e subprocessadores (modelos)
+    (legal)/         privacidade, termos (com o acordo de operador) e subprocessadores (revisados pelo advogado)
   components/
     ui/              shadcn (não misture regra de negócio aqui)
     app/             painel: sidebar, bottom-nav, header, empty states, toast
