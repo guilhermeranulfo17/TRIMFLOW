@@ -5,8 +5,11 @@
  * em POST, e continuam funcionando no endereço antigo até serem trocadas (docs/LANCAMENTO.md).
  */
 
-/** Domínios antigos que redirecionam para o atual. */
-export const DOMINIOS_ANTIGOS = ['trimflow-tau.vercel.app'] as const;
+/**
+ * Domínios que redirecionam para o atual: o endereço antigo da Vercel e o domínio próprio sem
+ * "www" (o site é https://www.sistemaorkestra.com.br).
+ */
+export const DOMINIOS_ANTIGOS = ['trimflow-tau.vercel.app', 'sistemaorkestra.com.br'] as const;
 
 /**
  * URL de destino do redirecionamento, ou null se a requisição já está no domínio certo (ou o site
