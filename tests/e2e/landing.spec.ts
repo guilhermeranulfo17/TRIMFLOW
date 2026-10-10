@@ -28,8 +28,10 @@ test('é a landing (sem redirecionar) e não chama o Auth', async ({ page }) => 
   expect(await semRolagemHorizontal(page)).toBe(true);
 });
 
-test('preços, limites e vagas do FUNDADOR são os do banco; mensal e anual', async ({ page }) => {
-  const { planos, cupom } = await noBanco(async (sql) => ({
+test('preços e limites são os do banco, sem faixa de fundador; mensal e anual', async ({
+  page,
+}) => {
+  const { planos } = await noBanco(async (sql) => ({
     planos: await sql<
       {
         codigo: string;
@@ -39,10 +41,6 @@ test('preços, limites e vagas do FUNDADOR são os do banco; mensal e anual', as
       }[]
     >`select codigo, preco_mensal_centavos, preco_anual_centavos, max_usuarios
       from public.planos where ativo order by ordem`,
-    cupom: (
-      await sql<{ max_usos: number; usos: number }[]>`
-        select max_usos, usos from public.cupons where codigo = 'FUNDADOR'`
-    )[0]!,
   }));
   await page.goto('/#precos');
   for (const p of planos) {
@@ -52,9 +50,7 @@ test('preços, limites e vagas do FUNDADOR são os do banco; mensal e anual', as
     });
     await expect(cartao).toContainText(`Até ${p.max_usuarios} usuários`);
   }
-  await expect(page.getByTestId('faixa-fundador')).toContainText(
-    `restam ${cupom.max_usos - cupom.usos} de ${cupom.max_usos}`,
-  );
+  await expect(page.getByText(/fundador/i)).toHaveCount(0);
 
   await page.getByTestId('ciclo-anual').click();
   await expect(page.getByTestId('ciclo-anual')).toHaveAttribute('aria-checked', 'true');

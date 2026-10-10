@@ -4,7 +4,6 @@ import { unstable_cache, unstable_noStore } from 'next/cache';
 import { hojeNoFuso } from '@/domain/dates';
 import {
   montarExemploSimulador,
-  type CupomFundador,
   type ExemploSimulador,
   type PlanoVitrine,
 } from '@/domain/marketing';
@@ -19,44 +18,25 @@ export { TAG_PLANOS };
 
 /*
  * Leituras da landing (Etapa 9.6). Preços só por publico.planos_vitrine (anon); nada de valor
- * fixo no código. Cache de 5 min com a tag TAG_PLANOS (quem mudar plano ou cupom invalida).
+ * fixo no código. Cache de 5 min com a tag TAG_PLANOS (quem mudar plano invalida).
  */
 
-export type PrecosVitrine = { planos: PlanoVitrine[]; fundador: CupomFundador | null };
+export type PrecosVitrine = { planos: PlanoVitrine[] };
 
-type JsonVitrine = {
-  planos: PlanoVitrine[];
-  fundador: (Omit<CupomFundador, 'validoAte'> & { validoAte: string | null }) | null;
-};
+type JsonVitrine = { planos: PlanoVitrine[] };
 
 export async function lerPrecosVitrine(comAnon: ComAnon = comAnonPadrao): Promise<PrecosVitrine> {
   const [linha] = await comAnon((tx) =>
     tx.execute<{ v: unknown }>(sql`select publico.planos_vitrine() as v`),
   );
-  const j = camelizar<JsonVitrine>(linha?.v ?? { planos: [], fundador: null });
-  return {
-    planos: j.planos,
-    fundador: j.fundador
-      ? { ...j.fundador, validoAte: j.fundador.validoAte ? new Date(j.fundador.validoAte) : null }
-      : null,
-  };
+  const j = camelizar<JsonVitrine>(linha?.v ?? { planos: [] });
+  return { planos: j.planos };
 }
 
-const lerEmCache = unstable_cache(
-  async () => {
-    const p = await lerPrecosVitrine();
-    // Date não sobrevive à serialização do cache: guarda o ISO e refaz na saída
-    return {
-      ...p,
-      fundador: p.fundador && {
-        ...p.fundador,
-        validoAte: p.fundador.validoAte?.toISOString() ?? null,
-      },
-    };
-  },
-  ['planos-vitrine'],
-  { tags: [TAG_PLANOS], revalidate: 300 },
-);
+const lerEmCache = unstable_cache(async () => lerPrecosVitrine(), ['planos-vitrine'], {
+  tags: [TAG_PLANOS],
+  revalidate: 300,
+});
 
 /**
  * Preços da landing; null se a leitura falhar (a página mostra os cartões sem preço e o
@@ -68,14 +48,7 @@ const lerEmCache = unstable_cache(
  */
 export async function carregarPrecosVitrine(): Promise<PrecosVitrine | null> {
   try {
-    const p = await lerEmCache();
-    return {
-      planos: p.planos,
-      fundador: p.fundador && {
-        ...p.fundador,
-        validoAte: p.fundador.validoAte ? new Date(p.fundador.validoAte) : null,
-      },
-    };
+    return await lerEmCache();
   } catch (e) {
     logar('erro', 'landing.planos_vitrine', { codigo: codigoDoErro(e) });
   }

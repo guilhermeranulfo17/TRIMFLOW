@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
 import { z } from 'zod';
 import { documentoValido } from '@/domain/cobranca/documento';
@@ -10,7 +10,6 @@ import type { UsuarioAtual } from '@/server/auth/sessao';
 import { depsCobranca } from '@/server/cobranca/deps';
 import { assinar, cancelarAssinatura, mudarPlano } from '@/server/cobranca/fluxos';
 import { comUsuario } from '@/server/db/tenant';
-import { TAG_PLANOS } from '@/server/marketing/cache';
 import { sql } from 'drizzle-orm';
 import { errosDoZod, type ResultadoAcao } from './empresa/comum';
 import { codigoDoErro, logar } from '@/server/log';
@@ -81,8 +80,6 @@ export async function assinarPlano(
         ? { ok: false, erro: r.erro, campos: { cupom: r.erro } }
         : { ok: false, erro: r.erro };
     }
-    // cupom usado: as vagas do FUNDADOR na landing mudaram
-    if (v.data.cupom) revalidateTag(TAG_PLANOS);
     return { ok: true, mensagem: 'Assinatura criada. Abrindo a fatura…', dados: r.dados };
   });
 }
