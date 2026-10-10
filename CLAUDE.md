@@ -433,7 +433,8 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
 - **Repositório:** `guilhermeranulfo17/TRIMFLOW`. Etapas 0 a 9B na `main`; Etapa 10 PR 1
   (contrato digital: base) na branch `etapa-10a-contrato-base`. Região das funções na Vercel: `gru1` (`vercel.json`).
 - **App (produção):** a Vercel está ligada ao repositório e publica a `main` automaticamente em
-  https://trimflow-tau.vercel.app.
+  https://www.sistemaorkestra.com.br (`NEXT_PUBLIC_SITE_URL`). `trimflow-tau.vercel.app` e
+  `sistemaorkestra.com.br` (sem www) redirecionam 308 para ele (`DOMINIOS_ANTIGOS`), menos `/api/`.
 - **Banco (produção):** Supabase, projeto `orkestra`, ref `nsqoenggvshzkhbpurfi`, região
   `sa-east-1`.
   - **Migrations são aplicadas automaticamente** pelo workflow

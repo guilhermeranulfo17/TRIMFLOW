@@ -47,26 +47,26 @@ Vercel → projeto `trimflow` → **Settings → Environment Variables**. Para c
 (ou **⋯ → Edit**), nome exato, valor, e marque os ambientes indicados. Segredo = marque
 **Sensitive**.
 
-| Variável                                                                                    | Onde pegar o valor                                                                                                             | Obrigatória     | Production | Preview |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------- | ---------- | ------- |
-| `NEXT_PUBLIC_SUPABASE_URL`                                                                  | Supabase → [API](https://supabase.com/dashboard/project/nsqoenggvshzkhbpurfi/settings/api) → Project URL                       | sim             | ✅         | ✅      |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`                                                             | Supabase → [API Keys](https://supabase.com/dashboard/project/nsqoenggvshzkhbpurfi/settings/api-keys) → `anon` / publishable    | sim             | ✅         | ✅      |
-| `NEXT_PUBLIC_SITE_URL`                                                                      | o endereço do site, com `https://` e sem barra no fim (hoje `https://trimflow-tau.vercel.app`; no passo 7 vira o domínio novo) | sim             | ✅         | ✅      |
-| `DATABASE_URL`                                                                              | passo 1.3 (Transaction pooler, porta 6543)                                                                                     | sim, secreta    | ✅         | ✅      |
-| `SUPABASE_SERVICE_ROLE_KEY`                                                                 | Supabase → API Keys → `service_role` (secret)                                                                                  | sim, secreta    | ✅         | ✅      |
-| `IP_HASH_SALT`                                                                              | gere no seu gerenciador de senhas (64 caracteres, letras e números). Já existe: não troque                                     | sim, secreta    | ✅         | ✅      |
-| `CRON_SECRET`                                                                               | gere (64 caracteres). O mesmo valor vai no Vault (Referência → Avisos)                                                         | sim, secreta    | ✅         | ❌      |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`                        | já cadastradas na Etapa 7 (push no celular). Só confira que existem                                                            | recomendadas    | ✅         | ❌      |
-| `RESEND_API_KEY`, `EMAIL_REMETENTE`                                                         | passo 5                                                                                                                        | recomendadas    | ✅         | ❌      |
-| `CONTRATOS_CHAVE`                                                                           | gere com `openssl rand -base64 32` e guarde uma cópia no gerenciador de senhas (sem ela os CPFs dos contratos não voltam)      | sim, secreta    | ✅         | ✅      |
-| `ASAAS_API_KEY`, `ASAAS_AMBIENTE`, `ASAAS_WEBHOOK_TOKEN`                                    | passo 4                                                                                                                        | para cobrar     | ✅         | ❌      |
-| `ORKESTRA_ADMINS`                                                                           | seus e-mails da equipe, separados por vírgula                                                                                  | para o /interno | ✅         | ✅      |
-| `NEXT_PUBLIC_LOGIN_GOOGLE`                                                                  | `1` (só depois do passo 3)                                                                                                     | não             | ✅         | ✅      |
-| `NEXT_PUBLIC_WHATSAPP_VENDAS`                                                               | seu WhatsApp de vendas, só dígitos com 55 (ex.: `5534999999999`)                                                               | recomendada     | ✅         | ✅      |
-| `NEXT_PUBLIC_DEMO_SLUG`                                                                     | passo 8 (`demonstracao`)                                                                                                       | não             | ✅         | ❌      |
-| `NEXT_PUBLIC_EMAIL_CONTATO`, `NEXT_PUBLIC_RAZAO_SOCIAL`                                     | passo 8                                                                                                                        | não             | ✅         | ✅      |
-| `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`                                                | [WHATSAPP_MODELOS.md](WHATSAPP_MODELOS.md)                                                                                     | não             | ✅         | ❌      |
-| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | passo 6                                                                                                                        | não             | ✅         | ❌      |
+| Variável                                                                                    | Onde pegar o valor                                                                                                          | Obrigatória     | Production | Preview |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------- | ------- |
+| `NEXT_PUBLIC_SUPABASE_URL`                                                                  | Supabase → [API](https://supabase.com/dashboard/project/nsqoenggvshzkhbpurfi/settings/api) → Project URL                    | sim             | ✅         | ✅      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`                                                             | Supabase → [API Keys](https://supabase.com/dashboard/project/nsqoenggvshzkhbpurfi/settings/api-keys) → `anon` / publishable | sim             | ✅         | ✅      |
+| `NEXT_PUBLIC_SITE_URL`                                                                      | o endereço do site, com `https://` e sem barra no fim (`https://www.sistemaorkestra.com.br`)                                | sim             | ✅         | ✅      |
+| `DATABASE_URL`                                                                              | passo 1.3 (Transaction pooler, porta 6543)                                                                                  | sim, secreta    | ✅         | ✅      |
+| `SUPABASE_SERVICE_ROLE_KEY`                                                                 | Supabase → API Keys → `service_role` (secret)                                                                               | sim, secreta    | ✅         | ✅      |
+| `IP_HASH_SALT`                                                                              | gere no seu gerenciador de senhas (64 caracteres, letras e números). Já existe: não troque                                  | sim, secreta    | ✅         | ✅      |
+| `CRON_SECRET`                                                                               | gere (64 caracteres). O mesmo valor vai no Vault (Referência → Avisos)                                                      | sim, secreta    | ✅         | ❌      |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`                        | já cadastradas na Etapa 7 (push no celular). Só confira que existem                                                         | recomendadas    | ✅         | ❌      |
+| `RESEND_API_KEY`, `EMAIL_REMETENTE`                                                         | passo 5                                                                                                                     | recomendadas    | ✅         | ❌      |
+| `CONTRATOS_CHAVE`                                                                           | gere com `openssl rand -base64 32` e guarde uma cópia no gerenciador de senhas (sem ela os CPFs dos contratos não voltam)   | sim, secreta    | ✅         | ✅      |
+| `ASAAS_API_KEY`, `ASAAS_AMBIENTE`, `ASAAS_WEBHOOK_TOKEN`                                    | passo 4                                                                                                                     | para cobrar     | ✅         | ❌      |
+| `ORKESTRA_ADMINS`                                                                           | seus e-mails da equipe, separados por vírgula                                                                               | para o /interno | ✅         | ✅      |
+| `NEXT_PUBLIC_LOGIN_GOOGLE`                                                                  | `1` (só depois do passo 3)                                                                                                  | não             | ✅         | ✅      |
+| `NEXT_PUBLIC_WHATSAPP_VENDAS`                                                               | seu WhatsApp de vendas, só dígitos com 55 (ex.: `5534999999999`)                                                            | recomendada     | ✅         | ✅      |
+| `NEXT_PUBLIC_DEMO_SLUG`                                                                     | passo 8 (`demonstracao`)                                                                                                    | não             | ✅         | ❌      |
+| `NEXT_PUBLIC_EMAIL_CONTATO`, `NEXT_PUBLIC_RAZAO_SOCIAL`                                     | passo 8                                                                                                                     | não             | ✅         | ✅      |
+| `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`                                                | [WHATSAPP_MODELOS.md](WHATSAPP_MODELOS.md)                                                                                  | não             | ✅         | ❌      |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | passo 6                                                                                                                     | não             | ✅         | ❌      |
 
 Nunca cadastre `ASAAS_API_URL` nem `RESEND_API_URL` em produção (só os testes usam). `CONTRATOS_CHAVE` é a mesma em Production e Preview (mesmo banco). Preview usa o **mesmo banco**:
 deixe as prévias protegidas (Referência → Previews da Vercel). **Redeploy** no fim.
@@ -97,21 +97,21 @@ deixe as prévias protegidas (Referência → Previews da Vercel). **Redeploy** 
 Precisa do domínio comprado (passo 7.1). Se ainda não tem, faça o 7.1 e 7.2 e volte aqui.
 
 1. Crie a conta em https://resend.com/signup.
-2. **Domains → Add Domain** → digite `seudominio.com.br` → **Region: São Paulo (sa-east-1)** →
+2. **Domains → Add Domain** → digite `sistemaorkestra.com.br` → **Region: São Paulo (sa-east-1)** →
    **Add**. O Resend mostra os registros DNS.
-3. Vercel → **Domains** (menu do time, não do projeto) → `seudominio.com.br` → **DNS Records** →
+3. Vercel → **Domains** (menu do time, não do projeto) → `sistemaorkestra.com.br` → **DNS Records** →
    **Add** cada registro exatamente como o Resend mostra:
    - **SPF:** tipo `MX`, nome `send`, valor `feedback-smtp.sa-east-1.amazonses.com`, prioridade
      `10`; e tipo `TXT`, nome `send`, valor `v=spf1 include:amazonses.com ~all`.
    - **DKIM:** tipo `TXT`, nome `resend._domainkey`, valor `p=MIGf...` (o texto longo do Resend).
    - **DMARC:** tipo `TXT`, nome `_dmarc`, valor
-     `v=DMARC1; p=none; rua=mailto:dmarc@seudominio.com.br`. (Depois de 1 mês sem problemas,
+     `v=DMARC1; p=none; rua=mailto:dmarc@sistemaorkestra.com.br`. (Depois de 1 mês sem problemas,
      troque `p=none` por `p=quarantine`.)
 4. No Resend, **Verify DNS Records**. Em alguns minutos (até 24 h) fica **Verified**.
 5. **API Keys → Create API Key** → nome `orkestra-producao`, permissão **Sending access**,
-   domínio `seudominio.com.br` → copie.
+   domínio `sistemaorkestra.com.br` → copie.
 6. Vercel (só Production): `RESEND_API_KEY` = a chave; `EMAIL_REMETENTE` =
-   `Orkestra <avisos@seudominio.com.br>` → **Redeploy**.
+   `Orkestra <avisos@sistemaorkestra.com.br>` → **Redeploy**.
 7. **E-mails do login (Supabase Auth) pelo Resend:** crie outra chave no Resend
    (`supabase-smtp`, Sending access). Supabase →
    [Authentication → Emails → SMTP Settings](https://supabase.com/dashboard/project/nsqoenggvshzkhbpurfi/auth/smtp)
@@ -119,7 +119,7 @@ Precisa do domínio comprado (passo 7.1). Se ainda não tem, faça o 7.1 e 7.2 e
 
    | Campo                           | Valor                             |
    | ------------------------------- | --------------------------------- |
-   | Sender email                    | `avisos@seudominio.com.br`        |
+   | Sender email                    | `avisos@sistemaorkestra.com.br`   |
    | Sender name                     | `Orkestra`                        |
    | Host                            | `smtp.resend.com`                 |
    | Port number                     | `465`                             |
@@ -131,7 +131,7 @@ Precisa do domínio comprado (passo 7.1). Se ainda não tem, faça o 7.1 e 7.2 e
    **Rate limit for sending emails**: `100` por hora.
 
 8. **Teste:** em `/recuperar-senha`, peça o link para o seu e-mail: chega do
-   `avisos@seudominio.com.br`. Crie um buffet de teste: chega o "Boas-vindas ao Orkestra" com o
+   `avisos@sistemaorkestra.com.br`. Crie um buffet de teste: chega o "Boas-vindas ao Orkestra" com o
    link do buffet. No Resend, **Emails** mostra os envios como "Delivered".
 
 ## 6. Sentry e monitor de disponibilidade
@@ -142,50 +142,53 @@ Precisa do domínio comprado (passo 7.1). Se ainda não tem, faça o 7.1 e 7.2 e
 
 ## 7. Domínio próprio
 
+Domínio escolhido: **https://www.sistemaorkestra.com.br** (com www). O endereço sem www e o
+antigo da Vercel redirecionam para ele (`DOMINIOS_ANTIGOS` em `src/domain/seguranca/dominio.ts`).
+
 1. **Comprar:** https://registro.br → pesquise o nome (ex.: `orkestra.com.br`) → **Registrar**
    (CPF ou CNPJ, uns R$ 40 por ano). Confira antes no passo 9.4.
 2. **Ligar na Vercel:** projeto `trimflow` → **Settings → Domains** → **Add** →
-   `seudominio.com.br` (escolha a opção que redireciona `www` para ele). A Vercel mostra os
+   `www.sistemaorkestra.com.br` e `sistemaorkestra.com.br` (escolha a opção que redireciona o sem www para o com www). A Vercel mostra os
    **nameservers** (`ns1.vercel-dns.com` e `ns2.vercel-dns.com`). No Registro.br → seu domínio →
    **DNS → Alterar servidores DNS** → cole os dois → **Salvar**. Em minutos a algumas horas, a
    Vercel mostra **Valid Configuration** (com o cadeado HTTPS).
-3. **`NEXT_PUBLIC_SITE_URL`** = `https://seudominio.com.br` (Production e Preview) →
+3. **`NEXT_PUBLIC_SITE_URL`** = `https://www.sistemaorkestra.com.br` (Production e Preview) →
    **Redeploy**. A partir daí, todo link de e-mail, WhatsApp, PDF, QR, compartilhamento,
    sitemap e Google usa o domínio novo, e `trimflow-tau.vercel.app` **redireciona sozinho**
    (308, mesmo caminho e query) para ele. As rotas `/api/` seguem respondendo no endereço antigo
    para nada quebrar enquanto você faz os passos abaixo.
 4. **Supabase Auth:** [Authentication → URL Configuration](https://supabase.com/dashboard/project/nsqoenggvshzkhbpurfi/auth/url-configuration)
-   → **Site URL** = `https://seudominio.com.br` → em **Redirect URLs**, **Add URL**
-   `https://seudominio.com.br/**` (deixe o antigo por um mês) → **Save**.
+   → **Site URL** = `https://www.sistemaorkestra.com.br` → em **Redirect URLs**, **Add URL**
+   `https://www.sistemaorkestra.com.br/**` (deixe o antigo por um mês) → **Save**.
 5. **Google:** [Google Cloud → Credentials](https://console.cloud.google.com/apis/credentials) →
    o cliente OAuth do Orkestra → **Authorized JavaScript origins** → **Add URI**
-   `https://seudominio.com.br` → **Save**. Em **OAuth consent screen → Authorized domains**,
-   adicione `seudominio.com.br`. (O "Authorized redirect URI" é o do Supabase e não muda.)
+   `https://www.sistemaorkestra.com.br` → **Save**. Em **OAuth consent screen → Authorized domains**,
+   adicione `sistemaorkestra.com.br`. (O "Authorized redirect URI" é o do Supabase e não muda.)
 6. **Asaas:** **Integrações → Webhooks** → edite o webhook → URL
-   `https://seudominio.com.br/api/cobranca/asaas` → **Salvar** (no sandbox e na produção).
+   `https://www.sistemaorkestra.com.br/api/cobranca/asaas` → **Salvar** (no sandbox e na produção).
 7. **Vault (fila de avisos, demo, LGPD, cobrança):** Supabase →
    [SQL Editor](https://supabase.com/dashboard/project/nsqoenggvshzkhbpurfi/sql/new) → cole e
    rode (troque o domínio):
    ```sql
    select vault.update_secret(
      (select id from vault.secrets where name = 'orkestra_site_url'),
-     'https://seudominio.com.br'
+     'https://www.sistemaorkestra.com.br'
    );
    ```
 8. **Monitor:** troque a URL dos monitores do UptimeRobot para o domínio novo.
 9. **WhatsApp (se ligado):** os modelos aprovados na Meta têm o endereço do site no botão. Crie
    versões novas com o domínio novo ([WHATSAPP_MODELOS.md](WHATSAPP_MODELOS.md)).
 10. **Confira:** abra `https://trimflow-tau.vercel.app/b/SEU-SLUG?utm_source=teste`: a barra de
-    endereço vira `https://seudominio.com.br/b/SEU-SLUG?utm_source=teste`. Baixe o QR em Minha
+    endereço vira `https://www.sistemaorkestra.com.br/b/SEU-SLUG?utm_source=teste`. Baixe o QR em Minha
     empresa → Link e divulgação e leia com a câmera: abre o domínio novo.
 
 ## 8. Landing
 
-1. **Conta de demonstração:** confira que `https://seudominio.com.br/b/demonstracao` dá
+1. **Conta de demonstração:** confira que `https://www.sistemaorkestra.com.br/b/demonstracao` dá
    "Buffet não encontrado" (ninguém usa esse endereço). Vercel (só Production):
    `NEXT_PUBLIC_DEMO_SLUG` = `demonstracao`.
 2. `NEXT_PUBLIC_WHATSAPP_VENDAS` = seu WhatsApp de vendas (só dígitos, com 55).
-3. `NEXT_PUBLIC_EMAIL_CONTATO` = `contato@seudominio.com.br` (crie a caixa no seu provedor de
+3. `NEXT_PUBLIC_EMAIL_CONTATO` = `contato@sistemaorkestra.com.br` (crie a caixa no seu provedor de
    e-mail ou um redirecionamento no Registro.br/ImprovMX).
 4. `NEXT_PUBLIC_RAZAO_SOCIAL` = a razão social e o CNPJ, como devem aparecer no rodapé.
 5. **Redeploy.** Abra a landing → **Ver o painel de demonstração**: na primeira vez leva uns
@@ -221,8 +224,8 @@ Faça no **celular** (4G, não no Wi-Fi de casa) e no **PC**, numa janela anôni
 - [ ] QR code (PNG e PDF) lido pela câmera abre o domínio novo.
 - [ ] Assinar o plano no Asaas de **produção** com um cartão/Pix seu (valor real; estorne
       depois no Asaas); chegam os e-mails "fatura" e "pagamento confirmado".
-- [ ] "Esqueci minha senha" chega pelo `avisos@seudominio.com.br`.
-- [ ] `https://seudominio.com.br/api/saude` com `"ok": true`; UptimeRobot verde.
+- [ ] "Esqueci minha senha" chega pelo `avisos@sistemaorkestra.com.br`.
+- [ ] `https://www.sistemaorkestra.com.br/api/saude` com `"ok": true`; UptimeRobot verde.
 - [ ] Sentry recebendo (Issues vazia ou só erros conhecidos).
 - [ ] [Backup manual do banco](https://github.com/guilhermeranulfo17/TRIMFLOW/actions/workflows/backup.yml)
       rodado uma vez e o simulado de restauração feito ([BACKUP.md](BACKUP.md)); decidir quando
@@ -352,7 +355,7 @@ preços da landing). Abra no navegador para ver o JSON.
 
 1. Crie a conta em https://uptimerobot.com → **+ New monitor**.
 2. **Monitor type:** HTTP(s). **Friendly name:** Orkestra. **URL:**
-   `https://trimflow-tau.vercel.app/api/saude` (troque pelo domínio novo quando existir).
+   `https://www.sistemaorkestra.com.br/api/saude`.
 3. **Monitoring interval:** 5 minutes. Em **Advanced**: "Alert when status code is not 2xx"
    (padrão).
 4. **Alert contacts:** seu e-mail e o app do UptimeRobot no celular. Salve.

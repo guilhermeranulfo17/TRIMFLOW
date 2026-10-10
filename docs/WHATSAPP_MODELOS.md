@@ -16,7 +16,7 @@ Para todos:
 - **Idioma:** Português (BR), código `pt_BR`.
 - **Cabeçalho:** nenhum. **Rodapé:** `Orkestra`.
 - **Botão:** "Visitar site", tipo **URL dinâmica**, texto `Abrir no Orkestra`, URL
-  `https://trimflow-tau.vercel.app/app/{{1}}`. Exemplo da variável do botão: `leads`. O
+  `https://www.sistemaorkestra.com.br/app/{{1}}`. Exemplo da variável do botão: `leads`. O
   servidor envia como sufixo o caminho sem o `/app/` (por exemplo
   `leads/8c1f…`, `avisos`). Se o domínio mudar, edite o botão dos cinco modelos.
 - Valores já chegam formatados (R$ 4.800,00, "sáb 14/11 tarde", "48h").

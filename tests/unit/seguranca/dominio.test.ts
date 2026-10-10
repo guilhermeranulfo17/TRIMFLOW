@@ -24,6 +24,14 @@ describe('redirecionamentoDeDominio', () => {
     expect(r(`${ANTIGO.toUpperCase()}:443`, '/')).toBe(`${NOVO}/`);
   });
 
+  it('domínio sem "www" → com "www" (e o com "www" não redireciona)', () => {
+    const site = 'https://www.sistemaorkestra.com.br';
+    expect(r('sistemaorkestra.com.br', '/b/buffet', '?origem=qrcode', site)).toBe(
+      `${site}/b/buffet?origem=qrcode`,
+    );
+    expect(r('www.sistemaorkestra.com.br', '/b/buffet', '', site)).toBeNull();
+  });
+
   it('não redireciona: domínio novo, outro host, site ainda no antigo, sem site ou API', () => {
     expect(r('orkestra.com.br', '/app')).toBeNull();
     expect(r('preview-123.vercel.app', '/app')).toBeNull();

@@ -46,7 +46,7 @@ A URL do site e o mesmo `CRON_SECRET` ficam no Vault (nunca numa migration). No 
 Supabase → SQL Editor, rode **uma vez** (troque o segredo pelo valor que você pôs na Vercel):
 
 ```sql
-select vault.create_secret('https://trimflow-tau.vercel.app', 'orkestra_site_url');
+select vault.create_secret('https://www.sistemaorkestra.com.br', 'orkestra_site_url');
 select vault.create_secret('COLE_AQUI_O_CRON_SECRET', 'orkestra_cron_secret');
 ```
 
@@ -102,7 +102,7 @@ fica vazia e está tudo certo. Para forçar um teste, use "Enviar aviso de teste
 ## Teste manual da rota
 
 ```bash
-curl -i -X POST https://trimflow-tau.vercel.app/api/avisos/processar \
+curl -i -X POST https://www.sistemaorkestra.com.br/api/avisos/processar \
   -H "Authorization: Bearer $CRON_SECRET"
 # 200 {"ok":true,...}; sem o cabeçalho ou com outro segredo: 401
 ```
