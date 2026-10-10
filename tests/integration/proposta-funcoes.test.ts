@@ -323,9 +323,11 @@ describe('pré-reserva a partir do orçamento e versões com reserva', () => {
       await comoDono(tx, async () => {
         const [r] = await tx`select id from public.reservas where orcamento_id = ${o.id}`;
         await tx`select public.confirmar_reserva(${r!.id}, 100000)`;
+        // outra data de verdade (se d1 já cair num dia 28, troca para 27)
+        const d2 = d1.replace(/..$/, d1.endsWith('28') ? '27' : '28');
         await esperarMensagem(
           tx,
-          () => salvarInterno(tx, c, { data: d1.replace(/..$/, '28'), orcamentoId: o.id }),
+          () => salvarInterno(tx, c, { data: d2, orcamentoId: o.id }),
           'ORCAMENTO_RESERVA_CONFIRMADA',
         );
       });

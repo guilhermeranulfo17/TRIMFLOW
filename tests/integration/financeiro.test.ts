@@ -85,7 +85,7 @@ describe('plano e recebimentos', () => {
       const r = await reserva(tx);
       const id = await como(tx, IDS.donoA, async () => {
         const [l] =
-          await tx`select public.registrar_recebimento(${r}, 175000, current_date, 'pix', 'Parcela 1') as id`;
+          await tx`select public.registrar_recebimento(${r}, 175000, (now() at time zone 'America/Sao_Paulo')::date, 'pix', 'Parcela 1') as id`;
         return l!.id as string;
       });
       expect(
@@ -93,7 +93,8 @@ describe('plano e recebimentos', () => {
           como(
             sp,
             IDS.donoA,
-            () => sp`select public.registrar_recebimento(${r}, 100, current_date + 1, 'pix', null)`,
+            () =>
+              sp`select public.registrar_recebimento(${r}, 100, (now() at time zone 'America/Sao_Paulo')::date + 1, 'pix', null)`,
           ),
         ),
       ).toBe('FINANCEIRO_RECEBIMENTO_INVALIDO');
@@ -102,7 +103,8 @@ describe('plano e recebimentos', () => {
           como(
             sp,
             IDS.donoA,
-            () => sp`select public.registrar_recebimento(${r}, 100, current_date, 'cheque', null)`,
+            () =>
+              sp`select public.registrar_recebimento(${r}, 100, (now() at time zone 'America/Sao_Paulo')::date, 'cheque', null)`,
           ),
         ),
       ).toBe('FINANCEIRO_RECEBIMENTO_INVALIDO');
@@ -141,7 +143,8 @@ describe('plano e recebimentos', () => {
       await como(
         tx,
         IDS.donoA,
-        () => tx`select public.registrar_recebimento(${r}, 1000, current_date, 'dinheiro', null)`,
+        () =>
+          tx`select public.registrar_recebimento(${r}, 1000, (now() at time zone 'America/Sao_Paulo')::date, 'dinheiro', null)`,
       );
       const [pre] = await tx`select id from public.reservas where empresa_id = ${IDS.empresaA}
         and tipo = 'pre_reserva' limit 1`;
@@ -152,7 +155,7 @@ describe('plano e recebimentos', () => {
               sp,
               IDS.donoA,
               () =>
-                sp`select public.registrar_recebimento(${pre.id}, 1000, current_date, 'pix', null)`,
+                sp`select public.registrar_recebimento(${pre.id}, 1000, (now() at time zone 'America/Sao_Paulo')::date, 'pix', null)`,
             ),
           ),
         ).toBe('FINANCEIRO_RESERVA_NAO_CONFIRMADA');
@@ -162,7 +165,8 @@ describe('plano e recebimentos', () => {
           como(
             sp,
             IDS.vendedorA,
-            () => sp`select public.registrar_recebimento(${r}, 1000, current_date, 'pix', null)`,
+            () =>
+              sp`select public.registrar_recebimento(${r}, 1000, (now() at time zone 'America/Sao_Paulo')::date, 'pix', null)`,
           ),
         ),
       ).toBe('FINANCEIRO_SO_DONO');
@@ -180,7 +184,8 @@ describe('plano e recebimentos', () => {
           como(
             sp,
             IDS.donoB,
-            () => sp`select public.registrar_recebimento(${r}, 1000, current_date, 'pix', null)`,
+            () =>
+              sp`select public.registrar_recebimento(${r}, 1000, (now() at time zone 'America/Sao_Paulo')::date, 'pix', null)`,
           ),
         ),
       ).toBe('FINANCEIRO_RESERVA_NAO_ENCONTRADA');
@@ -191,7 +196,7 @@ describe('plano e recebimentos', () => {
             sp,
             IDS.donoA,
             () => sp`insert into public.reserva_parcelas (empresa_id, reserva_id, numero, descricao, valor_centavos, vence_em)
-            values (${IDS.empresaA}, ${r}, 9, 'x', 1, current_date)`,
+            values (${IDS.empresaA}, ${r}, 9, 'x', 1, (now() at time zone 'America/Sao_Paulo')::date)`,
           ),
         ),
       ).toBeDefined();
@@ -222,7 +227,8 @@ describe('plano e recebimentos', () => {
           como(
             sp,
             IDS.donoA,
-            () => sp`select public.registrar_recebimento(${r}, 1000, current_date, 'pix', null)`,
+            () =>
+              sp`select public.registrar_recebimento(${r}, 1000, (now() at time zone 'America/Sao_Paulo')::date, 'pix', null)`,
           ),
         ),
       ).toBe('CONTA_SOMENTE_LEITURA');
