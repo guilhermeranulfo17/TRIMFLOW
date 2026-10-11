@@ -6,3 +6,4 @@ test-results
 supabase/.temp
 supabase/.branches
 *.zip
+.claude/skills

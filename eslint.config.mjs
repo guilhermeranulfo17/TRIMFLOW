@@ -14,6 +14,7 @@ const config = [
       'playwright-report/**',
       'test-results/**',
       'supabase/.temp/**',
+      '.claude/**',
     ],
   },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
