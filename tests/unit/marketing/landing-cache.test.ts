@@ -26,7 +26,6 @@ vi.mock('next/cache', () => ({
 
 const PLANOS = {
   planos: [{ codigo: 'essencial', nome: 'Essencial', preco_mensal_centavos: 9900 }],
-  fundador: null,
 };
 
 describe('carregarPrecosVitrine', () => {

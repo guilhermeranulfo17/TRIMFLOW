@@ -18,7 +18,7 @@ import {
 import { AbasSegmento, type Segmento } from '@/components/marketing/segmentos';
 import { SimuladorDemo } from '@/components/marketing/simulador';
 import { DIAS_TESTE_GRATIS, VALOR_IMPLANTACAO_CENTAVOS } from '@/domain/cobranca/precos';
-import { faixaFundador, jsonLdSoftware, seloAnual } from '@/domain/marketing';
+import { jsonLdSoftware, seloAnual } from '@/domain/marketing';
 import { slugValido } from '@/domain/slug';
 import { siteUrl } from '@/server/env';
 import { carregarPrecosVitrine, exemploDoSimulador } from '@/server/marketing/carregar';
@@ -82,7 +82,6 @@ const SEGMENTOS: Segmento[] = [
 export default async function Landing() {
   const [precos, exemplo] = await Promise.all([carregarPrecosVitrine(), exemploDoSimulador()]);
   const planos = precos?.planos ?? [];
-  const fundador = precos ? faixaFundador(precos.fundador, planos, new Date()) : null;
   const demo = process.env.NEXT_PUBLIC_DEMO_SLUG?.trim().toLowerCase() || null;
   const demoSlug = demo && slugValido(demo) ? demo : null;
   const url = siteUrl();
@@ -163,7 +162,6 @@ export default async function Landing() {
               <Precos
                 planos={planos}
                 selo={seloAnual(planos)}
-                fundador={fundador}
                 implantacaoCentavos={VALOR_IMPLANTACAO_CENTAVOS}
                 diasTeste={DIAS_TESTE_GRATIS}
                 semDados={!precos || planos.length === 0}

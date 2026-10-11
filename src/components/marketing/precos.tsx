@@ -1,8 +1,7 @@
 'use client';
 
-import { Check, Minus, Sparkles } from 'lucide-react';
+import { Check, Minus } from 'lucide-react';
 import { useState } from 'react';
-import type { FaixaFundador } from '@/domain/marketing/fundador';
 import {
   descontoAnual,
   itensDoPlano,
@@ -21,14 +20,12 @@ import { BotaoTeste, BotaoWhatsappVendas } from './ctas';
 export function Precos({
   planos,
   selo,
-  fundador,
   implantacaoCentavos,
   diasTeste,
   semDados,
 }: {
   planos: PlanoVitrine[];
   selo: string | null;
-  fundador: FaixaFundador | null;
   implantacaoCentavos: number;
   diasTeste: number;
   semDados: boolean;
@@ -178,33 +175,9 @@ export function Precos({
         </div>
       )}
 
-      {fundador && <FaixaDoFundador f={fundador} />}
-
       <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-center text-sm">
         Prefere ajuda para começar? Implantação assistida: {formatBRL(implantacaoCentavos)},
         cobrança única e opcional.
-      </p>
-    </div>
-  );
-}
-
-function FaixaDoFundador({ f }: { f: FaixaFundador }) {
-  return (
-    <div
-      className="border-primary/40 bg-primary/10 mx-auto mt-8 flex max-w-4xl items-start gap-3 rounded-2xl border p-4 text-sm sm:items-center"
-      data-testid="faixa-fundador"
-    >
-      <Sparkles className="text-primary-texto mt-0.5 size-5 shrink-0 sm:mt-0" aria-hidden />
-      <p>
-        <strong>Vagas de fundador</strong>
-        {f.vagas !== null && f.totalVagas !== null && (
-          <>
-            : restam {f.vagas} de {f.totalVagas}
-          </>
-        )}
-        . {f.planoNome} por {formatBRL(f.valorCentavos)}/{f.ciclo === 'anual' ? 'ano' : 'mês'} por{' '}
-        {f.meses} {f.meses === 1 ? 'mês' : 'meses'}, com o cupom <strong>FUNDADOR</strong> ao
-        assinar.
       </p>
     </div>
   );

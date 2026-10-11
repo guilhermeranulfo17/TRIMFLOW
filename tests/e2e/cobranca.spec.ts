@@ -7,7 +7,7 @@ import { codigoTotp } from './totp';
 /*
  * Etapa 9A no celular (375x812), com a API falsa do Asaas (tests/support/asaas-fake*):
  *   1. o teste acaba (relógio simulado no banco) → faixa → painel somente leitura → assina o
- *      Profissional com o cupom de fundador → paga a fatura → webhook → conta ativa a R$ 97;
+ *      Profissional com um cupom (TESTE97, criado aqui) → paga a fatura → webhook → conta ativa a R$ 97;
  *   2. /interno: fora da lista = 404; sem MFA não entra; com TOTP entra; suporte só com o
  *      consentimento do dono, com a faixa vermelha.
  */
@@ -15,7 +15,7 @@ import { codigoTotp } from './totp';
 const ADMIN = { id: '0e000000-0000-4000-8000-000000000001', email: 'equipe@orkestra.local' };
 const TESTE_B = '22222222-2222-4222-8222-222222222222';
 
-test('teste acaba, conta fica somente leitura, assina com o cupom de fundador e volta a ativa', async ({
+test('teste acaba, conta fica somente leitura, assina com cupom e volta a ativa', async ({
   page,
 }) => {
   const email = emailUnico('cobranca');
@@ -34,6 +34,8 @@ test('teste acaba, conta fica somente leitura, assina com o cupom de fundador e 
     await sql`update public.empresas set trial_ate = now() - interval '1 minute'
       where id = (select empresa_id from public.usuarios where email = ${email})`;
     await sql`select public.atualizar_situacoes()`;
+    await sql`insert into public.cupons (codigo, plano_codigo, ciclo, desconto_centavos, duracao_meses)
+      values ('TESTE97', 'profissional', 'mensal', 15000, 12) on conflict do nothing`;
   });
 
   await page.goto('/app/empresa/link');
@@ -51,7 +53,7 @@ test('teste acaba, conta fica somente leitura, assina com o cupom de fundador e 
   await expect(page).toHaveURL(/\/app\/empresa\/plano$/);
   await expect(page.getByTestId('situacao-plano')).toContainText('Acesso suspenso');
   await page.getByTestId('plano-profissional').click();
-  await page.getByLabel('Cupom (opcional)').fill('fundador');
+  await page.getByLabel('Cupom (opcional)').fill('teste97');
   await page.getByLabel('Nome ou razão social').fill('Dona Cobrança');
   await page.getByLabel('CPF ou CNPJ').fill('52998224725');
   await expect(page.getByLabel('E-mail para a fatura')).toHaveValue(email);
@@ -66,7 +68,7 @@ test('teste acaba, conta fica somente leitura, assina com o cupom de fundador e 
   const situacao = page.getByTestId('situacao-plano');
   await expect(situacao).toContainText('Assinatura ativa');
   await expect(situacao).toContainText('R$ 97,00');
-  await expect(situacao).toContainText('FUNDADOR');
+  await expect(situacao).toContainText('TESTE97');
   await expect(page.getByTestId('faixa-conta')).toHaveCount(0);
   await expect(page.getByTestId('lista-faturas')).toContainText('Paga');
 

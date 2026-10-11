@@ -5,7 +5,7 @@ import { dataDaVersao, VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 export const metadata: Metadata = { title: 'Termos de uso' };
 
 /*
- * MODELO (Etapa 9B): precisa de revisão de advogado antes do uso comercial. Mudou o texto? Suba
+ * Texto revisado pelo advogado (outubro de 2026). Mudou o texto? Peça nova revisão e suba
  * VERSAO_DOCUMENTOS em src/domain/legal/versao.ts: os donos aceitam de novo no próximo acesso.
  */
 export default function Termos() {

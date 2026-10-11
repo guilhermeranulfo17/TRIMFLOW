@@ -231,7 +231,7 @@ Faça no **celular** (4G, não no Wi-Fi de casa) e no **PC**, numa janela anôni
       rodado uma vez e o simulado de restauração feito ([BACKUP.md](BACKUP.md)); decidir quando
       contratar o plano Pro do Supabase (backup diário automático).
 - [ ] Endereço antigo `trimflow-tau.vercel.app` redirecionando para o novo.
-- [ ] Termos, Privacidade e Subprocessadores revisados pelo advogado.
+- [x] Termos, Privacidade e Subprocessadores revisados pelo advogado (outubro de 2026).
 
 ---
 
@@ -378,8 +378,8 @@ Quando o alerta chegar, abra o `/api/saude`: o item com `"ok": false` diz o que 
 - **Exclusão de conta:** o dono pede em Minha empresa → Privacidade e dados; 30 dias depois o
   job das 03:40 chama `/api/lgpd/processar` (mesmo `CRON_SECRET` e Vault dos avisos) e apaga
   fotos, acessos e dados. Nada a configurar além do que os avisos já usam.
-- **Textos:** Termos, Privacidade e `/subprocessadores` são **modelos** e precisam de revisão de
-  advogado antes de vender. Mudou um texto? Suba `VERSAO_DOCUMENTOS` em
+- **Textos:** Termos, Privacidade e `/subprocessadores` foram revisados pelo advogado (outubro
+  de 2026). Mudou um texto? Suba `VERSAO_DOCUMENTOS` em
   `src/domain/legal/versao.ts` (e a versão no `supabase/seed.sql`): os donos aceitam de novo.
 
 ## E-mails do produto (Etapa 9B)

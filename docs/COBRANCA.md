@@ -42,8 +42,8 @@ eles, nada é chamado (o webhook continua funcionando).
 3. Na Vercel: `ORKESTRA_ADMINS=email1@dominio,email2@dominio`. Redeploy.
 4. Acesse `https://SEU-DOMINIO/interno`, entre e cadastre o código no aplicativo autenticador.
 
-## 5. Cupom de fundador
+## 5. Cupons
 
-Já criado pela migration (`FUNDADOR`: R$ 97/mês por 12 meses no Profissional mensal, 10
-vagas). Cupons novos entram por migration (arquivo novo), até existir a tela de cupons no
+Não há preço de fundador: o cupom `FUNDADOR` da Etapa 9A foi desativado
+(`20261019000001_sem_fundador.sql`) e a landing não anuncia vagas. Cupons novos entram por migration (arquivo novo), até existir a tela de cupons no
 /interno (anotada em `docs/PROXIMOS_PASSOS.md`).

@@ -973,7 +973,8 @@ Regras gerais:
   usa o Profissional. Conta de cortesia (`empresas.isenta`) fica ativa sem assinatura; o
   backfill marcou como cortesia quem já estava `ativo`.
 - **Cupom** = desconto fixo em centavos sobre o preço do ciclo, por `duracao_meses` a partir
-  do 1º vencimento (`cupom_ate`). Fundador: 15000 de desconto (R$ 97/mês), 12 meses, 10 vagas.
+  do 1º vencimento (`cupom_ate`). O FUNDADOR (15000 de desconto, 12 meses, 10 vagas) foi desativado: sem
+  preço de fundador (§76).
   O uso é reservado na transação que grava a assinatura (`cobranca_reservar_cupom`, com trava);
   pendente trocada devolve o uso. A reconciliação volta ao preço cheio quando o cupom acaba.
 - **Asaas** só por `fetch` (`server/cobranca/asaas.ts`), header `access_token`. Assinatura com
@@ -1227,12 +1228,11 @@ A latência do painel vinha de idas ao banco em sequência (função na Vercel, 
   abas de segmento e na contagem/origem (`RastreioLanding`). Fora do matcher do middleware: a
   landing não toca no Auth. "Ir para o painel" só olha a presença do cookie `sb-…-auth-token` no
   navegador (sem rede e sem ler o conteúdo).
-- **Nada fixo no código:** preços, limites, desconto anual, etiqueta "Profissional" e vagas do
-  FUNDADOR vêm de `publico.planos_vitrine()` (só colunas públicas, só `anon`), lidos por
-  `carregarPrecosVitrine` com `unstable_cache` (tag `planos-vitrine`, 5 min). Usar o cupom
-  (assinatura ou /interno) invalida a tag. Leitura falhou: cartões sem preço e WhatsApp de vendas
+- **Nada fixo no código:** preços, limites, desconto anual, etiqueta "Profissional" vêm
+  de `publico.planos_vitrine()` (só colunas públicas, só `anon`), lidos por
+  `carregarPrecosVitrine` com `unstable_cache` (tag `planos-vitrine`, 5 min). Leitura falhou: cartões sem preço e WhatsApp de vendas
   (a falha não entra no cache). Regras puras em `domain/marketing` (`descontoAnual`, `seloAnual`,
-  `itensDoPlano`, `planoDoRecurso`, `faixaFundador`). O valor da implantação assistida e os dias
+  `itensDoPlano`, `planoDoRecurso`). O valor da implantação assistida e os dias
   de teste ficam em `domain/cobranca/precos` (o mesmo valor que a cobrança usa; um teste confere
   os 14 dias contra o SQL de `_criar_conta_dono`).
 - **Proibido inventar:** sem depoimentos, logos de clientes, notas ou "mais de X buffets"
@@ -1688,3 +1688,13 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   `%PDF-`.
 - **Guarda:** `tests/unit/config/pdf-rastreio.test.ts` falha se uma rota que gera PDF ficar fora
   de `ROTAS_PDF` ou se o glob do pdfkit não achar a versão instalada.
+
+## 76. Sem preço de fundador
+
+- Decisão do dono: o Orkestra não vende com preço de fundador. A migration
+  `20261019000001_sem_fundador.sql` desativa o cupom `FUNDADOR` (não apaga: `cupons_usos` e
+  `assinaturas` guardam o histórico) e tira a chave `fundador` de `publico.planos_vitrine()`.
+- A landing não tem mais a faixa "Vagas de fundador" (`faixaFundador` saiu de
+  `domain/marketing`) e a tela de Plano não sugere cupom. O mecanismo de cupom continua
+  (campo "Cupom (opcional)" e /interno) para cupons futuros, criados por migration.
+- Os testes de cobrança criam o próprio cupom (`TESTE97`) em vez de depender do FUNDADOR.

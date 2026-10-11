@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { criarClienteAsaas } from '@/server/cobranca/asaas';
 import {
   aplicarCupom,
@@ -28,6 +28,12 @@ import {
 
 const sql = conectar();
 const { db, sql: sqlDrizzle } = criarDb(urlBancoTeste(), { max: 4 });
+// Cupom só dos testes: R$ 97/mês por 12 meses no Profissional mensal
+const CUPOM = 'TESTE97';
+beforeAll(async () => {
+  await sql`insert into public.cupons (codigo, plano_codigo, ciclo, desconto_centavos, duracao_meses)
+    values (${CUPOM}, 'profissional', 'mensal', 15000, 12) on conflict do nothing`;
+});
 afterAll(async () => {
   await sql.end();
   await sqlDrizzle.end();
@@ -87,7 +93,7 @@ describe('webhook', () => {
 });
 
 describe('assinar e pagar', () => {
-  it('cupom de fundador, dois cliques, fatura, webhook repetido → conta ativa a R$ 97', async () => {
+  it('cupom, dois cliques, fatura, webhook repetido → conta ativa a R$ 97', async () => {
     await comEmpresa(async (e) => {
       const { falso, deps } = preparar();
       expect(await situacao(e.empresaId)).toBe('suspenso');
@@ -96,7 +102,7 @@ describe('assinar e pagar', () => {
         usuarioId: e.donoId,
         plano: 'profissional',
         ciclo: 'mensal' as const,
-        cupom: ' fundador ',
+        cupom: ' teste97 ',
         dados,
       };
       const r1 = await assinar(deps, entrada);
@@ -123,7 +129,7 @@ describe('assinar e pagar', () => {
       expect(a).toMatchObject({
         status: 'pendente',
         valor_centavos: 9700,
-        cupom_codigo: 'FUNDADOR',
+        cupom_codigo: CUPOM,
       });
       expect(
         await sql`select 1 from public.cupons_usos where empresa_id = ${e.empresaId}`,
@@ -136,7 +142,7 @@ describe('assinar e pagar', () => {
       expect(aud!.dados).toMatchObject({
         plano: 'profissional',
         valor_centavos: 9700,
-        cupom: 'FUNDADOR',
+        cupom: CUPOM,
       });
 
       // paga na página do Asaas → webhook (duas vezes, como o Asaas pode mandar)
@@ -179,7 +185,7 @@ describe('assinar e pagar', () => {
         ok: false,
         erro: 'CPF ou CNPJ inválido. Confira os números.',
       });
-      expect(await assinar(deps, { ...base, cupom: 'FUNDADOR' })).toMatchObject({
+      expect(await assinar(deps, { ...base, cupom: CUPOM })).toMatchObject({
         ok: false,
         codigo: 'CUPOM',
         erro: 'Este cupom vale só para o plano Profissional mensal.',
@@ -240,7 +246,7 @@ describe('mudar de plano, cancelar, reconciliar', () => {
         usuarioId: e.donoId,
         plano: 'profissional',
         ciclo: 'mensal',
-        cupom: 'FUNDADOR',
+        cupom: CUPOM,
         dados,
       });
       const pid = r.ok ? r.dados.urlFatura!.split('/').pop()! : '';
@@ -301,7 +307,7 @@ describe('mudar de plano, cancelar, reconciliar', () => {
         usuarioId: e.donoId,
         plano: 'profissional',
         ciclo: 'mensal',
-        cupom: 'FUNDADOR',
+        cupom: CUPOM,
         dados,
       });
       await sql`update public.assinaturas set cupom_ate = current_date - 30 where empresa_id = ${e.empresaId}`;
@@ -361,12 +367,12 @@ describe('/interno: implantação e cupom', () => {
         ok: false,
       });
       expect(
-        await aplicarCupom(deps, { empresaId: e.empresaId, codigo: 'FUNDADOR', admin: 'a@o.app' }),
+        await aplicarCupom(deps, { empresaId: e.empresaId, codigo: CUPOM, admin: 'a@o.app' }),
       ).toEqual({ ok: true });
       expect([...falso.assinaturas.values()][0]!.value).toBe(97);
       const [a] =
         await sql`select valor_centavos, cupom_codigo from public.assinaturas where empresa_id = ${e.empresaId}`;
-      expect(a).toEqual({ valor_centavos: 9700, cupom_codigo: 'FUNDADOR' });
+      expect(a).toEqual({ valor_centavos: 9700, cupom_codigo: CUPOM });
     });
   });
 });
