@@ -244,3 +244,4 @@ export const aceitesTermos = pgTable(
   ],
 );
 export * from './schema-financeiro';
+export * from './schema-vendas';

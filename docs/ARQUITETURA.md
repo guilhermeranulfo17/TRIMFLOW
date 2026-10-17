@@ -1698,3 +1698,26 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   `domain/marketing`) e a tela de Plano não sugere cupom. O mecanismo de cupom continua
   (campo "Cupom (opcional)" e /interno) para cupons futuros, criados por migration.
 - Os testes de cobrança criam o próprio cupom (`TESTE97`) em vez de depender do FUNDADOR.
+
+## 77. Vendas Orkestra (Etapa 14)
+
+- **O que é:** CRM interno da equipe Orkestra para vender o próprio Orkestra a donos de buffet
+  por prospecção ativa, com um copiloto de IA (Fase 1: o Gui cola a conversa, o agente sugere a
+  resposta e atualiza o pipeline; sem integração com WhatsApp, só o link `wa.me`).
+- **Separado dos buffets:** tabelas `vendas_*` (`20261020000001_vendas_orkestra.sql`) **sem
+  `empresa_id`**, com RLS ligado, sem policy e sem privilégio para `anon` e `authenticated` (o
+  mesmo desenho da `auditoria_interna`). Só o `/interno` lê e escreve, pela conexão
+  administrativa, depois de `exigirAdmin()` (ORKESTRA_ADMINS + MFA). Nada se mistura com
+  `public.leads`. Teste: `tests/integration/vendas.test.ts`.
+- **Tabelas:** `vendas_leads` (nome, buffet, telefone E.164 único, cidade, origem, etapa,
+  resumo, próximo follow-up como data civil, tentativas, não contatar),
+  `vendas_mensagens` (histórico: lead, Gui ou conversa colada), `vendas_sugestoes` (cada
+  "Gerar resposta": entrada, saída validada, mensagem sugerida e final, se foi editada, status,
+  versão do prompt, provedor, modelo e exemplos usados), `vendas_movimentos` (de, para, origem
+  manual/agente/importação, motivo), `vendas_conhecimento` (produto, preço, objeção, script) e
+  `vendas_exemplos` (sugestão marcada boa ou ruim com o motivo).
+- **Etapa gravada:** ao contrário do funil dos buffets (§74), a etapa do lead de vendas é
+  gravada: Novo, Abordado, Respondeu, Interessado, Fechando, Cliente, Perdido. Toda mudança
+  grava uma linha em `vendas_movimentos`.
+- **Sem `_exigir_escrita`:** a trava de conta suspensa e da demo é por empresa; aqui não há
+  empresa.
