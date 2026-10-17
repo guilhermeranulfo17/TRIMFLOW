@@ -1725,3 +1725,11 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   Exemplos, no tema escuro do painel e com o `EmptyState` do app. O layout e cada página chamam
   `exigirAdmin()`; dono de buffet recebe 404 (E2E `tests/e2e/vendas.spec.ts`). Link
   "Vendas Orkestra" no topo do `/interno`.
+- **Leads (passo 3):** `/interno/vendas/leads` lista (até 1000, mais recentes primeiro; busca
+  sem acento por nome, buffet, cidade ou dígitos do telefone, feita no servidor em memória, o
+  volume da prospecção é pequeno), `leads/novo` e `leads/[id]`. Validação em
+  `domain/vendas/lead` (telefone vira E.164; vazio vira null); ações em
+  `server/actions/vendas.ts` com `exigirAdmin()`, transação e `interno_registrar` só com o id
+  do lead. Cadastro manual entra em Novo e grava o movimento "Cadastro manual". Etapa e
+  tentativas não se editam no formulário (pipeline e copiloto). Telefone repetido: "Já existe
+  um lead com esse telefone." (índice único). Marcar "não contatar" grava `nao_contatar_em`.
