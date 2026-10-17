@@ -1733,3 +1733,12 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   do lead. Cadastro manual entra em Novo e grava o movimento "Cadastro manual". Etapa e
   tentativas não se editam no formulário (pipeline e copiloto). Telefone repetido: "Já existe
   um lead com esse telefone." (índice único). Marcar "não contatar" grava `nao_contatar_em`.
+- **Importar CSV (passo 4):** `/interno/vendas/leads/importar`, por arquivo ou colando o texto.
+  Leitor puro em `domain/vendas/csv` (`;` ou `,`, aspas, BOM; cabeçalho obrigatório com
+  sinônimos sem acento: nome/responsável, buffet/empresa, telefone/whatsapp, cidade, origem,
+  resumo/observação; até 2.000 linhas e 500 KB). O navegador decodifica UTF-8 e cai para
+  Windows-1252 (Excel em português). Prévia no servidor marca nova, com erro, repetida no
+  arquivo e já cadastrada (mesmo telefone); a importação lê o CSV de novo no servidor, grava
+  só as válidas com `on conflict do nothing` (reimportar não duplica) e o movimento
+  "Importação CSV" (origem `importacao`). Auditoria só com a quantidade. Lead sem telefone
+  não tem como ser deduplicado e entra sempre.

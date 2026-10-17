@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Upload, Users } from 'lucide-react';
 import Link from 'next/link';
 import { EmptyState } from '@/components/app/empty-state';
 import { formatData } from '@/domain/dates';
@@ -35,6 +35,14 @@ export default async function PaginaLeads({
             Buscar
           </button>
         </form>
+        <Link
+          href="/interno/vendas/leads/importar"
+          className="rounded-control inline-flex min-h-11 items-center gap-1.5 border px-4 font-semibold whitespace-nowrap"
+          data-testid="importar-csv"
+        >
+          <Upload className="size-4" aria-hidden />
+          Importar CSV
+        </Link>
         <Link
           href="/interno/vendas/leads/novo"
           className="bg-primary text-primary-foreground rounded-control inline-flex min-h-11 items-center gap-1.5 px-4 font-semibold whitespace-nowrap"

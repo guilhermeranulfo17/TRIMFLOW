@@ -126,3 +126,62 @@ test('Vendas Orkestra: cadastra, busca e edita lead; telefone repetido é recusa
   expect(violacoes()).toEqual([]);
   await ctx.close();
 });
+
+test('Vendas Orkestra: importa CSV com prévia, ignora repetidos e não duplica', async ({
+  browser,
+}) => {
+  await noBanco(async (sql) => {
+    await sql`delete from public.vendas_leads where telefone_e164 like '+553499999030%'`;
+    await sql`insert into public.vendas_leads (nome, telefone_e164) values ('Já Existe', '+5534999990301')`;
+  });
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
+  const admin = await ctx.newPage();
+  const violacoes = await vigiarCsp(admin);
+  await entrarComoEquipe(admin);
+
+  await admin.goto('/interno/vendas/leads');
+  await admin.getByTestId('importar-csv').click();
+  await expect(admin).toHaveURL(/\/interno\/vendas\/leads\/importar$/);
+  const csv = [
+    'Responsável;Buffet;WhatsApp;Cidade',
+    'Paula CSV;Buffet Lua;(34) 99999-0302;Araguari',
+    'Já Existe;Buffet X;34999990301;Uberaba',
+    'Repetida;Buffet Y;34 99999-0302;Uberaba',
+    ';Sem Nome;34999990303;Uberaba',
+    'Quim CSV;Buffet Mar;34999990304;Patos',
+  ].join('\n');
+  await admin.getByTestId('previa-importacao').waitFor({ state: 'detached' });
+  await admin.setInputFiles('#arquivo', {
+    name: 'leads.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv, 'utf8'),
+  });
+  const previa = admin.getByTestId('previa-importacao');
+  await expect(previa).toContainText('2 leads novos de 5 linhas');
+  await expect(previa).toContainText('Já cadastrada');
+  await expect(previa).toContainText('Repetida no arquivo');
+  await expect(previa).toContainText('Informe o nome.');
+  await admin.getByTestId('confirmar-importacao').click();
+  await expect(admin).toHaveURL(/\/interno\/vendas\/leads$/);
+  await expect(admin.getByText('2 leads importados.')).toBeVisible();
+  await expect(admin.getByTestId('lista-leads-vendas')).toContainText('Paula CSV');
+
+  // importar de novo não duplica: a prévia já mostra zero novos
+  await admin.goto('/interno/vendas/leads/importar');
+  await admin.getByLabel('Ou cole o conteúdo da planilha').fill(csv);
+  await admin.getByRole('button', { name: 'Ver prévia' }).click();
+  await expect(previa).toContainText('0 leads novos de 5 linhas');
+  await expect(admin.getByTestId('confirmar-importacao')).toBeDisabled();
+
+  await noBanco(async (sql) => {
+    const linhas = await sql`select l.nome, m.origem, m.motivo from public.vendas_leads l
+      join public.vendas_movimentos m on m.lead_id = l.id
+      where l.telefone_e164 in ('+5534999990302', '+5534999990304') order by l.nome`;
+    expect(linhas).toEqual([
+      { nome: 'Paula CSV', origem: 'importacao', motivo: 'Importação CSV' },
+      { nome: 'Quim CSV', origem: 'importacao', motivo: 'Importação CSV' },
+    ]);
+  });
+  expect(violacoes()).toEqual([]);
+  await ctx.close();
+});
