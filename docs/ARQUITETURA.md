@@ -1721,3 +1721,7 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   grava uma linha em `vendas_movimentos`.
 - **Sem `_exigir_escrita`:** a trava de conta suspensa e da demo é por empresa; aqui não há
   empresa.
+- **Telas (`/interno/vendas`):** abas Fila do dia (inicial), Pipeline, Leads, Conhecimento e
+  Exemplos, no tema escuro do painel e com o `EmptyState` do app. O layout e cada página chamam
+  `exigirAdmin()`; dono de buffet recebe 404 (E2E `tests/e2e/vendas.spec.ts`). Link
+  "Vendas Orkestra" no topo do `/interno`.

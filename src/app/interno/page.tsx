@@ -35,6 +35,13 @@ export default async function PaginaInterna({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Orkestra interno</h1>
         <div className="flex items-center gap-3 text-sm">
+          <Link
+            href="/interno/vendas"
+            className="rounded-control min-h-11 content-center border px-4 font-semibold whitespace-nowrap"
+            data-testid="link-vendas"
+          >
+            Vendas Orkestra
+          </Link>
           <span className="text-muted-foreground">{admin.email}</span>
           <BotaoSairInterno />
         </div>

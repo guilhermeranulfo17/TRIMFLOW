@@ -58,7 +58,8 @@ src/
     robots.ts, sitemap.ts  indexação (landing, termos, privacidade e vitrines)
     api/cobranca/    asaas (webhook, token no header) e reconciliar (POST, Bearer CRON_SECRET)
     interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral,
-                     empresas/[id] (ações auditadas, "Entrar como esta empresa")
+                     empresas/[id] (ações auditadas, "Entrar como esta empresa"), vendas
+                     (Vendas Orkestra, Etapa 14: fila, pipeline, leads, conhecimento, exemplos)
     manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)
     auth/            rotas técnicas: confirm (link do e-mail), callback (Google), sair
     b/[slug]/        página pública do buffet (vitrine com estilo), orcamento (wizard),
