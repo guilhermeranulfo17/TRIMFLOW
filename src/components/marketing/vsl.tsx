@@ -42,8 +42,7 @@ export function VideoVendas() {
               label="Português"
               default
             />
-            Seu navegador não toca vídeo.{' '}
-            <a href="/landing/vsl-orkestra.mp4">Baixe o vídeo</a>.
+            Seu navegador não toca vídeo. <a href="/landing/vsl-orkestra.mp4">Baixe o vídeo</a>.
           </video>
         </div>
       </div>
