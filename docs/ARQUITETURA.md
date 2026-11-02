@@ -1735,3 +1735,47 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   "pronto em minutos".
 - **Cabeçalho:** Como funciona, Recursos, Planos, Dúvidas; no celular o menu fecha ao escolher a
   seção, com Esc ou com um toque fora, e traz "Testar grátis".
+
+## 78. Nossas soluções (módulos adicionais) e OrkMargem
+
+- **O que é:** uma central no painel (`/app/solucoes`, abas Todas e Minhas) com seis módulos
+  vendidos à parte da assinatura-base: OrkFlow, OrkMargem, OrkStage, OrkPass (por festa), OrkPay e
+  OrkBis. Preço, cobrança (mensal ou por festa), carência e dias de acesso por festa ficam em
+  `public.modulos` (migration `20261102000002_modulos.sql`); textos, inclusos, limites, o que já é
+  do plano e pendências em `domain/modulos/catalogo`.
+- **Venda só com duas chaves:** `podeVender` = módulo pronto no código (`implementado` e sem
+  `pendenciasTecnicas`) **e** `modulos.venda_liberada = true` no banco. Todos nascem com a venda
+  desligada; liberar é uma migration nova, depois das decisões comerciais
+  (`docs/PROXIMOS_PASSOS.md`). O servidor confere as duas antes de criar qualquer cobrança.
+- **Cobrança:** o mesmo Asaas (fetch, sem SDK). Cada módulo mensal é uma **assinatura própria** no
+  Asaas (a da base nunca é alterada); o por festa é uma cobrança avulsa ligada à reserva. A
+  referência externa é `modulo:<id>`. Cobranças em `modulo_cobrancas`, separadas de
+  `public.cobrancas`: atraso num adicional não mexe na situação da conta (`_atualizar_situacao`
+  não lê estas tabelas). Primeiro vencimento hoje, sem proporcional; cancelar apaga a assinatura no
+  Asaas e o acesso segue até `pago_ate` (mesma regra da base). Conta-base suspensa ou demo não
+  contrata. Escrita só pela conexão administrativa (`server/modulos/fluxos`, com auditoria).
+- **Webhook:** `cobranca_registrar_evento` grava o evento uma vez (idempotência) e, se for de
+  módulo (`_modulo_do_evento`: referência, assinatura ou cobrança conhecidas), desvia para
+  `_modulo_registrar_evento`. Status monotônico (`_cobranca_proximo_status`): repetido ou fora de
+  ordem não regride; estorno tira a cobertura e um "recebido" atrasado não devolve o acesso. "Já
+  paguei" lê a API pelo mesmo caminho. O retorno do checkout não libera nada.
+- **Direito de acesso no banco:** `_modulo_situacao` (= `domain/modulos/situacao`, teste de
+  equivalência): não contratado, pagamento pendente, ativo, falha de pagamento, cancelamento
+  agendado, expirado, estornado. `modulo_acesso(empresa, modulo, reserva)` decide (com sessão de
+  usuário, só a própria empresa); `_exigir_modulo` recusa as escritas com `MODULO_INATIVO`. Por
+  festa: `modulo_compras` paga e `hoje <= acesso_ate` (data da festa + `acesso_evento_dias`), só
+  para aquela reserva. Telas usam `moduloComAcesso`; páginas só do dono mostram "Acesso restrito".
+- **Política da conta suspensa:** como o resto do painel, o adicional fica somente leitura (o
+  `_exigir_escrita` das tabelas do módulo) e a cobrança do adicional segue até ser cancelada.
+  Pendente de confirmação comercial.
+- **OrkMargem** (`20261102000003_orkmargem.sql`): `margem_custos_pacote` (por categoria: fixo por
+  festa + por convidado), `margem_festas` (preparada, foto do pacote e dos convidados, fechada) e
+  `margem_custos_festa` (previsto e realizado). Escrita só por funções (`margem_salvar_custos_pacote`,
+  `margem_preparar_festa`, `margem_salvar_custos_festa`, `margem_fechar_festa`,
+  `margem_reabrir_festa` com motivo na auditoria), só o dono, só com o módulo vigente; leitura do
+  histórico sempre (também depois de encerrar). Receita contratada e recebido vêm do Financeiro;
+  margem de contribuição, pendências e comparação por pacote em `domain/modulos/margem`. Telas:
+  `/app/margem` (festas, custos dos pacotes, comparação) e `/app/margem/[reservaId]`, com link em
+  Pagamentos da festa.
+- **Pontos de entrada:** menu lateral e menu da conta (celular); aviso curto "Conhecer" no
+  Financeiro (OrkMargem e OrkPay), em Clientes (OrkBis) e em Follow-up (OrkFlow). Sem pop-up.

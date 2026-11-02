@@ -273,3 +273,30 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   fictícios): gerar do seed com a marca atual, sem dados pessoais, e trocar mantendo a etiqueta.
 - **Suporte por plano:** a página não promete canal nem prazo de suporte; decidir e publicar.
 - **Simulador:** horas extras, adicionais por unidade e por hora e o modo de preço "aproximado".
+
+## Nossas soluções: o que falta para vender cada módulo
+
+Nenhum módulo tem venda pública (`modulos.venda_liberada = false`). Para liberar, uma migration
+nova depois das decisões abaixo (o código já recusa módulo não implementado).
+
+- **Decisões comuns (dono do produto):** regra de cancelamento dos adicionais (proposta: como a
+  base, sem multa, acesso até o fim do período pago); sem proporcional na primeira cobrança;
+  carência depois do vencimento (hoje 0); política com a conta-base suspensa (proposta: adicional
+  só para consulta e cobrança segue até cancelar); revisar Termos para os adicionais.
+- **OrkMargem:** pronto tecnicamente (entrega, pagamento integrado, autorização no servidor
+  testada, primeiro uso). Falta só confirmar as decisões comuns e liberar a venda.
+- **OrkFlow:** envio ao cliente final pela Cloud API (hoje o WhatsApp oficial só avisa a equipe),
+  webhook de entrada para detectar resposta, modelos aprovados na Meta, consentimento do cliente;
+  franquia de mensagens e preço do excedente; quem paga as conversas da Meta; revisar a regra
+  "nenhuma mensagem automática ao cliente final".
+- **OrkStage:** perfis de operação (coordenação, cozinha, recepção, equipe) e se contam no limite
+  de usuários; ficha operacional, checklist, cronograma e impressão.
+- **OrkPass:** dias de acesso depois da festa (`acesso_evento_dias`) e reembolso de festa
+  cancelada; convite, confirmação pública, QR code, portaria e acesso do contratante. A compra
+  por festa já existe no banco e no fluxo de contratação.
+- **OrkPay:** subcontas do Asaas para o buffet (abertura, aprovação, taxas), cobrança por parcela,
+  webhook da conta do buffet e conciliação. O dinheiro da festa nunca passa pela conta do Orkestra.
+- **OrkBis:** campo próprio da data relevante (aniversário) com confirmação, registro de
+  indicações, oportunidades automáticas; separar do que já é do plano (Clientes).
+- **Interno:** tela no /interno para ver as assinaturas dos adicionais e liberar a venda sem
+  migration.

@@ -84,6 +84,8 @@ export function criarClienteAsaas(config: ConfigAsaas, o: { fetch?: typeof fetch
       ciclo: CicloAsaas;
       descricao: string;
       empresaId: string;
+      /** referência própria (ex.: modulo:<id>); sem ela, o id da empresa */
+      referencia?: string;
     }) {
       return chamar<{ id: string }>('POST', '/subscriptions', {
         customer: d.cliente,
@@ -92,7 +94,7 @@ export function criarClienteAsaas(config: ConfigAsaas, o: { fetch?: typeof fetch
         nextDueDate: d.vencimento,
         cycle: d.ciclo,
         description: d.descricao,
-        externalReference: d.empresaId,
+        externalReference: d.referencia ?? d.empresaId,
       });
     },
 
@@ -127,6 +129,8 @@ export function criarClienteAsaas(config: ConfigAsaas, o: { fetch?: typeof fetch
       vencimento: string;
       descricao: string;
       empresaId: string;
+      /** referência própria (ex.: modulo:<id>); sem ela, o id da empresa */
+      referencia?: string;
     }) {
       return chamar<PagamentoAsaas>('POST', '/payments', {
         customer: d.cliente,
@@ -134,7 +138,7 @@ export function criarClienteAsaas(config: ConfigAsaas, o: { fetch?: typeof fetch
         value: centavosParaReais(d.valorCentavos),
         dueDate: d.vencimento,
         description: d.descricao,
-        externalReference: d.empresaId,
+        externalReference: d.referencia ?? d.empresaId,
       });
     },
 

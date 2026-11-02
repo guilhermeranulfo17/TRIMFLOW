@@ -1,5 +1,6 @@
 import { Search, UsersRound } from 'lucide-react';
 import type { Metadata } from 'next';
+import { ChamadaModulo } from '@/components/app/solucoes/chamada-modulo';
 import Form from 'next/form';
 import Link from 'next/link';
 import { EmptyState } from '@/components/app/empty-state';
@@ -205,6 +206,10 @@ export default async function ClientesPage({ searchParams }: Props) {
           )}
         </>
       )}
+      <ChamadaModulo
+        codigo="orkbis"
+        texto="oportunidades de recompra e indicações acompanhadas, com tarefa para o responsável."
+      />
     </div>
   );
 }
