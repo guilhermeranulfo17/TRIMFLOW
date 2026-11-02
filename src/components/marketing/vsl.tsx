@@ -17,10 +17,9 @@ export function VideoVendas() {
         <TituloSecao
           id="titulo-video"
           centro
-          sobre="Em menos de um minuto e meio"
           titulo="Quantas vezes hoje você respondeu"
           destaque="a mesma pergunta?"
-          texto="Veja como o Orkestra tira o orçamento repetido do seu WhatsApp e leva o cliente até a festa fechada. As telas do vídeo usam dados fictícios."
+          texto="Em menos de um minuto e meio, veja como o Orkestra tira o orçamento repetido do seu WhatsApp e leva o cliente até a festa fechada. As telas do vídeo usam dados fictícios."
         />
         <div className="ld-vidro mx-auto mt-10 max-w-4xl overflow-hidden rounded-[28px] p-1.5 md:p-2">
           <video

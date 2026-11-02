@@ -113,7 +113,8 @@ export function Precos({
                   className="ld-brilho pointer-events-none absolute -top-24 -right-24 size-64 rounded-full"
                 />
               )}
-              <div className="flex items-center justify-between gap-3">
+              {/* altura fixa: com ou sem a etiqueta, o preço fica na mesma linha nos dois cartões */}
+              <div className="flex min-h-7 items-center justify-between gap-3">
                 <h3 className="text-sm font-semibold tracking-wide text-white/75 uppercase">
                   {p.nome}
                 </h3>

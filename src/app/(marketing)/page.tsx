@@ -84,7 +84,6 @@ export default async function Landing() {
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <TituloSecao
               id="titulo-demo"
-              sobre="Experimente agora"
               titulo="Veja como seu cliente"
               destaque="monta a festa."
               texto="Mexa nas opções: o valor muda na hora, com o mesmo cálculo do link do buffet. Os valores são fictícios; cada buffet usa os próprios pacotes e regras. Nada do que você escolher aqui é enviado."
@@ -110,13 +109,10 @@ export default async function Landing() {
           {/* âncora antiga (links já divulgados para /#precos) */}
           <span id="precos" aria-hidden className="absolute top-0" />
           <div className="mx-auto max-w-6xl px-4 md:px-6">
-            <p className="text-primary-texto text-center text-xs font-bold tracking-[0.18em] uppercase">
-              Comece grátis. Assine só se fizer sentido.
-            </p>
             {/* a palavra gigante fica atrás dos cartões de vidro (o desfoque aparece nela) */}
             <h2
               id="titulo-planos"
-              className="ld-paralaxe pointer-events-none relative mt-2 pb-[0.14em] text-center text-[25vw] leading-[0.86] font-extrabold tracking-[-0.07em] select-none lg:text-[15.5rem]"
+              className="ld-paralaxe pointer-events-none relative pb-[0.14em] text-center text-[25vw] leading-[0.86] font-extrabold tracking-[-0.07em] select-none lg:text-[15.5rem]"
               style={{
                 backgroundImage:
                   'linear-gradient(180deg, #ffffff 35%, rgb(255 255 255 / 0.32) 92%)',
@@ -137,6 +133,9 @@ export default async function Landing() {
                 semDados={semDados}
               />
             </div>
+            <p className="mt-10 text-center text-lg font-semibold text-balance">
+              Comece grátis. Assine só se fizer sentido.
+            </p>
             {semDados && (
               <div className="mt-6 flex justify-center">
                 <BotaoWhatsappVendas>Ver preços no WhatsApp</BotaoWhatsappVendas>
