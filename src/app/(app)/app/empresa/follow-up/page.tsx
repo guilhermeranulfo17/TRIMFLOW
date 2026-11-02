@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ChamadaModulo } from '@/components/app/solucoes/chamada-modulo';
 import { RegrasFollowUp } from '@/components/app/empresa/regras-follow-up';
 import { exigirSessao } from '@/server/auth/sessao';
 import { carregarRegrasFollowUp } from '@/server/avisos/carregar';
@@ -17,6 +18,10 @@ export default async function FollowUpPage() {
         cliente sem você.
       </p>
       <RegrasFollowUp regras={regras} podeEditar={usuario.perfil === 'dono'} />
+      <ChamadaModulo
+        codigo="orkflow"
+        texto="envio automático dos retornos pelo WhatsApp oficial, que para quando o cliente responde."
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Wallet } from 'lucide-react';
 import type { Metadata } from 'next';
+import { ChamadaModulo } from '@/components/app/solucoes/chamada-modulo';
 import Link from 'next/link';
 import { SeloFinanceiro } from '@/components/app/financeiro/selo-financeiro';
 import { EmptyState } from '@/components/app/empty-state';
@@ -134,6 +135,10 @@ export default async function FinanceiroPage({ searchParams }: Props) {
           })}
         </ul>
       )}
+      <ChamadaModulo
+        codigo="orkpay"
+        texto="a parcela vira cobrança no provedor de pagamento do buffet e o recebimento é registrado com a confirmação."
+      />
     </div>
   );
 }

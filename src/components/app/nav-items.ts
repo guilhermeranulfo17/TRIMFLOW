@@ -4,6 +4,7 @@ import {
   CalendarDays,
   FileSignature,
   Inbox,
+  Sparkles,
   UsersRound,
   Wallet,
   type LucideIcon,
@@ -34,6 +35,8 @@ export const ITENS_NAV: readonly ItemNav[] = [
   },
   { href: '/app/numeros', rotulo: 'Números', icone: BarChart3 },
   { href: '/app/empresa', rotulo: 'Minha empresa', icone: Building2, curto: 'Empresa' },
+  // no celular, pelo menu da conta (a barra inferior já tem 5 itens)
+  { href: '/app/solucoes', rotulo: 'Nossas soluções', icone: Sparkles, soMenuLateral: true },
 ];
 
 export function itemAtivo(pathname: string, href: string): boolean {

@@ -6,6 +6,7 @@ import { PlanoPagamento } from '@/components/app/financeiro/plano-pagamento';
 import { RegistrarPagamento } from '@/components/app/financeiro/registrar-pagamento';
 import { SeloFinanceiro } from '@/components/app/financeiro/selo-financeiro';
 import { EmptyState } from '@/components/app/empty-state';
+import { ChamadaModulo } from '@/components/app/solucoes/chamada-modulo';
 import { PendenteLink } from '@/components/app/pendente-link';
 import { podeEscrever } from '@/domain/cobranca/situacao';
 import { formatData } from '@/domain/dates';
@@ -13,7 +14,9 @@ import { ROTULO_FORMA, type StatusParcela } from '@/domain/financeiro';
 import { formatBRL } from '@/domain/money';
 import { cn } from '@/lib/utils';
 import { exigirPerfil } from '@/server/auth/guards';
+import { comUsuario } from '@/server/db/tenant';
 import { carregarFinanceiroDaFesta } from '@/server/financeiro/carregar';
+import { moduloComAcesso } from '@/server/modulos/carregar';
 
 export const metadata: Metadata = { title: 'Pagamentos da festa' };
 
@@ -36,7 +39,13 @@ const CLASSE_PARCELA: Record<StatusParcela, string> = {
 export default async function FinanceiroFestaPage({ params }: Props) {
   const { reservaId } = await params;
   const dono = await exigirPerfil('dono');
-  const f = await carregarFinanceiroDaFesta(dono, reservaId);
+  // uma transação: o financeiro da festa e o direito do OrkMargem em pipeline
+  const [f, margem] = await comUsuario(dono.id, (tx) =>
+    Promise.all([
+      carregarFinanceiroDaFesta(dono, reservaId, tx),
+      moduloComAcesso(dono, 'orkmargem', { tx }),
+    ]),
+  );
   const voltar = (
     <Link
       href="/app/financeiro"
@@ -85,6 +94,21 @@ export default async function FinanceiroFestaPage({ params }: Props) {
           )}
         </p>
       </header>
+      {margem ? (
+        <Link
+          href={`/app/margem/${f.reservaId}`}
+          className="bg-card rounded-card hover:bg-accent flex min-h-11 items-center justify-between gap-3 border p-4 text-sm font-semibold"
+          data-testid="resultado-festa"
+        >
+          Resultado da festa: custos e margem (OrkMargem)
+          <PendenteLink />
+        </Link>
+      ) : (
+        <ChamadaModulo
+          codigo="orkmargem"
+          texto="veja quanto sobra desta festa: custos previstos e realizados e a margem de contribuição."
+        />
+      )}
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="resumo-festa">
         {(

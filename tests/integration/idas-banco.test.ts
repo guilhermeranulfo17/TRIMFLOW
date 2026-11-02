@@ -72,6 +72,12 @@ const LIMITE: Record<string, number> = {
   cliente: 3,
   // Etapa 13: funil de leads (uma consulta, cards por etapa já limitados no banco)
   funil: 2,
+  // Nossas soluções: catálogo com a situação (função + dados de cobrança + custos em pipeline)
+  solucoes: 2,
+  // OrkMargem: painel (acesso, pacotes, custos, festas em pipeline) e a festa (financeiro da
+  // festa; depois margem, acesso e pacotes em pipeline; orçamento, se houver)
+  margem: 3,
+  margem_festa: 6,
 };
 
 describe('idas ao banco por tela', () => {
@@ -214,6 +220,27 @@ describe('idas ao banco por tela', () => {
     expect(
       await medir('financeiro_festa', () => carregarFinanceiroDaFesta(u, r!.id)),
     ).toBeLessThanOrEqual(LIMITE.financeiro_festa!);
+  });
+
+  it('nossas soluções e OrkMargem', async () => {
+    const u = await usuarioDono();
+    const { carregarSolucoes } = await import('@/server/modulos/carregar');
+    const { carregarPainelMargem, carregarMargemDaFesta } = await import('@/server/modulos/margem');
+    const { obterDb } = await import('@/server/db/client');
+    const { sql } = await import('drizzle-orm');
+    const [r] = await obterDb().execute<{ id: string }>(
+      sql`select id from public.reservas where empresa_id = ${IDS.empresaA}
+        and tipo = 'confirmada' and status = 'ativa' and orcamento_id is not null limit 1`,
+    );
+    expect(await medir('solucoes', () => carregarSolucoes(u))).toBeLessThanOrEqual(
+      LIMITE.solucoes!,
+    );
+    expect(await medir('margem', () => carregarPainelMargem(u))).toBeLessThanOrEqual(
+      LIMITE.margem!,
+    );
+    expect(await medir('margem_festa', () => carregarMargemDaFesta(u, r!.id))).toBeLessThanOrEqual(
+      LIMITE.margem_festa!,
+    );
   });
 
   it('clientes: lista e ficha', async () => {

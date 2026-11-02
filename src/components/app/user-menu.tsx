@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, ChevronDown, LogOut, ShieldCheck } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, ShieldCheck, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import {
@@ -78,6 +78,12 @@ export function UserMenu({
           ))}
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/app/solucoes" className="cursor-pointer" data-testid="menu-solucoes">
+            <Sparkles aria-hidden />
+            Nossas soluções
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/app/conta/avisos" className="cursor-pointer">
             <Bell aria-hidden />
