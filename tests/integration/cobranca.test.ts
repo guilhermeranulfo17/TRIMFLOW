@@ -198,9 +198,12 @@ describe('eventos do Asaas', () => {
     await emTransacao(sql, async (tx) => {
       const e = await novaEmpresa(tx, { trialDias: -40 });
       const a = await novaAssinatura(tx, e.id);
-      // mês anterior pago (cobre até ~3 dias atrás)
-      const [venc] =
-        await tx`select ((${await hojeSP(tx, -2)}::date - interval '1 month')::date)::text as d`;
+      // mês anterior pago (cobre até ~3 dias atrás). A fatura vencida é a do mês seguinte, como o
+      // Asaas gera: em fim de mês (hoje - 2 = dia 31) ela cai um dia antes de "hoje - 2", então a
+      // data de suspensão esperada sai dela, não de "hoje"
+      const [venc] = await tx`select v::text as d, ((v + interval '1 month')::date)::text as atual
+        from (select ((${await hojeSP(tx, -2)}::date - interval '1 month')::date) as v) x`;
+      const [esperado] = await tx`select (${venc!.atual}::date + 8)::text as d`;
       await registrar(
         tx,
         evento({
@@ -222,7 +225,7 @@ describe('eventos do Asaas', () => {
             asaas_id: 'pay_t3',
             assinatura_asaas_id: a.asaas,
             valor_centavos: 9700,
-            vencimento: await hojeSP(tx, -2),
+            vencimento: venc!.atual,
             status: 'vencida',
           },
         }),
@@ -230,7 +233,8 @@ describe('eventos do Asaas', () => {
       expect(await plano(tx, e.id)).toBe('inadimplente');
       expect(await avisos(tx, e.id, 'pagamento_falhou')).toHaveLength(1);
       const [carencia] = await avisos(tx, e.id, 'carencia');
-      expect(carencia!.dados).toEqual({ suspende_em: await hojeSP(tx, 6) });
+      // carência de 8 dias a partir do início do atraso (dia seguinte ao período pago)
+      expect(carencia!.dados).toEqual({ suspende_em: esperado!.d });
       await tx`select public._atualizar_situacao(${e.id}, now() + interval '7 days')`;
       expect(await plano(tx, e.id)).toBe('suspenso');
       expect(await avisos(tx, e.id, 'conta_suspensa')).toHaveLength(1);
