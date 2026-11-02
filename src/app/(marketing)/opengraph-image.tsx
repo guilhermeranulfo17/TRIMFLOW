@@ -1,8 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { LOGOTIPO, svgDoLogotipo } from '@/components/marca/logotipo';
 
-export const alt =
-  'Orkestra: o cliente monta o orçamento sozinho. Você só entra quando ele quer reservar.';
+export const alt = 'Orkestra: seu cliente monta o orçamento. Você acompanha até a festa fechada.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -32,13 +31,15 @@ export default function Imagem() {
       />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
         <div style={{ fontSize: 64, fontWeight: 800, lineHeight: 1.08, letterSpacing: -1.5 }}>
-          O cliente monta o orçamento sozinho.
+          Seu cliente monta o orçamento.
         </div>
         <div style={{ fontSize: 40, color: '#B2F759', fontWeight: 700 }}>
-          Você só entra quando ele quer reservar.
+          Você acompanha até a festa fechada.
         </div>
       </div>
-      <div style={{ fontSize: 28, opacity: 0.75 }}>Link de orçamento para buffets de festas</div>
+      <div style={{ fontSize: 28, opacity: 0.75 }}>
+        Orçamento, atendimento e fechamento para buffets de festas
+      </div>
     </div>,
     size,
   );

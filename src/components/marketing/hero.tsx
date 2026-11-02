@@ -1,18 +1,17 @@
 import {
-  BellRing,
   CalendarCheck,
-  CalendarDays,
+  ChevronRight,
   FileSignature,
-  FileText,
+  Inbox,
+  ListChecks,
   Link2,
-  Repeat,
   Wallet,
 } from 'lucide-react';
 import Image from 'next/image';
 import { BotaoTeste } from './ctas';
 
-const TITULO = 'O cliente monta o orçamento';
-const TITULO_DESTAQUE = 'sozinho.';
+const TITULO = 'Seu cliente monta o orçamento.';
+const TITULO_DESTAQUE = 'Você acompanha até a festa fechada.';
 
 /** Cada palavra sobe de dentro da própria linha (CSS); o texto do h1 continua o mesmo. */
 function Palavras({ texto, de, className }: { texto: string; de: number; className?: string }) {
@@ -28,9 +27,9 @@ function Palavras({ texto, de, className }: { texto: string; de: number; classNa
 }
 
 /**
- * Hero: a foto da equipe do buffet ocupa a tela (LCP) e o texto, curto e em caixa alta, fica na
- * sombra da esquerda. No notebook a foto vai encostada à direita para as pessoas aparecerem
- * inteiras; no celular ela fica em cima e o texto embaixo, no escuro.
+ * Hero: a foto da equipe do buffet ocupa a tela (LCP) e o texto fica na sombra da esquerda. No
+ * notebook a foto vai encostada à direita para as pessoas aparecerem inteiras; no celular ela
+ * fica em cima e o texto embaixo, no escuro. O segundo botão leva à demonstração da página.
  */
 export function Hero({ demoSlug, diasTeste }: { demoSlug: string | null; diasTeste: number }) {
   const n = TITULO.split(' ').length;
@@ -39,7 +38,7 @@ export function Hero({ demoSlug, diasTeste }: { demoSlug: string | null; diasTes
       className="relative isolate overflow-hidden lg:flex lg:min-h-[min(100svh,58rem)] lg:items-center"
       aria-labelledby="titulo-hero"
     >
-      <div className="relative h-[min(100vw,30rem)] overflow-hidden sm:h-[34rem] lg:absolute lg:inset-0 lg:h-auto">
+      <div className="relative h-[min(92vw,28rem)] overflow-hidden sm:h-[32rem] lg:absolute lg:inset-0 lg:h-auto">
         <Image
           src="/landing/hero-equipe.webp"
           alt=""
@@ -59,7 +58,7 @@ export function Hero({ demoSlug, diasTeste }: { demoSlug: string | null; diasTes
         />
         <div
           aria-hidden
-          className="from-background via-background/75 absolute inset-0 hidden bg-gradient-to-r via-30% to-transparent to-60% lg:block"
+          className="from-background via-background/80 absolute inset-0 hidden bg-gradient-to-r via-35% to-transparent to-65% lg:block"
         />
         <div
           aria-hidden
@@ -73,42 +72,40 @@ export function Hero({ demoSlug, diasTeste }: { demoSlug: string | null; diasTes
             className="ld-subir text-primary-texto mb-5 text-xs font-bold tracking-[0.22em] uppercase"
             style={{ ['--atraso' as string]: '0ms' }}
           >
-            Para buffets de festas
+            Para buffets e espaços de festas
           </p>
           <h1
             id="titulo-hero"
-            className="text-[2.6rem] leading-[0.98] font-extrabold tracking-[-0.03em] text-balance uppercase sm:text-6xl lg:text-[3.6rem] xl:text-7xl"
+            className="text-[2.05rem] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance uppercase sm:text-5xl lg:text-[3.05rem] xl:text-[3.6rem]"
           >
             <Palavras texto={TITULO} de={0} />
             <Palavras texto={TITULO_DESTAQUE} de={n} className="ld-texto-limao" />
           </h1>
-          <p className="mt-5 text-base font-semibold tracking-[0.06em] text-white/80 uppercase sm:text-lg">
-            Você só entra quando ele quer reservar.
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-white/85">
+            Ele escolhe a data, os convidados e o pacote. Você recebe o contato e acompanha
+            proposta, pré-reserva, contrato e recebimentos em um só lugar.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <BotaoTeste className="shadow-[0_0_40px_-6px_rgb(178_247_89/0.55)]">
               Testar {diasTeste} dias grátis
             </BotaoTeste>
-            {demoSlug && (
-              // POST: entrar na demo abre uma sessão (um prefetch de link nunca pode fazer isso)
-              <form method="post" action="/demo/entrar">
-                <button
-                  type="submit"
-                  className="focus-visible:ring-ring/60 inline-flex min-h-13 w-full items-center justify-center rounded-full border border-white/20 bg-black/30 px-7 text-base font-semibold backdrop-blur transition-colors hover:border-white/45 hover:bg-white/10 focus-visible:ring-[3px] focus-visible:outline-none sm:w-auto"
-                  data-testid="ver-demo"
-                >
-                  Ver o painel de demonstração
-                </button>
-              </form>
-            )}
+            <a
+              href="#demonstracao"
+              className="focus-visible:ring-ring/60 inline-flex min-h-13 items-center justify-center rounded-full border border-white/25 bg-black/30 px-7 text-base font-semibold backdrop-blur transition-colors hover:border-white/45 hover:bg-white/10 focus-visible:ring-[3px] focus-visible:outline-none"
+              data-testid="experimentar-orcamento"
+            >
+              Experimentar o orçamento
+            </a>
           </div>
-          <p className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/70">
-            <span className="inline-flex items-center gap-2">
+          <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/75">
+            <li className="inline-flex items-center gap-2">
               <span className="bg-primary ld-pulso size-2 rounded-full" aria-hidden />
               {diasTeste} dias grátis, sem cartão
-            </span>
-            <span>Cancele quando quiser</span>
-            {demoSlug && (
+            </li>
+            <li>Cancele quando quiser</li>
+          </ul>
+          {demoSlug && (
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
               <a
                 href={`/b/${demoSlug}`}
                 className="text-foreground font-semibold underline underline-offset-4 hover:decoration-[var(--primary)]"
@@ -116,8 +113,18 @@ export function Hero({ demoSlug, diasTeste }: { demoSlug: string | null; diasTes
               >
                 Ver o link de um buffet de exemplo
               </a>
-            )}
-          </p>
+              {/* POST: entrar na demo abre uma sessão (um prefetch de link nunca pode fazer isso) */}
+              <form method="post" action="/demo/entrar">
+                <button
+                  type="submit"
+                  className="text-foreground focus-visible:ring-ring/60 min-h-11 rounded-md font-semibold underline underline-offset-4 hover:decoration-[var(--primary)] focus-visible:ring-[3px] focus-visible:outline-none"
+                  data-testid="ver-demo"
+                >
+                  Ver o painel de demonstração
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       </div>
       <div id="marcador-fim-hero" aria-hidden className="absolute bottom-0 h-px w-full" />
@@ -125,36 +132,42 @@ export function Hero({ demoSlug, diasTeste }: { demoSlug: string | null; diasTes
   );
 }
 
-const RECURSOS = [
-  { icone: Link2, texto: 'Link de orçamento' },
-  { icone: CalendarDays, texto: 'Agenda sem conflito' },
-  { icone: CalendarCheck, texto: 'Pré-reserva' },
-  { icone: FileText, texto: 'Proposta em PDF' },
-  { icone: FileSignature, texto: 'Contrato digital' },
-  { icone: Repeat, texto: 'Follow-up automático' },
-  { icone: BellRing, texto: 'Avisos no celular' },
-  { icone: Wallet, texto: 'Preço calculado na hora' },
+const JORNADA = [
+  { icone: Link2, texto: 'O cliente monta o orçamento' },
+  { icone: Inbox, texto: 'Você recebe a oportunidade' },
+  { icone: ListChecks, texto: 'Acompanha o atendimento' },
+  { icone: CalendarCheck, texto: 'Organiza a reserva' },
+  { icone: FileSignature, texto: 'Formaliza o contrato' },
+  { icone: Wallet, texto: 'Controla os recebimentos' },
 ];
 
-/** Faixa limão inclinada correndo com os recursos (pausa ao passar o mouse). */
-export function FaixaRecursos() {
-  const itens = [...RECURSOS, ...RECURSOS];
+/** Faixa limão com a sequência do produto, do link ao dinheiro recebido (estática). */
+export function Jornada() {
   return (
-    <div className="ld-faixa-pai relative z-10 -my-2 overflow-hidden py-10" aria-label="Recursos">
-      <div className="bg-primary text-primary-foreground -mx-4 -rotate-2 overflow-hidden py-4 shadow-[0_20px_60px_-20px_rgb(178_247_89/0.5)]">
-        <ul className="ld-faixa flex w-max gap-10 pr-10">
-          {itens.map((r, i) => (
-            <li
-              key={i}
-              aria-hidden={i >= RECURSOS.length || undefined}
-              className="flex items-center gap-3 text-lg font-extrabold tracking-tight whitespace-nowrap uppercase"
-            >
-              <r.icone className="size-5" aria-hidden />
-              {r.texto}
-              <span aria-hidden className="ml-7 inline-block size-2 rotate-45 bg-black" />
+    <div className="relative z-10 px-3 py-6 lg:py-10">
+      <div className="bg-primary text-primary-foreground mx-auto max-w-7xl rounded-[28px] px-4 py-5 shadow-[0_20px_60px_-20px_rgb(178_247_89/0.5)] sm:px-6 lg:-rotate-1 lg:rounded-none lg:px-8">
+        <ol
+          aria-label="Do orçamento aos recebimentos"
+          className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid-cols-6 lg:gap-x-2"
+        >
+          {JORNADA.map((j, i) => (
+            <li key={j.texto} className="flex min-w-0 items-center gap-2.5">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-black/10">
+                <j.icone className="size-[1.1rem]" aria-hidden />
+              </span>
+              <span className="min-w-0 text-sm leading-tight font-extrabold tracking-tight">
+                <span className="sr-only">{i + 1}. </span>
+                {j.texto}
+              </span>
+              {i < JORNADA.length - 1 && (
+                <ChevronRight
+                  className="ml-auto hidden size-4 shrink-0 opacity-50 lg:block"
+                  aria-hidden
+                />
+              )}
             </li>
           ))}
-        </ul>
+        </ol>
       </div>
     </div>
   );
