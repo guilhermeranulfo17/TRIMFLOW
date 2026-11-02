@@ -100,7 +100,10 @@ export function acaoPrincipal(o: {
   podeContratar: boolean;
   /** o módulo tem primeiro uso pendente (ex.: margem sem custos de pacote) */
   configuracaoPendente?: boolean;
+  /** o perfil usa as telas do módulo (módulos só do dono: false para o vendedor) */
+  podeUsar?: boolean;
 }): AcaoModulo {
+  if (o.acesso && o.podeUsar === false) return { tipo: 'conhecer', rotulo: 'Conhecer solução' };
   if (o.acesso) {
     return o.configuracaoPendente
       ? { tipo: 'configurar', rotulo: 'Configurar' }

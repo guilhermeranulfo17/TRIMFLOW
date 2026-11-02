@@ -64,6 +64,7 @@ export default async function SolucaoPage({ params }: Props) {
     vendaLiberada: s.contratavel,
     podeContratar: t.podeContratar,
     configuracaoPendente: s.configuracaoPendente,
+    podeUsar: !s.soDono || usuario.perfil === 'dono',
   });
   const comAssinatura =
     s.cobranca === 'mensal' &&

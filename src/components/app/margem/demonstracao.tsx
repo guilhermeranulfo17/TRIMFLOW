@@ -62,18 +62,20 @@ export function DemonstracaoMargem() {
         {linhas.map(([rotulo, v]) => (
           <div key={rotulo} className="flex justify-between gap-3 border-b pb-2">
             <dt className="text-muted-foreground">{rotulo}</dt>
-            <dd className="font-semibold tabular-nums">{formatBRL(v)}</dd>
+            <dd className="text-right font-semibold whitespace-nowrap tabular-nums">
+              {formatBRL(v)}
+            </dd>
           </div>
         ))}
         <div className="flex justify-between gap-3 border-b pb-2">
           <dt className="text-muted-foreground">Margem de contribuição prevista</dt>
-          <dd className="font-semibold tabular-nums">
+          <dd className="text-right font-semibold whitespace-nowrap tabular-nums">
             {formatBRL(r.margemPrevistaCentavos)} ({formatBp(r.margemPrevistaBp ?? 0)})
           </dd>
         </div>
         <div className="flex justify-between gap-3 border-b pb-2">
           <dt className="text-muted-foreground">Margem de contribuição realizada</dt>
-          <dd className="font-semibold tabular-nums">
+          <dd className="text-right font-semibold whitespace-nowrap tabular-nums">
             {formatBRL(r.margemRealizadaCentavos ?? 0)} ({formatBp(r.margemRealizadaBp ?? 0)})
           </dd>
         </div>

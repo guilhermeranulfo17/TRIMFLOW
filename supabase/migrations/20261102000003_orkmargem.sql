@@ -215,7 +215,9 @@ begin
       raise exception 'MARGEM_PACOTE_NAO_ENCONTRADO' using errcode = 'no_data_found';
     end if;
   end if;
-  v_conv := v_r.convidados;
+  -- convidados da reserva; sem eles, os do orçamento que gerou a reserva
+  v_conv := coalesce(v_r.convidados, (select o.convidados from public.orcamentos o
+                                      where o.id = v_r.orcamento_id and o.empresa_id = v_u.empresa_id));
 
   if v_atual.reserva_id is null then
     insert into public.margem_festas (reserva_id, empresa_id, pacote_id, pacote_nome, convidados, preparada_por)

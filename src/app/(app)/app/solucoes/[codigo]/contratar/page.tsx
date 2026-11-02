@@ -7,7 +7,8 @@ import { FormContratar, type FestaOpcao } from '@/components/app/solucoes/form-c
 import { formatData, hojeNoFuso } from '@/domain/dates';
 import { resumoCompra } from '@/domain/modulos';
 import { formatBRL } from '@/domain/money';
-import { exigirPerfil } from '@/server/auth/guards';
+import { AcessoRestrito } from '@/components/app/solucoes/acesso-restrito';
+import { exigirSessao } from '@/server/auth/sessao';
 import { reservas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { carregarSolucao } from '@/server/modulos/carregar';
@@ -19,7 +20,9 @@ type Props = { params: Promise<{ codigo: string }> };
 /** Resumo da compra e confirmação (só o dono; o servidor confere tudo de novo ao contratar). */
 export default async function ContratarPage({ params }: Props) {
   const { codigo } = await params;
-  const dono = await exigirPerfil('dono');
+  const dono = await exigirSessao();
+  if (dono.perfil !== 'dono')
+    return <AcessoRestrito texto="Só o dono do buffet contrata soluções." />;
   const t = await carregarSolucao(dono, codigo);
   if (!t) notFound();
   const s = t.solucao;

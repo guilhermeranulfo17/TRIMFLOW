@@ -9,7 +9,8 @@ import { formatData } from '@/domain/dates';
 import { TEXTO_PENDENCIA } from '@/domain/modulos';
 import { formatBRL } from '@/domain/money';
 import { formatBp } from '@/domain/percent';
-import { exigirPerfil } from '@/server/auth/guards';
+import { AcessoRestrito } from '@/components/app/solucoes/acesso-restrito';
+import { exigirSessao } from '@/server/auth/sessao';
 import { carregarMargemDaFesta } from '@/server/modulos/margem';
 
 export const metadata: Metadata = { title: 'Resultado da festa' };
@@ -19,7 +20,9 @@ type Props = { params: Promise<{ reservaId: string }> };
 /** Resultado de uma festa (OrkMargem): receita, recebido, custos e margem de contribuição. */
 export default async function MargemFestaPage({ params }: Props) {
   const { reservaId } = await params;
-  const dono = await exigirPerfil('dono');
+  const dono = await exigirSessao();
+  if (dono.perfil !== 'dono')
+    return <AcessoRestrito texto="Custos e margens das festas: só o dono do buffet vê." />;
   const m = await carregarMargemDaFesta(dono, reservaId);
   const voltar = (
     <Link
@@ -98,6 +101,12 @@ export default async function MargemFestaPage({ params }: Props) {
       {!m.acesso && (
         <p className="bg-muted rounded-control p-3 text-sm">
           O OrkMargem não está ativo: estes valores ficam para consulta.
+        </p>
+      )}
+      {!m.convidados && (
+        <p className="text-muted-foreground text-sm">
+          A reserva não tem número de convidados: os custos por convidado do pacote ficam fora da
+          previsão. Informe os convidados na reserva ou ajuste os itens à mão.
         </p>
       )}
       {m.pendencias.length > 0 && (

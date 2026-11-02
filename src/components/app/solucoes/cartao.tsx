@@ -31,6 +31,7 @@ export function CartaoSolucao({ s, podeContratar }: { s: SolucaoTela; podeContra
     vendaLiberada: s.contratavel,
     podeContratar,
     configuracaoPendente: s.configuracaoPendente,
+    podeUsar: !s.soDono || podeContratar,
   });
   const destaque =
     acao.tipo === 'contratar' || acao.tipo === 'acessar' || acao.tipo === 'configurar';

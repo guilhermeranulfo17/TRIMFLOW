@@ -109,3 +109,17 @@ describe('cartão: botão e etiqueta', () => {
     expect(ehMinha('expirado')).toBe(true);
   });
 });
+
+describe('módulo só do dono', () => {
+  it('com acesso, quem não usa as telas vê "Conhecer solução"', () => {
+    expect(
+      acaoPrincipal({
+        situacao: 'ativo',
+        acesso: true,
+        vendaLiberada: true,
+        podeContratar: false,
+        podeUsar: false,
+      }).tipo,
+    ).toBe('conhecer');
+  });
+});

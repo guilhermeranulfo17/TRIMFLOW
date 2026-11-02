@@ -8,7 +8,8 @@ import { TEXTO_PENDENCIA } from '@/domain/modulos';
 import { formatBRL } from '@/domain/money';
 import { formatBp } from '@/domain/percent';
 import { cn } from '@/lib/utils';
-import { exigirPerfil } from '@/server/auth/guards';
+import { AcessoRestrito } from '@/components/app/solucoes/acesso-restrito';
+import { exigirSessao } from '@/server/auth/sessao';
 import { carregarPainelMargem } from '@/server/modulos/margem';
 
 export const metadata: Metadata = { title: 'OrkMargem' };
@@ -25,7 +26,9 @@ const bp = (v: number | null) => (v === null ? '—' : formatBp(v));
 
 /** OrkMargem (só o dono): festas com margem, previsão por pacote e comparação. */
 export default async function MargemPage({ searchParams }: Props) {
-  const dono = await exigirPerfil('dono');
+  const dono = await exigirSessao();
+  if (dono.perfil !== 'dono')
+    return <AcessoRestrito texto="Custos e margens das festas: só o dono do buffet vê." />;
   const aba = (await searchParams).aba;
   const atual = ABAS.some(([k]) => k === aba) ? (aba as string) : 'festas';
   const p = await carregarPainelMargem(dono);

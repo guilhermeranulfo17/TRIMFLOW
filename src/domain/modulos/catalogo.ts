@@ -52,6 +52,8 @@ export type TextoModulo = {
   ondeUsar: { href: string; rotulo: string } | null;
   /** demonstração com dados fictícios na página de detalhes */
   temDemonstracao: boolean;
+  /** as telas do módulo são só do dono (valores e dados financeiros) */
+  soDono: boolean;
 };
 
 const POLITICAS_COMUNS = [
@@ -116,6 +118,7 @@ export const MODULOS: Record<CodigoModulo, TextoModulo> = {
     ],
     ondeUsar: { href: '/app/leads', rotulo: 'Ir para Leads' },
     temDemonstracao: false,
+    soDono: false,
   },
   orkmargem: {
     codigo: 'orkmargem',
@@ -158,6 +161,7 @@ export const MODULOS: Record<CodigoModulo, TextoModulo> = {
     pendenciasComerciais: POLITICAS_COMUNS,
     ondeUsar: { href: '/app/margem', rotulo: 'Abrir OrkMargem' },
     temDemonstracao: true,
+    soDono: true,
   },
   orkstage: {
     codigo: 'orkstage',
@@ -203,6 +207,7 @@ export const MODULOS: Record<CodigoModulo, TextoModulo> = {
     ],
     ondeUsar: { href: '/app/agenda', rotulo: 'Ir para a Agenda' },
     temDemonstracao: false,
+    soDono: false,
   },
   orkpass: {
     codigo: 'orkpass',
@@ -246,6 +251,7 @@ export const MODULOS: Record<CodigoModulo, TextoModulo> = {
     ],
     ondeUsar: { href: '/app/agenda', rotulo: 'Ir para a Agenda' },
     temDemonstracao: false,
+    soDono: false,
   },
   orkpay: {
     codigo: 'orkpay',
@@ -289,6 +295,7 @@ export const MODULOS: Record<CodigoModulo, TextoModulo> = {
     ],
     ondeUsar: { href: '/app/financeiro', rotulo: 'Ir para o Financeiro' },
     temDemonstracao: false,
+    soDono: true,
   },
   orkbis: {
     codigo: 'orkbis',
@@ -331,6 +338,7 @@ export const MODULOS: Record<CodigoModulo, TextoModulo> = {
     ],
     ondeUsar: { href: '/app/clientes', rotulo: 'Ir para Clientes' },
     temDemonstracao: false,
+    soDono: false,
   },
 };
 

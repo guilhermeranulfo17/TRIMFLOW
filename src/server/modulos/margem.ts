@@ -233,7 +233,7 @@ export async function carregarMargemDaFesta(
       reservaId,
       cliente: fin.cliente,
       data: fin.data,
-      convidados: fin.convidados,
+      convidados: festa?.convidados ?? fin.convidados,
       hoje: fin.hoje,
       preparada: Boolean(festa),
       fechada,
