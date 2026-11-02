@@ -1779,3 +1779,21 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   Pagamentos da festa.
 - **Pontos de entrada:** menu lateral e menu da conta (celular); aviso curto "Conhecer" no
   Financeiro (OrkMargem e OrkPay), em Clientes (OrkBis) e em Follow-up (OrkFlow). Sem pop-up.
+
+## 79. Vídeo de vendas (VSL) na landing
+
+- **Onde:** seção `#video` logo depois do Hero (`components/marketing/vsl.tsx`), com arquivos
+  nossos em `public/landing/vsl-orkestra.{mp4,webm,vtt}` e `vsl-orkestra-poster.webp`.
+- **Origem:** o vídeo é feito fora deste repositório (projeto Remotion em `EMPRESA/video/vsl-orkestra`),
+  para não trazer dependência nova ao app. Narração gerada no ElevenLabs, trilha composta em código
+  (sem direitos autorais) e efeitos do SFX Kit (CC0). Para mudar o vídeo: editar lá, renderizar e
+  trocar os arquivos aqui (mesmos nomes).
+- **Roteiro (estrutura Hormozi):** gancho na dor ("quantas vezes hoje você respondeu a mesma
+  pergunta?"), agitação, virada ("não é falta de cliente, é falta de caminho"), mecanismo
+  (orçamento no link, proposta e próxima ação, pré-reserva, contrato e o que falta receber),
+  oferta (14 dias grátis, sem cartão) e chamada. Sem depoimento, número ou resultado inventado;
+  telas com o selo "Exemplo ilustrativo · dados fictícios"; "Quem envia é você" (nenhuma mensagem
+  automática ao cliente final).
+- **Carregamento:** sem autoplay (tem som), `preload="none"` (nada baixa antes do play), poster e
+  proporção fixa (sem salto de layout), legenda pt-BR em `<track>` (desligável; não queimada no
+  vídeo). Tudo em `'self'`, então a CSP (`media-src`) não muda. A landing segue estática.

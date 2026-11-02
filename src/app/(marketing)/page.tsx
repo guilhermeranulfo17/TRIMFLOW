@@ -19,6 +19,7 @@ import {
   TituloSecao,
 } from '@/components/marketing/secoes';
 import { SimuladorDemo } from '@/components/marketing/simulador';
+import { VideoVendas } from '@/components/marketing/vsl';
 import { codigoPlanoVigente } from '@/domain/cobranca/limites';
 import { DIAS_TESTE_GRATIS, VALOR_IMPLANTACAO_CENTAVOS } from '@/domain/cobranca/precos';
 import { jsonLdSoftware, seloAnual } from '@/domain/marketing';
@@ -71,6 +72,7 @@ export default async function Landing() {
       <CascaLanding diasTeste={DIAS_TESTE_GRATIS} />
       <main>
         <Hero demoSlug={demoSlug} diasTeste={DIAS_TESTE_GRATIS} />
+        <VideoVendas />
         <Jornada />
         <Problema />
 
