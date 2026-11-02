@@ -539,6 +539,17 @@ dialog.lightbox::backdrop {
   }
 }
 
+/* partes do navegador na landing (seleção, cursor, rolagem) nas cores da marca, não no padrão */
+:root:has([data-landing]) {
+  scrollbar-color: #3a3a3a var(--landing-fundo);
+  accent-color: var(--primary);
+  caret-color: var(--primary);
+}
+[data-landing] ::selection {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
 .ld-brilho {
   background: radial-gradient(closest-side, rgb(178 247 89 / 0.22), transparent);
   filter: blur(20px);
@@ -626,10 +637,6 @@ dialog.lightbox::backdrop {
   .ld-palavra > span {
     animation: ld-subir 0.7s cubic-bezier(0.2, 0.7, 0.1, 1) both;
     animation-delay: calc(var(--i, 0) * 45ms + 60ms);
-  }
-  .ld-subir {
-    animation: ld-subir 0.8s cubic-bezier(0.2, 0.7, 0.1, 1) both;
-    animation-delay: var(--atraso, 0ms);
   }
   .ld-foto {
     animation: ld-foto 2.4s cubic-bezier(0.2, 0.7, 0.1, 1) both;

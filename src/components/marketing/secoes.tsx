@@ -22,17 +22,15 @@ import { formatBRL } from '@/domain/money';
 import { cn } from '@/lib/utils';
 import { BotaoTeste, BotaoWhatsappVendas, linkWhatsappVendas } from './ctas';
 
-/** Título de seção: um sobretítulo curto com o traço limão e o título grande. */
+/** Título de seção: o título grande (final em limão) e, se houver, o texto de apoio. */
 export function TituloSecao({
   id,
-  sobre,
   titulo,
   destaque,
   texto,
   centro = false,
 }: {
   id: string;
-  sobre: string;
   titulo: string;
   /** final do título em limão (opcional) */
   destaque?: string;
@@ -41,13 +39,9 @@ export function TituloSecao({
 }) {
   return (
     <div className={cn('max-w-3xl', centro && 'mx-auto text-center')}>
-      <p className="text-primary-texto inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.18em] uppercase">
-        <span aria-hidden className="bg-primary h-px w-8" />
-        {sobre}
-      </p>
       <h2
         id={id}
-        className="mt-4 text-[2rem] leading-[1.08] font-extrabold tracking-[-0.03em] text-balance sm:text-5xl"
+        className="text-[2rem] leading-[1.08] font-extrabold tracking-[-0.03em] text-balance sm:text-5xl"
       >
         {titulo}
         {destaque && (
@@ -101,19 +95,20 @@ export function Problema() {
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-problema"
-          sobre="Conhece essa rotina?"
           titulo="O atendimento toma o dia,"
           destaque="e a organização fica para depois."
         />
+        {/* no PC, as linhas dos três cartões se alinham (subgrid): o "Com o Orkestra" fica na mesma altura */}
         <ul className="mt-12 grid gap-4 md:grid-cols-3">
           {SITUACOES.map((d) => (
-            <li key={d.titulo} className="ld-vidro flex flex-col rounded-[28px] p-6 md:p-7">
-              <span className="grid size-12 place-items-center rounded-2xl border border-white/10 bg-white/5">
-                <d.icone className="text-primary-texto size-6" aria-hidden />
-              </span>
+            <li
+              key={d.titulo}
+              className="ld-vidro flex flex-col rounded-[28px] p-6 md:row-span-4 md:grid md:grid-rows-subgrid md:gap-0 md:p-7"
+            >
+              <d.icone className="text-primary-texto size-7" aria-hidden />
               <h3 className="mt-5 text-xl leading-snug font-bold">{d.titulo}</h3>
               <p className="text-muted-foreground mt-2 leading-relaxed">{d.texto}</p>
-              <p className="mt-auto border-t border-white/10 pt-4 leading-relaxed">
+              <p className="mt-5 border-t border-white/10 pt-4 leading-relaxed">
                 <span className="text-primary-texto block text-xs font-bold tracking-wide uppercase">
                   Com o Orkestra
                 </span>
@@ -157,7 +152,6 @@ export function ComoFunciona() {
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-como"
-          sobre="Como funciona"
           titulo="Quatro passos,"
           destaque="do cadastro à festa fechada."
         />
@@ -203,7 +197,6 @@ export function SuaPagina() {
       <div className="relative mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-pagina"
-          sobre="Seu link"
           titulo="Uma página com a cara do seu buffet,"
           destaque="pronta para divulgar."
           texto="Logo, fotos, pacotes, perguntas frequentes e o botão de orçamento. Você ganha um link para cada canal, o QR code para imprimir e textos prontos para a bio e o WhatsApp."
@@ -312,7 +305,6 @@ export function Recursos({ planos }: { planos: PlanoVitrine[] }) {
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-recursos"
-          sobre="Recursos"
           titulo="O que muda no dia a dia"
           destaque="do seu buffet."
         />
@@ -389,7 +381,6 @@ export function Indicadores({ planos }: { planos: PlanoVitrine[] }) {
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-indicadores"
-          sobre="Números"
           titulo="Indicadores que ajudam"
           destaque="a decidir o próximo passo."
           texto="Veja onde os interessados param, de onde vêm as reservas e quais datas ainda estão livres para divulgar."
@@ -516,7 +507,6 @@ export function Implantacao({ implantacaoCentavos }: { implantacaoCentavos: numb
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-implantacao"
-          sobre="Para começar"
           titulo="Duas formas de colocar"
           destaque="o seu buffet no ar."
         />
@@ -694,7 +684,6 @@ export function Perguntas({
         <div className="lg:sticky lg:top-28 lg:self-start">
           <TituloSecao
             id="titulo-duvidas"
-            sobre="Dúvidas"
             titulo="Perguntas"
             destaque="frequentes."
             texto="Se a sua não estiver aqui, chame a gente no WhatsApp."

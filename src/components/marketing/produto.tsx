@@ -275,7 +275,6 @@ export function ProdutoPorDentro() {
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <TituloSecao
           id="titulo-produto"
-          sobre="Por dentro do Orkestra"
           titulo="Do pedido de orçamento"
           destaque="à festa fechada."
           texto="Três momentos do atendimento, do jeito que aparecem no sistema."

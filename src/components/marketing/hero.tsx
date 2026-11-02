@@ -68,12 +68,6 @@ export function Hero({ demoSlug, diasTeste }: { demoSlug: string | null; diasTes
 
       <div className="relative mx-auto -mt-20 w-full max-w-7xl px-4 pb-12 sm:-mt-32 md:px-6 lg:mt-0 lg:px-12 lg:pt-28 lg:pb-24 2xl:max-w-none 2xl:pl-[calc(50vw-30.75rem)]">
         <div className="max-w-xl min-w-0 xl:max-w-2xl">
-          <p
-            className="ld-subir text-primary-texto mb-5 text-xs font-bold tracking-[0.22em] uppercase"
-            style={{ ['--atraso' as string]: '0ms' }}
-          >
-            Para buffets e espaços de festas
-          </p>
           <h1
             id="titulo-hero"
             className="text-[2.05rem] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance uppercase sm:text-5xl lg:text-[3.05rem] xl:text-[3.6rem]"
@@ -82,8 +76,9 @@ export function Hero({ demoSlug, diasTeste }: { demoSlug: string | null; diasTes
             <Palavras texto={TITULO_DESTAQUE} de={n} className="ld-texto-limao" />
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-white/85">
-            Ele escolhe a data, os convidados e o pacote. Você recebe o contato e acompanha
-            proposta, pré-reserva, contrato e recebimentos em um só lugar.
+            Feito para buffets e espaços de festas: o cliente escolhe a data, os convidados e o
+            pacote. Você recebe o contato e acompanha proposta, pré-reserva, contrato e recebimentos
+            em um só lugar.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <BotaoTeste className="shadow-[0_0_40px_-6px_rgb(178_247_89/0.55)]">
