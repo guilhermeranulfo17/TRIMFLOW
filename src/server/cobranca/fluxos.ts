@@ -100,7 +100,7 @@ export async function processarWebhook(db: Db, corpo: unknown): Promise<string |
 }
 
 /** Cobrança lida da API vira evento sintético idempotente (mesmo id = mesmo status). */
-async function registrarCobrancaLida(db: Db | Tx, origem: string, pagamento: unknown) {
+export async function registrarCobrancaLida(db: Db | Tx, origem: string, pagamento: unknown) {
   const c = lerCobranca(pagamento);
   if (!c) return null;
   return registrarEvento(db, {
@@ -185,7 +185,7 @@ async function auditar(
 }
 
 /** Garante o cliente no Asaas com os dados de cobrança atuais (cria ou atualiza). */
-async function garantirCliente(
+export async function garantirCliente(
   d: DepsCobranca,
   empresaId: string,
   dados: { nome: string; documento: string; email: string } | null,

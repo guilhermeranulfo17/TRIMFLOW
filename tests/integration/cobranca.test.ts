@@ -504,7 +504,10 @@ describe('conta suspensa = somente leitura', () => {
           'acessos_suporte', 'assinaturas', 'cobrancas', 'cobranca_eventos', 'cupons_usos',
           'empresas_cobranca', 'push_inscricoes', 'preferencias_avisos', 'funil_eventos',
           -- Etapa 9B: aceitar os termos novos precisa funcionar com a conta suspensa
-          'aceites_termos')
+          'aceites_termos',
+          -- Nossas soluções: como assinaturas e cobrancas, a cobrança dos adicionais segue
+          -- gravável (o webhook registra pagamentos); escrita só pela conexão administrativa
+          'modulo_assinaturas', 'modulo_compras', 'modulo_cobrancas')
         and not exists (select 1 from pg_trigger g
           where g.tgrelid = format('public.%I', c.table_name)::regclass
             and g.tgfoid = 'public._exigir_escrita()'::regprocedure)`;
