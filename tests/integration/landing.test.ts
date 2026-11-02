@@ -38,9 +38,13 @@ describe('publico.planos_vitrine', () => {
         'whatsapp_avisos',
         'follow_up',
         'numeros_completo',
+        'contratos_mes',
       ].sort(),
     );
     expect(v.planos[1]).toMatchObject({ preco_mensal_centavos: 24700, max_espacos: null });
+    // limite de contratos do plano (Etapa 10): Essencial 10 por mês, Profissional sem limite
+    expect(v.planos[0]).toMatchObject({ contratos_mes: 10 });
+    expect(v.planos[1]).toMatchObject({ contratos_mes: null });
     expect(Object.keys(v)).toEqual(['planos']);
   });
 
