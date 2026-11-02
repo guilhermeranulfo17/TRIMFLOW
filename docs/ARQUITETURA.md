@@ -1698,3 +1698,40 @@ Substitui o que §59 e §62 diziam sobre a cor, o símbolo e o visual da landing
   `domain/marketing`) e a tela de Plano não sugere cupom. O mecanismo de cupom continua
   (campo "Cupom (opcional)" e /interno) para cupons futuros, criados por migration.
 - Os testes de cobrança criam o próprio cupom (`TESTE97`) em vez de depender do FUNDADOR.
+
+## 77. Landing reescrita (novembro de 2026)
+
+- **Mensagem:** "Seu cliente monta o orçamento. Você acompanha até a festa fechada." A promessa
+  antiga ("você só entra quando ele quer reservar") saiu da página, do OG e dos metadados: o
+  produto apoia o atendimento, não atende sozinho. Sequência mostrada logo abaixo do hero
+  (`Jornada`, faixa estática no lugar da faixa animada de recursos): orçamento → oportunidade →
+  atendimento → reserva → contrato → recebimentos.
+- **Seções** (ordem): hero, jornada, problema (três situações, cada uma com "Com o Orkestra"),
+  demonstração (`#demonstracao`), produto por dentro (`#produto`, três cenas), como funciona
+  (`#como-funciona`, 4 passos), o link (vitrines), recursos (`#recursos`, 6 blocos com benefício e
+  exemplos), indicadores, implantação (`#implantacao`), planos (`#planos`), dúvidas (`#duvidas`) e
+  chamada final. As âncoras antigas `#precos` e `#perguntas` continuam abrindo a seção certa. "Para
+  quem é" (abas de segmento) saiu: o público prioritário é o buffet infantil com espaço próprio.
+- **Cenas do produto** (`components/marketing/produto.tsx`): desenhos em HTML/CSS, não capturas
+  (as de `docs/capturas` são da marca antiga). Cada uma leva a etiqueta "Exemplo ilustrativo" e só
+  dados fictícios (primeiro nome, sem telefone). Os textos vêm do app: as linhas do orçamento são
+  as do motor com o modelo infantil, o título da tarefa é o de `tituloTarefa` e a mensagem pronta
+  a de `domain/leads/mensagens`. Os números dos indicadores são "Números de demonstração", com os
+  rótulos do funil de Números.
+- **Simulador:** além de tipo, pacote e convidados, crianças da faixa cobrada em parte (6 a 10 anos
+  do modelo, `maxCriancas` mantém os equivalentes acima do mínimo do pacote) e o adicional de
+  valor fixo (Mesa temática). Mostra resumo, total, sinal e as linhas do cálculo; continua no
+  navegador, sem enviar nada (E2E confere que nenhuma requisição sai). Teste de igualdade com
+  `calcularOrcamento` também com crianças e adicional.
+- **Planos:** `publico.planos_vitrine` passa a trazer `contratos_mes` (migration
+  `20261102000001_vitrine_contratos.sql`, aditiva; chave ausente = a página não mostra número). O
+  cartão lista só o que o plano diz ou o que vale para todos no app (recebimentos, propostas,
+  avisos no painel e no celular). No anual, o valor grande é o equivalente por mês e o total do ano
+  aparece abaixo (`precoNoCiclo`). O plano do teste vem de `codigoPlanoVigente` (trial =
+  Profissional). Cancelamento como nos Termos: a qualquer momento, acesso até o fim do período pago.
+- **Sem promessa não verificada:** nada de envio automático ao cliente (o FAQ diz que a equipe
+  envia), contrato como "assinatura eletrônica simples, sem ICP-Brasil", financeiro como controle
+  (o Orkestra não cobra o cliente), implantação assistida só com valor e "combinada antes", sem
+  "pronto em minutos".
+- **Cabeçalho:** Como funciona, Recursos, Planos, Dúvidas; no celular o menu fecha ao escolher a
+  seção, com Esc ou com um toque fora, e traz "Testar grátis".

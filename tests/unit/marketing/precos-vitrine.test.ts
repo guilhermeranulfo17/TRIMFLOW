@@ -3,6 +3,7 @@ import {
   descontoAnual,
   itensDoPlano,
   planoDoRecurso,
+  precoNoCiclo,
   seloAnual,
   type PlanoVitrine,
 } from '@/domain/marketing';
@@ -17,6 +18,7 @@ const essencial: PlanoVitrine = {
   whatsappAvisos: false,
   followUp: false,
   numerosCompleto: false,
+  contratosMes: 10,
 };
 const profissional: PlanoVitrine = {
   ...essencial,
@@ -29,6 +31,7 @@ const profissional: PlanoVitrine = {
   whatsappAvisos: true,
   followUp: true,
   numerosCompleto: true,
+  contratosMes: null,
 };
 
 describe('descontoAnual', () => {
@@ -64,17 +67,49 @@ describe('itensDoPlano e planoDoRecurso', () => {
     const e = itensDoPlano(essencial);
     expect(e).toContainEqual({ texto: 'Até 2 usuários', incluso: true });
     expect(e).toContainEqual({ texto: '1 espaço', incluso: true });
-    expect(e).toContainEqual({ texto: 'Avisos no WhatsApp', incluso: false });
-    expect(e).toContainEqual({ texto: 'Números básicos do mês', incluso: true });
+    expect(e).toContainEqual({ texto: 'Avisos no WhatsApp para a equipe', incluso: false });
+    expect(e).toContainEqual({ texto: 'Tarefas automáticas de follow-up', incluso: false });
+    expect(e).toContainEqual({ texto: 'Números: resumo e etapas até a reserva', incluso: true });
     const p = itensDoPlano(profissional);
     expect(p).toContainEqual({ texto: 'Espaços ilimitados', incluso: true });
-    expect(p).toContainEqual({ texto: 'Follow-up automático', incluso: true });
+    expect(p).toContainEqual({ texto: 'Tarefas automáticas de follow-up', incluso: true });
+    expect(p).toContainEqual({ texto: 'Avisos no WhatsApp para a equipe', incluso: true });
     expect(itensDoPlano({ ...essencial, maxUsuarios: 1, maxEspacos: 3 })).toEqual(
       expect.arrayContaining([
         { texto: '1 usuário', incluso: true },
         { texto: 'Até 3 espaços', incluso: true },
       ]),
     );
+  });
+
+  it('contratos: limite por mês do plano, sem limite (null) ou sem número (chave ausente)', () => {
+    const contratos = (p: PlanoVitrine) =>
+      itensDoPlano(p).find((i) => i.texto.startsWith('Contratos'));
+    expect(contratos(essencial)).toEqual({
+      texto: 'Contratos com aceite eletrônico: até 10 por mês',
+      incluso: true,
+    });
+    expect(contratos(profissional)).toEqual({
+      texto: 'Contratos com aceite eletrônico, sem limite',
+      incluso: true,
+    });
+    const { contratosMes: _, ...semChave } = essencial;
+    expect(contratos(semChave)).toEqual({
+      texto: 'Contratos com aceite eletrônico',
+      incluso: true,
+    });
+    expect(contratos({ ...essencial, contratosMes: 0 })?.incluso).toBe(false);
+  });
+
+  it('itens que valem para todos os planos aparecem nos dois', () => {
+    const comuns = (p: PlanoVitrine) =>
+      itensDoPlano(p)
+        .filter((i) => i.incluso)
+        .map((i) => i.texto);
+    for (const t of ['Controle de recebimentos por festa', 'Propostas na web e em PDF']) {
+      expect(comuns(essencial)).toContain(t);
+      expect(comuns(profissional)).toContain(t);
+    }
   });
 
   it('etiqueta só quando o plano mais barato não tem o recurso', () => {
@@ -86,5 +121,23 @@ describe('itensDoPlano e planoDoRecurso', () => {
       planoDoRecurso([{ ...essencial, whatsappAvisos: true }, profissional], 'whatsappAvisos'),
     ).toBeNull();
     expect(planoDoRecurso([], 'numerosCompleto')).toBeNull();
+  });
+});
+
+describe('precoNoCiclo', () => {
+  it('mensal mostra a mensalidade, sem total anual', () => {
+    expect(precoNoCiclo(essencial, 'mensal')).toEqual({
+      porMesCentavos: 14700,
+      totalAnualCentavos: null,
+      economiaCentavos: 0,
+    });
+  });
+
+  it('anual mostra o equivalente por mês e o total cobrado no ano', () => {
+    expect(precoNoCiclo(profissional, 'anual')).toEqual({
+      porMesCentavos: 20583,
+      totalAnualCentavos: 247000,
+      economiaCentavos: 49400,
+    });
   });
 });

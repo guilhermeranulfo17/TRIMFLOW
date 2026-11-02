@@ -2,16 +2,16 @@
 
 import { Menu } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Logo } from '@/components/app/logo';
 import { cn } from '@/lib/utils';
 import { BotaoTeste } from './ctas';
 
 export const ANCORAS = [
   { href: '#como-funciona', rotulo: 'Como funciona' },
-  { href: '#para-quem', rotulo: 'Para quem' },
-  { href: '#precos', rotulo: 'Preços' },
-  { href: '#perguntas', rotulo: 'Perguntas' },
+  { href: '#recursos', rotulo: 'Recursos' },
+  { href: '#planos', rotulo: 'Planos' },
+  { href: '#duvidas', rotulo: 'Dúvidas' },
 ] as const;
 
 /** Sessão do Supabase no navegador (só a presença do cookie, sem rede e sem ler o conteúdo). */
@@ -28,10 +28,13 @@ function temSessao(): boolean {
  * "Testar grátis" depois do hero. Dois marcadores no HTML e IntersectionObserver: nada de
  * listener de scroll.
  */
-export function CascaLanding() {
+export function CascaLanding({ diasTeste }: { diasTeste: number }) {
   const [rolou, setRolou] = useState(false);
   const [passouHero, setPassouHero] = useState(false);
   const [logado, setLogado] = useState(false);
+  const menu = useRef<HTMLDetailsElement>(null);
+  // no celular, o menu fecha ao escolher uma seção (senão fica aberto por cima do conteúdo)
+  const fecharMenu = () => menu.current?.removeAttribute('open');
 
   useEffect(() => {
     setLogado(temSessao());
@@ -50,7 +53,24 @@ export function CascaLanding() {
     );
     if (topo) obs.observe(topo);
     if (fim) obs.observe(fim);
-    return () => obs.disconnect();
+    // fecha o menu com Esc ou com um toque fora dele
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !menu.current?.open) return;
+      menu.current.removeAttribute('open');
+      menu.current.querySelector('summary')?.focus();
+    };
+    const aoTocar = (e: PointerEvent) => {
+      if (menu.current?.open && !menu.current.contains(e.target as Node)) {
+        menu.current.removeAttribute('open');
+      }
+    };
+    document.addEventListener('keydown', aoTeclar);
+    document.addEventListener('pointerdown', aoTocar);
+    return () => {
+      obs.disconnect();
+      document.removeEventListener('keydown', aoTeclar);
+      document.removeEventListener('pointerdown', aoTocar);
+    };
   }, []);
 
   return (
@@ -104,26 +124,32 @@ export function CascaLanding() {
                 </BotaoTeste>
               </>
             )}
-            <details className="relative lg:hidden">
+            <details ref={menu} className="relative lg:hidden" data-testid="menu-celular">
               <summary
-                className="grid size-10 cursor-pointer list-none place-items-center rounded-full hover:bg-white/5 [&::-webkit-details-marker]:hidden"
-                aria-label="Abrir o menu de seções"
+                className="focus-visible:ring-ring/60 grid size-10 cursor-pointer list-none place-items-center rounded-full hover:bg-white/5 focus-visible:ring-[3px] focus-visible:outline-none [&::-webkit-details-marker]:hidden"
+                aria-label="Menu de seções"
               >
                 <Menu className="size-5" aria-hidden />
               </summary>
               <nav
                 aria-label="Seções"
-                className="bg-card rounded-card absolute top-12 right-0 flex w-56 flex-col border p-2 shadow-2xl"
+                className="bg-card rounded-card absolute top-12 right-0 flex w-60 flex-col border p-2 shadow-2xl"
               >
                 {ANCORAS.map((a) => (
                   <a
                     key={a.href}
                     href={a.href}
+                    onClick={fecharMenu}
                     className="hover:bg-accent rounded-control px-3 py-3 text-sm font-semibold"
                   >
                     {a.rotulo}
                   </a>
                 ))}
+                {!logado && (
+                  <BotaoTeste tamanho="medio" className="mt-2 w-full sm:hidden">
+                    Testar grátis
+                  </BotaoTeste>
+                )}
               </nav>
             </details>
           </div>
@@ -143,7 +169,7 @@ export function CascaLanding() {
         data-testid="barra-teste-celular"
       >
         <BotaoTeste tamanho="medio" className="w-full">
-          Testar 14 dias grátis
+          Testar {diasTeste} dias grátis
         </BotaoTeste>
       </div>
     </>

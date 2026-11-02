@@ -17,6 +17,11 @@ export type PlanoVitrine = {
   whatsappAvisos: boolean;
   followUp: boolean;
   numerosCompleto: boolean;
+  /**
+   * Contratos enviados por mês (planos.contratos_mes): null = sem limite; undefined = a vitrine
+   * não informou (versão anterior da função), e a página não mostra número.
+   */
+  contratosMes?: number | null;
 };
 
 export type CicloVitrine = 'mensal' | 'anual';
@@ -53,8 +58,43 @@ export function seloAnual(planos: PlanoVitrine[]): string | null {
 
 export type RecursoPlano = 'whatsappAvisos' | 'followUp' | 'numerosCompleto';
 
-/** Itens do cartão do plano, na ordem de exibição; `incluso = false` aparece riscado/esmaecido. */
-export function itensDoPlano(p: PlanoVitrine): { texto: string; incluso: boolean }[] {
+/**
+ * Valor exibido no cartão: no mensal, a mensalidade; no anual, o equivalente por mês (anual ÷ 12)
+ * e, à parte, o total cobrado de uma vez no ano.
+ */
+export function precoNoCiclo(
+  p: PlanoVitrine,
+  ciclo: CicloVitrine,
+): { porMesCentavos: Centavos; totalAnualCentavos: Centavos | null; economiaCentavos: Centavos } {
+  if (ciclo === 'mensal') {
+    return { porMesCentavos: p.precoMensalCentavos, totalAnualCentavos: null, economiaCentavos: 0 };
+  }
+  const d = descontoAnual(p);
+  return {
+    porMesCentavos: d.mensalEquivalenteCentavos,
+    totalAnualCentavos: p.precoAnualCentavos,
+    economiaCentavos: d.economiaCentavos,
+  };
+}
+
+export type ItemPlano = { texto: string; incluso: boolean };
+
+function itemContratos(n: number | null | undefined): ItemPlano {
+  if (n === undefined) return { texto: 'Contratos com aceite eletrônico', incluso: true };
+  if (n === null) return { texto: 'Contratos com aceite eletrônico, sem limite', incluso: true };
+  if (n <= 0) return { texto: 'Contratos com aceite eletrônico', incluso: false };
+  return {
+    texto: `Contratos com aceite eletrônico: até ${n} por mês`,
+    incluso: true,
+  };
+}
+
+/**
+ * Itens do cartão do plano, na ordem de exibição; `incluso = false` aparece esmaecido. Só entra
+ * aqui o que os dados do plano dizem (planos_vitrine) ou o que vale para todos os planos no app
+ * (link, leads e tarefas, agenda, propostas, recebimentos, avisos no painel e no celular).
+ */
+export function itensDoPlano(p: PlanoVitrine): ItemPlano[] {
   const usuarios = p.maxUsuarios === 1 ? '1 usuário' : `Até ${p.maxUsuarios} usuários`;
   const espacos =
     p.maxEspacos === null
@@ -63,14 +103,21 @@ export function itensDoPlano(p: PlanoVitrine): { texto: string; incluso: boolean
         ? '1 espaço'
         : `Até ${p.maxEspacos} espaços`;
   return [
-    { texto: 'Link de orçamento com o seu preço', incluso: true },
-    { texto: 'Leads, agenda e propostas em PDF', incluso: true },
     { texto: usuarios, incluso: true },
     { texto: espacos, incluso: true },
-    { texto: 'Avisos no WhatsApp', incluso: p.whatsappAvisos },
-    { texto: 'Follow-up automático', incluso: p.followUp },
+    { texto: 'Link de orçamento com seus pacotes e regras', incluso: true },
+    { texto: 'Leads, tarefas e mensagens prontas', incluso: true },
+    { texto: 'Agenda com turnos e pré-reservas', incluso: true },
+    { texto: 'Propostas na web e em PDF', incluso: true },
+    itemContratos(p.contratosMes),
+    { texto: 'Controle de recebimentos por festa', incluso: true },
+    { texto: 'Avisos no painel e no celular', incluso: true },
+    { texto: 'Avisos no WhatsApp para a equipe', incluso: p.whatsappAvisos },
+    { texto: 'Tarefas automáticas de follow-up', incluso: p.followUp },
     {
-      texto: p.numerosCompleto ? 'Números completos do mês' : 'Números básicos do mês',
+      texto: p.numerosCompleto
+        ? 'Números completos: origem, perdas, ocupação e datas livres'
+        : 'Números: resumo e etapas até a reserva',
       incluso: true,
     },
   ];

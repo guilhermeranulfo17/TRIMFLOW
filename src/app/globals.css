@@ -495,11 +495,6 @@ dialog.lightbox::backdrop {
     stroke-dashoffset: 0;
   }
 }
-@keyframes ld-faixa {
-  to {
-    transform: translateX(-50%);
-  }
-}
 @keyframes ld-pulso {
   0% {
     box-shadow: 0 0 0 0 rgb(178 247 89 / 0.6);
@@ -646,12 +641,6 @@ dialog.lightbox::backdrop {
   .ld-chegar {
     animation: ld-chegar 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     animation-delay: var(--atraso, 0ms);
-  }
-  .ld-faixa {
-    animation: ld-faixa 38s linear infinite;
-  }
-  .ld-faixa-pai:hover .ld-faixa {
-    animation-play-state: paused;
   }
   .ld-pulso {
     animation: ld-pulso 1.8s ease-out infinite;
