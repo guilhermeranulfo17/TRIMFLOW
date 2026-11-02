@@ -43,7 +43,8 @@ src/
                      (Minha conta: avisos e MFA), numeros (Números), leads/[id]/exportar (LGPD),
                      contratos (lista com filtros, [id] detalhe com ações e
                      histórico, [id]/pdf, novo: prévia e envio, modelos), financeiro (+ [reservaId]),
-                     clientes (+ [id]: ficha com as festas)
+                     clientes (+ [id]: ficha com as festas), solucoes (Nossas soluções: catálogo,
+                     [codigo] detalhe, [codigo]/contratar), margem (OrkMargem: painel, [reservaId])
       empresa/       Minha empresa: identidade (page), agenda-config, catalogo (+ pacotes/[id],
                      opcionais/[id]), regras, follow-up, usuarios, plano (assinar, faturas,
                      cancelar, acesso do suporte), simulador, privacidade (+ exportar: ZIP),
@@ -79,6 +80,8 @@ src/
                      perguntas) e prévia em iframe
       numeros/       cartões, funil, origem, perdas, atendimento, ocupação (SVG próprio)
       plano/         escolher plano, cancelar e suporte, faixa da conta, faixa do suporte
+      solucoes/      cartão, etiqueta, contratar, assinatura (cancelar, já paguei), Conhecer, restrito
+      margem/        custos do pacote, custos da festa (preparar, fechar, reabrir), demonstração
     interno/         formulários e ações do /interno
     orcamento/       peças compartilhadas do wizard e do orçamento interno (contador)
     proposta/        proposta na web (desenha o ModeloProposta)
@@ -118,6 +121,8 @@ src/
     clientes/        quem é cliente (festas por lead ou WhatsApp), hora de chamar de novo, busca
     cobranca/        situação da conta (= _situacao_conta), limites (= _codigo_plano), CPF/CNPJ,
                      preços e cupom, eventos do Asaas (status monotônico = SQL), MRR, motivos
+    modulos/         Nossas soluções: catálogo e pendências, situação do direito (= _modulo_situacao),
+                     resumo da compra, OrkMargem (previsão, margem de contribuição, pendências)
     marketing/       landing: preços da vitrine (desconto anual, itens), origem
                      do cadastro (UTM), JSON-LD, simulador (mesmo calcularOrcamento)
     legal/           versão vigente dos Termos e da Privacidade (VERSAO_DOCUMENTOS)
@@ -154,6 +159,8 @@ src/
     cobranca/        cliente Asaas (fetch), fluxos (assinar, mudar, cancelar, implantação,
                      reconciliar) com dependências injetadas, webhook, leituras da tela de Plano
     interno/         guard (lista + aal2), leituras do /interno, sessão de suporte (cookie HMAC)
+    modulos/         contratar/cancelar/verificar no Asaas (deps injetadas), catálogo com situação,
+                     guard moduloComAcesso, leituras do OrkMargem
     marketing/       preços da landing (planos_vitrine em cache, tag planos-vitrine), exemplo do
                      simulador, contagem
     lgpd/            exportações (ZIP próprio), exclusão definitiva (deps injetadas), Privacidade
@@ -360,6 +367,14 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   (`CONTRATOS_CHAVE`, `server/contratos/segredos`) e mascarado; nunca em log nem no Sentry.
   E-mail ao cliente final só o do contrato (código), direto pelo Resend. Hash do banco =
   `hashTexto` do domínio (equivalência).
+- **Nossas soluções (§78):** módulo só é vendido com `podeVender` (pronto no código) **e**
+  `modulos.venda_liberada` (decisão comercial, por migration). Cada módulo mensal é uma
+  assinatura própria no Asaas (nunca altere a da base); cobranças em `modulo_cobrancas`, fora da
+  situação da conta. Acesso só por cobrança confirmada pelo provedor (`modulo_acesso`,
+  `_modulo_situacao` = `domain/modulos/situacao`, equivalência); escrita de módulo passa por
+  `_exigir_modulo` (`MODULO_INATIVO`), leitura do histórico continua. Contratar e cancelar: só o
+  dono. Módulo novo: textos e pendências em `domain/modulos/catalogo`, tabelas com
+  `_exigir_escrita` e funções com o guard. OrkMargem: escrita só por `margem_*`.
 - **Financeiro (Etapa 11, §72):** só o dono; `reserva_parcelas` e `recebimentos` só por
   `salvar_plano_pagamento`, `registrar_recebimento` e `estornar_recebimento`. Recebimento nunca é
   apagado (estorno). A situação (pago, atrasado) é calculada em `domain/financeiro`.
