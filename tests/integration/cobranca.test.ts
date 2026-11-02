@@ -598,6 +598,12 @@ describe('conta suspensa = somente leitura', () => {
     'salvar_plano_pagamento',
     'registrar_recebimento',
     'estornar_recebimento',
+    // Nossas soluções: OrkMargem
+    'margem_salvar_custos_pacote',
+    'margem_preparar_festa',
+    'margem_salvar_custos_festa',
+    'margem_fechar_festa',
+    'margem_reabrir_festa',
   ];
 
   it('toda função de escrita do painel está classificada', async () => {

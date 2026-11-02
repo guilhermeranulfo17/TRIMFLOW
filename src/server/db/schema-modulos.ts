@@ -105,3 +105,40 @@ export const moduloCobrancas = pgTable(
     }).onDelete('cascade'),
   ],
 );
+
+// ---------------------------------------------------------------------------------------------
+// OrkMargem (20261102000003_orkmargem)
+// ---------------------------------------------------------------------------------------------
+
+export const margemCustosPacote = pgTable('margem_custos_pacote', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  empresaId: empresaId(),
+  pacoteId: uuid('pacote_id').notNull(),
+  categoria: text('categoria').notNull(),
+  fixoCentavos: integer('fixo_centavos').notNull().default(0),
+  porConvidadoCentavos: integer('por_convidado_centavos').notNull().default(0),
+  atualizadoEm: instante('atualizado_em').notNull().defaultNow(),
+});
+
+export const margemFestas = pgTable('margem_festas', {
+  reservaId: uuid('reserva_id').primaryKey(),
+  empresaId: empresaId(),
+  pacoteId: uuid('pacote_id'),
+  pacoteNome: text('pacote_nome'),
+  convidados: integer('convidados'),
+  preparadaEm: instante('preparada_em').notNull().defaultNow(),
+  preparadaPor: uuid('preparada_por').references(() => usuarios.id, { onDelete: 'set null' }),
+  fechadaEm: instante('fechada_em'),
+  fechadaPor: uuid('fechada_por').references(() => usuarios.id, { onDelete: 'set null' }),
+});
+
+export const margemCustosFesta = pgTable('margem_custos_festa', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  empresaId: empresaId(),
+  reservaId: uuid('reserva_id').notNull(),
+  ordem: smallint('ordem').notNull().default(0),
+  categoria: text('categoria').notNull(),
+  descricao: text('descricao').notNull(),
+  previstoCentavos: integer('previsto_centavos').notNull(),
+  realizadoCentavos: integer('realizado_centavos'),
+});
