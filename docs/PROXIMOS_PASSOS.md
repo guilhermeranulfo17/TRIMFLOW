@@ -263,3 +263,13 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Lembrar a visão escolhida (Lista ou Funil) por usuário.
 - Arrastar também no celular (toque longo) e reordenar dentro da coluna.
 - Taxa de conversão entre etapas e tempo médio em cada uma (em Números).
+
+## Depois da landing de novembro de 2026
+
+- **Escopo da implantação assistida:** a página só diz o valor (R$ 497, único e opcional) e que o
+  conteúdo é combinado antes. Quando o dono definir o que entra (configuração do catálogo,
+  registro das festas já vendidas, conversa de treinamento, prazo), escrever na landing e no FAQ.
+- **Capturas reais do painel** na seção "Por dentro" (hoje são desenhos em HTML/CSS com dados
+  fictícios): gerar do seed com a marca atual, sem dados pessoais, e trocar mantendo a etiqueta.
+- **Suporte por plano:** a página não promete canal nem prazo de suporte; decidir e publicar.
+- **Simulador:** horas extras, adicionais por unidade e por hora e o modo de preço "aproximado".

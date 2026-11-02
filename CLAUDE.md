@@ -87,8 +87,8 @@ src/
                      fontes dos estilos, cor da marca, rodapé
     auth/            peças dos formulários de autenticação
     marca/           logotipo (traçado da arte oficial) e símbolo (o "O" sobre o limão)
-    marketing/       seções e ilhas da landing (cabeçalho, simulador, preços, abas, contagem/origem,
-                     holofote e contador); landing toda escura, animações `ld-*` em globals.css
+    marketing/       seções e ilhas da landing (cabeçalho, simulador, produto por dentro, preços,
+                     contagem/origem e holofote); landing toda escura, animações `ld-*` em globals.css
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
                      conversao (campos), senha, forca-senha, tema, imagem, plano
     auth/            destino depois do login (destinoPosLogin, destinoSeguro)
