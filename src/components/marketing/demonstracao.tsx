@@ -219,7 +219,7 @@ export function Demonstracao({
               <span className="ld-serif text-[1.1em] text-[var(--ld-limao)]">chega</span> pra você.
             </h2>
             <p className="mt-4 max-w-sm text-base text-white/70 md:text-lg">
-              Organizado, direto no seu WhatsApp. Você só confirma.
+              Organizado, com data, convidados, pacote e valor.
             </p>
           </div>
 

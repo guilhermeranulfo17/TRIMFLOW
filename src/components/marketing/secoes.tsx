@@ -31,7 +31,7 @@ export function Topo() {
             <span className="ld-serif text-[1.1em] text-[var(--ld-limao)]">sozinho</span>.
           </h1>
           <p className="ld-subir mt-6 max-w-md text-lg text-white/70 md:text-xl">
-            Você só entra na conversa quando ele quer reservar.
+            E o pedido chega pronto no seu WhatsApp.
           </p>
           <a
             href="#demonstracao"

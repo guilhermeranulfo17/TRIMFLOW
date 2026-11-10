@@ -6,7 +6,7 @@ async function esperarToast(page: Page, texto: string) {
 }
 
 /*
- * Etapa 9B · B.5 Conta de demonstração, no celular: entra pela landing sem senha, vê o painel
+ * Etapa 9B · B.5 Conta de demonstração, no celular: entra por /demo/entrar sem senha, vê o painel
  * cheio, nada é salvo (mensagem com "Criar conta grátis"), o link público da demo não cria lead
  * real, a landing não conta o clique como "Testar grátis" e, depois de 2 horas, sai para o cadastro.
  */
@@ -25,9 +25,16 @@ test('demonstração: entra sem senha, vê tudo, não salva nada e termina no ca
     if (r.url().includes('/api/landing/contar')) contagens.push(r.postData() ?? '');
   });
 
+  // a landing nova não tem mais o botão da demonstração: a entrada continua sendo o POST de
+  // /demo/entrar (formulário, nunca um link), enviado aqui a partir da própria landing
   await page.goto('/');
-  await expect(page.getByTestId('ver-demo')).not.toHaveAttribute('data-cta-teste');
-  await page.getByTestId('ver-demo').click();
+  await page.evaluate(() => {
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/demo/entrar';
+    document.body.append(form);
+    form.submit();
+  });
   await expect(page).toHaveURL(/\/app\/leads$/, { timeout: 30_000 });
   await expect(page.getByTestId('faixa-demo')).toBeVisible();
   await expect(page.getByText('Patrícia Lima').first()).toBeVisible();

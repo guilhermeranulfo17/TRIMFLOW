@@ -35,7 +35,7 @@ src/
     (auth)/          login (+ verificacao: código da MFA), cadastro (+ completar, para quem entrou
                      pelo Google), recuperar-senha, nova-senha; layout dividido no PC
     (aceite)/app/aceite/  aceite dos Termos e da Privacidade novos (Etapa 9B)
-    (marketing)/     landing em `/` (Etapa 9.6): página de vendas estática, imagem de compartilhamento
+    (marketing)/     landing em `/` (§80): página de vendas estática em seis blocos, imagem de compartilhamento
     (onboarding)/app/comecar/  onboarding guiado em 5 passos (tela cheia, sem menu)
     (app)/app/       área logada: leads (caixa em Lista ou Funil) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
@@ -90,8 +90,9 @@ src/
                      fontes dos estilos, cor da marca, rodapé
     auth/            peças dos formulários de autenticação
     marca/           logotipo (traçado da arte oficial) e símbolo (o "O" sobre o limão)
-    marketing/       seções e ilhas da landing (cabeçalho, simulador, produto por dentro, preços,
-                     contagem/origem e holofote); landing toda escura, animações `ld-*` em globals.css
+    marketing/       seções da landing (topo, benefícios, preço, chamada final, rodapé) e ilhas
+                     (demonstração com os passos reais do link público + resultado, "Entrar",
+                     contagem/origem); estilos `ld-*` em globals.css
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
                      conversao (campos), senha, forca-senha, tema, imagem, plano
     auth/            destino depois do login (destinoPosLogin, destinoSeguro)
@@ -123,8 +124,8 @@ src/
                      preços e cupom, eventos do Asaas (status monotônico = SQL), MRR, motivos
     modulos/         Nossas soluções: catálogo e pendências, situação do direito (= _modulo_situacao),
                      resumo da compra, OrkMargem (previsão, margem de contribuição, pendências)
-    marketing/       landing: preços da vitrine (desconto anual, itens), origem
-                     do cadastro (UTM), JSON-LD, simulador (mesmo calcularOrcamento)
+    marketing/       landing: preço único da vitrine, origem do cadastro (UTM), JSON-LD,
+                     demonstração do "Buffet Exemplo" (mesmo montarPrevia do link público)
     legal/           versão vigente dos Termos e da Privacidade (VERSAO_DOCUMENTOS)
     email/           modelos dos e-mails da conta (HTML + texto, links absolutos)
     lgpd/            CSV das exportações
@@ -161,8 +162,8 @@ src/
     interno/         guard (lista + aal2), leituras do /interno, sessão de suporte (cookie HMAC)
     modulos/         contratar/cancelar/verificar no Asaas (deps injetadas), catálogo com situação,
                      guard moduloComAcesso, leituras do OrkMargem
-    marketing/       preços da landing (planos_vitrine em cache, tag planos-vitrine), exemplo do
-                     simulador, contagem
+    marketing/       preços da landing (planos_vitrine em cache, tag planos-vitrine), exemplo da
+                     demonstração, contagem
     lgpd/            exportações (ZIP próprio), exclusão definitiva (deps injetadas), Privacidade
     seguranca/       limite de tentativas (publico.limite_acesso)
     saude/           dados do /api/saude (deps injetadas)
@@ -205,7 +206,7 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   Opcional, Turno, Espaço.
 - **ids:** sempre uuid. Nunca expor ids sequenciais.
 - **Identidade e temas (Etapa 9.5, `docs/ARQUITETURA.md` §59 e §71):** grafite + limão
-  `#B2F759` (o da logo); **nada de roxo** (teste `sem-roxo`). Painel com tema escolhido no menu da conta (cookie `orkestra_tema`:
+  `#B2F759` (o da logo; a landing usa a paleta própria do §80); **nada de roxo** (teste `sem-roxo`). Painel com tema escolhido no menu da conta (cookie `orkestra_tema`:
   escuro padrão, claro, sistema) via `data-painel data-tema`; telas de acesso sempre no escuro
   (`data-acesso`); termos e privacidade no claro da marca (`data-orkestra-claro`); link público e
   proposta no claro neutro com a cor do buffet (padrão `#0F766E`). Use só tokens (`bg-card`,
@@ -304,13 +305,18 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `trocar_senha`), chame `refreshSession()`: os claims vêm do token. Login com Google:
   `/auth/callback` → `decidirVoltaExterna` (`server/auth/volta-externa.ts`, regra em
   `domain/auth/destino`); conta nova completa em `/cadastro/completar` (`completar_conta_dono`).
-- **Landing (Etapa 9.6, §62):** `/` estática (ISR 5 min) e fora do middleware (não toca no
-  Auth). Preços, limites e desconto anual só de `publico.planos_vitrine`
-  (nunca valor fixo no código; sem preço de fundador); quem mudar plano invalida a tag
-  `planos-vitrine`. Nada de
-  depoimento, logo de cliente, nota ou número inventado. Simulador usa o `calcularOrcamento` do
-  domínio com preços fictícios. Origem do anúncio (utm_, ref) só por `registrar_origem_cadastro`;
-  contagem agregada só por `publico.landing_contar` (sem nada pessoal).
+- **Landing (§62 e §80):** `/` estática (ISR 5 min) e fora do middleware (não toca no
+  Auth). Seis blocos e nada mais: topo, demonstração, resultado, três benefícios, um preço e botão
+  final; pouco texto, sem travessão, feita para o celular. Um preço só, de
+  `publico.planos_vitrine` (a mensalidade do plano do teste; nunca valor fixo no código; sem preço
+  de fundador); quem mudar plano invalida a tag `planos-vitrine`. Nada de depoimento, logo de
+  cliente, nota ou número inventado. A demonstração desenha os passos reais do link público
+  (`passo-pacote`, `passo-extras`) com o `montarPrevia` do domínio e preços fictícios, no
+  navegador, sem enviar nada. Identidade só da landing: limão `#C0F05A`, verde `#6FD36A`, verde
+  escuro `#1E7A3F`, preto `#0A0A0A`, off-white `#F4F4EE`; títulos `.ld-titulo` (Bricolage
+  Grotesque) e destaque `.ld-serif` (Instrument Serif itálico). Origem do anúncio (utm_, ref) só
+  por `registrar_origem_cadastro`; contagem agregada só por `publico.landing_contar` (sem nada
+  pessoal). Cadastro pede só nome, buffet, WhatsApp, e-mail e senha (segmento padrão `infantil`).
 - **LGPD (Etapa 9B, §63):** o buffet é controlador dos leads, o Orkestra operador. Lead só é
   anonimizado/exportado por `lgpd_apagar_lead`/`lgpd_exportar_lead` (dono) e pelo job
   `lgpd_retencao`; empresa exportada pela rota do ZIP (RLS do dono) e excluída 30 dias depois do
