@@ -32,7 +32,9 @@ test.describe('cadastro', () => {
     await page.getByRole('button', { name: 'Criar conta' }).click();
     await expect(page.getByText('Informe seu nome')).toBeVisible();
     await expect(page.getByText('Informe seu WhatsApp')).toBeVisible();
-    await expect(page.getByText('Escolha o tipo de buffet')).toBeVisible();
+    await expect(page.getByText('Informe o nome do buffet')).toBeVisible();
+    // o cadastro pede só o mínimo: "Tipo de buffet" não é mais perguntado
+    await expect(page.getByText('Tipo de buffet')).toHaveCount(0);
     expect(await semRolagemHorizontal(page)).toBe(true);
   });
 
