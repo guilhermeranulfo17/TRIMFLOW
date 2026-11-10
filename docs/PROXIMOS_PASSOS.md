@@ -267,9 +267,14 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 ## Depois da landing em seis blocos (novembro de 2026, ARQUITETURA §80)
 
 - **Um plano só também no painel:** a landing mostra um preço (a mensalidade do plano do teste),
-  mas a tela Plano ainda oferece os planos ativos do banco e o ciclo anual. Para vender um plano
-  só: migration desativando o outro (`planos.ativo = false`), decidir o que fazer com o anual e
-  rever os testes de cobrança que assinam o Essencial.
+  mas a tela Plano ainda oferece os planos ativos do banco e o ciclo anual. Decisão do dono
+  (nov/2026): não mexer nisso agora. Quando for a hora: migration desativando o outro
+  (`planos.ativo = false`), decidir o que fazer com o anual e rever os testes de cobrança que
+  assinam o Essencial.
+- **Oferta de primeiro acesso (ideia do dono, para depois):** quando a pessoa estiver quase
+  saindo da landing, oferecer uma condição especial, por exemplo o primeiro mês (ou os três
+  primeiros) por um valor menor, como R$ 97. Precisa de cupom no banco (a tabela `cupons` já
+  existe), do aviso de saída na página e do texto da condição; nada de valor fixo no código.
 - **Implantação assistida grátis:** a landing promete; o /interno ainda tem a cobrança avulsa de
   implantação (`VALOR_IMPLANTACAO_CENTAVOS`). Tirar a ação (ou zerar) e definir o escopo do que
   entra na implantação (configuração do catálogo, festas já vendidas, treinamento, prazo).
