@@ -264,15 +264,39 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
 - Arrastar também no celular (toque longo) e reordenar dentro da coluna.
 - Taxa de conversão entre etapas e tempo médio em cada uma (em Números).
 
-## Depois da landing de novembro de 2026
+## Depois da landing em seis blocos (novembro de 2026, ARQUITETURA §80)
 
-- **Escopo da implantação assistida:** a página só diz o valor (R$ 497, único e opcional) e que o
-  conteúdo é combinado antes. Quando o dono definir o que entra (configuração do catálogo,
-  registro das festas já vendidas, conversa de treinamento, prazo), escrever na landing e no FAQ.
-- **Capturas reais do painel** na seção "Por dentro" (hoje são desenhos em HTML/CSS com dados
-  fictícios): gerar do seed com a marca atual, sem dados pessoais, e trocar mantendo a etiqueta.
-- **Suporte por plano:** a página não promete canal nem prazo de suporte; decidir e publicar.
-- **Simulador:** horas extras, adicionais por unidade e por hora e o modo de preço "aproximado".
+- **Um plano só também no painel:** a landing mostra um preço (a mensalidade do plano do teste),
+  mas a tela Plano ainda oferece os planos ativos do banco e o ciclo anual. Decisão do dono
+  (nov/2026): não mexer nisso agora. Quando for a hora: migration desativando o outro
+  (`planos.ativo = false`), decidir o que fazer com o anual e rever os testes de cobrança que
+  assinam o Essencial.
+- **Oferta de primeiro acesso (ideia do dono, para depois):** quando a pessoa estiver quase
+  saindo da landing, oferecer uma condição especial, por exemplo o primeiro mês (ou os três
+  primeiros) por um valor menor, como R$ 97. Precisa de cupom no banco (a tabela `cupons` já
+  existe), do aviso de saída na página e do texto da condição; nada de valor fixo no código.
+- **Implantação assistida grátis:** a landing promete; o /interno ainda tem a cobrança avulsa de
+  implantação (`VALOR_IMPLANTACAO_CENTAVOS`). Tirar a ação (ou zerar) e definir o escopo do que
+  entra na implantação (configuração do catálogo, festas já vendidas, treinamento, prazo).
+- **Tipo de buffet:** saiu do cadastro; toda conta nasce com o modelo infantil. Se entrarem
+  buffets de casamento ou em domicílio, oferecer a troca do modelo no passo 1 do onboarding.
+- **Arquivos sem uso:** `public/landing/` (foto do hero antigo, capturas das vitrines e o vídeo de
+  vendas) e `scripts/capturas-landing.mjs`. Apagar ou reaproveitar o vídeo em outro lugar.
+- **Demonstração:** crianças por faixa de idade, horas extras e escolha de data (hoje a festa de
+  exemplo é fixa: aniversário infantil, sábado à tarde).
+- **Suporte:** a página não promete canal nem prazo de suporte; decidir e publicar.
+
+## Depois do rastreio para o CRM de prospecção (ARQUITETURA §81)
+
+- **Privacidade e subprocessadores:** o rastreio manda nome, WhatsApp e e-mail do dono da conta ao
+  CRM de prospecção (hospedado fora da Vercel e do Supabase) e guarda o cookie `orkestra_r`. Rever
+  com o advogado se a Política de Privacidade e a página de subprocessadores precisam citar isso
+  (se mudar o texto, subir `VERSAO_DOCUMENTOS`).
+- **Etapas seguintes do funil:** hoje o Orkestra para em `demo_marcada`. Assinatura paga poderia
+  mandar "Assinou" e a etapa `fechado`; cancelamento e fim do teste sem assinar, um evento.
+- **Fila com repetição:** as chamadas são de melhor esforço (uma tentativa, com nova tentativa do
+  "Criou conta" no marco seguinte). Se o CRM cair com frequência, levar para a fila de avisos.
+- **Tela no /interno:** mostrar o vínculo com o CRM e os marcos de cada empresa.
 
 ## Nossas soluções: o que falta para vender cada módulo
 

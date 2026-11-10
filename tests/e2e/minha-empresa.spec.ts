@@ -17,7 +17,6 @@ async function novaEmpresa(page: Page, buffet: string) {
     whatsapp: '34991355450',
     senha: SENHA,
     buffet,
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   // estes testes montam o catálogo do zero

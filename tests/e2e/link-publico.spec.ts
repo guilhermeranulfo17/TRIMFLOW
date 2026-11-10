@@ -26,7 +26,6 @@ async function empresaComModelo(page: Page, buffet: string): Promise<string> {
     whatsapp: '34991355450',
     senha: 'senha-forte-123',
     buffet,
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   await confirmarPrecosNoOnboarding(page);
@@ -188,7 +187,6 @@ test.describe('link público', () => {
       whatsapp: '34991355450',
       senha: 'senha-forte-123',
       buffet: 'Buffet Link Pendente',
-      segmento: 'Buffet infantil',
     });
     // conta nova: o catálogo do modelo veio com preços de exemplo, ainda não confirmados
     await expect(page).toHaveURL(/\/app\/comecar$/);

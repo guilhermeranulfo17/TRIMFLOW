@@ -1,7 +1,7 @@
 import type { PlanoVitrine } from './precos-vitrine';
 
 /*
- * JSON-LD da landing (Etapa 9.6): SoftwareApplication com as ofertas reais dos planos. Nunca
+ * JSON-LD da landing: SoftwareApplication com a oferta real (o preço único da landing). Nunca
  * leva aggregateRating, review ou nota: o Orkestra não inventa avaliação.
  */
 
@@ -10,7 +10,8 @@ const reais = (centavos: number) => (centavos / 100).toFixed(2);
 export function jsonLdSoftware(o: {
   url: string;
   descricao: string;
-  planos: PlanoVitrine[];
+  /** o plano à venda na landing; null = sem oferta (leitura dos preços falhou) */
+  plano: PlanoVitrine | null;
 }): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
@@ -21,19 +22,18 @@ export function jsonLdSoftware(o: {
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web',
     inLanguage: 'pt-BR',
-    ...(o.planos.length > 0 && {
-      offers: o.planos.map((p) => ({
+    ...(o.plano && {
+      offers: {
         '@type': 'Offer',
-        name: `Plano ${p.nome}`,
-        price: reais(p.precoMensalCentavos),
+        price: reais(o.plano.precoMensalCentavos),
         priceCurrency: 'BRL',
         priceSpecification: {
           '@type': 'UnitPriceSpecification',
-          price: reais(p.precoMensalCentavos),
+          price: reais(o.plano.precoMensalCentavos),
           priceCurrency: 'BRL',
           unitCode: 'MON',
         },
-      })),
+      },
     }),
   };
 }

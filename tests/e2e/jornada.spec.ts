@@ -12,7 +12,7 @@ import {
 /*
  * Etapa 9B · B.8 "Jornada do buffet", ponta a ponta no celular (375x812), contra o app real e a
  * API falsa do Asaas. Roda em todo PR:
- *   landing (Testar grátis com origem do anúncio) → cadastro → onboarding → testar como cliente →
+ *   landing (botão final com origem do anúncio) → cadastro → onboarding → testar como cliente →
  *   cliente de verdade monta o orçamento e pede pré-reserva → aviso no sino → vendedor confirma o
  *   sinal → reserva na Agenda → Números mostra → teste acaba (somente leitura) → assina (sandbox
  *   simulado) → continua usando.
@@ -52,12 +52,11 @@ test('jornada do buffet: da landing à assinatura, sem sair do celular', async (
   const buffet = `Buffet Jornada ${sufixo}`;
   const email = emailUnico('jornada');
 
-  // 1. Landing → "Testar grátis" (anúncio do Instagram) → cadastro
+  // 1. Landing → botão final (anúncio do Instagram) → cadastro
   await page.goto('/?utm_source=instagram&utm_campaign=jornada');
   await page
     .getByRole('main')
-    .getByRole('link', { name: /Testar 14 dias grátis/ })
-    .first()
+    .getByRole('link', { name: 'Quero isso com o nome do meu buffet' })
     .click();
   await expect(page).toHaveURL(/\/cadastro$/);
   await cadastrar(page, {
@@ -66,7 +65,6 @@ test('jornada do buffet: da landing à assinatura, sem sair do celular', async (
     whatsapp: '34991355450',
     senha: SENHA_SEED,
     buffet,
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   const empresaId = await noBanco(async (sql) => {

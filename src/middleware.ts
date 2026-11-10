@@ -152,7 +152,7 @@ export async function middleware(request: NextRequest) {
 
 /**
  * Rotas que não tocam no Auth (como antes da Etapa 9B, quando ficavam fora do matcher): a landing
- * (estática), a página pública do buffet, contagem da landing, webhooks e rotas chamadas pelo
+ * (estática), a página pública do buffet, contagem e rastreio da landing, webhooks e rotas chamadas pelo
  * pg_cron, saúde e os textos legais.
  */
 export function usaSessao(pathname: string): boolean {
@@ -161,6 +161,7 @@ export function usaSessao(pathname: string): boolean {
     pathname === '/opengraph-image' ||
     pathname.startsWith('/b/') ||
     pathname.startsWith('/api/landing/') ||
+    pathname.startsWith('/api/prospeccao/') ||
     pathname === '/api/cobranca/asaas' ||
     pathname === '/api/cobranca/reconciliar' ||
     pathname === '/api/avisos/processar' ||

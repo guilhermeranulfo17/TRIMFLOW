@@ -190,10 +190,25 @@
   --quente: #9a3412;
 }
 
-/* Landing: o escuro da marca com o fundo quase preto das referências */
+/*
+ * Landing (nov/2026): a identidade da Orkestra na página de vendas. Limão #C0F05A, verde #6FD36A,
+ * verde escuro #1E7A3F, preto #0A0A0A e off-white #F4F4EE. O bloco troca só o que muda sobre o
+ * escuro da marca; as seções claras usam .ld-gelo (mais abaixo).
+ */
 :root:has([data-landing]) {
-  --background: #070707;
-  --landing-fundo: #070707;
+  --background: #0a0a0a;
+  --landing-fundo: #0a0a0a;
+  --foreground: #f4f4ee;
+  --primary: #c0f05a;
+  --primary-hover: #cdf57a;
+  --primary-foreground: #0a0a0a;
+  --primary-texto: #c0f05a;
+  --ring: #c0f05a;
+  --ld-limao: #c0f05a;
+  --ld-verde: #6fd36a;
+  --ld-verde-escuro: #1e7a3f;
+  --ld-preto: #0a0a0a;
+  --ld-gelo: #f4f4ee;
 }
 
 /* "Seguir o sistema": os mesmos blocos, escolhidos pelo aparelho */
@@ -448,30 +463,13 @@ dialog.lightbox::backdrop {
 }
 
 /*
- * Landing nova (out/2026): escuro com o limão da logo. Tudo em CSS (transform, clip-path e
- * offset-path; opacidade só no que é decoração), desligado com movimento reduzido. A foto da
- * hero (LCP) só aproxima de leve; nada de opacidade nela nem no título.
+ * Landing (nov/2026): preto e off-white com o limão da marca. Títulos em Bricolage Grotesque
+ * ExtraBold e a palavra de destaque em Instrument Serif itálico (fontes no layout de marketing).
+ * Movimento só com transform e opacidade em decoração, desligado com movimento reduzido.
  */
 @keyframes ld-subir {
   from {
-    transform: translateY(105%);
-  }
-  to {
-    transform: none;
-  }
-}
-@keyframes ld-flutuar {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-14px);
-  }
-}
-@keyframes ld-chegar {
-  from {
-    transform: translate3d(var(--de-x, 40px), var(--de-y, 0), 0) scale(0.92);
+    transform: translateY(18px);
     opacity: 0;
   }
   to {
@@ -479,28 +477,14 @@ dialog.lightbox::backdrop {
     opacity: 1;
   }
 }
-@keyframes ld-foto {
+@keyframes ld-chegar {
   from {
-    transform: scale(1.08);
+    transform: translateY(22px) scale(0.96);
+    opacity: 0;
   }
   to {
     transform: none;
-  }
-}
-@keyframes ld-desenhar {
-  from {
-    stroke-dashoffset: var(--comprimento, 1000);
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes ld-pulso {
-  0% {
-    box-shadow: 0 0 0 0 rgb(178 247 89 / 0.6);
-  }
-  100% {
-    box-shadow: 0 0 0 12px rgb(178 247 89 / 0);
+    opacity: 1;
   }
 }
 @keyframes ld-brilho {
@@ -512,30 +496,14 @@ dialog.lightbox::backdrop {
     transform: translate3d(6%, -4%, 0) scale(1.12);
   }
 }
-@keyframes ld-girar-preco {
+@keyframes ld-valor {
   from {
-    transform: translateY(0.6em) rotateX(-70deg);
+    transform: translateY(0.35em);
+    opacity: 0.2;
   }
   to {
     transform: none;
-  }
-}
-@keyframes ld-paralaxe {
-  from {
-    transform: translateY(18%) scale(0.94);
-  }
-  to {
-    transform: translateY(-6%) scale(1);
-  }
-}
-@keyframes ld-revelar {
-  from {
-    transform: translateY(48px);
-    clip-path: inset(0 0 30% 0 round 28px);
-  }
-  to {
-    transform: none;
-    clip-path: inset(0 0 0 0 round 28px);
+    opacity: 1;
   }
 }
 
@@ -546,144 +514,70 @@ dialog.lightbox::backdrop {
   caret-color: var(--primary);
 }
 [data-landing] ::selection {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: var(--ld-limao);
+  color: var(--ld-preto);
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:has([data-landing]) {
+    scroll-behavior: smooth;
+  }
 }
 
+.ld-titulo {
+  font-family: var(--font-ld-titulo), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+/* a palavra de destaque: serifada e itálica (nos títulos, um pouco maior: text-[1.1em]) */
+.ld-serif {
+  font-family: var(--font-ld-serif), Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 0.9;
+}
+
+/* seção clara dentro da landing escura: os tokens passam a valer para o off-white */
+[data-landing] .ld-gelo {
+  color-scheme: light;
+  --background: #f4f4ee;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --muted: #e9e9e1;
+  --muted-foreground: #55584f;
+  --border: #deded4;
+  --primary-texto: #1e7a3f;
+  --ring: #1e7a3f;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* brilho das telas de acesso (components/auth/fundo-acesso) e do topo da landing */
 .ld-brilho {
   background: radial-gradient(closest-side, rgb(178 247 89 / 0.22), transparent);
   filter: blur(20px);
 }
-.ld-vidro {
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.025));
-  border: 1px solid rgb(255 255 255 / 0.09);
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-}
-.ld-texto-limao {
-  color: var(--primary);
-}
-.ld-contorno {
-  color: transparent;
-  -webkit-text-stroke: 1px rgb(255 255 255 / 0.12);
-}
-
-/* holofote: um brilho limão segue o ponteiro (variáveis --x/--y do Holofote) */
-.ld-holofote {
-  position: relative;
-  isolation: isolate;
-}
-.ld-holofote::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: radial-gradient(
-    360px circle at var(--x, 50%) var(--y, -40%),
-    rgb(178 247 89 / 0.13),
-    transparent 60%
-  );
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-}
-.ld-holofote:hover::before {
-  opacity: 1;
-}
-
-/* palavras do título: cada uma sobe de dentro da própria linha */
-.ld-palavra {
-  display: inline-block;
-  overflow: clip;
-  overflow-clip-margin: 0.12em;
-  vertical-align: top;
-  padding-bottom: 0.08em;
-  margin-bottom: -0.08em;
-}
-.ld-palavra > span {
-  display: inline-block;
-}
-
-/* passos 01/02/03: o destaque limão vai para o cartão que está sob o ponteiro */
-.ld-passo {
-  transition:
-    background-color 0.35s,
-    color 0.35s,
-    transform 0.35s;
-}
-.ld-passo[data-destaque],
-.ld-passos:hover .ld-passo:hover {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-}
-.ld-passos:hover .ld-passo[data-destaque]:not(:hover) {
-  background-color: transparent;
-  color: var(--foreground);
-}
-.ld-passo .ld-passo-texto {
-  color: var(--muted-foreground);
-  transition: color 0.35s;
-}
-.ld-passo[data-destaque] .ld-passo-texto,
-.ld-passos:hover .ld-passo:hover .ld-passo-texto {
-  color: rgb(12 12 12 / 0.78);
-}
-.ld-passos:hover .ld-passo[data-destaque]:not(:hover) .ld-passo-texto {
-  color: var(--muted-foreground);
+[data-landing] .ld-brilho {
+  background: radial-gradient(closest-side, rgb(192 240 90 / 0.2), transparent);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .ld-palavra > span {
+  .ld-subir {
     animation: ld-subir 0.7s cubic-bezier(0.2, 0.7, 0.1, 1) both;
-    animation-delay: calc(var(--i, 0) * 45ms + 60ms);
-  }
-  .ld-foto {
-    animation: ld-foto 2.4s cubic-bezier(0.2, 0.7, 0.1, 1) both;
-  }
-  .ld-flutuar {
-    animation: ld-flutuar 6s ease-in-out infinite;
-    animation-delay: var(--atraso, 0ms);
+    animation-delay: calc(var(--i, 0) * 90ms + 60ms);
   }
   .ld-chegar {
-    animation: ld-chegar 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    animation-delay: var(--atraso, 0ms);
-  }
-  .ld-pulso {
-    animation: ld-pulso 1.8s ease-out infinite;
+    animation: ld-chegar 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
   .ld-brilho {
     animation: ld-brilho 14s ease-in-out infinite;
   }
-  .ld-preco-novo {
+  .ld-valor {
     display: inline-block;
-    transform-origin: 50% 100%;
-    animation: ld-girar-preco 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  }
-  .ld-cartao {
-    transition:
-      transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
-      border-color 0.3s;
-  }
-  .ld-cartao:hover {
-    transform: translateY(-6px);
-  }
-  @supports (animation-timeline: view()) {
-    .ld-paralaxe {
-      animation: ld-paralaxe linear both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 55%;
-    }
-    .ld-revelar {
-      animation: ld-revelar linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 60%;
-    }
-    .ld-desenhar {
-      animation: ld-desenhar linear both;
-      animation-timeline: view();
-      animation-range: entry 10% cover 45%;
-    }
+    animation: ld-valor 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 }
 

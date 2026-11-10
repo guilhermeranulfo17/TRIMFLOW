@@ -14,19 +14,17 @@ const plano: PlanoVitrine = {
 };
 
 describe('jsonLdSoftware', () => {
-  it('ofertas com o preço real em reais e nada de avaliação', () => {
-    const j = jsonLdSoftware({ url: 'https://x.test', descricao: 'd', planos: [plano] });
+  it('uma oferta só, com o preço real em reais, e nada de avaliação', () => {
+    const j = jsonLdSoftware({ url: 'https://x.test', descricao: 'd', plano });
     expect(j['@type']).toBe('SoftwareApplication');
-    expect(j.offers).toEqual([
-      expect.objectContaining({ name: 'Plano Essencial', price: '147.00', priceCurrency: 'BRL' }),
-    ]);
+    expect(j.offers).toEqual(expect.objectContaining({ price: '147.00', priceCurrency: 'BRL' }));
     const texto = JSON.stringify(j);
     expect(texto).not.toMatch(/aggregateRating|review|ratingValue/i);
   });
 
-  it('sem planos (leitura falhou), sem ofertas', () => {
+  it('sem plano (leitura falhou), sem oferta', () => {
     expect(
-      jsonLdSoftware({ url: 'https://x.test', descricao: 'd', planos: [] }),
+      jsonLdSoftware({ url: 'https://x.test', descricao: 'd', plano: null }),
     ).not.toHaveProperty('offers');
   });
 });

@@ -1,40 +1,22 @@
 import type { Metadata } from 'next';
-import { CascaLanding } from '@/components/marketing/casca';
-import { BotaoWhatsappVendas } from '@/components/marketing/ctas';
-import { Hero, Jornada } from '@/components/marketing/hero';
-import { Holofote } from '@/components/marketing/holofote';
-import { Precos } from '@/components/marketing/precos';
-import { ProdutoPorDentro } from '@/components/marketing/produto';
+import { Demonstracao } from '@/components/marketing/demonstracao';
+import { CapturaProspeccao } from '@/components/marketing/prospeccao';
 import { RastreioLanding } from '@/components/marketing/rastreio';
-import {
-  ChamadaFinal,
-  ComoFunciona,
-  Implantacao,
-  Indicadores,
-  Perguntas,
-  Problema,
-  Recursos,
-  Rodape,
-  SuaPagina,
-  TituloSecao,
-} from '@/components/marketing/secoes';
-import { SimuladorDemo } from '@/components/marketing/simulador';
-import { VideoVendas } from '@/components/marketing/vsl';
+import { Beneficios, ChamadaFinal, Preco, Rodape, Topo } from '@/components/marketing/secoes';
 import { codigoPlanoVigente } from '@/domain/cobranca/limites';
-import { DIAS_TESTE_GRATIS, VALOR_IMPLANTACAO_CENTAVOS } from '@/domain/cobranca/precos';
-import { jsonLdSoftware, seloAnual } from '@/domain/marketing';
-import { slugValido } from '@/domain/slug';
+import { DIAS_TESTE_GRATIS } from '@/domain/cobranca/precos';
+import { jsonLdSoftware, planoDaLanding, precoCurto } from '@/domain/marketing';
 import { siteUrl } from '@/server/env';
-import { carregarPrecosVitrine, exemploDoSimulador } from '@/server/marketing/carregar';
+import { carregarPrecosVitrine, exemploDaDemonstracao } from '@/server/marketing/carregar';
 
-// Página estática, refeita a cada 5 min (preços em cache com a tag dos planos). Não toca no Auth.
+// Página estática, refeita a cada 5 min (preço em cache com a tag dos planos). Não toca no Auth.
 export const revalidate = 300;
 
 const DESCRICAO =
-  'Sistema para buffets de festas: o cliente monta o orçamento no seu link e você acompanha proposta, pré-reserva, contrato e recebimentos em um só lugar. Teste grátis por 14 dias, sem cartão.';
+  'Seu cliente monta o orçamento da festa sozinho, no link do seu buffet, e o pedido chega organizado no seu WhatsApp. Teste grátis por 14 dias, sem cartão.';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Orkestra: o cliente monta o orçamento, você acompanha até a festa' },
+  title: { absolute: 'Orkestra: seu cliente monta o orçamento sozinho' },
   description: DESCRICAO,
   metadataBase: new URL(siteUrl()),
   alternates: { canonical: '/' },
@@ -42,7 +24,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'pt_BR',
     siteName: 'Orkestra',
-    title: 'Seu cliente monta o orçamento. Você acompanha até a festa fechada.',
+    title: 'Seu cliente monta o orçamento sozinho.',
     description: DESCRICAO,
     url: '/',
   },
@@ -50,114 +32,37 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+/**
+ * Landing (nov/2026): seis blocos e nada mais. Topo, demonstração (o "Buffet Exemplo" com os
+ * passos reais do link público), resultado (como o pedido chega), três benefícios, um preço e o
+ * botão final para o cadastro.
+ */
 export default async function Landing() {
-  const [precos, exemplo] = await Promise.all([carregarPrecosVitrine(), exemploDoSimulador()]);
-  const planos = precos?.planos ?? [];
-  const semDados = !precos || planos.length === 0;
-  // o teste usa os recursos deste plano (mesma regra dos limites no servidor e no banco)
-  const codigoTeste = codigoPlanoVigente({
-    situacao: 'trial',
-    isenta: false,
-    planoAssinatura: null,
-  });
-  const planoTeste = planos.find((p) => p.codigo === codigoTeste)?.nome ?? null;
-  const demo = process.env.NEXT_PUBLIC_DEMO_SLUG?.trim().toLowerCase() || null;
-  const demoSlug = demo && slugValido(demo) ? demo : null;
-  const url = siteUrl();
-  const jsonLd = jsonLdSoftware({ url, descricao: DESCRICAO, planos });
+  const [precos, exemplo] = await Promise.all([carregarPrecosVitrine(), exemploDaDemonstracao()]);
+  // um preço só: a mensalidade do plano que o teste grátis usa (mesma regra dos limites)
+  const codigo = codigoPlanoVigente({ situacao: 'trial', isenta: false, planoAssinatura: null });
+  const plano = planoDaLanding(precos?.planos ?? [], codigo);
+  const jsonLd = jsonLdSoftware({ url: siteUrl(), descricao: DESCRICAO, plano });
 
   return (
     <>
-      <div id="marcador-topo" aria-hidden className="absolute top-6 h-px w-px" />
-      <CascaLanding diasTeste={DIAS_TESTE_GRATIS} />
       <main>
-        <Hero demoSlug={demoSlug} diasTeste={DIAS_TESTE_GRATIS} />
-        <VideoVendas />
-        <Jornada />
-        <Problema />
-
-        <section
-          id="demonstracao"
-          className="relative scroll-mt-24 py-20 md:py-28"
-          aria-labelledby="titulo-demo"
-        >
-          <div className="mx-auto max-w-6xl px-4 md:px-6">
-            <TituloSecao
-              id="titulo-demo"
-              titulo="Veja como seu cliente"
-              destaque="monta a festa."
-              texto="Mexa nas opções: o valor muda na hora, com o mesmo cálculo do link do buffet. Os valores são fictícios; cada buffet usa os próprios pacotes e regras. Nada do que você escolher aqui é enviado."
-            />
-            <div className="mt-12">
-              <SimuladorDemo exemplo={exemplo} />
-            </div>
-          </div>
-        </section>
-
-        <ProdutoPorDentro />
-        <ComoFunciona />
-        <SuaPagina />
-        <Recursos planos={planos} />
-        <Indicadores planos={planos} />
-        <Implantacao implantacaoCentavos={VALOR_IMPLANTACAO_CENTAVOS} />
-
-        <section
-          id="planos"
-          className="relative scroll-mt-20 overflow-hidden py-20 md:py-28"
-          aria-labelledby="titulo-planos"
-        >
-          {/* âncora antiga (links já divulgados para /#precos) */}
-          <span id="precos" aria-hidden className="absolute top-0" />
-          <div className="mx-auto max-w-6xl px-4 md:px-6">
-            {/* a palavra gigante fica atrás dos cartões de vidro (o desfoque aparece nela) */}
-            <h2
-              id="titulo-planos"
-              className="ld-paralaxe pointer-events-none relative pb-[0.14em] text-center text-[25vw] leading-[0.86] font-extrabold tracking-[-0.07em] select-none lg:text-[15.5rem]"
-              style={{
-                backgroundImage:
-                  'linear-gradient(180deg, #ffffff 35%, rgb(255 255 255 / 0.32) 92%)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent',
-              }}
-            >
-              Planos
-            </h2>
-            <div className="relative -mt-[3vw] lg:-mt-10">
-              <Precos
-                planos={planos}
-                selo={seloAnual(planos)}
-                implantacaoCentavos={VALOR_IMPLANTACAO_CENTAVOS}
-                diasTeste={DIAS_TESTE_GRATIS}
-                planoTeste={planoTeste}
-                semDados={semDados}
-              />
-            </div>
-            <p className="mt-10 text-center text-lg font-semibold text-balance">
-              Comece grátis. Assine só se fizer sentido.
-            </p>
-            {semDados && (
-              <div className="mt-6 flex justify-center">
-                <BotaoWhatsappVendas>Ver preços no WhatsApp</BotaoWhatsappVendas>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <Perguntas
-          planos={planos}
-          planoTeste={planoTeste}
+        <Topo />
+        <Demonstracao exemplo={exemplo} />
+        <Beneficios />
+        <Preco
+          preco={plano ? precoCurto(plano.precoMensalCentavos) : null}
           diasTeste={DIAS_TESTE_GRATIS}
-          implantacaoCentavos={VALOR_IMPLANTACAO_CENTAVOS}
         />
         <ChamadaFinal diasTeste={DIAS_TESTE_GRATIS} />
       </main>
       <Rodape />
       <RastreioLanding />
-      <Holofote />
+      {/* link da prospecção (?r=): guarda o r e avisa que a demonstração foi aberta */}
+      <CapturaProspeccao demonstracao />
       <script
         type="application/ld+json"
-        // JSON montado no servidor a partir dos planos (sem texto do usuário)
+        // JSON montado no servidor a partir do plano (sem texto do usuário)
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
     </>

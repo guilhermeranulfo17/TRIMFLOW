@@ -41,7 +41,6 @@ async function novaConta(page: Page, buffet: string) {
     whatsapp: '34991355450',
     senha: 'senha-forte-123',
     buffet,
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   await expect(page.getByTestId('passo-onboarding')).toHaveText('Passo 1 de 5');

@@ -32,7 +32,9 @@ test.describe('cadastro', () => {
     await page.getByRole('button', { name: 'Criar conta' }).click();
     await expect(page.getByText('Informe seu nome')).toBeVisible();
     await expect(page.getByText('Informe seu WhatsApp')).toBeVisible();
-    await expect(page.getByText('Escolha o tipo de buffet')).toBeVisible();
+    await expect(page.getByText('Informe o nome do buffet')).toBeVisible();
+    // o cadastro pede só o mínimo: "Tipo de buffet" não é mais perguntado
+    await expect(page.getByText('Tipo de buffet')).toHaveCount(0);
     expect(await semRolagemHorizontal(page)).toBe(true);
   });
 
@@ -52,7 +54,6 @@ test.describe('cadastro', () => {
       whatsapp: '34991355450',
       senha,
       buffet: 'Buffet Alegria & Cia',
-      segmento: 'Buffet infantil',
     });
     // a conta nasce com o modelo do segmento e cai no onboarding
     await expect(page).toHaveURL(/\/app\/comecar$/);
@@ -81,7 +82,6 @@ test.describe('cadastro', () => {
       whatsapp: '34991355450',
       senha: 'senha-forte-123',
       buffet: 'Buffet Qualquer',
-      segmento: 'Casamento e eventos',
     });
     await expect(page.getByTestId('aviso-form')).toContainText(
       'Já existe uma conta com esse e-mail',

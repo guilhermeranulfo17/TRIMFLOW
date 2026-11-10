@@ -1,19 +1,27 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { noBanco } from './banco';
 import { cadastrar, emailUnico, entrar, SENHA_SEED, semRolagemHorizontal } from './helpers';
 
 /*
- * Etapa 9.6: landing em `/`. Preços vêm do banco (publico.planos_vitrine), o simulador roda no
- * navegador, a origem do anúncio vai para empresas.origem_cadastro e a página não toca no Auth.
+ * Landing em `/` (nov/2026): seis blocos e nada mais. Topo, demonstração (o "Buffet Exemplo" com
+ * os passos reais do link público, rodando no navegador), resultado (o pedido como chega para o
+ * dono), três benefícios, um preço só (do banco) e o botão final para o cadastro. A página não
+ * toca no Auth e a origem do anúncio vai para empresas.origem_cadastro.
  */
 
-const brl = (centavos: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-    .format(centavos / 100)
-    .replace(/ /g, ' ');
 const normal = (s: string) => s.replace(/ /g, ' ');
+/** Requisições que a demonstração NÃO pode fazer: tudo o que não é leitura nem contagem. */
+const ehEnvio = (metodo: string, url: string) =>
+  metodo !== 'GET' && !url.includes('/api/landing/contar') && !url.includes('/api/prospeccao/');
 
-test('é a landing (sem redirecionar) e não chama o Auth', async ({ page }) => {
+async function irParaDemonstracao(page: Page) {
+  await page.goto('/');
+  await page.getByTestId('ir-para-demonstracao').click();
+  await expect(page).toHaveURL(/#demonstracao$/);
+  await expect(page.getByTestId('demonstracao')).toBeInViewport();
+}
+
+test('é a landing (sem redirecionar), com os seis blocos, e não chama o Auth', async ({ page }) => {
   const auth: string[] = [];
   page.on('request', (r) => {
     if (r.url().includes('/auth/v1')) auth.push(r.url());
@@ -22,197 +30,134 @@ test('é a landing (sem redirecionar) e não chama o Auth', async ({ page }) => 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Seu cliente monta o orçamento. Você acompanha até a festa fechada.',
+    'Seu cliente monta o orçamento sozinho.',
   );
+  await expect(
+    page.getByRole('link', { name: 'Monte um orçamento como se fosse seu cliente' }),
+  ).toHaveAttribute('href', '#demonstracao');
+  // topo, demonstração, resultado, benefícios, preço e botão final: nada além disso
+  await expect(page.locator('main > section')).toHaveCount(6);
+  await expect(page.getByText('É assim que o pedido chega pra você.')).toBeVisible();
+  for (const beneficio of [
+    'Seu cliente não espera.',
+    'Você não gasta tempo com curioso.',
+    'Nenhum pedido fica sem retorno.',
+  ]) {
+    await expect(page.getByText(beneficio, { exact: true })).toBeVisible();
+  }
   await page.waitForLoadState('networkidle');
   expect(auth).toEqual([]);
   expect(await semRolagemHorizontal(page)).toBe(true);
 });
 
-test('planos: preços, limites e contratos do banco; anual mostra o mensal equivalente e o total', async ({
+test('um preço só, vindo do banco: sem outro plano, sem anual e sem valor de implantação', async ({
   page,
 }) => {
-  const { planos } = await noBanco(async (sql) => ({
-    planos: await sql<
-      {
-        codigo: string;
-        preco_mensal_centavos: number;
-        preco_anual_centavos: number;
-        max_usuarios: number;
-        contratos_mes: number | null;
-      }[]
-    >`select codigo, preco_mensal_centavos, preco_anual_centavos, max_usuarios, contratos_mes
-      from public.planos where ativo order by ordem`,
-  }));
-  await page.goto('/#planos');
-  for (const p of planos) {
-    const cartao = page.getByTestId(`plano-${p.codigo}`);
-    await expect(cartao.getByTestId('preco')).toHaveText(brl(p.preco_mensal_centavos), {
-      useInnerText: true,
-    });
-    await expect(cartao).toContainText(`Até ${p.max_usuarios} usuários`);
-    await expect(cartao).toContainText(
-      p.contratos_mes === null ? 'sem limite' : `até ${p.contratos_mes} por mês`,
-    );
-    await expect(cartao.getByTestId('total-anual')).toHaveCount(0);
-  }
-  await expect(page.getByText(/fundador/i)).toHaveCount(0);
+  const planos = await noBanco(
+    (sql) =>
+      sql<
+        { codigo: string; preco_mensal_centavos: number; preco_anual_centavos: number }[]
+      >`select codigo, preco_mensal_centavos, preco_anual_centavos from public.planos where ativo`,
+  );
+  const reais = (centavos: number) => `R$ ${(centavos / 100).toLocaleString('pt-BR')}`;
+  const vendido = planos.find((p) => p.codigo === 'profissional')!;
+  await page.goto('/');
+  const preco = page.locator('#preco');
+  await expect(preco.getByTestId('preco')).toContainText(reais(vendido.preco_mensal_centavos));
+  await expect(preco.getByTestId('preco')).toContainText('por mês');
+  await expect(preco).toContainText('14 dias grátis, sem cartão');
+  await expect(preco).toContainText('Implantação assistida grátis');
 
-  // seletor mensal/anual: clique e setas do teclado
-  await page.getByTestId('ciclo-anual').click();
-  await expect(page.getByTestId('ciclo-anual')).toHaveAttribute('aria-checked', 'true');
-  for (const p of planos) {
-    const cartao = page.getByTestId(`plano-${p.codigo}`);
-    const preco = await cartao.getByTestId('preco').innerText();
-    expect(normal(preco)).toBe(brl(Math.floor((p.preco_anual_centavos * 2 + 12) / 24)));
-    expect(normal(await cartao.getByTestId('total-anual').innerText())).toContain(
-      brl(p.preco_anual_centavos),
-    );
+  // fora da demonstração (valores fictícios do Buffet Exemplo), a página tem um único valor
+  const fora = normal(
+    await page.evaluate(() =>
+      [...document.querySelectorAll('main > section:not(#demonstracao):not(#resultado), footer')]
+        .map((e) => (e as HTMLElement).innerText)
+        .join('\n'),
+    ),
+  );
+  expect(fora.match(/R\$\s?[\d.,]+/g)).toEqual([reais(vendido.preco_mensal_centavos)]);
+  for (const p of planos.filter((x) => x.codigo !== vendido.codigo)) {
+    expect(fora).not.toContain(reais(p.preco_mensal_centavos));
   }
-  await expect(page.getByTestId('selo-anual')).toHaveText(/\d+ (mês|meses) grátis/);
-  await page.getByTestId('ciclo-anual').press('ArrowLeft');
-  await expect(page.getByTestId('ciclo-mensal')).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByTestId('ciclo-mensal')).toBeFocused();
+  expect(fora).not.toMatch(/anual|por ano|fundador/i);
 });
 
-test('"Experimentar o orçamento" leva à demonstração, que recalcula no navegador', async ({
+test('demonstração: convidados, pacote e extras mudam o valor na hora, e o pedido chega igual', async ({
   page,
 }) => {
   const enviados: string[] = [];
   page.on('request', (r) => {
-    if (r.method() !== 'GET' && !r.url().includes('/api/landing/contar')) enviados.push(r.url());
+    if (ehEnvio(r.method(), r.url())) enviados.push(r.url());
   });
-  await page.goto('/');
-  await page.getByTestId('experimentar-orcamento').click();
-  await expect(page).toHaveURL(/#demonstracao$/);
-  await expect(page.locator('#titulo-demo')).toBeInViewport();
-  const total = page.getByTestId('simulador-total');
+  await irParaDemonstracao(page);
+  const demo = page.getByTestId('demonstracao');
+  const total = page.getByTestId('demo-total');
   const lerTotal = async () => normal(await total.innerText());
 
-  // convidados pelo teclado (deslizante) e pelos botões
+  await expect(demo).toContainText('Buffet Exemplo');
+  await expect(page.getByTestId('demo-passo')).toHaveText('Passo 1 de 2 · Pacote');
+  await expect(total).toHaveText(/^Total R\$\s?[\d.]+,\d{2}$/);
+
+  // convidados: o mesmo contador do link público (aqui de 10 em 10)
   const inicial = await lerTotal();
-  const deslizante = page.getByRole('slider', { name: 'Convidados' });
-  await deslizante.focus();
-  await deslizante.press('ArrowRight');
-  await expect(page.getByTestId('simulador-convidados')).toHaveText('55');
-  await page.getByRole('button', { name: 'Mais 5 convidados' }).click();
-  await expect(page.getByTestId('simulador-convidados')).toHaveText('60');
-  await expect(page.getByTestId('simulador-resumo')).toContainText('60 convidados');
+  await demo.getByRole('button', { name: 'Aumentar convidados' }).click();
+  await expect(demo.getByRole('spinbutton', { name: 'Convidados' })).toHaveValue('60');
+  await expect(total).not.toHaveText(inicial);
+  await expect(page.getByTestId('demo-resumo')).toContainText('60 convidados');
 
-  // pacotes diferentes mudam o total; troca pelo teclado (setas no grupo de rádios)
-  const pacote = (nome: string) => page.getByRole('radio', { name: nome, exact: true });
-  const porPacote = new Map<string, string>();
-  await pacote('Super').focus();
-  for (const [tecla, nome] of [
-    ['ArrowLeft', 'Alegria'],
-    ['ArrowRight', 'Super'],
-    ['ArrowRight', 'Encanto'],
-  ] as const) {
-    await page.keyboard.press(tecla);
-    await expect(pacote(nome)).toBeChecked();
-    await expect(page.getByTestId('simulador-resumo')).toContainText(`Pacote ${nome}`);
-    porPacote.set(nome, await lerTotal());
+  // pacote: os cartões do passo real, cada um com o total para esta festa
+  const pacotes = demo.getByTestId('opcao-pacote');
+  await expect(pacotes).toHaveCount(3);
+  const porPacote = new Set<string>();
+  for (const nome of ['Alegria', 'Super', 'Encanto']) {
+    const cartao = pacotes.filter({ hasText: nome });
+    await cartao.click();
+    await expect(cartao).toHaveAttribute('aria-checked', 'true');
+    const valor = await lerTotal();
+    expect(normal(await cartao.innerText())).toContain(valor.replace('Total ', ''));
+    porPacote.add(valor);
   }
-  expect(new Set(porPacote.values()).size).toBe(3);
-  expect(inicial).not.toBe(porPacote.get('Encanto'));
+  expect(porPacote.size).toBe(3);
 
-  // adicional (espaço no checkbox) soma o valor; crianças de 6 a 10 entram no resumo
-  await page.keyboard.press('ArrowLeft');
-  await expect(pacote('Super')).toBeChecked();
-  const semMesa = await lerTotal();
-  const mesa = page.getByRole('checkbox', { name: /Mesa temática/ });
-  await mesa.focus();
-  await page.keyboard.press('Space');
-  await expect(mesa).toBeChecked();
-  await expect(total).not.toHaveText(semMesa);
-  await page.getByRole('button', { name: 'Mais uma criança' }).click();
-  await expect(page.getByTestId('simulador-criancas')).toHaveText('1');
-  await expect(page.getByTestId('simulador-resumo')).toContainText('59 adultos e 1 crianças');
-  await expect(total).toHaveText(/^R\$\s?[\d.]+,\d{2}$/);
-  await expect(page.getByTestId('simulador-sinal')).toHaveText(/^R\$\s?[\d.]+,\d{2}$/);
-  await expect(page.getByText(/Valores fictícios/)).toBeVisible();
+  // extras: o passo real, somando ao total
+  await pacotes.filter({ hasText: 'Super' }).click();
+  const semExtra = await lerTotal();
+  await demo.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.getByTestId('demo-passo')).toHaveText('Passo 2 de 2 · Extras');
+  await demo.getByRole('checkbox', { name: /Mesa temática/ }).click();
+  await expect(total).not.toHaveText(semExtra);
+  const final = (await lerTotal()).replace('Total ', '');
 
-  // CTA depois da interação vai ao cadastro; nada da demonstração foi enviado ao servidor
-  await expect(page.getByRole('link', { name: 'Quero usar com os meus pacotes' })).toHaveAttribute(
-    'href',
-    '/cadastro',
-  );
+  // resultado: o pedido como o dono recebe, com data, convidados, pacote, extra e o mesmo valor
+  await demo.getByRole('button', { name: 'Ver como o buffet recebe' }).click();
+  const pedido = page.getByTestId('pedido');
+  await expect(pedido).toBeInViewport();
+  await expect(page.locator('#resultado')).toHaveAttribute('data-chegou', 'true');
+  await expect(pedido).toContainText('WhatsApp');
+  await expect(pedido).toContainText('Aniversário infantil');
+  await expect(pedido).toContainText(/Sáb, \d{2}\/\d{2} · Tarde/);
+  await expect(pedido).toContainText('60 convidados');
+  await expect(pedido).toContainText('Pacote Super');
+  await expect(pedido).toContainText('Mesa temática');
+  expect(normal(await page.getByTestId('pedido-total').innerText())).toBe(final);
+
+  // voltar e trocar: o pedido acompanha
+  await demo.getByRole('button', { name: 'Voltar ao passo anterior' }).click();
+  await pacotes.filter({ hasText: 'Alegria' }).click();
+  await expect(pedido).toContainText('Pacote Alegria');
+
+  // nada da demonstração foi enviado ao servidor (não gera lead, reserva nem número)
   expect(enviados).toEqual([]);
   expect(await semRolagemHorizontal(page)).toBe(true);
 });
 
-test('navegação por âncoras do cabeçalho; no celular o menu fecha ao escolher', async ({
-  page,
-  isMobile,
-}) => {
+test('destinos: Entrar e o botão final; nenhum link quebrado', async ({ page }) => {
   await page.goto('/');
-  const secoes = [
-    ['Como funciona', 'como-funciona'],
-    ['Recursos', 'recursos'],
-    ['Planos', 'planos'],
-    ['Dúvidas', 'duvidas'],
-  ] as const;
-  for (const [rotulo, id] of secoes) {
-    if (isMobile) {
-      await page.getByLabel('Menu de seções').click();
-      await expect(page.getByTestId('menu-celular')).toHaveAttribute('open', '');
-    }
-    await page
-      .getByRole('banner')
-      .getByRole('link', { name: rotulo, exact: true })
-      .and(page.locator(':visible'))
-      .click();
-    await expect(page).toHaveURL(new RegExp(`#${id}$`));
-    await expect(page.locator(`#${id}`)).toBeInViewport();
-    if (isMobile) await expect(page.getByTestId('menu-celular')).not.toHaveAttribute('open');
-  }
-  // âncoras antigas continuam abrindo a seção certa
-  await page.goto('/#precos');
-  await expect(page.getByTestId('plano-essencial')).toBeVisible();
-});
-
-test('dúvidas abrem e fecham pelo teclado e levam aos documentos', async ({ page }) => {
-  await page.goto('/#duvidas');
-  const pergunta = page.locator('summary', { hasText: 'Como funciona o contrato eletrônico?' });
-  const resposta = page.getByText(/assinatura eletrônica simples/);
-  await expect(resposta).toBeHidden();
-  await pergunta.focus();
-  await page.keyboard.press('Enter');
-  await expect(resposta).toBeVisible();
-  await expect(resposta).toContainText('ICP-Brasil');
-  await page.keyboard.press('Enter');
-  await expect(resposta).toBeHidden();
-
-  await page.locator('summary', { hasText: 'E os dados dos meus clientes?' }).click();
-  const duvidas = page.getByTestId('duvidas');
-  await expect(duvidas.getByRole('link', { name: 'Política de Privacidade' })).toHaveAttribute(
-    'href',
-    '/privacidade',
-  );
-  await expect(duvidas.getByRole('link', { name: 'Termos de uso' })).toHaveAttribute(
-    'href',
-    '/termos',
-  );
-});
-
-test('destinos: Entrar, Testar grátis e WhatsApp de vendas', async ({ page }) => {
-  await page.goto('/');
-  await expect(
-    page.getByRole('banner').getByRole('link', { name: 'Entrar', exact: true }),
-  ).toHaveAttribute('href', '/login');
-  const testar = page.locator('a[data-cta-teste]');
-  expect(await testar.count()).toBeGreaterThan(3);
-  for (const href of await testar.evaluateAll((as) => as.map((a) => a.getAttribute('href'))))
-    expect(href).toBe('/cadastro');
-  const numero = process.env.NEXT_PUBLIC_WHATSAPP_VENDAS?.replace(/\D/g, '');
-  const whats = page.locator('a[href^="https://wa.me/"]');
-  if (numero) {
-    expect(await whats.count()).toBeGreaterThan(0);
-    for (const href of await whats.evaluateAll((as) => as.map((a) => a.getAttribute('href'))))
-      expect(href).toMatch(new RegExp(`^https://wa\\.me/${numero}\\?text=`));
-  } else {
-    await expect(whats).toHaveCount(0);
-  }
+  await expect(page.getByTestId('entrar')).toHaveAttribute('href', '/login');
+  const final = page.getByRole('link', { name: 'Quero isso com o nome do meu buffet' });
+  await expect(final).toHaveAttribute('href', '/cadastro');
+  await expect(final).toHaveAttribute('data-cta-teste');
   // nenhum link sem destino e nenhuma âncora para seção que não existe
   const quebrados = await page.evaluate(() =>
     [...document.querySelectorAll('a')]
@@ -224,16 +169,27 @@ test('destinos: Entrar, Testar grátis e WhatsApp de vendas', async ({ page }) =
   expect(quebrados).toEqual([]);
 });
 
-test('"Testar grátis" leva ao cadastro e a conta nasce com a origem do anúncio', async ({
+test('o botão final leva ao cadastro mínimo e a conta nasce com a origem do anúncio', async ({
   page,
 }) => {
   await page.goto('/?utm_source=Instagram&utm_campaign=lancamento&ref=bio');
-  await page
-    .getByRole('main')
-    .getByRole('link', { name: /Testar 14 dias grátis/ })
-    .first()
-    .click();
+  await page.getByRole('link', { name: 'Quero isso com o nome do meu buffet' }).click();
   await expect(page).toHaveURL(/\/cadastro$/);
+
+  // só o mínimo: nome, nome do buffet, WhatsApp, e-mail e senha (mais o aceite dos termos)
+  const campos = page.locator('form').locator('input:not([type="checkbox"])');
+  await expect(campos).toHaveCount(5);
+  await expect(page.getByLabel('WhatsApp (com DDD)')).toBeVisible();
+  await expect(page.getByRole('radio')).toHaveCount(0);
+
+  // WhatsApp é obrigatório e precisa do DDD
+  await page.getByLabel('Seu nome').fill('Lia Landing');
+  await page.getByRole('button', { name: 'Criar conta' }).click();
+  await expect(page.getByText('Informe seu WhatsApp')).toBeVisible();
+  await page.getByLabel('WhatsApp (com DDD)').fill('99135-5450');
+  await page.getByRole('button', { name: 'Criar conta' }).click();
+  await expect(page.getByText('Informe um celular válido com DDD')).toBeVisible();
+
   const email = emailUnico('landing');
   await cadastrar(page, {
     nome: 'Lia Landing',
@@ -241,7 +197,6 @@ test('"Testar grátis" leva ao cadastro e a conta nasce com a origem do anúncio
     whatsapp: '34991355450',
     senha: 'senha-boa-123',
     buffet: `Buffet Landing ${Date.now()}`,
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar/);
   const origem = await noBanco(async (sql) => {
@@ -253,26 +208,19 @@ test('"Testar grátis" leva ao cadastro e a conta nasce com a origem do anúncio
   expect(origem).toEqual({ utm_source: 'instagram', utm_campaign: 'lancamento', ref: 'bio' });
 });
 
-test('botão de exemplo só com NEXT_PUBLIC_DEMO_SLUG; nada inventado na página', async ({
-  page,
-}) => {
+test('nada inventado e nenhum travessão na página', async ({ page }) => {
   await page.goto('/');
-  const demo = process.env.NEXT_PUBLIC_DEMO_SLUG;
-  if (demo) {
-    await expect(page.getByTestId('ver-exemplo')).toHaveAttribute('href', `/b/${demo}`);
-  } else {
-    await expect(page.getByTestId('ver-exemplo')).toHaveCount(0);
-  }
   const texto = (await page.locator('body').innerText()).toLowerCase();
   expect(texto).not.toMatch(/depoimento|avalia[çc][ãa]o|estrelas|clientes satisfeitos/);
   expect(texto).not.toMatch(/mais de \d+\s*(buffets|clientes)/);
   expect(texto).not.toMatch(/você só entra quando ele quer reservar/);
-  // as telas do produto são desenhos com dados fictícios, identificados como exemplo
-  await expect(page.getByText('Exemplo ilustrativo', { exact: true })).toHaveCount(3);
-  await expect(page.getByText('Números de demonstração', { exact: true })).toHaveCount(3);
+  expect(texto).not.toMatch(/[—–]/);
+  // o exemplo é identificado como exemplo
+  await expect(page.getByText(/Valores fictícios/)).toBeVisible();
+  await expect(page.locator('img, video')).toHaveCount(0);
 });
 
-test('logado, o cabeçalho leva ao painel', async ({ page }) => {
+test('logado, o topo leva ao painel', async ({ page }) => {
   await entrar(page, 'dono@demo.local', SENHA_SEED);
   await page.goto('/');
   await expect(page.getByTestId('ir-para-painel')).toBeVisible();
@@ -280,20 +228,77 @@ test('logado, o cabeçalho leva ao painel', async ({ page }) => {
   await expect(page).toHaveURL(/\/app\/leads$/);
 });
 
-test('cabeçalho ganha fundo ao rolar; no celular, a barra "Testar grátis" aparece depois do hero', async ({
+/*
+ * Rastreio para o CRM de prospecção (ARQUITETURA §81): o link da prospecção leva ?r=<id do lead>.
+ * A landing guarda o r e avisa o servidor (que fala com o CRM em segundo plano); aqui só o que o
+ * navegador faz. Os fluxos do CRM têm testes próprios (unitários e de integração).
+ */
+const R = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+
+async function vigiarProspeccao(page: Page) {
+  const avisos: { evento: string; r: string }[] = [];
+  await page.route('**/api/prospeccao/evento', async (rota) => {
+    avisos.push(rota.request().postDataJSON() as { evento: string; r: string });
+    await rota.fulfill({ status: 204 });
+  });
+  return avisos;
+}
+
+test('link com ?r=: guarda o r, avisa que abriu a demonstração e que montou um orçamento', async ({
   page,
-  isMobile,
+  context,
 }) => {
-  await page.goto('/');
-  const cabecalho = page.getByTestId('cabecalho-landing');
-  const barra = page.getByTestId('barra-teste-celular');
-  await expect(cabecalho).toHaveAttribute('data-rolou', 'false');
-  await expect(barra).toHaveAttribute('data-visivel', 'false');
-  await page.mouse.wheel(0, 3000);
-  await expect(cabecalho).toHaveAttribute('data-rolou', 'true');
-  await expect(barra).toHaveAttribute('data-visivel', 'true');
-  if (isMobile)
-    await expect(barra.getByRole('link', { name: /Testar 14 dias grátis/ })).toBeVisible();
-  await page.mouse.wheel(0, -3000);
-  await expect(barra).toHaveAttribute('data-visivel', 'false');
+  const avisos = await vigiarProspeccao(page);
+  await page.goto(`/?r=${R}`);
+  await expect.poll(() => avisos).toEqual([{ evento: 'abriu_demo', r: R }]);
+  const cookies = await context.cookies();
+  expect(cookies.find((c) => c.name === 'orkestra_r')?.value).toBe(R);
+  expect(await page.evaluate(() => localStorage.getItem('orkestra_r'))).toBe(R);
+
+  // recarregar não repete o aviso
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  expect(avisos).toHaveLength(1);
+
+  // chegar ao resultado avisa uma vez (mesmo voltando e chegando de novo)
+  await page.getByTestId('ir-para-demonstracao').click();
+  const demo = page.getByTestId('demonstracao');
+  await demo.getByRole('button', { name: 'Continuar' }).click();
+  await demo.getByRole('button', { name: 'Ver como o buffet recebe' }).click();
+  await expect.poll(() => avisos.length).toBe(2);
+  expect(avisos[1]).toEqual({ evento: 'montou_orcamento', r: R });
+  await demo.getByRole('button', { name: 'Ver como o buffet recebe' }).click();
+  await page.waitForTimeout(300);
+  expect(avisos).toHaveLength(2);
+
+  // o r vale também numa visita seguinte sem o parâmetro (até o cadastro)
+  await page.goto('/cadastro');
+  expect((await context.cookies()).find((c) => c.name === 'orkestra_r')?.value).toBe(R);
+});
+
+test('sem r (ou com r inválido), a landing não avisa nada', async ({ page, context }) => {
+  const avisos = await vigiarProspeccao(page);
+  for (const url of ['/', '/?r=123', '/?r=../leads']) {
+    await page.goto(url);
+    await page.getByTestId('ir-para-demonstracao').click();
+    const demo = page.getByTestId('demonstracao');
+    await demo.getByRole('button', { name: 'Aumentar convidados' }).click();
+    await demo.getByRole('button', { name: 'Continuar' }).click();
+    await demo.getByRole('button', { name: 'Ver como o buffet recebe' }).click();
+    await expect(page.locator('#resultado')).toHaveAttribute('data-chegou', 'true');
+  }
+  await page.waitForLoadState('networkidle');
+  expect(avisos).toEqual([]);
+  expect((await context.cookies()).find((c) => c.name === 'orkestra_r')).toBeUndefined();
+});
+
+test('rota do rastreio: responde na hora e recusa evento ou r fora do formato', async ({
+  request,
+}) => {
+  const enviar = (data: unknown) => request.post('/api/prospeccao/evento', { data });
+  expect((await enviar({ evento: 'abriu_demo', r: R })).status()).toBe(204);
+  expect((await enviar({ evento: 'montou_orcamento', r: R })).status()).toBe(204);
+  expect((await enviar({ evento: 'criou_conta', r: R })).status()).toBe(400);
+  expect((await enviar({ evento: 'abriu_demo', r: '../leads' })).status()).toBe(400);
+  expect((await enviar({ evento: 'abriu_demo' })).status()).toBe(400);
 });

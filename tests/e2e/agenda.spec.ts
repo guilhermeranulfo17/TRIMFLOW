@@ -28,7 +28,6 @@ async function empresaComModelo(page: Page, buffet: string) {
     whatsapp: '34991355450',
     senha: 'senha-forte-123',
     buffet,
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   await confirmarPrecosNoOnboarding(page);

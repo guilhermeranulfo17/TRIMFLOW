@@ -17,7 +17,6 @@ test.describe('simulador de preço', () => {
       whatsapp: '34991355450',
       senha: 'senha-forte-123',
       buffet: 'Buffet Simulado',
-      segmento: 'Buffet infantil',
     });
     await expect(page).toHaveURL(/\/app\/comecar$/);
     // conta antiga sem catálogo (o cadastro novo já traz o modelo)

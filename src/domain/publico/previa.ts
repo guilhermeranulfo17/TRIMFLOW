@@ -1,13 +1,14 @@
-import {
-  aPartirDe,
-  calcularOrcamento,
-  opcionaisDisponiveis,
-  type ContextoPreco,
-  type DataCivil,
-  type EntradaOrcamento,
-  type Id,
-  type ResultadoOrcamento,
-} from '../preco';
+// módulos específicos (não o índice de ../preco, que traz o Zod da entrada para o navegador)
+import { aPartirDe } from '../preco/a-partir-de';
+import { calcularOrcamento } from '../preco/calcular';
+import { opcionaisDisponiveis } from '../preco/disponibilidade';
+import type {
+  ContextoPreco,
+  DataCivil,
+  EntradaOrcamento,
+  Id,
+  ResultadoOrcamento,
+} from '../preco/tipos';
 import { contextoSemDeslocamento } from './contexto';
 import { espacoEscolhido, pacotesDoPasso, pessoas } from './passos';
 import type { Escolhas, ModoPreco } from './tipos';

@@ -19,7 +19,7 @@ export function FormCompletar({ nome }: { nome: string }) {
   const [enviando, iniciar] = useTransition();
   const form = useForm<Entrada, unknown, Saida>({
     resolver: zodResolver(completarSchema),
-    defaultValues: { nome, nomeBuffet: '', whatsapp: '', segmento: undefined, aceite: false },
+    defaultValues: { nome, nomeBuffet: '', whatsapp: '', aceite: false },
   });
 
   function onSubmit(valores: Saida) {

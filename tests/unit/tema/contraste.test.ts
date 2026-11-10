@@ -101,12 +101,28 @@ describe('tokens do tema', () => {
   }
 });
 
-describe('landing: escuro da marca sobre o fundo quase preto', () => {
+describe('landing: identidade da Orkestra (preto, off-white e limão)', () => {
   const t = { ...TEMAS['escuro da marca'], ...bloco(':root:has([data-landing]) {') };
 
-  it('o bloco só troca o fundo', () => {
-    expect(t.background).toBe('#070707');
-    expect(t['landing-fundo']).toBe('#070707');
+  it('o bloco leva a paleta da marca', () => {
+    expect(t.background).toBe('#0a0a0a');
+    expect(t['landing-fundo']).toBe('#0a0a0a');
+    expect(t.foreground).toBe('#f4f4ee');
+    expect(t.primary).toBe('#c0f05a');
+    expect(t['ld-verde']).toBe('#6fd36a');
+    expect(t['ld-verde-escuro']).toBe('#1e7a3f');
+  });
+
+  it('seção clara (.ld-gelo): texto, texto apagado e verde escuro ≥ 4,5:1 sobre o off-white', () => {
+    const gelo = bloco('[data-landing] .ld-gelo {');
+    expect(gelo.background).toBe('#f4f4ee');
+    for (const frente of ['foreground', 'muted-foreground', 'primary-texto'] as const) {
+      expect(contraste(gelo[frente]!, gelo.background!)).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(gelo[frente]!, gelo.card!)).toBeGreaterThanOrEqual(4.5);
+    }
+    // botões e cartões limão levam texto preto; o WhatsApp e os ícones verdes ficam no preto
+    expect(contraste(t['ld-preto']!, t['ld-limao']!)).toBeGreaterThanOrEqual(4.5);
+    expect(contraste(t['ld-verde']!, t.background!)).toBeGreaterThanOrEqual(4.5);
   });
 
   it.each(TEXTO.filter(([, fundo]) => fundo === 'background'))(

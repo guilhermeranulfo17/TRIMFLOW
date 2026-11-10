@@ -3,11 +3,11 @@ import { sql } from 'drizzle-orm';
 import { unstable_cache, unstable_noStore } from 'next/cache';
 import { hojeNoFuso } from '@/domain/dates';
 import {
-  montarExemploSimulador,
-  type ExemploSimulador,
+  montarExemploDemonstracao,
+  type ExemploDemonstracao,
   type PlanoVitrine,
 } from '@/domain/marketing';
-import { contextoDoModelo, MODELOS } from '@/domain/modelos';
+import { contextoDoModelo, idDoModelo, MODELOS } from '@/domain/modelos';
 import { camelizar } from '@/server/catalogo/montar-contexto';
 import { comAnon as comAnonPadrao } from '@/server/db/anon';
 import type { ComAnon } from '@/server/publico/carregar';
@@ -57,9 +57,19 @@ export async function carregarPrecosVitrine(): Promise<PrecosVitrine | null> {
   return null;
 }
 
-/** Exemplo do simulador: o catálogo do modelo infantil (preços fictícios), com "hoje" de SP. */
-export function exemploDoSimulador(agora = new Date()): ExemploSimulador {
-  return montarExemploSimulador(contextoDoModelo(MODELOS.infantil), hojeNoFuso(undefined, agora));
+/**
+ * "Buffet Exemplo" da demonstração: o catálogo do modelo infantil (preços fictícios), com "hoje"
+ * de SP e a descrição de cada pacote (o que o link público mostra em "O que está incluso").
+ */
+export function exemploDaDemonstracao(agora = new Date()): ExemploDemonstracao {
+  const modelo = MODELOS.infantil;
+  const extras = Object.fromEntries(
+    modelo.pacotes.map((p) => [
+      idDoModelo.pacote(p.chave),
+      { descricao: p.descricao ?? null, fotos: [] },
+    ]),
+  );
+  return montarExemploDemonstracao(contextoDoModelo(modelo), hojeNoFuso(undefined, agora), extras);
 }
 
 export type EventoLanding = 'visita' | 'clicou_teste';
