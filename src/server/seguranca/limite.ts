@@ -12,7 +12,13 @@ import { hashIp, ipDoVisitante } from '@/server/publico/seguranca';
  * Supabase Auth tem os limites dele e o login não pode cair junto.
  */
 
-export type AcaoLimitada = 'login' | 'cadastro' | 'recuperar_senha' | 'webhook' | 'cron';
+export type AcaoLimitada =
+  | 'login'
+  | 'cadastro'
+  | 'recuperar_senha'
+  | 'webhook'
+  | 'cron'
+  | 'prospeccao';
 
 export const MENSAGEM_LIMITE =
   'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.';

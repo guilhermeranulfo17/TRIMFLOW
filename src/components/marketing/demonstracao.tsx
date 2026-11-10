@@ -18,6 +18,7 @@ import {
 import { formatBRL } from '@/domain/money';
 import { pessoas } from '@/domain/publico/passos';
 import type { Escolhas } from '@/domain/publico/tipos';
+import { avisarProspeccao } from './prospeccao';
 
 const PASSOS = [
   { numero: 1, curto: 'Pacote', titulo: 'Escolha o pacote' },
@@ -29,25 +30,44 @@ const PASSOS = [
  * passos reais do link público (mesmo cálculo, rodando no navegador com preços fictícios) e vê,
  * logo abaixo, como o pedido chega para o dono do buffet. Nada é enviado ao servidor.
  */
-export function Demonstracao({
-  exemplo,
-  aoChegarNoResultado,
-}: {
-  exemplo: ExemploDemonstracao;
-  /** uma vez, quando a pessoa termina de montar e vai ver o pedido */
-  aoChegarNoResultado?: () => void;
-}) {
+export function Demonstracao({ exemplo }: { exemplo: ExemploDemonstracao }) {
   const id = useId();
   const [escolhas, setEscolhas] = useState<Escolhas>(exemplo.inicial);
   const [passo, setPasso] = useState<1 | 2>(1);
   const [chegou, setChegou] = useState(false);
+  // a pessoa mexeu em alguma coisa (convidados, pacote ou extra)
+  const [mexeu, setMexeu] = useState(false);
   const cartao = useRef<HTMLDivElement>(null);
   const resultado = useRef<HTMLElement>(null);
 
-  const alterar = useCallback(
-    (parcial: Partial<Escolhas>) => setEscolhas((atual) => ({ ...atual, ...parcial })),
-    [],
-  );
+  const alterar = useCallback((parcial: Partial<Escolhas>) => {
+    setMexeu(true);
+    setEscolhas((atual) => ({ ...atual, ...parcial }));
+  }, []);
+
+  /**
+   * Chegou ao resultado (uma vez): pelo botão do último passo ou rolando até o pedido depois de
+   * mexer na demonstração. É o "montou um orçamento" do rastreio (só sai se houver r no link).
+   */
+  const marcarChegada = useCallback(() => {
+    setChegou((antes) => {
+      if (!antes) avisarProspeccao('montou_orcamento');
+      return true;
+    });
+  }, []);
+
+  useEffect(() => {
+    const alvo = resultado.current;
+    if (!mexeu || chegou || !alvo || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver(
+      (entradas) => {
+        if (entradas.some((e) => e.isIntersecting)) marcarChegada();
+      },
+      { threshold: 0.5 },
+    );
+    obs.observe(alvo);
+    return () => obs.disconnect();
+  }, [mexeu, chegou, marcarChegada]);
   const previa = useMemo(() => previaDaDemonstracao(exemplo, escolhas), [exemplo, escolhas]);
   const pedido = useMemo(
     () => pedidoDaDemonstracao(exemplo, escolhas, previa),
@@ -77,10 +97,7 @@ export function Demonstracao({
   }, [passo]);
 
   function verPedido() {
-    if (!chegou) {
-      setChegou(true);
-      aoChegarNoResultado?.();
-    }
+    marcarChegada();
     resultado.current?.scrollIntoView({ block: 'start' });
     resultado.current?.focus({ preventScroll: true });
   }
@@ -163,7 +180,10 @@ export function Demonstracao({
                         min={exemplo.convidados.min}
                         max={exemplo.convidados.max}
                         passo={exemplo.convidados.passo}
-                        aoMudar={(n) => setEscolhas((atual) => comConvidados(exemplo, atual, n))}
+                        aoMudar={(n) => {
+                          setMexeu(true);
+                          setEscolhas((atual) => comConvidados(exemplo, atual, n));
+                        }}
                       />
                     </div>
                     <PassoPacote {...props} />

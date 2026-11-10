@@ -82,6 +82,8 @@ export const empresas = pgTable('empresas', {
   paginaPersonalizadaEm: timestamp('pagina_personalizada_em', { withTimezone: true }),
   /** Etapa 9.6: utm_source, utm_medium, utm_campaign e ref do cadastro (gravado uma vez). */
   origemCadastro: jsonb('origem_cadastro').$type<Record<string, string>>(),
+  /** Vínculo com o CRM de prospecção (§81): id do lead e marcos avisados. Só o servidor grava. */
+  prospeccao: jsonb('prospeccao').$type<Record<string, string>>(),
   /** Etapa 9B (LGPD): retenção dos leads e exclusão da conta com 30 dias para desistir. */
   retencaoLeadsMeses: smallint('retencao_leads_meses').notNull().default(24),
   exclusaoSolicitadaEm: timestamp('exclusao_solicitada_em', { withTimezone: true }),

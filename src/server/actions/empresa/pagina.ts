@@ -14,6 +14,7 @@ import {
 } from '@/domain/validacao/pagina';
 import { apagarArquivosMidia } from '@/server/catalogo/midia';
 import { comUsuario } from '@/server/db/tenant';
+import { rastrearMarco } from '@/server/prospeccao';
 import { acaoDoDono, validar, type ResultadoAcao } from './comum';
 
 /*
@@ -40,6 +41,8 @@ export async function salvarTextosPagina(entrada: TextosPaginaEntrada): Promise<
       tx.execute(sql`select public.salvar_pagina_publica(${JSON.stringify(p)}::jsonb)`),
     );
     revalidatePath(CAMINHO);
+    // CRM de prospecção (§81): quem pulou o onboarding e arrumou a página pública pelo editor
+    rastrearMarco(dono, 'pagina');
     return { ok: true, mensagem: 'Página atualizada.' };
   });
 }

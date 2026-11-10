@@ -15,6 +15,7 @@ import { comUsuario } from '@/server/db/tenant';
 import { tagDoBuffet } from '@/server/publico/cache';
 import { mensagemErroConta } from '@/domain/cobranca/limites';
 import { logar } from '@/server/log';
+import { rastrearMarco } from '@/server/prospeccao';
 
 /*
  * Onboarding guiado (/app/comecar) e itens manuais do checklist. Escrita só pelas funções SQL
@@ -57,6 +58,8 @@ export async function irParaPasso(passo: number): Promise<ResultadoAcao> {
     await comUsuario(u.id, (tx) =>
       tx.execute(sql`select public.avancar_onboarding(${p.data}::smallint)`),
     );
+    // CRM de prospecção (§81): concluir o onboarding (passo 5) é quando o link vai ao ar
+    if (p.data === 5) rastrearMarco(u, 'pagina');
     revalidatePath('/app', 'layout');
     return { ok: true, mensagem: '' };
   });
@@ -134,6 +137,8 @@ export async function confirmarPrecos(
     );
     revalidateTag(tagDoBuffet(u.empresa.slug));
     revalidatePath('/app', 'layout');
+    // CRM de prospecção (§81): o primeiro preço de pacote confirmado pelo dono
+    if (v.data.pacotes.length > 0) rastrearMarco(u, 'pacote');
     return { ok: true, mensagem: 'Preços confirmados.', dados: { n: r?.n ?? 0 } };
   });
 }

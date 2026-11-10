@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Demonstracao } from '@/components/marketing/demonstracao';
+import { CapturaProspeccao } from '@/components/marketing/prospeccao';
 import { RastreioLanding } from '@/components/marketing/rastreio';
 import { Beneficios, ChamadaFinal, Preco, Rodape, Topo } from '@/components/marketing/secoes';
 import { codigoPlanoVigente } from '@/domain/cobranca/limites';
@@ -57,6 +58,8 @@ export default async function Landing() {
       </main>
       <Rodape />
       <RastreioLanding />
+      {/* link da prospecção (?r=): guarda o r e avisa que a demonstração foi aberta */}
+      <CapturaProspeccao demonstracao />
       <script
         type="application/ld+json"
         // JSON montado no servidor a partir do plano (sem texto do usuário)

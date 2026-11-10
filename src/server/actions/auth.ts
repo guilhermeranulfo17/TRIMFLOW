@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation';
 import { ehSessaoDemo, MENSAGEM_DEMO } from '@/domain/auth/demo';
 import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
+import { COOKIE_PROSPECCAO, idDoLead } from '@/domain/prospeccao';
 import { modeloDoSegmento } from '@/domain/modelos';
 import { celularBRParaE164 } from '@/domain/phone';
 import type { Segmento } from '@/domain/segmento';
@@ -35,6 +36,7 @@ import { comUsuario } from '@/server/db/tenant';
 import { siteUrl } from '@/server/env';
 import { mensagemDeErroAuth } from '@/server/erros';
 import { codigoDoErro, logar } from '@/server/log';
+import { rastrearCadastro } from '@/server/prospeccao';
 import { dentroDoLimite, MENSAGEM_LIMITE } from '@/server/seguranca/limite';
 
 export type ResultadoAcao = { ok: true; mensagem?: string } | { ok: false; erro: string };
@@ -79,6 +81,7 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
   if (data.user) {
     await registrarAceite(data.user.id);
     await avisarBoasVindas(data.user.id);
+    await avisarProspeccao(data.user.id);
   }
 
   // Com confirmação de e-mail ligada no projeto, o signup não devolve sessão.
@@ -125,6 +128,7 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
   }
   await registrarAceite(user.id);
   await avisarBoasVindas(user.id);
+  await avisarProspeccao(user.id);
   await aplicarModeloDoCadastro(user.id, dados.segmento);
   await registrarOrigem(user.id);
   redirect('/app/comecar');
@@ -156,6 +160,22 @@ async function avisarBoasVindas(usuarioId: string) {
     after(processarAvisosSemFalhar);
   } catch (e) {
     logar('aviso', 'cadastro.boas_vindas_falhou', { codigo: codigoDoErro(e) });
+  }
+}
+
+/**
+ * "Criou conta" no CRM de prospecção (§81): liga a conta ao lead pelo r do link (cookie guardado
+ * pela landing) ou pelo WhatsApp informado. Roda em segundo plano, depois da resposta: se o CRM
+ * falhar ou demorar, o cadastro segue igual.
+ */
+async function avisarProspeccao(usuarioId: string) {
+  try {
+    const loja = await cookies();
+    const r = idDoLead(loja.get(COOKIE_PROSPECCAO)?.value);
+    rastrearCadastro(usuarioId, r);
+    if (r) loja.delete(COOKIE_PROSPECCAO);
+  } catch (e) {
+    logar('aviso', 'cadastro.prospeccao_falhou', { codigo: codigoDoErro(e) });
   }
 }
 

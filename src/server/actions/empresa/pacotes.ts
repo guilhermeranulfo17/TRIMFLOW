@@ -27,6 +27,7 @@ import {
   pacoteTiposEvento,
   secoesCardapio,
 } from '@/server/db/schema';
+import { rastrearMarco } from '@/server/prospeccao';
 import { comUsuario, type Tx } from '@/server/db/tenant';
 import {
   acaoDoDono,
@@ -113,6 +114,8 @@ export async function criarPacote(
       return novo!.id;
     });
     revalidar();
+    // CRM de prospecção (§81): o primeiro pacote criado ou com preço salvo pelo dono
+    rastrearMarco(dono, 'pacote');
     return { ok: true, mensagem: 'Pacote criado. Agora defina o preço.', dados: { id } };
   });
 }
@@ -300,6 +303,8 @@ export async function salvarPrecoPacote(
     });
     if (!ok) return { ok: false, erro: NAO_ENCONTRADO };
     revalidar(id);
+    // CRM de prospecção (§81): o primeiro pacote criado ou com preço salvo pelo dono
+    rastrearMarco(dono, 'pacote');
     return { ok: true, mensagem: 'Preço do pacote salvo.' };
   });
 }
