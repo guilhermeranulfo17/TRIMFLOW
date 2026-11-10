@@ -44,7 +44,6 @@ test('recuperar senha por e-mail e entrar com a nova senha', async ({ page }) =>
     whatsapp: '11987654321',
     senha: 'senha-antiga-123',
     buffet: 'Buffet Recupera',
-    segmento: 'Buffet em domicílio',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   await page.goto('/app/leads');

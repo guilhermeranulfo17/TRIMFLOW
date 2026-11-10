@@ -63,7 +63,6 @@ test('OrkMargem: contratar, voltar sem pagar, pagar (webhook), usar e cancelar',
       whatsapp: '34991355450',
       senha: 'senha-boa-123',
       buffet: `Buffet Soluções ${Date.now()}`,
-      segmento: 'Buffet infantil',
     });
     await expect(page).toHaveURL(/\/app\/comecar/);
     await page.goto('/app/solucoes');

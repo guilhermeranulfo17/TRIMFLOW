@@ -1,12 +1,8 @@
 import { contarConvidados } from '../preco/equivalentes';
 import { dataCivilValida, diaDaSemanaNumero } from '../dates';
-import {
-  pacotesDisponiveis,
-  type ContextoPreco,
-  type DataCivil,
-  type Id,
-  type PacoteCtx,
-} from '../preco';
+// módulos específicos (não o índice de ../preco, que traz o Zod da entrada para o navegador)
+import { pacotesDisponiveis } from '../preco/disponibilidade';
+import type { ContextoPreco, DataCivil, Id, PacoteCtx } from '../preco/tipos';
 import type { Escolhas } from './tipos';
 
 export type NumeroPasso = 1 | 2 | 3 | 4 | 5 | 6;

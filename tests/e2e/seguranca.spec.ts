@@ -135,7 +135,6 @@ test('termos novos: o painel pede o aceite antes de qualquer tela', async ({ pag
     whatsapp: '34991355450',
     senha: SENHA_SEED,
     buffet: 'Buffet Aceite',
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   // o cadastro gravou o aceite; agora a versão muda
@@ -197,7 +196,6 @@ test('LGPD: exportar tudo, pedir a exclusão da conta e desistir', async ({ page
     whatsapp: '34991355450',
     senha: SENHA_SEED,
     buffet: 'Buffet Exclusao',
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   await page.goto('/app/empresa/privacidade');
@@ -229,7 +227,6 @@ test('MFA opcional do dono: liga, o login pede o código, desliga', async ({ pag
     whatsapp: '34991355450',
     senha: SENHA_SEED,
     buffet: 'Buffet Mfa',
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   await page.goto('/app/conta/seguranca');

@@ -52,7 +52,6 @@ test.describe('cadastro', () => {
       whatsapp: '34991355450',
       senha,
       buffet: 'Buffet Alegria & Cia',
-      segmento: 'Buffet infantil',
     });
     // a conta nasce com o modelo do segmento e cai no onboarding
     await expect(page).toHaveURL(/\/app\/comecar$/);
@@ -81,7 +80,6 @@ test.describe('cadastro', () => {
       whatsapp: '34991355450',
       senha: 'senha-forte-123',
       buffet: 'Buffet Qualquer',
-      segmento: 'Casamento e eventos',
     });
     await expect(page.getByTestId('aviso-form')).toContainText(
       'Já existe uma conta com esse e-mail',

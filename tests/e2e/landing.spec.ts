@@ -241,7 +241,6 @@ test('"Testar grátis" leva ao cadastro e a conta nasce com a origem do anúncio
     whatsapp: '34991355450',
     senha: 'senha-boa-123',
     buffet: `Buffet Landing ${Date.now()}`,
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar/);
   const origem = await noBanco(async (sql) => {

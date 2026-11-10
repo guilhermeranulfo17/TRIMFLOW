@@ -25,7 +25,6 @@ test('teste acaba, conta fica somente leitura, assina com cupom e volta a ativa'
     whatsapp: '34991230000',
     senha: SENHA_SEED,
     buffet: `Buffet Cobrança ${Date.now()}`,
-    segmento: 'Infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar/);
 

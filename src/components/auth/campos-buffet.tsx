@@ -12,18 +12,18 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { mascaraTelefoneBR } from '@/domain/mascara';
-import { ROTULO_SEGMENTO, SEGMENTOS, type Segmento } from '@/domain/validacao/cadastro';
-import { cn } from '@/lib/utils';
 
 type CamposBuffet = {
   nome: string;
   nomeBuffet: string;
   whatsapp: string;
-  segmento: Segmento;
   aceite: boolean;
 };
 
-/** Nome, buffet, WhatsApp e segmento (cadastro e "completar" de quem entrou pelo Google). */
+/**
+ * Nome, buffet e WhatsApp (cadastro e "completar" de quem entrou pelo Google). Só o mínimo: o
+ * tipo de buffet não é mais perguntado aqui (a conta nasce com o modelo infantil).
+ */
 export function CamposDoBuffet({ focoNoNome = false }: { focoNoNome?: boolean }) {
   const { control } = useFormContext<CamposBuffet>();
   return (
@@ -59,7 +59,7 @@ export function CamposDoBuffet({ focoNoNome = false }: { focoNoNome?: boolean })
         name="whatsapp"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>WhatsApp</FormLabel>
+            <FormLabel>WhatsApp (com DDD)</FormLabel>
             <FormControl>
               <Input
                 type="tel"
@@ -73,54 +73,6 @@ export function CamposDoBuffet({ focoNoNome = false }: { focoNoNome?: boolean })
             <FormDescription>
               É por aqui que avisamos quando um cliente quiser reservar.
             </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={control}
-        name="segmento"
-        render={({ field, fieldState }) => (
-          <FormItem>
-            <p
-              id="rotulo-segmento"
-              className={cn(
-                'text-sm leading-none font-medium',
-                fieldState.error && 'text-destructive',
-              )}
-            >
-              Tipo de buffet
-            </p>
-            <div
-              role="radiogroup"
-              aria-labelledby="rotulo-segmento"
-              aria-invalid={!!fieldState.error}
-              className="grid gap-2"
-            >
-              {SEGMENTOS.map((segmento) => {
-                const marcado = field.value === segmento;
-                return (
-                  <label
-                    key={segmento}
-                    className={cn(
-                      'rounded-control flex min-h-11 cursor-pointer items-center gap-3 border px-3 py-2.5 text-sm transition-colors',
-                      marcado ? 'border-primary bg-accent font-semibold' : 'hover:bg-muted',
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name={field.name}
-                      value={segmento}
-                      checked={marcado}
-                      onChange={() => field.onChange(segmento)}
-                      onBlur={field.onBlur}
-                      className="accent-primary size-4"
-                    />
-                    {ROTULO_SEGMENTO[segmento]}
-                  </label>
-                );
-              })}
-            </div>
             <FormMessage />
           </FormItem>
         )}

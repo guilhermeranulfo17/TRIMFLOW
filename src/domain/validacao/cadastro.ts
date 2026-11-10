@@ -15,7 +15,8 @@ const dadosDoBuffet = {
     .trim()
     .min(1, 'Informe seu WhatsApp')
     .refine((v) => celularBRParaE164(v) !== null, 'Informe um celular válido com DDD'),
-  segmento: z.enum(SEGMENTOS, { error: 'Escolha o tipo de buffet' }),
+  // o formulário não pergunta mais (nov/2026): sem escolha, a conta nasce com o modelo infantil
+  segmento: z.enum(SEGMENTOS, { error: 'Escolha o tipo de buffet' }).default('infantil'),
   aceite: z.boolean().refine((v) => v, 'Para criar a conta, aceite os termos de uso.'),
 };
 

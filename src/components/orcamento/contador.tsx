@@ -2,7 +2,7 @@
 
 import { Minus, Plus } from 'lucide-react';
 
-/** Campo numérico com botões grandes de − e + (toque ≥ 48 px). */
+/** Campo numérico com botões grandes de − e + (toque ≥ 48 px). `passo`: quanto cada toque soma. */
 export function Contador({
   id,
   rotulo,
@@ -10,6 +10,7 @@ export function Contador({
   valor,
   min = 0,
   max = 10_000,
+  passo = 1,
   aoMudar,
 }: {
   id: string;
@@ -18,6 +19,7 @@ export function Contador({
   valor: number;
   min?: number;
   max?: number;
+  passo?: number;
   aoMudar: (v: number) => void;
 }) {
   const ajustar = (v: number) =>
@@ -31,7 +33,7 @@ export function Contador({
       <div className="flex shrink-0 items-center gap-1">
         <button
           type="button"
-          onClick={() => ajustar(valor - 1)}
+          onClick={() => ajustar(valor - passo)}
           disabled={valor <= min}
           className="hover:bg-accent grid size-12 place-items-center rounded-full border disabled:opacity-40"
           aria-label={`Diminuir ${rotulo.toLowerCase()}`}
@@ -50,7 +52,7 @@ export function Contador({
         />
         <button
           type="button"
-          onClick={() => ajustar(valor + 1)}
+          onClick={() => ajustar(valor + passo)}
           disabled={valor >= max}
           className="hover:bg-accent grid size-12 place-items-center rounded-full border disabled:opacity-40"
           aria-label={`Aumentar ${rotulo.toLowerCase()}`}

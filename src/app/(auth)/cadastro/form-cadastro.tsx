@@ -24,7 +24,7 @@ import { cadastrar } from '@/server/actions/auth';
 type Entrada = z.input<typeof cadastroSchema>;
 type Saida = z.output<typeof cadastroSchema>;
 
-/** Ordem: quem é, o buffet, como avisar, o tipo, e por último e-mail e senha. */
+/** Só o mínimo: nome, nome do buffet, WhatsApp, e-mail e senha (mais o aceite dos termos). */
 export function FormCadastro() {
   const [erro, setErro] = useState<string>();
   const [sucesso, setSucesso] = useState<string>();
@@ -35,7 +35,6 @@ export function FormCadastro() {
       nome: '',
       nomeBuffet: '',
       whatsapp: '',
-      segmento: undefined,
       email: '',
       senha: '',
       aceite: false,

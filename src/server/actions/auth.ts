@@ -9,6 +9,7 @@ import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
 import { modeloDoSegmento } from '@/domain/modelos';
 import { celularBRParaE164 } from '@/domain/phone';
+import type { Segmento } from '@/domain/segmento';
 import { slugBaseDaEmpresa } from '@/domain/slug';
 import {
   loginSchema,
@@ -181,7 +182,7 @@ async function registrarOrigem(usuarioId: string) {
  * do link até o dono confirmar no passo 3). Idempotente (gravarModelo nunca sobrescreve e tem
  * trava por empresa). Se falhar, o cadastro segue: o passo 1 oferece carregar o modelo.
  */
-async function aplicarModeloDoCadastro(usuarioId: string, segmento: CadastroInput['segmento']) {
+async function aplicarModeloDoCadastro(usuarioId: string, segmento: Segmento) {
   try {
     const [linha] = (await comUsuario(usuarioId, (tx) =>
       tx.execute(sql`select empresa_id from public.usuarios where id = ${usuarioId}`),

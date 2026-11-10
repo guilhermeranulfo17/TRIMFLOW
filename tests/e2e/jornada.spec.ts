@@ -66,7 +66,6 @@ test('jornada do buffet: da landing à assinatura, sem sair do celular', async (
     whatsapp: '34991355450',
     senha: SENHA_SEED,
     buffet,
-    segmento: 'Buffet infantil',
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
   const empresaId = await noBanco(async (sql) => {

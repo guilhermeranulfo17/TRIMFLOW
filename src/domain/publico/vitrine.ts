@@ -1,4 +1,5 @@
-import { aPartirDe, type ContextoPreco, type DataCivil, type Id } from '../preco';
+import { aPartirDe } from '../preco/a-partir-de';
+import type { ContextoPreco, DataCivil, Id } from '../preco/tipos';
 import { valorDoPacote } from '../preco/pacote';
 import type { ModoPreco } from './tipos';
 

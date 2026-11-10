@@ -29,7 +29,6 @@ export async function cadastrar(
     whatsapp: string;
     senha: string;
     buffet: string;
-    segmento: string;
   },
 ) {
   await page.goto('/cadastro');
@@ -38,7 +37,6 @@ export async function cadastrar(
   await page.getByLabel('WhatsApp').fill(dados.whatsapp);
   await page.getByLabel('Senha', { exact: true }).fill(dados.senha);
   await page.getByLabel('Nome do buffet').fill(dados.buffet);
-  await page.getByRole('radio', { name: dados.segmento }).check();
   await page.getByRole('checkbox', { name: /aceito os termos/ }).check();
   await page.getByRole('button', { name: 'Criar conta' }).click();
 }
