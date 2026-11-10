@@ -13,12 +13,7 @@ import { hashIp, ipDoVisitante } from '@/server/publico/seguranca';
  */
 
 export type AcaoLimitada =
-  | 'login'
-  | 'cadastro'
-  | 'recuperar_senha'
-  | 'webhook'
-  | 'cron'
-  | 'prospeccao';
+  'login' | 'cadastro' | 'recuperar_senha' | 'webhook' | 'cron' | 'prospeccao';
 
 export const MENSAGEM_LIMITE =
   'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.';

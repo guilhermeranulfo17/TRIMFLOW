@@ -281,6 +281,18 @@ Itens percebidos na fundação que pertencem a etapas futuras. Nada aqui foi imp
   exemplo é fixa: aniversário infantil, sábado à tarde).
 - **Suporte:** a página não promete canal nem prazo de suporte; decidir e publicar.
 
+## Depois do rastreio para o CRM de prospecção (ARQUITETURA §81)
+
+- **Privacidade e subprocessadores:** o rastreio manda nome, WhatsApp e e-mail do dono da conta ao
+  CRM de prospecção (hospedado fora da Vercel e do Supabase) e guarda o cookie `orkestra_r`. Rever
+  com o advogado se a Política de Privacidade e a página de subprocessadores precisam citar isso
+  (se mudar o texto, subir `VERSAO_DOCUMENTOS`).
+- **Etapas seguintes do funil:** hoje o Orkestra para em `demo_marcada`. Assinatura paga poderia
+  mandar "Assinou" e a etapa `fechado`; cancelamento e fim do teste sem assinar, um evento.
+- **Fila com repetição:** as chamadas são de melhor esforço (uma tentativa, com nova tentativa do
+  "Criou conta" no marco seguinte). Se o CRM cair com frequência, levar para a fila de avisos.
+- **Tela no /interno:** mostrar o vínculo com o CRM e os marcos de cada empresa.
+
 ## Nossas soluções: o que falta para vender cada módulo
 
 Nenhum módulo tem venda pública (`modulos.venda_liberada = false`). Para liberar, uma migration

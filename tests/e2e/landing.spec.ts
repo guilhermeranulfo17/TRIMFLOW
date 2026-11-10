@@ -227,3 +227,78 @@ test('logado, o topo leva ao painel', async ({ page }) => {
   await page.getByTestId('ir-para-painel').click();
   await expect(page).toHaveURL(/\/app\/leads$/);
 });
+
+/*
+ * Rastreio para o CRM de prospecção (ARQUITETURA §81): o link da prospecção leva ?r=<id do lead>.
+ * A landing guarda o r e avisa o servidor (que fala com o CRM em segundo plano); aqui só o que o
+ * navegador faz. Os fluxos do CRM têm testes próprios (unitários e de integração).
+ */
+const R = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+
+async function vigiarProspeccao(page: Page) {
+  const avisos: { evento: string; r: string }[] = [];
+  await page.route('**/api/prospeccao/evento', async (rota) => {
+    avisos.push(rota.request().postDataJSON() as { evento: string; r: string });
+    await rota.fulfill({ status: 204 });
+  });
+  return avisos;
+}
+
+test('link com ?r=: guarda o r, avisa que abriu a demonstração e que montou um orçamento', async ({
+  page,
+  context,
+}) => {
+  const avisos = await vigiarProspeccao(page);
+  await page.goto(`/?r=${R}`);
+  await expect.poll(() => avisos).toEqual([{ evento: 'abriu_demo', r: R }]);
+  const cookies = await context.cookies();
+  expect(cookies.find((c) => c.name === 'orkestra_r')?.value).toBe(R);
+  expect(await page.evaluate(() => localStorage.getItem('orkestra_r'))).toBe(R);
+
+  // recarregar não repete o aviso
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  expect(avisos).toHaveLength(1);
+
+  // chegar ao resultado avisa uma vez (mesmo voltando e chegando de novo)
+  await page.getByTestId('ir-para-demonstracao').click();
+  const demo = page.getByTestId('demonstracao');
+  await demo.getByRole('button', { name: 'Continuar' }).click();
+  await demo.getByRole('button', { name: 'Ver como o buffet recebe' }).click();
+  await expect.poll(() => avisos.length).toBe(2);
+  expect(avisos[1]).toEqual({ evento: 'montou_orcamento', r: R });
+  await demo.getByRole('button', { name: 'Ver como o buffet recebe' }).click();
+  await page.waitForTimeout(300);
+  expect(avisos).toHaveLength(2);
+
+  // o r vale também numa visita seguinte sem o parâmetro (até o cadastro)
+  await page.goto('/cadastro');
+  expect((await context.cookies()).find((c) => c.name === 'orkestra_r')?.value).toBe(R);
+});
+
+test('sem r (ou com r inválido), a landing não avisa nada', async ({ page, context }) => {
+  const avisos = await vigiarProspeccao(page);
+  for (const url of ['/', '/?r=123', '/?r=../leads']) {
+    await page.goto(url);
+    await page.getByTestId('ir-para-demonstracao').click();
+    const demo = page.getByTestId('demonstracao');
+    await demo.getByRole('button', { name: 'Aumentar convidados' }).click();
+    await demo.getByRole('button', { name: 'Continuar' }).click();
+    await demo.getByRole('button', { name: 'Ver como o buffet recebe' }).click();
+    await expect(page.locator('#resultado')).toHaveAttribute('data-chegou', 'true');
+  }
+  await page.waitForLoadState('networkidle');
+  expect(avisos).toEqual([]);
+  expect((await context.cookies()).find((c) => c.name === 'orkestra_r')).toBeUndefined();
+});
+
+test('rota do rastreio: responde na hora e recusa evento ou r fora do formato', async ({
+  request,
+}) => {
+  const enviar = (data: unknown) => request.post('/api/prospeccao/evento', { data });
+  expect((await enviar({ evento: 'abriu_demo', r: R })).status()).toBe(204);
+  expect((await enviar({ evento: 'montou_orcamento', r: R })).status()).toBe(204);
+  expect((await enviar({ evento: 'criou_conta', r: R })).status()).toBe(400);
+  expect((await enviar({ evento: 'abriu_demo', r: '../leads' })).status()).toBe(400);
+  expect((await enviar({ evento: 'abriu_demo' })).status()).toBe(400);
+});

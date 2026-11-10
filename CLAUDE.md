@@ -56,6 +56,7 @@ src/
     api/lgpd/        processar (POST, Bearer CRON_SECRET): exclusão definitiva das contas
     api/saude/       GET público para o monitor de disponibilidade (200/503)
     api/landing/     contar (POST, visitas e cliques agregados da landing)
+    api/prospeccao/  evento (POST público: abriu a demonstração e montou um orçamento, com ?r=)
     robots.ts, sitemap.ts  indexação (landing, termos, privacidade e vitrines)
     api/cobranca/    asaas (webhook, token no header) e reconciliar (POST, Bearer CRON_SECRET)
     interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral,
@@ -126,6 +127,8 @@ src/
                      resumo da compra, OrkMargem (previsão, margem de contribuição, pendências)
     marketing/       landing: preço único da vitrine, origem do cadastro (UTM), JSON-LD,
                      demonstração do "Buffet Exemplo" (mesmo montarPrevia do link público)
+    prospeccao/      CRM de prospecção: ordem das etapas (nunca rebaixar), textos dos eventos,
+                     telefone no formato do CRM e o r do link (§81)
     legal/           versão vigente dos Termos e da Privacidade (VERSAO_DOCUMENTOS)
     email/           modelos dos e-mails da conta (HTML + texto, links absolutos)
     lgpd/            CSV das exportações
@@ -164,6 +167,8 @@ src/
                      guard moduloComAcesso, leituras do OrkMargem
     marketing/       preços da landing (planos_vitrine em cache, tag planos-vitrine), exemplo da
                      demonstração, contagem
+    prospeccao/      CRM de prospecção: cliente (fetch), os cinco eventos, vínculo da empresa com
+                     o lead (empresas.prospeccao) e execução em segundo plano (§81)
     lgpd/            exportações (ZIP próprio), exclusão definitiva (deps injetadas), Privacidade
     seguranca/       limite de tentativas (publico.limite_acesso)
     saude/           dados do /api/saude (deps injetadas)
@@ -317,6 +322,13 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   Grotesque) e destaque `.ld-serif` (Instrument Serif itálico). Origem do anúncio (utm_, ref) só
   por `registrar_origem_cadastro`; contagem agregada só por `publico.landing_contar` (sem nada
   pessoal). Cadastro pede só nome, buffet, WhatsApp, e-mail e senha (segmento padrão `infantil`).
+- **CRM de prospecção (§81, `docs/PROSPECCAO_CRM.md`):** o servidor avisa o CRM de prospecção em
+  cinco eventos (abriu a demonstração com `?r=<id do lead>`, montou um orçamento, criou conta,
+  cadastrou pacote, publicou a página). Só por `server/prospeccao` (token `CRM_PROSPECCAO_TOKEN`
+  só no servidor; sem ele, desligado), sempre em segundo plano (`after()`) e sem nunca lançar: o
+  CRM fora do ar não pode atrapalhar cadastro nem página. Etapa nunca é rebaixada
+  (`domain/prospeccao`). O vínculo fica em `empresas.prospeccao` (só a conexão administrativa
+  grava). Nada de lead do buffet vai ao CRM, só dados da conta do dono.
 - **LGPD (Etapa 9B, §63):** o buffet é controlador dos leads, o Orkestra operador. Lead só é
   anonimizado/exportado por `lgpd_apagar_lead`/`lgpd_exportar_lead` (dono) e pelo job
   `lgpd_retencao`; empresa exportada pela rota do ZIP (RLS do dono) e excluída 30 dias depois do
@@ -486,7 +498,8 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
   desligado) e `NEXT_PUBLIC_DEMO_SLUG` passa a ligar a conta de demonstração. Secreto novo no
   GitHub: `BACKUP_SENHA` (workflow de backup, `docs/BACKUP.md`). Desde a Etapa 10:
   `CONTRATOS_CHAVE` (secreta, obrigatória para o cliente assinar; mesma em Production e Preview;
-  guardar cópia fora da Vercel). **Roteiro do lançamento, na
+  guardar cópia fora da Vercel). Desde o rastreio da prospecção (§81): `CRM_PROSPECCAO_TOKEN`
+  (secreta; sem ela, o rastreio fica desligado) e `CRM_PROSPECCAO_URL` (opcional). **Roteiro do lançamento, na
   ordem:** `docs/LANCAMENTO.md`.
   - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.

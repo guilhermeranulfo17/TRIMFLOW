@@ -20,12 +20,12 @@ function deps(): DepsProspeccao | null {
   return crm ? { db: obterDb(), crm } : null;
 }
 
-function emSegundoPlano(evento: string, fn: (d: DepsProspeccao) => Promise<unknown>): void {
+function emSegundoPlano(acao: string, fn: (d: DepsProspeccao) => Promise<unknown>): void {
   let d: DepsProspeccao | null;
   try {
     d = deps();
   } catch (erro) {
-    logar('aviso', 'prospeccao.falhou', { evento, codigo: codigoDoErro(erro) });
+    logar('aviso', 'prospeccao.falhou', { acao, codigo: codigoDoErro(erro) });
     return;
   }
   if (!d) return;
@@ -34,7 +34,7 @@ function emSegundoPlano(evento: string, fn: (d: DepsProspeccao) => Promise<unkno
     try {
       await fn(dependencias);
     } catch (erro) {
-      logar('aviso', 'prospeccao.falhou', { evento, codigo: codigoDoErro(erro) });
+      logar('aviso', 'prospeccao.falhou', { acao, codigo: codigoDoErro(erro) });
     }
   };
   try {

@@ -1859,3 +1859,54 @@ contagem agregada, nada inventado).
   "completar" de quem entra pelo Google): `cadastroSchema.segmento` tem padrão `infantil`, então
   toda conta nova nasce com o modelo infantil. O banco e o `modeloDoSegmento` continuam aceitando
   os três segmentos.
+
+## 81. Rastreio para o CRM de prospecção (novembro de 2026)
+
+O dono do Orkestra prospecta buffets pelo WhatsApp num CRM separado e precisa saber quem abriu a
+demonstração e quem criou conta. O Orkestra avisa esse CRM em cinco momentos. Guia de uso, link
+com `?r=` e como testar: `docs/PROSPECCAO_CRM.md`.
+
+- **CRM:** API própria por `fetch` (`server/prospeccao/cliente`, sem SDK), `Authorization: Bearer`
+  com `CRM_PROSPECCAO_TOKEN` (variável do servidor; sem ela, tudo desligado) e base em
+  `CRM_PROSPECCAO_URL` (opcional). Contrato conferido com leituras na API real: `GET /leads?q=`
+  devolve uma lista; `GET /leads/{id}` devolve `{ lead, eventos }` (404 se não existe);
+  `POST /leads/upsert` é pelo `telefone` (55 + DDD + número) e altera só os campos enviados;
+  `POST /leads/{id}/eventos { texto }` grava na linha do tempo. O id do lead é uuid: `idDoLead`
+  recusa qualquer outra coisa (o valor vai para a URL do CRM).
+- **Regras puras em `domain/prospeccao`:** ordem das etapas e as duas transições
+  (`etapaAoAbrirDemonstracao`, `etapaAoCriarConta`: nunca rebaixam; `perdido` e etapa
+  desconhecida ficam como estão), textos dos eventos, telefone no formato do CRM e
+  `mesmoTelefone` (DDD + 8 últimos dígitos, para o cadastro antigo sem o 9 casar).
+- **O r do link:** `CapturaProspeccao` (landing e `/cadastro`) guarda `?r=` no cookie
+  `orkestra_r` (90 dias) e no armazenamento local. Na landing, abrir com r manda `abriu_demo`; chegar
+  ao resultado da demonstração (botão do último passo, ou rolar até o pedido depois de mexer)
+  manda `montou_orcamento`. Uma vez por aba para cada evento (sessionStorage). O navegador só
+  conhece o r; o token nunca sai do servidor.
+- **Rota `/api/prospeccao/evento`** (pública, fora do Auth como `/api/landing/`): valida evento e
+  r, aplica o limite `prospeccao` de `publico.limite_acesso` (30 por IP por hora, só o hash) e
+  responde 204 na hora. Acima do limite a resposta é a mesma e nada é enviado.
+- **Segundo plano, sem derrubar nada:** toda chamada ao CRM roda em `after()` (depois da resposta),
+  com prazo de 8 s por chamada, dentro de um `try` que só loga `prospeccao.falhou` com a ação e o
+  código do erro. O cadastro e a página nunca esperam o CRM.
+- **Vínculo da empresa com o lead:** coluna nova `empresas.prospeccao` (jsonb, migration
+  `20261110000001_prospeccao.sql`, aditiva): `r` (o id que veio no link), `crm_lead_id`,
+  `conta_em`, `pacote_em`, `pagina_em`. Escrita só pela conexão administrativa
+  (`server/prospeccao/vinculo`, revisado: lê só o que o CRM recebe e escreve só nessa coluna);
+  `authenticated` não tem `UPDATE` nela (os grants de `empresas` são coluna a coluna). Coluna em vez
+  de tabela nova: é um dado por empresa, sem leitura por usuário, e dispensa RLS e trigger novos.
+- **"Criou conta"** (`avisarCadastro`, chamado em `cadastrar` e `completarConta`): guarda o r,
+  acha o lead pelo r ou pelo WhatsApp, faz o upsert e grava o evento. O upsert usa o telefone do
+  lead que já existe (o upsert é pela chave telefone: com o número novo nasceria um lead
+  duplicado); se o número informado é outro, o evento leva ", WhatsApp informado …". `buffet` só
+  entra em lead novo. Se o CRM falhar, a empresa fica sem `crm_lead_id` e `sincronizarConta`
+  repete a tentativa no próximo marco, com a data de criação lida do banco.
+- **"Cadastrou pacote"** e **"Publicou a página"** (`avisarMarco`): uma vez por empresa. A marca
+  (`pacote_em`/`pagina_em`) é gravada antes do aviso, num `UPDATE … WHERE NOT (prospeccao ? chave)`
+  (duas ações juntas não mandam dois eventos), e desfeita se o CRM falhar. Como a conta já nasce
+  com os pacotes do modelo, "primeiro pacote" é a primeira vez que o DONO cria um pacote ou salva
+  o preço de um (`criarPacote`, `salvarPrecoPacote`, `confirmarPrecos` com pacote). "Publicou a
+  página" é concluir o onboarding (passo 5, "Seu link está no ar") ou, para quem pulou o
+  onboarding, salvar os textos da página pública. A equipe em modo suporte e a conta de
+  demonstração não disparam marcos.
+- **Fora do rastreio:** nada do cliente final do buffet (leads, orçamentos) vai ao CRM. Só dados
+  da conta do dono (nome, WhatsApp, e-mail, nome do buffet).
