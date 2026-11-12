@@ -42,9 +42,16 @@ export function classesMosaico(n: number): string[] {
 
 /**
  * Galeria em mosaico (PC) ou 2 colunas (celular), com lightbox em <dialog>: setas, teclado
- * (← → e Esc), arrastar no celular e foco devolvido à foto que abriu.
+ * (← → e Esc), arrastar no celular e foco devolvido à foto que abriu. `grade` (página
+ * elegante): todas as fotos do mesmo tamanho, 2 colunas no celular e 3 no PC.
  */
-export function GaleriaPublica({ fotos }: { fotos: FotoGaleria[] }) {
+export function GaleriaPublica({
+  fotos,
+  variante = 'mosaico',
+}: {
+  fotos: FotoGaleria[];
+  variante?: 'mosaico' | 'grade';
+}) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const botoes = useRef<(HTMLButtonElement | null)[]>([]);
   const toque = useRef<number | null>(null);
@@ -65,9 +72,20 @@ export function GaleriaPublica({ fotos }: { fotos: FotoGaleria[] }) {
 
   return (
     <>
-      <ul className="grid auto-rows-[160px] grid-cols-2 gap-2 md:auto-rows-[200px] md:grid-cols-4 md:gap-3">
+      <ul
+        className={
+          variante === 'grade'
+            ? 'grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-4'
+            : 'grid auto-rows-[160px] grid-cols-2 gap-2 md:auto-rows-[200px] md:grid-cols-4 md:gap-3'
+        }
+      >
         {fotos.map((f, i) => (
-          <li key={f.id} className={mosaico[i]}>
+          <li
+            key={f.id}
+            className={
+              variante === 'grade' ? 'relative aspect-[4/3] min-w-0 overflow-hidden' : mosaico[i]
+            }
+          >
             <button
               type="button"
               ref={(el) => {
@@ -83,7 +101,13 @@ export function GaleriaPublica({ fotos }: { fotos: FotoGaleria[] }) {
               <img
                 src={f.url640}
                 srcSet={`${f.url640} 640w, ${f.url1280} 1280w`}
-                sizes={i === 0 ? '(min-width: 768px) 50vw, 50vw' : '(min-width: 768px) 25vw, 50vw'}
+                sizes={
+                  variante === 'grade'
+                    ? '(min-width: 768px) 33vw, 50vw'
+                    : i === 0
+                      ? '(min-width: 768px) 50vw, 50vw'
+                      : '(min-width: 768px) 25vw, 50vw'
+                }
                 width={f.largura}
                 height={f.altura}
                 alt={f.alt}
