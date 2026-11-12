@@ -221,6 +221,8 @@ export const secoesCardapio = pgTable(
     nome: text('nome').notNull(),
     itens: text('itens').array().notNull(),
     ordem: integer('ordem').notNull().default(0),
+    /** Caminho no bucket midia ({empresa_id}/pacotes/{uuid}.webp), não a URL. */
+    fotoUrl: text('foto_url'),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },
@@ -291,6 +293,8 @@ export const opcionais = pgTable(
     ativo: boolean('ativo').notNull().default(true),
     /** Nulo = preço de exemplo do modelo, fora do link (Etapa 8). */
     precoConfirmadoEm: timestamp('preco_confirmado_em', { withTimezone: true }),
+    /** Caminhos no bucket midia ({empresa_id}/pacotes/{uuid}.webp); a primeira vai na proposta. */
+    fotos: jsonb('fotos').$type<string[]>().notNull().default([]),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },
