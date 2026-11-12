@@ -333,3 +333,11 @@ nova depois das decisões abaixo (o código já recusa módulo não implementado
   página de conteúdo.
 - **Prévia do modelo na tela de escolha:** hoje o dono escolhe e abre "Ver como fica uma
   proposta". Uma miniatura de cada modelo ao lado da opção ajudaria.
+
+## Depois das fotos do catálogo (ARQUITETURA §83)
+
+- **Foto enviada e não salva no cardápio:** a foto da seção sobe na hora e só é gravada ao
+  salvar o cardápio; se o dono sair sem salvar, o arquivo fica solto no Storage (mesmo caso
+  dos "Arquivos soltos" da Etapa 2).
+- **Foto do opcional no link público:** hoje só a proposta mostra. Avaliar mostrar no passo de
+  extras do orçamento.
