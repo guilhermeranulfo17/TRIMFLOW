@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck, CheckCircle2, Download, Eye, RotateCcw } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, Download, Eye, RotateCcw, Sheet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { diaDaSemana, formatData, formatDataHora } from '@/domain/dates';
@@ -143,16 +143,28 @@ export function AcoesProposta(p: Props) {
     </a>
   );
 
+  // PDF e planilha lado a lado (a planilha abre no Excel: ";" e acentos certos)
   const botaoPdf = (
-    <a
-      href={`/b/${p.slug}/proposta/${p.token}/pdf`}
-      className={`${BOTAO_SECUNDARIO} w-full`}
-      data-testid="baixar-pdf"
-      download
-    >
-      <Download className="size-5" aria-hidden />
-      Baixar PDF
-    </a>
+    <div className="grid grid-cols-2 gap-2">
+      <a
+        href={`/b/${p.slug}/proposta/${p.token}/pdf`}
+        className={`${BOTAO_SECUNDARIO} w-full px-3`}
+        data-testid="baixar-pdf"
+        download
+      >
+        <Download className="size-5" aria-hidden />
+        Baixar PDF
+      </a>
+      <a
+        href={`/b/${p.slug}/proposta/${p.token}/planilha`}
+        className={`${BOTAO_SECUNDARIO} w-full px-3`}
+        data-testid="baixar-planilha"
+        download
+      >
+        <Sheet className="size-5" aria-hidden />
+        Baixar planilha
+      </a>
+    </div>
   );
 
   if (estado === 'expirada') {

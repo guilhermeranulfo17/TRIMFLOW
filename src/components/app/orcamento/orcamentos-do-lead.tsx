@@ -8,6 +8,7 @@ import {
   FilePen,
   FileSignature,
   Loader2,
+  Sheet,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -146,6 +147,10 @@ export function OrcamentosDoLead({
               >
                 <Download className="size-4" aria-hidden />
                 PDF
+              </a>
+              <a href={`/app/orcamentos/${v.id}/planilha`} className={ACAO}>
+                <Sheet className="size-4" aria-hidden />
+                Planilha
               </a>
               {v.linkWhatsapp && (
                 <a
