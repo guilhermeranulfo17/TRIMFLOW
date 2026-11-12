@@ -1980,3 +1980,27 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   novas sem mudar função SQL (`_contexto_da_empresa` usa `to_jsonb` da linha; o contexto fica
   no servidor). `vitrineDoCatalogo` aceita a entrada antiga do cache (sem fotos) e só não
   congela foto.
+
+## 84. Página pública elegante (novembro de 2026)
+
+- **Dois modelos da página** `/b/[slug]`: `alegre` (a página de antes, com o estilo festivo,
+  elegante ou limpo do dono) e `elegante` (`components/publico/pagina/elegante.tsx`): capa em
+  tela cheia com a foto e véu escuro neutro, nome em serifa, muito espaço, pacotes, galeria em
+  grade limpa (`GaleriaPublica variante="grade"`), diferenciais em lista com fios, depoimentos
+  em destaque, perguntas em acordeão discreto e botão de orçamento fixo e sóbrio no celular.
+  Mesmos dados, mesmo fluxo e mesmas regras de preço: só o desenho muda.
+- **Escolha:** `empresas.modelo_pagina` (nulo = automático = o modelo da proposta, que sem
+  escolha vem do tipo de buffet; `modeloPaginaEfetivo` em `domain/publico/pagina`). Gravada só
+  por `salvar_pagina_publica` (chave `modelo`; mesma assinatura) e lida por `publico.pagina`
+  (chaves novas `modelo_pagina` e `modelo_proposta`). Migration `20261114000001_pagina_modelo.sql`.
+- **Modelo elegante força o estilo `elegante`** (`lerPagina`): o layout de `/b/[slug]` põe
+  `data-estilo="elegante"`, então orçamento e proposta seguem a mesma tipografia. A página põe o
+  estilo do modelo também num wrapper próprio, para a prévia poder mostrar outro modelo.
+- **Prévia antes de salvar:** no editor (Minha empresa → Link, "Apresentação e estilo"), o
+  modelo escolhido vai para o iframe como `?previa=1&modelo=…`. A página só aceita esse
+  parâmetro com `previa=1` **e** em modo teste (dono logado); fora disso vale o gravado.
+- **Cache:** entrada antiga de `carregarPagina` (sem `modelo`) cai no alegre com o estilo
+  gravado até expirar (60 s). Visto no teste local: não quebra, só atrasa a troca.
+- **Desempenho:** Lighthouse no celular, mediana 96 antes e depois (detalhes e capturas em
+  `docs/capturas/pagina-elegante/`). A galeria em grade precisa de `min-w-0` na célula: sem
+  ele, a largura original da foto alargava a página no celular.
