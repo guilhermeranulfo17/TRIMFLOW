@@ -78,6 +78,8 @@ const LIMITE: Record<string, number> = {
   // festa; depois margem, acesso e pacotes em pipeline; orçamento, se houver)
   margem: 3,
   margem_festa: 6,
+  // Fase 4: ficha da cozinha (reserva com o orçamento e os itens, em pipeline)
+  ficha_cozinha: 2,
 };
 
 describe('idas ao banco por tela', () => {
@@ -220,6 +222,20 @@ describe('idas ao banco por tela', () => {
     expect(
       await medir('financeiro_festa', () => carregarFinanceiroDaFesta(u, r!.id)),
     ).toBeLessThanOrEqual(LIMITE.financeiro_festa!);
+  });
+
+  it('ficha da cozinha', async () => {
+    const u = await usuarioDono();
+    const { carregarFichaCozinha } = await import('@/server/ficha/carregar');
+    const { obterDb } = await import('@/server/db/client');
+    const { sql } = await import('drizzle-orm');
+    const [r] = await obterDb().execute<{ id: string }>(
+      sql`select id from public.reservas where empresa_id = ${IDS.empresaA}
+        and tipo = 'confirmada' and status = 'ativa' and orcamento_id is not null limit 1`,
+    );
+    expect(await medir('ficha_cozinha', () => carregarFichaCozinha(u, r!.id))).toBeLessThanOrEqual(
+      LIMITE.ficha_cozinha!,
+    );
   });
 
   it('nossas soluções e OrkMargem', async () => {
