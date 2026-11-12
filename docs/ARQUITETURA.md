@@ -1928,8 +1928,10 @@ vergonha.
     `modelo_proposta` e `segmento` em `empresa`).
   - Web e PDF desenham o mesmo `ModeloProposta` (`m.visual`). Na web, a proposta põe
     `data-estilo` no próprio `<article>` (elegante → `elegante`, alegre → `festivo`), então a
-    tipografia é a dos estilos da página pública; a Cormorant passou a carregar também o peso 500
-    (títulos finos), baixado só quando usado.
+    tipografia é a dos estilos da página pública (Cormorant só no peso 700, como antes). Pedir
+    mais pesos e o itálico ao `next/font` fazia o build da Vercel falhar de forma intermitente
+    (erro do carregador do Google Fonts); por isso os títulos "finos" ficam só no PDF, que usa
+    os TTF do repositório.
 - **Marca d'água:** o logo inteiro (sem recorte) no centro de cada página do PDF, a 6% de
   opacidade. Na capa do elegante o logo já é o destaque, então lá não há marca d'água. O
   react-pdf embute a imagem de novo em cada página: a marca d'água usa um PNG pequeno (280 px) com
