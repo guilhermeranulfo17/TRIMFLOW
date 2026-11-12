@@ -1,5 +1,6 @@
 'use client';
 
+import { ChefHat } from 'lucide-react';
 import { SeloStatusContrato } from '@/components/app/contratos/selo-contrato';
 import { useState, useTransition } from 'react';
 import { SeloEstado } from '@/components/app/agenda/estados';
@@ -103,6 +104,25 @@ export function ItemReserva({
           <div className="col-span-2 whitespace-pre-line">{reserva.observacoes}</div>
         )}
       </dl>
+
+      {/* Fase 4: reserva fechada (confirmada, ativa ou realizada) tem a ficha da cozinha */}
+      {!pre && (reserva.status === 'ativa' || reserva.status === 'realizada') && (
+        <div className="flex flex-wrap items-center gap-2" data-testid="ficha-cozinha">
+          <a
+            href={`/app/agenda/ficha/${reserva.id}/pdf`}
+            className="rounded-control hover:bg-accent inline-flex min-h-9 items-center gap-1.5 border px-3 text-sm font-semibold"
+          >
+            <ChefHat className="size-4" aria-hidden />
+            Ficha da cozinha
+          </a>
+          <a
+            href={`/app/agenda/ficha/${reserva.id}/csv`}
+            className="text-primary-texto inline-flex min-h-9 items-center px-1 text-sm font-semibold underline-offset-2 hover:underline"
+          >
+            Planilha
+          </a>
+        </div>
+      )}
 
       {modo === null && (
         <div className="flex flex-wrap gap-2">
