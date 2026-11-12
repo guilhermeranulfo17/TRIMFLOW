@@ -26,6 +26,8 @@ export const escolhasSchema = z.object({
     .max(50)
     .default([]),
   horasExtras: z.number().int().min(0).max(12).default(0),
+  /** 2ª e 3ª datas de preferência (opcionais; só informam o buffet, não mudam o preço) */
+  datasAlternativas: z.array(dataCivil).max(2).optional(),
 });
 
 export type EscolhasEntrada = z.input<typeof escolhasSchema>;

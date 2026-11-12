@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { montarCalendario, somarMes } from '@/domain/agenda/calendario';
 import { diaDaSemana, formatData, somarDias } from '@/domain/dates';
+import { limparDatasAlternativas } from '@/domain/publico/datas-alternativas';
 import { espacoEscolhido, pessoas, turnosNaData } from '@/domain/publico/passos';
 import { verDisponibilidade, type DiaDisponivel } from '@/server/actions/publico';
 import { classeOpcao, Contador } from '@/components/orcamento/contador';
@@ -231,6 +232,40 @@ export default function PassoQuando({ slug, vitrine, escolhas, alterar }: PropsP
                     </span>
                   </span>
                 </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
+      {escolhas.turnoId && (
+        <fieldset data-testid="datas-alternativas">
+          <legend className="text-lg font-bold">Outras datas possíveis</legend>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Opcional. O preço é o da data acima; as outras ajudam o buffet a achar uma opção se ela
+            não der.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {[0, 1].map((i) => {
+              const alternativas = escolhas.datasAlternativas ?? [];
+              return (
+                <label key={i} className="text-sm font-semibold">
+                  {i === 0 ? '2ª data' : '3ª data'}
+                  <input
+                    type="date"
+                    min={minimo}
+                    value={alternativas[i] ?? ''}
+                    onChange={(e) => {
+                      const nova = [...alternativas];
+                      nova[i] = e.target.value;
+                      alterar({
+                        datasAlternativas: limparDatasAlternativas(escolhas.data, nova, minimo),
+                      });
+                    }}
+                    className="focus-visible:ring-ring/50 rounded-control mt-1 h-12 w-full border px-3 text-base font-normal focus-visible:ring-[3px] focus-visible:outline-none"
+                    data-testid={`data-alternativa-${i + 2}`}
+                  />
+                </label>
               );
             })}
           </div>

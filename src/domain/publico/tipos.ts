@@ -29,6 +29,8 @@ export type Escolhas = {
   pacoteId?: Id;
   opcionais: { opcionalId: Id; quantidade: number }[];
   horasExtras: number;
+  /** 2ª e 3ª datas de preferência (Fase 6): só informam o buffet, não mudam o preço */
+  datasAlternativas?: DataCivil[];
 };
 
 export const ESCOLHAS_VAZIAS: Escolhas = { criancas: [], opcionais: [], horasExtras: 0 };

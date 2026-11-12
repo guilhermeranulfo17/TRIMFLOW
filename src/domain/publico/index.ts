@@ -11,3 +11,4 @@ export * from './vitrine';
 export * from './whatsapp';
 export * from './mensagens';
 export * from './pagina';
+export * from './datas-alternativas';
