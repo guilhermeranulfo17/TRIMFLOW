@@ -18,17 +18,20 @@ function ascii(texto: string): string {
 }
 
 /**
- * Nome do PDF: "Proposta 0042 - Buffet X - Ana Souza.pdf". O header Content-Disposition leva a
+ * Nome do PDF (ou da planilha, .csv): "Proposta 0042 - Buffet X - Ana Souza.pdf". O header Content-Disposition leva a
  * versão ASCII em `filename` e a UTF-8 em `filename*` (RFC 6266).
  */
-export function arquivoProposta(d: { numero: number; buffet: string; cliente?: string | null }): {
+export function arquivoProposta(
+  d: { numero: number; buffet: string; cliente?: string | null },
+  extensao: 'pdf' | 'csv' = 'pdf',
+): {
   nome: string;
   contentDisposition: string;
 } {
   const partes = [`Proposta ${numeroProposta(d.numero)}`, d.buffet, d.cliente]
     .filter((p): p is string => !!p && !!p.trim())
     .map(semCaracteresProibidos);
-  const nome = `${partes.join(' - ').slice(0, 150)}.pdf`;
+  const nome = `${partes.join(' - ').slice(0, 150)}.${extensao}`;
   const simples = ascii(nome).replace(/"/g, '');
   return {
     nome,

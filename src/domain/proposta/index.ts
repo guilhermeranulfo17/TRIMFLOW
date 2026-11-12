@@ -6,3 +6,4 @@ export * from './exemplo';
 export * from './temperatura';
 export * from './validade';
 export * from './visual';
+export * from './planilha';
