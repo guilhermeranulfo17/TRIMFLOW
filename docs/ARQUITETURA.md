@@ -2026,3 +2026,18 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   proteção contra fórmula.
 - **PDF:** o mesmo motor da proposta (`@react-pdf/renderer`, Manrope), rota incluída em
   `ROTAS_PDF`. Exemplos em `docs/capturas/ficha-cozinha/`.
+
+## 86. Proposta em planilha (novembro de 2026)
+
+- **"Baixar planilha"** ao lado de "Baixar PDF" na proposta do cliente (`/b/[slug]/proposta/
+[token]/planilha`, mesmo limite por IP do PDF, token antigo → 307 para a vigente) e no painel
+  (`/app/orcamentos/[id]/planilha`, RLS; nos botões do "+ Orçamento" e na lista de orçamentos do
+  lead). Baixar a planilha no painel não marca a proposta como enviada (o PDF marca).
+- **Conteúdo** (`planilhaDaProposta`, `domain/proposta/planilha`): desenha o mesmo
+  `ModeloProposta` da web e do PDF. Uma linha por item do investimento (tipo, descrição,
+  detalhe, valor), depois total, valor por convidado e condições de pagamento. Nada de
+  observação interna, motivo do desconto ou autor (teste de vazamento junto com o PDF).
+- **Formato:** o gerador das exportações (`domain/lgpd/csv`): `;`, UTF-8 com BOM e proteção
+  contra fórmula. Valores como na proposta ("R$ 1.234,56"); o desconto sai "R$ -297,50" porque
+  célula começando com "-" ganharia o apóstrofo da proteção e viraria texto.
+- Nome do arquivo: o do PDF com `.csv` (`arquivoProposta(…, 'csv')`).
