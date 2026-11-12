@@ -215,7 +215,8 @@ function estilosElegante(m: ModeloProposta) {
       lineHeight: 1.2,
       color: m.cores.destaque,
     },
-    cardapioSecao: { marginBottom: 8 },
+    cardapioSecao: { marginBottom: 8, alignItems: 'flex-start' },
+    fotoSecao: { width: 96, height: 64, objectFit: 'cover', marginRight: 12 },
     cardapioNome: {
       fontSize: 7.5,
       letterSpacing: 1,
@@ -353,6 +354,7 @@ function estilosAlegre(m: ModeloProposta) {
       padding: 8,
     },
     cardapioNome: { fontWeight: 800 },
+    fotoSecao: { width: 86, height: 58, objectFit: 'cover', borderRadius: 8, marginRight: 10 },
   });
 }
 
@@ -494,12 +496,23 @@ function Corpo({ m, s, imagens }: { m: ModeloProposta; s: Estilos; imagens: Imag
 
       {m.cardapio && (
         <Secao titulo={`Cardápio · ${m.cardapio.pacote}`} s={s}>
-          {m.cardapio.secoes.map((sec) => (
-            <View key={sec.nome} style={s.cardapioSecao} wrap={false}>
-              <Text style={s.cardapioNome}>{sec.nome}</Text>
-              <Text style={s.rotulo}>{sec.itens.join(', ')}</Text>
-            </View>
-          ))}
+          {m.cardapio.secoes.map((sec) => {
+            const foto = sec.foto ? (imagens.fotos[sec.foto] ?? null) : null;
+            return (
+              <View
+                key={sec.nome}
+                style={[s.cardapioSecao, foto ? { flexDirection: 'row' } : {}]}
+                wrap={false}
+              >
+                {/* eslint-disable-next-line jsx-a11y/alt-text -- Image do react-pdf não tem alt */}
+                {foto && <Image src={foto} style={s.fotoSecao} />}
+                <View style={{ flex: 1 }}>
+                  <Text style={s.cardapioNome}>{sec.nome}</Text>
+                  <Text style={s.rotulo}>{sec.itens.join(', ')}</Text>
+                </View>
+              </View>
+            );
+          })}
         </Secao>
       )}
 
@@ -714,7 +727,12 @@ async function logosDaProposta(m: ModeloProposta) {
 /** Todas as imagens da proposta, em paralelo. */
 export async function carregarImagensProposta(m: ModeloProposta): Promise<ImagensProposta> {
   const urls = [
-    ...new Set(m.investimento.linhas.map((l) => l.foto).filter((u): u is string => !!u)),
+    ...new Set(
+      [
+        ...m.investimento.linhas.map((l) => l.foto),
+        ...(m.cardapio?.secoes.map((sec) => sec.foto) ?? []),
+      ].filter((u): u is string => !!u),
+    ),
   ];
   const [logos, ...fotos] = await Promise.all([
     logosDaProposta(m),

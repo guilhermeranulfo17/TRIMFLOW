@@ -4,6 +4,8 @@ export const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'] as const;
 export const TAMANHO_MAXIMO_BYTES = 5 * 1024 * 1024;
 export const QUALIDADE_WEBP = 0.82;
 export const MAX_FOTOS_PACOTE = 6;
+/** Opcional: uma foto (a que vai na proposta, ao lado do item). */
+export const MAX_FOTOS_OPCIONAL = 1;
 
 export const LADO_MAXIMO = { logo: 512, capa: 1920, pacotes: 1600 } as const;
 export type TipoImagemUpload = keyof typeof LADO_MAXIMO;

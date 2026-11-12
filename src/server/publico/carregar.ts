@@ -7,6 +7,7 @@ import { capaPequenaDe } from '@/domain/imagem';
 import type { ContextoPreco, Id } from '@/domain/preco';
 import type { TextosComerciais } from '@/domain/proposta';
 import { montarVitrine, type ExtrasPacote, type VitrinePublica } from '@/domain/publico';
+import type { FotosCatalogo } from '@/server/proposta/versao';
 import { estiloEfetivo, type EstiloPagina, type Segmento } from '@/domain/publico/pagina';
 import { slugValido } from '@/domain/slug';
 import { urlPublicaMidia } from '@/lib/midia';
@@ -84,6 +85,8 @@ export async function lerSlugAtual(slug: string, comAnon: ComAnon = comAnonPadra
 export type ContextoPublico = {
   ctx: ContextoPreco;
   extras: Record<Id, ExtrasPacote>;
+  /** fotos do catálogo (caminhos), para congelar na versão (vitrineDoCatalogo) */
+  fotosCatalogo: FotosCatalogo;
   fuso: string;
   prazoPreReservaHoras: number;
   cancelamentoTexto: string | null;
@@ -111,9 +114,11 @@ type JsonContexto = {
   faixasIdade: LinhasCatalogo['faixasIdade'];
   pacotes: (LinhasCatalogo['pacotes'][number] & { descricao: string | null; fotos: string[] })[];
   faixasPreco: LinhasCatalogo['faixasPreco'];
-  secoesCardapio: LinhasCatalogo['secoesCardapio'];
+  secoesCardapio: (LinhasCatalogo['secoesCardapio'][number] & {
+    fotoUrl?: string | null;
+  })[];
   pacoteTiposEvento: LinhasCatalogo['pacoteTiposEvento'];
-  opcionais: LinhasCatalogo['opcionais'];
+  opcionais: (LinhasCatalogo['opcionais'][number] & { fotos?: string[] })[];
   opcionalPacotes: LinhasCatalogo['opcionalPacotes'];
   opcionalTiposEvento: LinhasCatalogo['opcionalTiposEvento'];
   faixasDeslocamento: LinhasCatalogo['faixasDeslocamento'];
@@ -143,6 +148,16 @@ export async function lerContextoPublico(
       extras: Object.fromEntries(
         j.pacotes.map((p) => [p.id, { descricao: p.descricao, fotos: p.fotos ?? [] }]),
       ),
+      fotosCatalogo: {
+        pacotes: j.pacotes.map((p) => ({ id: p.id, descricao: p.descricao, fotos: p.fotos ?? [] })),
+        secoes: j.secoesCardapio.map((s) => ({
+          pacoteId: s.pacoteId,
+          nome: s.nome,
+          ordem: s.ordem,
+          fotoUrl: s.fotoUrl ?? null,
+        })),
+        opcionais: j.opcionais.map((o) => ({ id: o.id, fotos: o.fotos ?? [] })),
+      },
       fuso: j.fuso,
       prazoPreReservaHoras: j.regras.prazoPreReservaHoras,
       cancelamentoTexto: j.regras.cancelamentoTexto,

@@ -1,10 +1,10 @@
 import { somarDias } from '@/domain/dates';
 import type { ContextoPreco, ResultadoOrcamento } from '@/domain/preco';
-import type { Id } from '@/domain/preco';
 import {
   congelarConteudo,
   type ConteudoCongelado,
   type TextosComerciais,
+  type VitrineOpcionais,
   type VitrinePacotes,
 } from '@/domain/proposta';
 import type { Escolhas } from '@/domain/publico';
@@ -48,8 +48,8 @@ export function prepararVersao(d: {
   aberturaModelo: string | null;
   clienteNome: string;
   buffetNome: string;
-  /** descrição e foto de cada pacote (vitrinePacotesDe); sem ela, a versão sai sem foto */
-  vitrinePacotes?: VitrinePacotes;
+  /** fotos do catálogo (vitrineDoCatalogo); sem ela, a versão sai sem foto */
+  vitrine?: VitrineCatalogo;
 }): DadosVersao {
   const { ctx, escolhas: e, resultado } = d;
   const ativos = ctx.espacos.filter((x) => x.ativo);
@@ -82,23 +82,44 @@ export function prepararVersao(d: {
       aberturaModelo: d.aberturaModelo,
       clienteNome: d.clienteNome,
       buffetNome: d.buffetNome,
-      vitrinePacotes: d.vitrinePacotes,
+      vitrinePacotes: d.vitrine?.pacotes,
+      vitrineOpcionais: d.vitrine?.opcionais,
     }),
   };
 }
 
+/** Fotos do catálogo como estão no banco (caminhos no bucket). */
+export type FotosCatalogo = {
+  pacotes: { id: string; descricao: string | null; fotos: string[] }[];
+  secoes: { pacoteId: string; nome: string; ordem: number; fotoUrl: string | null }[];
+  opcionais: { id: string; fotos: string[] }[];
+};
+
+export type VitrineCatalogo = { pacotes: VitrinePacotes; opcionais: VitrineOpcionais };
+
 /**
- * Descrição e URL pública da PRIMEIRA foto de cada pacote, para congelar na versão: o PDF de
- * uma versão emitida mostra sempre a mesma foto (o arquivo não é apagado enquanto alguma
- * proposta o usa: ver fotosEmUso em server/actions/empresa/pacotes).
+ * URLs públicas a congelar na versão: a PRIMEIRA foto de cada pacote e de cada opcional e a
+ * foto de cada seção do cardápio. O PDF de uma versão emitida mostra sempre as mesmas fotos (o
+ * arquivo não é apagado enquanto alguma proposta o usa: server/catalogo/fotos-em-uso).
  */
-export function vitrinePacotesDe(
-  pacotes: Record<Id, { descricao: string | null; fotos: string[] }>,
-): VitrinePacotes {
-  return Object.fromEntries(
-    Object.entries(pacotes).map(([id, p]) => [
-      id,
-      { descricao: p.descricao, foto: urlPublicaMidia(p.fotos[0] ?? null) },
-    ]),
-  );
+export function vitrineDoCatalogo(f: FotosCatalogo | undefined): VitrineCatalogo {
+  // entrada do cache de antes desta versão (sem a lista): a versão sai sem foto
+  if (!f) return { pacotes: {}, opcionais: {} };
+  return {
+    pacotes: Object.fromEntries(
+      f.pacotes.map((p) => [
+        p.id,
+        {
+          descricao: p.descricao,
+          foto: urlPublicaMidia(p.fotos[0] ?? null),
+          secoes: f.secoes
+            .filter((s) => s.pacoteId === p.id)
+            .map((s) => ({ nome: s.nome, ordem: s.ordem, foto: urlPublicaMidia(s.fotoUrl) })),
+        },
+      ]),
+    ),
+    opcionais: Object.fromEntries(
+      f.opcionais.map((o) => [o.id, { foto: urlPublicaMidia(o.fotos[0] ?? null) }]),
+    ),
+  };
 }

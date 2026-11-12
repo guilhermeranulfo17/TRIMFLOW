@@ -1956,3 +1956,27 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   foto) em `docs/capturas/pdf-premium/`. Fotos e logos dos exemplos são ilustrações geradas.
 - Migration `20261112200001_proposta_premium.sql` (aditiva): coluna nullable com check, grant de
   coluna e `create or replace` de `publico.proposta` com duas chaves a mais.
+
+## 83. Fotos em opcionais e nas seções do cardápio (novembro de 2026)
+
+- **Banco** (`20261113000001_fotos_catalogo.sql`, aditiva): `opcionais.fotos` (jsonb, lista de
+  caminhos, até 6 no banco e 1 na tela) e `secoes_cardapio.foto_url` (texto nulo). Apesar do
+  nome, `foto_url` guarda o **caminho** no bucket, como `pacotes.fotos`; a URL é montada pelo
+  servidor. Checks com `_fotos_catalogo_da_empresa` e regex garantem que só entra caminho da
+  pasta da própria empresa (`{empresa_id}/pacotes/{uuid}.webp`). RLS, UPDATE só do dono e
+  `_exigir_escrita` já existiam nas duas tabelas.
+- **Storage:** as fotos de opcional e de seção usam a mesma pasta `pacotes/`, o mesmo
+  componente (`UploadImagem`) e as mesmas regras de tamanho e formato. Assim, nenhuma policy do
+  Storage mudou.
+- **Telas:** `SecaoFotos` virou componente de `components/app/empresa` (pacote: até 6; opcional:
+  1, salva na hora). No cardápio, cada seção tem a sua foto dentro do formulário (vale ao
+  salvar o cardápio); `salvarCardapio` regrava as seções com a foto.
+- **Arquivos apagados:** `fotosAindaEmUso` (`server/catalogo/fotos-em-uso`) é a regra única:
+  depois de gravar, só apaga do Storage o arquivo que não está em pacote, opcional, seção nem no
+  `conteudo` de nenhuma versão de proposta. Excluir pacote leva junto as fotos das seções.
+- **Proposta:** o conteúdo congelado ganhou `opcionais` (nome, descrição e foto de cada opcional
+  escolhido, ligados à linha do investimento pelo nome) e `foto` em cada seção do cardápio
+  (ligada por ordem e nome). Versões antigas abrem sem foto. O link público recebe as colunas
+  novas sem mudar função SQL (`_contexto_da_empresa` usa `to_jsonb` da linha; o contexto fica
+  no servidor). `vitrineDoCatalogo` aceita a entrada antiga do cache (sem fotos) e só não
+  congela foto.

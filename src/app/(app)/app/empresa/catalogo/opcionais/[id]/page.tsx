@@ -3,9 +3,15 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { AcoesItemCatalogo } from '@/components/app/empresa/acoes-item-catalogo';
 import { CabecalhoEditor } from '@/components/app/empresa/cabecalho-editor';
+import { SecaoFotos } from '@/components/app/empresa/secao-fotos';
+import { MAX_FOTOS_OPCIONAL } from '@/domain/imagem';
 import { LinkTestarPrecos } from '@/components/app/empresa/link-testar-precos';
 import { idSchema } from '@/domain/validacao/comum';
-import { duplicarOpcional, excluirOpcional } from '@/server/actions/empresa/opcionais';
+import {
+  duplicarOpcional,
+  excluirOpcional,
+  salvarFotosOpcional,
+} from '@/server/actions/empresa/opcionais';
 import { exigirSessao } from '@/server/auth/sessao';
 import { carregarEmUso } from '@/server/catalogo/em-uso';
 import {
@@ -90,6 +96,15 @@ export default async function EditarOpcionalPage({ params }: Props) {
           qtdMax: opcional.qtdMax,
           ativo: opcional.ativo,
         }}
+      />
+      <SecaoFotos
+        empresaId={usuario.empresa.id}
+        fotos={opcional.fotos}
+        somenteLeitura={somenteLeitura}
+        salvar={salvarFotosOpcional.bind(null, opcional.id)}
+        max={MAX_FOTOS_OPCIONAL}
+        descricao="Aparece na proposta, ao lado do opcional, quando o cliente escolhe."
+        vazio="Nenhuma foto ainda. Uma boa foto ajuda o cliente a querer o opcional."
       />
       <FormVinculos
         opcionalId={opcional.id}

@@ -322,11 +322,26 @@ export function PropostaWeb({ modelo: m }: { modelo: ModeloProposta }) {
 
       {m.cardapio && (
         <Secao visual={v} titulo={`Cardápio · ${m.cardapio.pacote}`} id="sec-cardapio">
-          <div className="grid gap-2 text-sm">
+          <div className="grid gap-3 text-sm">
             {m.cardapio.secoes.map((s) => (
-              <div key={s.nome}>
-                <p className="font-semibold">{s.nome}</p>
-                <p className="text-muted-foreground">{s.itens.join(', ')}</p>
+              <div key={s.nome} className={s.foto ? 'flex items-start gap-3' : ''}>
+                {s.foto && (
+                  // eslint-disable-next-line @next/next/no-img-element -- foto já no tamanho certo (§18)
+                  <img
+                    src={s.foto}
+                    alt={s.nome}
+                    width={320}
+                    height={213}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-[3/2] w-24 shrink-0 rounded-[var(--radius-foto)] object-cover sm:w-32"
+                    data-testid="foto-secao"
+                  />
+                )}
+                <div className="min-w-0">
+                  <p className="font-semibold">{s.nome}</p>
+                  <p className="text-muted-foreground">{s.itens.join(', ')}</p>
+                </div>
               </div>
             ))}
           </div>

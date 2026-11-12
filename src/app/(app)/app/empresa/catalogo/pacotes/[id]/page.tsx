@@ -4,12 +4,15 @@ import { notFound } from 'next/navigation';
 import { AcoesItemCatalogo } from '@/components/app/empresa/acoes-item-catalogo';
 import { CabecalhoEditor } from '@/components/app/empresa/cabecalho-editor';
 import { LinkTestarPrecos } from '@/components/app/empresa/link-testar-precos';
+import { SecaoFotos } from '@/components/app/empresa/secao-fotos';
 import { SecaoSelecao } from '@/components/app/empresa/secao-selecao';
+import { MAX_FOTOS_PACOTE } from '@/domain/imagem';
 import { resumirPrecoOpcional } from '@/domain/catalogo/resumo';
 import { idSchema } from '@/domain/validacao/comum';
 import {
   duplicarPacote,
   excluirPacote,
+  salvarFotosPacote,
   salvarInclusosPacote,
   salvarTiposEventoPacote,
 } from '@/server/actions/empresa/pacotes';
@@ -30,7 +33,6 @@ import { FormDadosPacote } from '../form-dados-pacote';
 import { FormCardapio } from './form-cardapio';
 import { FormCriancas } from './form-criancas';
 import { FormPrecoPacote } from './form-preco-pacote';
-import { SecaoFotos } from './secao-fotos';
 
 export const metadata: Metadata = { title: 'Editar pacote' };
 
@@ -169,15 +171,21 @@ export default async function EditarPacotePage({ params }: Props) {
         onSalvar={salvarTiposEventoPacote.bind(null, pacote.id)}
       />
       <SecaoFotos
-        pacoteId={pacote.id}
         empresaId={usuario.empresa.id}
         fotos={pacote.fotos}
         somenteLeitura={somenteLeitura}
+        salvar={salvarFotosPacote.bind(null, pacote.id)}
+        max={MAX_FOTOS_PACOTE}
+        descricao={`Até ${MAX_FOTOS_PACOTE} fotos. A primeira é a capa do pacote e vai na proposta.`}
+        vazio="Nenhuma foto ainda. Pacotes com foto chamam mais atenção do cliente."
       />
       <FormCardapio
         pacoteId={pacote.id}
+        empresaId={usuario.empresa.id}
         somenteLeitura={somenteLeitura}
-        inicial={{ secoes: dados.secoes.map((s) => ({ nome: s.nome, itens: s.itens })) }}
+        inicial={{
+          secoes: dados.secoes.map((s) => ({ nome: s.nome, itens: s.itens, foto: s.fotoUrl })),
+        }}
       />
       <FormCriancas
         pacoteId={pacote.id}
