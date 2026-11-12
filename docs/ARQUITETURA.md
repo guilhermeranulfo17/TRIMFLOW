@@ -1952,7 +1952,7 @@ vergonha.
 - **Exemplos:** `GERAR_PDF_EXEMPLOS=1 pnpm vitest run --project unit
 tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre, com e sem
   foto) em `docs/capturas/pdf-premium/`. Fotos e logos dos exemplos são ilustrações geradas.
-- Migration `20261112000001_proposta_premium.sql` (aditiva): coluna nullable com check, grant de
+- Migration `20261112200001_proposta_premium.sql` (aditiva): coluna nullable com check, grant de
   coluna e `create or replace` de `publico.proposta` com duas chaves a mais.
 
 ## 83. Fotos em opcionais e nas seções do cardápio (novembro de 2026)
