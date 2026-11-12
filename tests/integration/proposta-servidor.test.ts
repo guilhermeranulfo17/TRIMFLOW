@@ -1,7 +1,7 @@
 import { sql as sqlDrizzle } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { hojeNoFuso } from '@/domain/dates';
-import { textoDoModelo } from '@/domain/proposta';
+import { planilhaDaProposta, textoDoModelo } from '@/domain/proposta';
 import { montarPrevia, type Escolhas } from '@/domain/publico';
 import { criarComAnon } from '@/server/db/anon';
 import { criarDb } from '@/server/db/client';
@@ -114,7 +114,11 @@ describe('proposta: congelamento, web e PDF', () => {
       await sql`update public.orcamentos set observacoes_internas = 'SEGREDO-PDF-789',
         desconto_motivo = 'MOTIVO-PDF-012' where token = ${token}`;
       const p = await carregarPropostaPublica('buffet-demo', token, comAnon);
-      const texto = textoDoModelo(p!.modelo) + JSON.stringify(p!.versao) + JSON.stringify(p!.meta);
+      const texto =
+        textoDoModelo(p!.modelo) +
+        JSON.stringify(p!.versao) +
+        JSON.stringify(p!.meta) +
+        planilhaDaProposta(p!.modelo);
       expect(texto).not.toContain('SEGREDO-PDF-789');
       expect(texto).not.toContain('MOTIVO-PDF-012');
     } finally {
