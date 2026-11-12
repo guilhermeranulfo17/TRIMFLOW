@@ -1,15 +1,18 @@
 import 'server-only';
-import { and, asc, count, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNotNull } from 'drizzle-orm';
 import { hojeNoFuso } from '@/domain/dates';
 import { percentualTextoParaBp } from '@/domain/percent';
 import type { ContextoPreco, Id } from '@/domain/preco';
 import type { TextosComerciais } from '@/domain/proposta';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { carregarContexto } from '@/server/catalogo/carregar';
+import type { FotosCatalogo } from '@/server/proposta/versao';
 import {
   leads,
+  opcionais,
   orcamentos,
   pacotes,
+  secoesCardapio,
   regrasComerciais,
   reservas,
   tiposEvento,
@@ -62,14 +65,26 @@ export async function carregarBaseInterna(usuario: UsuarioAtual): Promise<BaseIn
   };
 }
 
-/** Descrição e fotos (caminhos) de cada pacote, para congelar a foto na versão nova. */
-export async function carregarExtrasPacotes(
-  usuario: UsuarioAtual,
-): Promise<Record<Id, { descricao: string | null; fotos: string[] }>> {
-  const linhas = await comUsuario(usuario.id, (tx) =>
-    tx.select({ id: pacotes.id, descricao: pacotes.descricao, fotos: pacotes.fotos }).from(pacotes),
-  );
-  return Object.fromEntries(linhas.map((l) => [l.id, { descricao: l.descricao, fotos: l.fotos }]));
+/** Fotos do catálogo (caminhos) e descrição dos pacotes, para congelar na versão nova. */
+export async function carregarFotosCatalogo(usuario: UsuarioAtual): Promise<FotosCatalogo> {
+  return comUsuario(usuario.id, async (tx) => {
+    const [p, s, o] = await Promise.all([
+      tx
+        .select({ id: pacotes.id, descricao: pacotes.descricao, fotos: pacotes.fotos })
+        .from(pacotes),
+      tx
+        .select({
+          pacoteId: secoesCardapio.pacoteId,
+          nome: secoesCardapio.nome,
+          ordem: secoesCardapio.ordem,
+          fotoUrl: secoesCardapio.fotoUrl,
+        })
+        .from(secoesCardapio)
+        .where(isNotNull(secoesCardapio.fotoUrl)),
+      tx.select({ id: opcionais.id, fotos: opcionais.fotos }).from(opcionais),
+    ]);
+    return { pacotes: p, secoes: s, opcionais: o };
+  });
 }
 
 export type LeadPorWhatsapp = { id: string; nome: string; orcamentos: number } | null;

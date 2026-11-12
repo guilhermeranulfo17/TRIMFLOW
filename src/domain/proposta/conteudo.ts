@@ -25,7 +25,8 @@ export type ConteudoCongelado = {
   pacote: {
     nome: string;
     duracaoInclusaMin: number;
-    secoes: { nome: string; itens: string[] }[];
+    /** foto: URL pública da foto da seção (desde as fotos do catálogo; antigas não têm) */
+    secoes: { nome: string; itens: string[]; foto?: string | null }[];
     /**
      * Descrição e URL pública da primeira foto do pacote no momento da conclusão (desde a
      * proposta premium). Versões antigas não têm os campos: saem sem foto e sem descrição.
@@ -33,6 +34,11 @@ export type ConteudoCongelado = {
     descricao?: string | null;
     foto?: string | null;
   } | null;
+  /**
+   * Opcionais escolhidos com descrição e URL da primeira foto (desde as fotos do catálogo).
+   * Ligados à linha do investimento pelo nome. Versões antigas não têm a lista.
+   */
+  opcionais?: { nome: string; descricao: string | null; foto: string | null }[];
   convidados: { adultos: number; criancas: { rotulo: string; quantidade: number }[] };
   espaco: { nome: string; noLocalDoCliente: boolean; localCliente: string | null } | null;
   abertura: string | null;
@@ -48,8 +54,21 @@ export type ConteudoCongelado = {
 
 export type TextosComerciais = Omit<ConteudoCongelado['textos'], 'sinalBp'>;
 
-/** Descrição e URL pública da primeira foto de cada pacote (o servidor monta a URL). */
-export type VitrinePacotes = Record<Id, { descricao: string | null; foto: string | null }>;
+/**
+ * Descrição e URL pública da primeira foto de cada pacote e a foto de cada seção do cardápio
+ * (ligada por ordem e nome). O servidor monta as URLs.
+ */
+export type VitrinePacotes = Record<
+  Id,
+  {
+    descricao: string | null;
+    foto: string | null;
+    secoes?: { nome: string; ordem: number; foto: string | null }[];
+  }
+>;
+
+/** URL pública da primeira foto de cada opcional (a descrição vem do contexto). */
+export type VitrineOpcionais = Record<Id, { foto: string | null }>;
 
 export function congelarConteudo(d: {
   ctx: ContextoPreco;
@@ -61,6 +80,8 @@ export function congelarConteudo(d: {
   buffetNome: string;
   /** descrição e foto do pacote escolhido; sem a entrada, a versão sai sem foto */
   vitrinePacotes?: VitrinePacotes;
+  /** fotos dos opcionais; sem a entrada, os opcionais saem sem foto */
+  vitrineOpcionais?: VitrineOpcionais;
 }): ConteudoCongelado {
   const { ctx, escolhas: e } = d;
   const pacote = ctx.pacotes.find((p) => p.id === e.pacoteId) ?? null;
@@ -75,6 +96,25 @@ export function congelarConteudo(d: {
     .filter((c) => c.quantidade > 0)
     .map((c) => ({ rotulo: rotuloFaixa(c.faixaIdadeId), quantidade: c.quantidade }));
   const pessoas = (e.adultos ?? 0) + criancas.reduce((n, c) => n + c.quantidade, 0);
+  const vitrinePacote = pacote ? d.vitrinePacotes?.[pacote.id] : undefined;
+  const fotoDaSecao = (s: { nome: string; ordem: number }) =>
+    vitrinePacote?.secoes?.find((x) => x.ordem === s.ordem && x.nome === s.nome)?.foto ??
+    vitrinePacote?.secoes?.find((x) => x.nome === s.nome)?.foto ??
+    null;
+  const opcionais = e.opcionais
+    .filter((o) => o.quantidade > 0)
+    .flatMap((o) => {
+      const op = ctx.opcionais.find((x) => x.id === o.opcionalId);
+      return op
+        ? [
+            {
+              nome: op.nome,
+              descricao: textoOuNull(op.descricao),
+              foto: d.vitrineOpcionais?.[op.id]?.foto ?? null,
+            },
+          ]
+        : [];
+    });
   return {
     formato: 1,
     pacote: pacote
@@ -84,11 +124,12 @@ export function congelarConteudo(d: {
           secoes: [...pacote.secoes]
             .sort((a, b) => a.ordem - b.ordem)
             .filter((s) => s.itens.length > 0)
-            .map((s) => ({ nome: s.nome, itens: s.itens })),
-          descricao: textoOuNull(d.vitrinePacotes?.[pacote.id]?.descricao),
-          foto: d.vitrinePacotes?.[pacote.id]?.foto ?? null,
+            .map((s) => ({ nome: s.nome, itens: s.itens, foto: fotoDaSecao(s) })),
+          descricao: textoOuNull(vitrinePacote?.descricao),
+          foto: vitrinePacote?.foto ?? null,
         }
       : null,
+    opcionais,
     convidados: { adultos: e.adultos ?? 0, criancas },
     espaco: espaco
       ? {
@@ -157,7 +198,7 @@ export type LinhaInvestimento = {
   detalhe: string | null;
   valor: string;
   negativo: boolean;
-  /** foto congelada do item (hoje só o pacote) e texto de apresentação dele */
+  /** foto congelada do item (pacote e opcionais) e texto de apresentação dele */
   foto: string | null;
   texto: string | null;
 };
@@ -193,7 +234,10 @@ export type ModeloProposta = {
     ultimaParcela: string | null;
     texto: string | null;
   };
-  cardapio: { pacote: string; secoes: { nome: string; itens: string[] }[] } | null;
+  cardapio: {
+    pacote: string;
+    secoes: { nome: string; itens: string[]; foto: string | null }[];
+  } | null;
   incluso: { duracao: string | null; naoIncluso: string | null } | null;
   politicas: { cancelamento: string | null; alteracaoConvidados: string | null } | null;
   observacoes: string | null;
@@ -253,11 +297,16 @@ export function montarConteudo(v: VersaoProposta, buffet: BuffetProposta): Model
       : c.espaco.nome
     : v.espaco;
 
-  // A foto e a descrição do pacote vão na linha do pacote (só uma por versão).
+  // A foto e a descrição do pacote vão na linha do pacote (só uma por versão); as de cada
+  // opcional, na linha do opcional de mesmo nome (cada um usado uma vez).
   let pacoteUsado = false;
+  const opcionaisLivres = [...(c?.opcionais ?? [])];
   const linhas: LinhaInvestimento[] = v.itens.map((i) => {
     const ehPacote = i.tipo === 'pacote' && !pacoteUsado && !!c?.pacote;
     if (ehPacote) pacoteUsado = true;
+    const iOpcional =
+      i.tipo === 'opcional' ? opcionaisLivres.findIndex((o) => o.nome === i.descricao) : -1;
+    const opcional = iOpcional >= 0 ? opcionaisLivres.splice(iOpcional, 1)[0]! : null;
     return {
       tipo: i.tipo,
       descricao: i.descricao,
@@ -267,8 +316,8 @@ export function montarConteudo(v: VersaoProposta, buffet: BuffetProposta): Model
           ? `- ${formatBRL(-i.subtotalCentavos)}`
           : formatBRL(i.subtotalCentavos),
       negativo: i.subtotalCentavos < 0,
-      foto: ehPacote ? fotoValida(c!.pacote!.foto) : null,
-      texto: ehPacote ? textoOuNull(c!.pacote!.descricao) : null,
+      foto: ehPacote ? fotoValida(c!.pacote!.foto) : fotoValida(opcional?.foto),
+      texto: ehPacote ? textoOuNull(c!.pacote!.descricao) : textoOuNull(opcional?.descricao),
     };
   });
 
@@ -325,7 +374,14 @@ export function montarConteudo(v: VersaoProposta, buffet: BuffetProposta): Model
     },
     cardapio:
       c?.pacote && c.pacote.secoes.length > 0
-        ? { pacote: c.pacote.nome, secoes: c.pacote.secoes }
+        ? {
+            pacote: c.pacote.nome,
+            secoes: c.pacote.secoes.map((s) => ({
+              nome: s.nome,
+              itens: s.itens,
+              foto: fotoValida(s.foto),
+            })),
+          }
         : null,
     incluso: c
       ? {

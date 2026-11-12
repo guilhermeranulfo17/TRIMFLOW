@@ -67,6 +67,15 @@ const arquivos = new Map<string, Buffer>();
 beforeAll(async () => {
   arquivos.set('/casamento.webp', await ilustracao(['#F5EBDD', '#C8A27A', '#FFFFFF']));
   arquivos.set('/infantil.webp', await ilustracao(['#FDE68A', '#F472B6', '#38BDF8']));
+  const paletas: [string, string, string][] = [
+    ['#E8DCCB', '#9C7A54', '#FFFFFF'],
+    ['#DDE7E1', '#5E8A72', '#FFFFFF'],
+    ['#F1E3E6', '#B07A86', '#FFFFFF'],
+    ['#FFF1C2', '#F59E0B', '#FDE68A'],
+    ['#DBEAFE', '#38BDF8', '#FFFFFF'],
+  ];
+  for (let i = 0; i < 8; i++)
+    arquivos.set(`/item-${i}.webp`, await ilustracao(paletas[i % paletas.length]!, 960, 640));
   arquivos.set('/logo-elegante.webp', await logoExemplo('#8A6A3F', 'S'));
   arquivos.set('/logo-alegre.webp', await logoExemplo('#DB2777', 'P'));
   servidor = createServer((req, res) => {
@@ -97,6 +106,9 @@ function versao(
   segmento: 'eventos' | 'infantil',
   foto: string | null,
 ): { versao: VersaoProposta; cliente: string } {
+  // com foto: o pacote, cada opcional escolhido e cada seção do cardápio têm a sua
+  let n = 0;
+  const outra = () => (foto ? `${base}/item-${n++ % 8}.webp` : null);
   const ctx = contextoDoModelo(MODELOS[segmento]);
   const tipo = ctx.tiposEvento[0]!;
   const pacote = [...ctx.pacotes]
@@ -140,7 +152,16 @@ function versao(
           'Olá, {nome}! Preparamos com carinho esta proposta para o seu {tipo} em {data}, com {convidados} convidados.',
         clienteNome: cliente,
         buffetNome: 'Buffet',
-        vitrinePacotes: { [pacote.id]: { descricao: descricao ?? null, foto } },
+        vitrinePacotes: {
+          [pacote.id]: {
+            descricao: descricao ?? null,
+            foto,
+            secoes: pacote.secoes.map((s) => ({ nome: s.nome, ordem: s.ordem, foto: outra() })),
+          },
+        },
+        vitrineOpcionais: Object.fromEntries(
+          escolhas.opcionais.map((o) => [o.opcionalId, { foto: outra() }]),
+        ),
       }),
       itens: r.linhas.map((l) => ({
         tipo: l.tipo,
@@ -208,9 +229,21 @@ describe('PDF premium da proposta', () => {
     const pdf = await gerarPdfProposta(m);
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(pdf.length).toBeLessThan(300 * 1024);
-    // logo (capa ou círculo e marca d'água) sempre; a foto do pacote é o único JPEG
+    // logo (capa ou círculo e marca d'água) sempre; as fotos (pacote, opcionais e seções do
+    // cardápio) são os únicos JPEG
+    const fotos = new Set(
+      [
+        ...m.investimento.linhas.map((l) => l.foto),
+        ...m.cardapio!.secoes.map((x) => x.foto),
+      ].filter(Boolean),
+    );
     expect(imagensNoPdf(pdf)).toBeGreaterThan(0);
-    expect(fotosJpegNoPdf(pdf)).toBe(foto ? 1 : 0);
+    expect(fotos.size > 2).toBe(foto);
+    expect(fotosJpegNoPdf(pdf)).toBe(fotos.size);
+    if (foto) {
+      expect(m.investimento.linhas.filter((l) => l.tipo === 'opcional' && l.foto)).toHaveLength(2);
+      expect(m.cardapio!.secoes.every((x) => x.foto)).toBe(true);
+    }
     // elegante tem capa: o investimento começa na página 2
     expect(paginasNoPdf(pdf)).toBeGreaterThanOrEqual(v === 'elegante' ? 2 : 1);
     if (process.env.GERAR_PDF_EXEMPLOS === '1') {

@@ -14,8 +14,8 @@ import { urlPublicaMidia } from '@/lib/midia';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { carregarBaseInterna, carregarExtrasPacotes } from '@/server/orcamentos/carregar';
-import { prepararVersao, vitrinePacotesDe } from './versao';
+import { carregarBaseInterna, carregarFotosCatalogo } from '@/server/orcamentos/carregar';
+import { prepararVersao, vitrineDoCatalogo } from './versao';
 
 export const CLIENTE_EXEMPLO = 'Ana Souza';
 
@@ -26,9 +26,9 @@ export const CLIENTE_EXEMPLO = 'Ana Souza';
 export async function montarPropostaExemplo(
   usuario: UsuarioAtual,
 ): Promise<{ modelo: ModeloProposta; buffet: BuffetProposta } | null> {
-  const [base, extrasPacotes, empresa] = await Promise.all([
+  const [base, fotosCatalogo, empresa] = await Promise.all([
     carregarBaseInterna(usuario),
-    carregarExtrasPacotes(usuario),
+    carregarFotosCatalogo(usuario),
     comUsuario(usuario.id, async (tx) => {
       const [e] = await tx.select().from(empresas).where(eq(empresas.id, usuario.empresa.id));
       return e;
@@ -50,7 +50,7 @@ export async function montarPropostaExemplo(
     aberturaModelo: base.aberturaPorTipo[escolhas.tipoEventoId!] ?? null,
     clienteNome: CLIENTE_EXEMPLO,
     buffetNome: empresa.nome,
-    vitrinePacotes: vitrinePacotesDe(extrasPacotes),
+    vitrine: vitrineDoCatalogo(fotosCatalogo),
   });
   const turno = base.ctx.turnos.find((t) => t.id === escolhas.turnoId);
   const buffet: BuffetProposta = {

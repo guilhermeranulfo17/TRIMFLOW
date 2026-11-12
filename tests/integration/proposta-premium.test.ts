@@ -6,7 +6,7 @@ import { criarComAnon } from '@/server/db/anon';
 import { criarDb } from '@/server/db/client';
 import { carregarPropostaPublica } from '@/server/proposta/carregar';
 import { gerarPdfProposta } from '@/server/proposta/pdf';
-import { prepararVersao, vitrinePacotesDe } from '@/server/proposta/versao';
+import { prepararVersao, vitrineDoCatalogo } from '@/server/proposta/versao';
 import { lerContextoPublico } from '@/server/publico/carregar';
 import { comoUsuario, conectar, esperarErroSql, IDS, urlBancoTeste } from '../support/db';
 
@@ -64,7 +64,7 @@ async function concluirComFoto() {
     aberturaModelo: null,
     clienteNome: 'Noiva Teste',
     buffetNome: 'Buffet Demo',
-    vitrinePacotes: vitrinePacotesDe(contexto.extras),
+    vitrine: vitrineDoCatalogo(contexto.fotosCatalogo),
   });
   const token = await comAnon(async (tx) => {
     const [t] = await tx.execute<{ token: string }>(sqlDrizzle`select publico.iniciar_orcamento(
