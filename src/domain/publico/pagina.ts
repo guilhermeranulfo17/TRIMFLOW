@@ -1,4 +1,5 @@
 import { formatBRL } from '../money';
+import { modeloVisualEfetivo, modeloVisualValido, type ModeloVisual } from '../proposta/visual';
 import type { VitrinePublica } from './vitrine';
 
 /*
@@ -34,6 +35,33 @@ export function estiloValido(v: unknown): v is EstiloPagina {
 export function estiloEfetivo(estilo: string | null | undefined, segmento: Segmento): EstiloPagina {
   return estiloValido(estilo) ? estilo : ESTILO_DO_SEGMENTO[segmento];
 }
+
+/**
+ * Modelo visual da página pública (§84): o escolhido para a página ou, sem escolha, o mesmo da
+ * proposta (que, sem escolha, vem do tipo de buffet: infantil = alegre; eventos e domicílio =
+ * elegante). "Alegre" é a página de antes, com o estilo (festivo, elegante, limpo) do dono.
+ */
+export function modeloPaginaEfetivo(
+  modeloPagina: string | null | undefined,
+  modeloProposta: string | null | undefined,
+  segmento: string | null | undefined,
+): ModeloVisual {
+  return modeloVisualValido(modeloPagina)
+    ? modeloPagina
+    : modeloVisualEfetivo(modeloProposta, segmento);
+}
+
+export const ROTULO_MODELO_PAGINA: Record<ModeloVisual, { nome: string; descricao: string }> = {
+  elegante: {
+    nome: 'Elegante',
+    descricao:
+      'Para casamento e 15 anos: capa em tela cheia, títulos com serifa, muito espaço e galeria em grade.',
+  },
+  alegre: {
+    nome: 'Alegre',
+    descricao: 'Para festa infantil: cores da marca em blocos e o estilo que você escolher abaixo.',
+  },
+};
 
 export const LIMITES_PAGINA = {
   slogan: 80,

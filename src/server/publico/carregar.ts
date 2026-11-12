@@ -8,7 +8,13 @@ import type { ContextoPreco, Id } from '@/domain/preco';
 import type { TextosComerciais } from '@/domain/proposta';
 import { montarVitrine, type ExtrasPacote, type VitrinePublica } from '@/domain/publico';
 import type { FotosCatalogo } from '@/server/proposta/versao';
-import { estiloEfetivo, type EstiloPagina, type Segmento } from '@/domain/publico/pagina';
+import {
+  estiloEfetivo,
+  modeloPaginaEfetivo,
+  type EstiloPagina,
+  type Segmento,
+} from '@/domain/publico/pagina';
+import type { ModeloVisual } from '@/domain/proposta/visual';
 import { slugValido } from '@/domain/slug';
 import { urlPublicaMidia } from '@/lib/midia';
 import { camelizar, montarContexto, type LinhasCatalogo } from '@/server/catalogo/montar-contexto';
@@ -267,7 +273,11 @@ export type FotoPublica = {
 
 export type PaginaPublica = {
   segmento: Segmento;
+  /** modelo visual efetivo da página (§84); elegante força o estilo "elegante" */
+  modelo: ModeloVisual;
   estilo: EstiloPagina;
+  /** estilo do modelo alegre (o escolhido pelo dono ou o do segmento), para a prévia */
+  estiloAlegre: EstiloPagina;
   slogan: string | null;
   diferenciais: string[];
   bairro: string | null;
@@ -282,6 +292,9 @@ type JsonPagina = {
   segmento: Segmento;
   slogan: string | null;
   estilo: string | null;
+  /** desde a página elegante; ausentes enquanto o banco não tiver a migration */
+  modeloPagina?: string | null;
+  modeloProposta?: string | null;
   diferenciais: string[] | null;
   bairro: string | null;
   endereco: string | null;
@@ -308,9 +321,12 @@ export async function lerPagina(
   );
   if (!linha?.p) return null;
   const j = camelizar<JsonPagina>(linha.p);
+  const modelo = modeloPaginaEfetivo(j.modeloPagina, j.modeloProposta, j.segmento);
   return {
     segmento: j.segmento,
-    estilo: estiloEfetivo(j.estilo, j.segmento),
+    modelo,
+    estilo: modelo === 'elegante' ? 'elegante' : estiloEfetivo(j.estilo, j.segmento),
+    estiloAlegre: estiloEfetivo(j.estilo, j.segmento),
     slogan: j.slogan,
     diferenciais: j.diferenciais ?? [],
     bairro: j.bairro,
