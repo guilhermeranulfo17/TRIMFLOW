@@ -130,6 +130,33 @@ export async function carregarPrecos(
   });
 }
 
+/**
+ * O catálogo ainda é só o exemplo do modelo? (Fase 6: só então o dono troca o modelo no passo 1.)
+ * Onboarding não concluído e nenhum preço confirmado, orçamento, reserva ou bloqueio.
+ */
+export async function catalogoSoDeExemplo(
+  tx: Tx,
+  empresaId: string,
+): Promise<{ ok: boolean; segmento: string | null }> {
+  const [r] = await tx.execute<{ ok: boolean; segmento: string }>(sql`
+    select e.onboarding_concluido_em is null
+       and not exists (select 1 from public.orcamentos o where o.empresa_id = e.id)
+       and not exists (select 1 from public.reservas r where r.empresa_id = e.id)
+       and not exists (select 1 from public.bloqueios b where b.empresa_id = e.id)
+       and not exists (select 1 from public.pacotes p
+                       where p.empresa_id = e.id and p.preco_confirmado_em is not null)
+       and not exists (select 1 from public.opcionais o
+                       where o.empresa_id = e.id and o.preco_confirmado_em is not null) as ok,
+           e.segmento::text as segmento
+    from public.empresas e where e.id = ${empresaId}`);
+  return { ok: !!r?.ok, segmento: r?.segmento ?? null };
+}
+
+export async function podeTrocarModelo(usuario: UsuarioAtual): Promise<boolean> {
+  if (usuario.perfil !== 'dono') return false;
+  return (await comUsuario(usuario.id, (tx) => catalogoSoDeExemplo(tx, usuario.empresa.id))).ok;
+}
+
 export type AgendaRapida = {
   espacos: {
     id: string;

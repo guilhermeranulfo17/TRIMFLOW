@@ -5,6 +5,7 @@ import { QrCodigo } from '@/components/app/divulgacao/qr-codigo';
 import { CabecalhoPasso } from '@/components/app/onboarding/comecar/navegacao';
 import { PassoAgenda } from '@/components/app/onboarding/comecar/passo-agenda';
 import { PassoIdentidade } from '@/components/app/onboarding/comecar/passo-identidade';
+import { CHAVES_MODELO, MODELOS_ONBOARDING } from '@/domain/modelos';
 import { PassoModelo } from '@/components/app/onboarding/comecar/passo-modelo';
 import { PassoPrecos } from '@/components/app/onboarding/comecar/passo-precos';
 import { PassoPronto } from '@/components/app/onboarding/comecar/passo-pronto';
@@ -20,6 +21,7 @@ import {
   carregarAgendaRapida,
   carregarEstadoOnboarding,
   carregarPrecos,
+  podeTrocarModelo,
   carregarResumoModelo,
 } from '@/server/onboarding/carregar';
 
@@ -59,6 +61,12 @@ export default async function PaginaComecar({ searchParams }: Props) {
           resumo={await carregarResumoModelo(usuario)}
           vazio={estado.catalogoVazio}
           segmento={ROTULO_SEGMENTO[empresa.segmento].toLowerCase()}
+          podeTrocar={!estado.catalogoVazio && (await podeTrocarModelo(usuario))}
+          modelos={CHAVES_MODELO.map((chave) => ({
+            chave,
+            rotulo: MODELOS_ONBOARDING[chave].rotulo,
+            descricao: MODELOS_ONBOARDING[chave].descricao,
+          }))}
         />
       );
       break;

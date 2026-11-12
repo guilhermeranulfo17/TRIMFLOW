@@ -4,12 +4,13 @@ import { eq, sql } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
 import { z } from 'zod';
-import { modeloDoSegmento } from '@/domain/modelos';
+import { chaveModeloValida, modeloDoSegmento } from '@/domain/modelos';
 import { validarFaixas, validarPreco } from '@/domain/onboarding/precos';
 import type { ResultadoAcao } from '@/server/actions/empresa/comum';
 import { exigirPerfil } from '@/server/auth/guards';
 import { exigirSessao, type UsuarioAtual } from '@/server/auth/sessao';
 import { gravarModelo } from '@/server/catalogo/gravar-modelo';
+import { trocarModelo } from '@/server/onboarding/trocar-modelo';
 import { auditar } from '@/server/actions/empresa/comum';
 import { empresas, regrasComerciais } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
@@ -30,6 +31,8 @@ const MENSAGENS: Record<string, string> = {
   PRECO_INVALIDO: 'Confira os preços digitados.',
   PACOTE_NAO_ENCONTRADO: 'Um pacote não foi encontrado. Recarregue a página.',
   OPCIONAL_NAO_ENCONTRADO: 'Um opcional não foi encontrado. Recarregue a página.',
+  MODELO_EM_USO:
+    'Seu catálogo já está em uso (preço confirmado, orçamento ou reserva). Ajuste em Minha empresa, Catálogo.',
 };
 const PADRAO = 'Não foi possível salvar agora. Tente de novo em instantes.';
 
@@ -80,6 +83,16 @@ export async function carregarModeloDoOnboarding(): Promise<ResultadoAcao> {
     }
     revalidatePath('/app', 'layout');
     return { ok: true, mensagem: 'Catálogo de exemplo carregado.' };
+  });
+}
+
+/** Passo 1 (Fase 6): troca o modelo de exemplo (regra e travas em server/onboarding/trocar-modelo). */
+export async function trocarModeloDoOnboarding(chave: string): Promise<ResultadoAcao> {
+  return acao(async (u) => {
+    if (!chaveModeloValida(chave)) return { ok: false, erro: 'Escolha um modelo da lista.' };
+    const nome = await comUsuario(u.id, (tx) => trocarModelo(tx, u, chave));
+    revalidatePath('/app', 'layout');
+    return { ok: true, mensagem: `Modelo trocado: ${nome}.` };
   });
 }
 

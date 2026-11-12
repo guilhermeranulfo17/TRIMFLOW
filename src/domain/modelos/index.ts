@@ -1,5 +1,6 @@
 import type { Segmento } from '../segmento';
 import type { ContextoPreco } from '../preco';
+import { modeloCasamento } from './casamento';
 import { modeloDomicilio } from './domicilio';
 import { modeloEventos } from './eventos';
 import { modeloInfantil } from './infantil';
@@ -12,6 +13,48 @@ export const MODELOS: Record<Segmento, Modelo> = {
   eventos: modeloEventos,
   domicilio: modeloDomicilio,
 };
+
+/**
+ * Modelos que o dono escolhe no onboarding (Fase 6). "casamento" grava o segmento "eventos" com
+ * um catálogo próprio de casamento e 15 anos; os outros são os modelos de cada segmento.
+ */
+export const CHAVES_MODELO = ['infantil', 'casamento', 'eventos', 'domicilio'] as const;
+export type ChaveModelo = (typeof CHAVES_MODELO)[number];
+
+export const MODELOS_ONBOARDING: Record<
+  ChaveModelo,
+  { modelo: Modelo; rotulo: string; descricao: string }
+> = {
+  infantil: {
+    modelo: modeloInfantil,
+    rotulo: 'Buffet infantil',
+    descricao: 'Aniversários de criança, com faixas de idade e pacotes por convidados.',
+  },
+  casamento: {
+    modelo: modeloCasamento,
+    rotulo: 'Casamento e 15 anos',
+    descricao: 'Recepção, jantar, bem-casados e bar, com preço por convidado.',
+  },
+  eventos: {
+    modelo: modeloEventos,
+    rotulo: 'Espaço de eventos',
+    descricao: 'Casamentos, formaturas e corporativos num salão próprio.',
+  },
+  domicilio: {
+    modelo: modeloDomicilio,
+    rotulo: 'Buffet em domicílio',
+    descricao: 'Festa na casa do cliente, com deslocamento por distância.',
+  },
+};
+
+export function chaveModeloValida(v: unknown): v is ChaveModelo {
+  return typeof v === 'string' && (CHAVES_MODELO as readonly string[]).includes(v);
+}
+
+/** Modelo escolhido no onboarding, validado. */
+export function modeloDaChave(chave: ChaveModelo): Modelo {
+  return modeloSchema.parse(MODELOS_ONBOARDING[chave].modelo);
+}
 
 /** Modelo do segmento, validado (lança erro se o modelo estiver inconsistente). */
 export function modeloDoSegmento(segmento: Segmento): Modelo {
