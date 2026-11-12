@@ -28,7 +28,7 @@ function Secao({
         id={id}
         className={
           visual === 'elegante'
-            ? 'font-titulo border-b border-[var(--marca-destaque)]/40 pb-1 text-2xl font-medium text-[var(--marca-destaque)]'
+            ? 'font-titulo border-b border-[var(--marca-destaque)]/40 pb-1 text-2xl font-bold text-[var(--marca-destaque)]'
             : 'font-titulo bg-primary text-primary-foreground inline-block rounded-full px-3 py-1 text-sm font-bold tracking-wide uppercase'
         }
       >
@@ -97,10 +97,8 @@ function CapaElegante({ m }: { m: ModeloProposta }) {
       <div className="mx-auto my-5 h-px w-16 bg-[var(--marca-destaque)]" aria-hidden />
       {m.evento.cliente && (
         <>
-          <p className="font-titulo text-muted-foreground text-lg font-medium italic">
-            Proposta para
-          </p>
-          <p className="font-titulo text-4xl font-medium text-[var(--marca-destaque)] sm:text-5xl">
+          <p className="text-muted-foreground text-sm tracking-[0.18em] uppercase">Proposta para</p>
+          <p className="font-titulo mt-1 text-4xl font-bold text-[var(--marca-destaque)] sm:text-5xl">
             {m.evento.cliente}
           </p>
         </>
@@ -218,7 +216,7 @@ export function PropostaWeb({ modelo: m }: { modelo: ModeloProposta }) {
         <p
           className={
             v === 'elegante'
-              ? 'font-titulo mt-8 text-xl leading-relaxed font-medium italic'
+              ? 'text-muted-foreground mt-8 text-lg leading-relaxed'
               : 'mt-5 text-base leading-relaxed'
           }
         >
