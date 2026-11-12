@@ -3,7 +3,7 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useTransition } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
-import { EditorItensCardapio } from '@/components/app/campos';
+import { EditorItensCardapio, UploadImagem } from '@/components/app/campos';
 import { Campo } from '@/components/app/form/campo';
 import { aplicarErrosServidor, lerErro } from '@/components/app/form/erros';
 import { Secao } from '@/components/app/form/secao';
@@ -11,14 +11,17 @@ import { useToast } from '@/components/app/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cardapioSchema, type CardapioEntrada } from '@/domain/validacao/catalogo';
+import { urlPublicaMidia } from '@/lib/midia';
 import { salvarCardapio } from '@/server/actions/empresa/pacotes';
 
 export function FormCardapio({
   pacoteId,
+  empresaId,
   inicial,
   somenteLeitura,
 }: {
   pacoteId: string;
+  empresaId: string;
   inicial: CardapioEntrada;
   somenteLeitura: boolean;
 }) {
@@ -60,7 +63,7 @@ export function FormCardapio({
     <Secao
       id="cardapio"
       titulo="Cardápio"
-      descricao="Organize em seções (ex.: Salgados, Bebidas, Doces), cada uma com seus itens."
+      descricao="Organize em seções (ex.: Salgados, Bebidas, Doces), cada uma com seus itens e, se quiser, uma foto. A foto vai na proposta, ao lado da seção."
       onSubmit={onSubmit}
       salvando={salvando}
       sujo={form.formState.isDirty}
@@ -140,6 +143,28 @@ export function FormCardapio({
                 )}
               />
             </Campo>
+            <Controller
+              control={form.control}
+              name={`secoes.${i}.foto`}
+              render={({ field }) => (
+                <UploadImagem
+                  empresaId={empresaId}
+                  tipo="pacotes"
+                  urlAtual={urlPublicaMidia(field.value)}
+                  rotulo="Foto da seção"
+                  disabled={somenteLeitura}
+                  onEnviado={async (caminho) => {
+                    form.setValue(`secoes.${i}.foto`, caminho, { shouldDirty: true });
+                    toast.sucesso('Foto enviada. Salve o cardápio para gravar.');
+                    return true;
+                  }}
+                  onRemover={async () => {
+                    form.setValue(`secoes.${i}.foto`, null, { shouldDirty: true });
+                    return true;
+                  }}
+                />
+              )}
+            />
           </li>
         ))}
       </ul>
@@ -148,7 +173,7 @@ export function FormCardapio({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => append({ nome: '', itens: [''] })}
+          onClick={() => append({ nome: '', itens: [''], foto: null })}
         >
           <Plus aria-hidden /> Adicionar seção
         </Button>

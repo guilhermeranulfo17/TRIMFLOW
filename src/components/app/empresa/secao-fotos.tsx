@@ -9,21 +9,30 @@ import { mover } from '@/components/app/campos/lista-ordenavel';
 import { Secao } from '@/components/app/form/secao';
 import { useToast } from '@/components/app/toast';
 import { Button } from '@/components/ui/button';
-import { MAX_FOTOS_PACOTE } from '@/domain/imagem';
 import { urlPublicaMidia } from '@/lib/midia';
-import { salvarFotosPacote } from '@/server/actions/empresa/pacotes';
+import type { ResultadoAcao } from '@/server/actions/empresa/comum';
 
-/** Até 6 fotos; a primeira é a capa. Cada mudança é salva na hora. */
+/**
+ * Fotos de um item do catálogo (pacote ou opcional), no mesmo bucket e com as mesmas regras de
+ * tamanho e formato. A primeira é a capa. Cada mudança é salva na hora pela action do item.
+ */
 export function SecaoFotos({
-  pacoteId,
   empresaId,
   fotos: iniciais,
   somenteLeitura,
+  salvar,
+  max,
+  descricao,
+  vazio,
 }: {
-  pacoteId: string;
   empresaId: string;
   fotos: string[];
   somenteLeitura: boolean;
+  /** server action do item, já com o id (ex.: salvarFotosPacote.bind(null, id)) */
+  salvar: (caminhos: string[]) => Promise<ResultadoAcao>;
+  max: number;
+  descricao: string;
+  vazio: string;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -33,7 +42,7 @@ export function SecaoFotos({
   async function gravar(novas: string[]): Promise<boolean> {
     const anteriores = fotos;
     setFotos(novas);
-    const r = await salvarFotosPacote(pacoteId, novas);
+    const r = await salvar(novas);
     if (r.ok) {
       toast.sucesso(r.mensagem);
       router.refresh();
@@ -47,15 +56,11 @@ export function SecaoFotos({
   return (
     <Secao
       id="fotos"
-      titulo="Fotos"
-      descricao={`Até ${MAX_FOTOS_PACOTE} fotos. A primeira é a capa do pacote.`}
+      titulo={max === 1 ? 'Foto' : 'Fotos'}
+      descricao={descricao}
       somenteLeitura={somenteLeitura}
     >
-      {fotos.length === 0 && (
-        <p className="text-muted-foreground text-sm">
-          Nenhuma foto ainda. Pacotes com foto chamam mais atenção do cliente.
-        </p>
-      )}
+      {fotos.length === 0 && <p className="text-muted-foreground text-sm">{vazio}</p>}
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {fotos.map((caminho, i) => (
           <li key={caminho} className="space-y-2" data-testid="foto-pacote">
@@ -67,34 +72,42 @@ export function SecaoFotos({
                 sizes="(max-width: 640px) 50vw, 240px"
                 className="object-cover"
               />
-              {i === 0 && (
+              {i === 0 && max > 1 && (
                 <span className="bg-primary text-primary-foreground absolute top-2 left-2 rounded-full px-2 py-0.5 text-xs font-medium">
                   Capa
                 </span>
               )}
             </div>
             {!somenteLeitura && (
-              <div className="flex justify-between gap-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={salvando || i === 0}
-                  aria-label={`Mover foto ${i + 1} para a esquerda`}
-                  onClick={() => iniciar(async () => void (await gravar(mover(fotos, i, i - 1))))}
-                >
-                  <ArrowUp className="-rotate-90" aria-hidden />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={salvando || i === fotos.length - 1}
-                  aria-label={`Mover foto ${i + 1} para a direita`}
-                  onClick={() => iniciar(async () => void (await gravar(mover(fotos, i, i + 1))))}
-                >
-                  <ArrowDown className="-rotate-90" aria-hidden />
-                </Button>
+              <div className={max > 1 ? 'flex justify-between gap-1' : 'flex justify-end'}>
+                {max > 1 && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={salvando || i === 0}
+                      aria-label={`Mover foto ${i + 1} para a esquerda`}
+                      onClick={() =>
+                        iniciar(async () => void (await gravar(mover(fotos, i, i - 1))))
+                      }
+                    >
+                      <ArrowUp className="-rotate-90" aria-hidden />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={salvando || i === fotos.length - 1}
+                      aria-label={`Mover foto ${i + 1} para a direita`}
+                      onClick={() =>
+                        iniciar(async () => void (await gravar(mover(fotos, i, i + 1))))
+                      }
+                    >
+                      <ArrowDown className="-rotate-90" aria-hidden />
+                    </Button>
+                  </>
+                )}
                 <Button
                   type="button"
                   variant="outline"
@@ -112,7 +125,7 @@ export function SecaoFotos({
           </li>
         ))}
       </ul>
-      {!somenteLeitura && fotos.length < MAX_FOTOS_PACOTE && (
+      {!somenteLeitura && fotos.length < max && (
         <UploadImagem
           empresaId={empresaId}
           tipo="pacotes"
