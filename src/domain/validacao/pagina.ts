@@ -5,6 +5,8 @@ import { textoOpcional } from './comum';
 /** Schemas do editor da página pública (Minha empresa → Link). Os limites valem também no banco. */
 
 export const textosPaginaSchema = z.object({
+  /** modelo da página (§84): '' = automático (o mesmo da proposta) */
+  modelo: z.union([z.literal(''), z.enum(['elegante', 'alegre'])]).optional(),
   slogan: textoOpcional(L.slogan),
   estilo: z.union([z.literal(''), z.enum(ESTILOS)]),
   diferenciais: z

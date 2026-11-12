@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, X } from 'lucide-react';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { Campo, CampoCheck } from '@/components/app/form/campo';
 import { aplicarErrosServidor } from '@/components/app/form/erros';
@@ -15,12 +15,14 @@ import {
   ESTILOS,
   LIMITES_PAGINA as L,
   ROTULO_ESTILO,
+  ROTULO_MODELO_PAGINA,
   sugestoesDiferenciais,
   sugestoesSlogan,
   type Segmento,
 } from '@/domain/publico/pagina';
 import { textosPaginaSchema, type TextosPaginaEntrada } from '@/domain/validacao/pagina';
 import { salvarTextosPagina } from '@/server/actions/empresa/pagina';
+import type { ModeloVisual } from '@/domain/proposta/visual';
 import { cn } from '@/lib/utils';
 import { usePrevia } from './previa';
 
@@ -28,12 +30,15 @@ import { usePrevia } from './previa';
 export function FormTextosPagina({
   inicial,
   segmento,
+  modeloPadrao,
 }: {
   inicial: TextosPaginaEntrada;
   segmento: Segmento;
+  /** o que "automático" escolhe hoje */
+  modeloPadrao: ModeloVisual;
 }) {
   const toast = useToast();
-  const { atualizar } = usePrevia();
+  const { atualizar, definirModelo } = usePrevia();
   const [salvando, iniciar] = useTransition();
   const form = useForm<TextosPaginaEntrada>({
     resolver: zodResolver(textosPaginaSchema),
@@ -43,6 +48,13 @@ export function FormTextosPagina({
   const e = formState.errors;
   const slogan = watch('slogan') ?? '';
   const estilo = watch('estilo');
+  const modelo = watch('modelo') ?? '';
+  const modeloEfetivo: ModeloVisual = modelo || modeloPadrao;
+  // a prévia mostra o modelo escolhido antes de salvar; depois de salvar, volta ao gravado
+  const modeloSujo = modelo !== (formState.defaultValues?.modelo ?? '');
+  useEffect(() => {
+    definirModelo(modeloSujo ? modeloEfetivo : '');
+  }, [definirModelo, modeloSujo, modeloEfetivo]);
   const diferenciais = watch('diferenciais');
   const [novo, setNovo] = useState('');
 
@@ -81,6 +93,35 @@ export function FormTextosPagina({
       salvando={salvando}
       sujo={formState.isDirty}
     >
+      <fieldset>
+        <legend className="text-sm font-medium">Modelo da página</legend>
+        <p className="text-muted-foreground mt-1 text-xs">
+          Escolha e veja na prévia antes de salvar.
+        </p>
+        <div className="mt-2 grid gap-3 sm:grid-cols-3" role="radiogroup">
+          {(['', 'elegante', 'alegre'] as const).map((m) => (
+            <label
+              key={m || 'automatico'}
+              className={cn(
+                'rounded-card hover:border-ring has-focus-visible:ring-ring/50 flex min-h-11 cursor-pointer flex-col gap-1 border p-3 has-focus-visible:ring-[3px]',
+                modelo === m && 'border-primary bg-secondary',
+              )}
+              data-testid={`modelo-pagina-${m || 'automatico'}`}
+            >
+              <input type="radio" value={m} className="sr-only" {...register('modelo')} />
+              <span className={cn('text-lg font-bold', m === 'elegante' && 'font-serif')}>
+                {m ? ROTULO_MODELO_PAGINA[m].nome : 'Automático'}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                {m
+                  ? ROTULO_MODELO_PAGINA[m].descricao
+                  : `O mesmo da sua proposta. Hoje: ${ROTULO_MODELO_PAGINA[modeloPadrao].nome.toLowerCase()}.`}
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       <Campo
         id="slogan"
         rotulo="Frase de apresentação"
@@ -102,7 +143,7 @@ export function FormTextosPagina({
         ))}
       </div>
 
-      <fieldset>
+      <fieldset hidden={modeloEfetivo === 'elegante'}>
         <legend className="text-sm font-medium">Estilo da página</legend>
         <div className="mt-2 grid gap-3 sm:grid-cols-3" role="radiogroup">
           {ESTILOS.map((s) => (

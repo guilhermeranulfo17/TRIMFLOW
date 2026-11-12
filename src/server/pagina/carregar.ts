@@ -1,6 +1,12 @@
 import 'server-only';
 import { asc, eq } from 'drizzle-orm';
-import { estiloValido, type EstiloPagina, type Segmento } from '@/domain/publico/pagina';
+import {
+  estiloValido,
+  modeloPaginaEfetivo,
+  type EstiloPagina,
+  type Segmento,
+} from '@/domain/publico/pagina';
+import { modeloVisualValido, type ModeloVisual } from '@/domain/proposta/visual';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { depoimentos, empresas, galeriaFotos, perguntasFrequentes } from '@/server/db/schema';
 import { naTransacao, type Tx } from '@/server/db/tenant';
@@ -8,7 +14,10 @@ import { naTransacao, type Tx } from '@/server/db/tenant';
 /** Estado atual do editor da página pública (RLS: só o dono lê as tabelas novas). */
 export type EditorPagina = {
   segmento: Segmento;
+  /** o que "automático" escolhe hoje (o modelo da proposta) */
+  modeloPadrao: ModeloVisual;
   textos: {
+    modelo: ModeloVisual | '';
     slogan: string;
     estilo: EstiloPagina | '';
     diferenciais: string[];
@@ -34,6 +43,8 @@ export async function carregarEditorPagina(usuario: UsuarioAtual, tx?: Tx): Prom
       tx
         .select({
           segmento: empresas.segmento,
+          modeloPagina: empresas.modeloPagina,
+          modeloProposta: empresas.modeloProposta,
           slogan: empresas.slogan,
           estilo: empresas.estilo,
           diferenciais: empresas.diferenciais,
@@ -49,7 +60,9 @@ export async function carregarEditorPagina(usuario: UsuarioAtual, tx?: Tx): Prom
     ]);
     return {
       segmento: e!.segmento,
+      modeloPadrao: modeloPaginaEfetivo(null, e!.modeloProposta, e!.segmento),
       textos: {
+        modelo: modeloVisualValido(e!.modeloPagina) ? e!.modeloPagina : '',
         slogan: e!.slogan ?? '',
         estilo: estiloValido(e!.estilo) ? e!.estilo : '',
         diferenciais: e!.diferenciais ?? [],
