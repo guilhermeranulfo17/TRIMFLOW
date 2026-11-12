@@ -3,6 +3,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { hojeNoFuso } from '@/domain/dates';
 import type { ResultadoOrcamento } from '@/domain/preco';
 import {
+  modeloVisualEfetivo,
   montarConteudo,
   type BuffetProposta,
   type ConteudoCongelado,
@@ -83,6 +84,9 @@ type JsonProposta = {
     endereco: string | null;
     whatsappE164: string | null;
     rodapeOrkestra: boolean;
+    /** desde a proposta premium; ausente enquanto o banco não tiver a migration */
+    modeloProposta?: string | null;
+    segmento?: string | null;
   };
   regras: { prazoPreReservaHoras: number; sinalBp: number; cancelamentoTexto: string | null };
 };
@@ -118,6 +122,7 @@ export async function carregarPropostaPublica(
     endereco: p.empresa.endereco,
     whatsappE164: p.empresa.whatsappE164,
     rodapeOrkestra: p.empresa.rodapeOrkestra,
+    modeloVisual: modeloVisualEfetivo(p.empresa.modeloProposta, p.empresa.segmento),
   };
   const versao: VersaoProposta = {
     numero: p.numero,
@@ -218,6 +223,7 @@ export async function carregarPropostaDoPainel(
     endereco: empresa.endereco,
     whatsappE164: empresa.whatsappE164,
     rodapeOrkestra: empresa.rodapeOrkestra,
+    modeloVisual: modeloVisualEfetivo(empresa.modeloProposta, empresa.segmento),
   };
   const versao: VersaoProposta = {
     numero: o.numero,

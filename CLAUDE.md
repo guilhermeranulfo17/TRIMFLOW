@@ -365,6 +365,8 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - **Proposta:** web e PDF desenham o mesmo `ModeloProposta` (`montarConteudo`). Condições,
   cardápio e textos ficam congelados em `orcamentos.conteudo`; identidade do buffet é ao vivo.
   `publico.proposta` e o PDF nunca levam observações internas, motivo do desconto nem autor.
+  Modelo visual (`elegante`/`alegre`, §82) é identidade ao vivo (`modeloVisualEfetivo`); a foto
+  do pacote é congelada no `conteudo` (arquivo congelado nunca é apagado do Storage).
 - **Página pública (Etapa 9.5, §61):** frase, estilo, diferenciais, galeria, depoimentos e
   perguntas só são escritos por `salvar_pagina_publica`, `salvar_galeria`, `salvar_depoimentos`
   e `salvar_perguntas` (dono, limites, auditoria); o público lê só por `publico.pagina`.

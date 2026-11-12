@@ -324,3 +324,12 @@ nova depois das decisões abaixo (o código já recusa módulo não implementado
   indicações, oportunidades automáticas; separar do que já é do plano (Clientes).
 - **Interno:** tela no /interno para ver as assinaturas dos adicionais e liberar a venda sem
   migration.
+
+## Depois da proposta premium (ARQUITETURA §82)
+
+- **Fotos de opcionais e do cardápio** (Fase 2): mesmo congelamento do pacote (`conteudo`).
+- **Imagens repetidas no PDF:** o react-pdf embute a marca d'água de novo em cada página. Se uma
+  proposta longa passar do tamanho desejado, avaliar desenhar a marca d'água só na primeira
+  página de conteúdo.
+- **Prévia do modelo na tela de escolha:** hoje o dono escolhe e abre "Ver como fica uma
+  proposta". Uma miniatura de cada modelo ao lado da opção ajudaria.

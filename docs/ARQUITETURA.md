@@ -1910,3 +1910,49 @@ com `?r=` e como testar: `docs/PROSPECCAO_CRM.md`.
   demonstração não disparam marcos.
 - **Fora do rastreio:** nada do cliente final do buffet (leads, orçamentos) vai ao CRM. Só dados
   da conta do dono (nome, WhatsApp, e-mail, nome do buffet).
+
+## 82. Proposta premium: modelo visual, marca d'água e foto do pacote (novembro de 2026)
+
+Motivo: a primeira venda para um buffet de casamento. O PDF precisava ir para a noiva sem
+vergonha.
+
+- **Dois modelos visuais** (`domain/proposta/visual`): `elegante` (capa na primeira página,
+  muito branco, títulos serifados finos em Cormorant Garamond, fios na cor da marca, total entre
+  fios) e `alegre` (faixa e blocos na cor da marca, cantos arredondados, títulos fortes).
+  - Escolha em Minha empresa → "Modelo da proposta" (`empresas.modelo_proposta`, nulo =
+    automático). Automático: infantil = alegre; eventos e domicílio = elegante
+    (`modeloVisualEfetivo`). Só o dono grava (grant de coluna + policy `empresas_update_dono`,
+    auditoria `empresa.modelo_proposta_alterado`).
+  - É **identidade** (como cor e logo), não condição comercial: lida ao vivo, vale também para
+    propostas já enviadas. Chega ao link público por `publico.proposta` (chaves novas
+    `modelo_proposta` e `segmento` em `empresa`).
+  - Web e PDF desenham o mesmo `ModeloProposta` (`m.visual`). Na web, a proposta põe
+    `data-estilo` no próprio `<article>` (elegante → `elegante`, alegre → `festivo`), então a
+    tipografia é a dos estilos da página pública (Cormorant só no peso 700, como antes). Pedir
+    mais pesos e o itálico ao `next/font` fazia o build da Vercel falhar de forma intermitente
+    (erro do carregador do Google Fonts); por isso os títulos "finos" ficam só no PDF, que usa
+    os TTF do repositório.
+- **Marca d'água:** o logo inteiro (sem recorte) no centro de cada página do PDF, a 6% de
+  opacidade. Na capa do elegante o logo já é o destaque, então lá não há marca d'água. O
+  react-pdf embute a imagem de novo em cada página: a marca d'água usa um PNG pequeno (280 px) com
+  paleta. Sem logo, sem marca d'água.
+- **Foto do pacote congelada:** na conclusão de cada versão o servidor grava em
+  `conteudo.pacote` a `descricao` e a URL pública da **primeira** foto do pacote
+  (`vitrinePacotesDe`, nos três caminhos: link público, orçamento interno e proposta de exemplo).
+  Campos opcionais, sem subir `formato`: versões antigas abrem sem foto. A linha do pacote no
+  investimento leva a foto ao lado (no celular, acima) e a descrição junto; nada de galeria.
+  `fotoValida` só aceita URL http(s) sem espaço ou aspas.
+- **Foto não some do Storage:** `fotosEmUso` (ações do pacote) passou a manter o arquivo que
+  aparece no `conteudo` de qualquer versão (busca só pelos caminhos que iam ser apagados).
+- **Imagens no PDF:** fotos viram JPEG de até 600 px (`sharp`), logo vira PNG. Cada imagem tem
+  prazo total (download + conversão): 3 s para foto, 2,5 s para logo. Estourou ou falhou, a
+  imagem some e o PDF sai igual. Logo é baixado uma vez para as três formas (círculo, capa e
+  marca d'água).
+- **Fontes:** Cormorant Garamond 500, 600 e 500 itálico (OFL, `OFL-CormorantGaramond.txt`),
+  reduzidas ao alfabeto latino (~64 kB cada) em `src/server/proposta/fontes/`, já incluídas no
+  rastreio das rotas de PDF.
+- **Exemplos:** `GERAR_PDF_EXEMPLOS=1 pnpm vitest run --project unit
+tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre, com e sem
+  foto) em `docs/capturas/pdf-premium/`. Fotos e logos dos exemplos são ilustrações geradas.
+- Migration `20261112200001_proposta_premium.sql` (aditiva): coluna nullable com check, grant de
+  coluna e `create or replace` de `publico.proposta` com duas chaves a mais.

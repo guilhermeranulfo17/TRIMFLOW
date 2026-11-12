@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { calcularOrcamento } from '@/domain/preco';
 import {
   escolhasDeExemplo,
+  modeloVisualEfetivo,
   montarConteudo,
   type BuffetProposta,
   type ModeloProposta,
@@ -13,8 +14,8 @@ import { urlPublicaMidia } from '@/lib/midia';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
-import { carregarBaseInterna } from '@/server/orcamentos/carregar';
-import { prepararVersao } from './versao';
+import { carregarBaseInterna, carregarExtrasPacotes } from '@/server/orcamentos/carregar';
+import { prepararVersao, vitrinePacotesDe } from './versao';
 
 export const CLIENTE_EXEMPLO = 'Ana Souza';
 
@@ -25,8 +26,9 @@ export const CLIENTE_EXEMPLO = 'Ana Souza';
 export async function montarPropostaExemplo(
   usuario: UsuarioAtual,
 ): Promise<{ modelo: ModeloProposta; buffet: BuffetProposta } | null> {
-  const [base, empresa] = await Promise.all([
+  const [base, extrasPacotes, empresa] = await Promise.all([
     carregarBaseInterna(usuario),
+    carregarExtrasPacotes(usuario),
     comUsuario(usuario.id, async (tx) => {
       const [e] = await tx.select().from(empresas).where(eq(empresas.id, usuario.empresa.id));
       return e;
@@ -48,6 +50,7 @@ export async function montarPropostaExemplo(
     aberturaModelo: base.aberturaPorTipo[escolhas.tipoEventoId!] ?? null,
     clienteNome: CLIENTE_EXEMPLO,
     buffetNome: empresa.nome,
+    vitrinePacotes: vitrinePacotesDe(extrasPacotes),
   });
   const turno = base.ctx.turnos.find((t) => t.id === escolhas.turnoId);
   const buffet: BuffetProposta = {
@@ -59,6 +62,7 @@ export async function montarPropostaExemplo(
     endereco: empresa.endereco,
     whatsappE164: empresa.whatsappE164,
     rodapeOrkestra: empresa.rodapeOrkestra,
+    modeloVisual: modeloVisualEfetivo(empresa.modeloProposta, empresa.segmento),
   };
   const versao: VersaoProposta = {
     numero: 1,

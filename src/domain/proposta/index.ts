@@ -5,3 +5,4 @@ export * from './diferencas';
 export * from './exemplo';
 export * from './temperatura';
 export * from './validade';
+export * from './visual';

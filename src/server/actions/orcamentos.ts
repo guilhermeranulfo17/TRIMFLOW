@@ -23,9 +23,10 @@ import { siteUrl } from '@/server/env';
 import {
   buscarLeadPorWhatsapp,
   carregarBaseInterna,
+  carregarExtrasPacotes,
   type BaseInterna,
 } from '@/server/orcamentos/carregar';
-import { prepararVersao } from '@/server/proposta/versao';
+import { prepararVersao, vitrinePacotesDe } from '@/server/proposta/versao';
 import { logar } from '@/server/log';
 
 /*
@@ -146,7 +147,10 @@ export async function salvarOrcamentoInterno(
         campos: { 'cliente.whatsapp': 'Informe um celular com DDD, ex.: (34) 99135-5450.' },
       };
     }
-    const base = await carregarBaseInterna(usuario);
+    const [base, extrasPacotes] = await Promise.all([
+      carregarBaseInterna(usuario),
+      carregarExtrasPacotes(usuario),
+    ]);
     if (!base) return { ok: false, erro: 'Não foi possível carregar seu catálogo.' };
     const previa = calcular(base, o);
     if (!previa.resultado)
@@ -171,6 +175,7 @@ export async function salvarOrcamentoInterno(
       aberturaModelo: base.aberturaPorTipo[o.escolhas.tipoEventoId ?? ''] ?? null,
       clienteNome: o.cliente.nome,
       buffetNome: usuario.empresa.nome,
+      vitrinePacotes: vitrinePacotesDe(extrasPacotes),
     });
     const rascunho = { ...o.escolhas, interno: o.ajustes };
     const [salvo] = await comUsuario(usuario.id, (tx) =>

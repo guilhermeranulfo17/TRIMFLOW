@@ -9,7 +9,9 @@ import {
   caminhoImagemValido,
   dadosPropostaSchema,
   identidadeSchema,
+  modeloPropostaSchema,
   type DadosPropostaEntrada,
+  type ModeloPropostaEntrada,
   slugSchema,
   type IdentidadeEntrada,
   type SlugEntrada,
@@ -94,6 +96,32 @@ export async function salvarDadosProposta(entrada: DadosPropostaEntrada): Promis
     });
     revalidatePath('/app/empresa');
     return { ok: true, mensagem: 'Dados da proposta salvos.' };
+  });
+}
+
+/** Modelo visual da proposta (web e PDF). Vale também para as propostas já enviadas. */
+export async function salvarModeloProposta(entrada: ModeloPropostaEntrada): Promise<ResultadoAcao> {
+  return acaoDoDono(async (dono) => {
+    const v = validar(modeloPropostaSchema, entrada);
+    if (!v.ok) return v.resultado;
+    const novos = { modeloProposta: v.dados.modelo === 'automatico' ? null : v.dados.modelo };
+    await comUsuario(dono.id, async (tx) => {
+      const [antes] = await tx
+        .select({ modeloProposta: empresas.modeloProposta })
+        .from(empresas)
+        .where(eq(empresas.id, dono.empresa.id));
+      await tx.update(empresas).set(novos).where(eq(empresas.id, dono.empresa.id));
+      await auditar(
+        tx,
+        dono,
+        'empresa.modelo_proposta_alterado',
+        'empresa',
+        dono.empresa.id,
+        diferencas(antes ?? {}, novos),
+      );
+    });
+    revalidatePath('/app/empresa');
+    return { ok: true, mensagem: 'Modelo da proposta salvo.' };
   });
 }
 
