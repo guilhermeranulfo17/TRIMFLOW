@@ -5,7 +5,9 @@ import { exigirSessao } from '@/server/auth/sessao';
 import { empresas } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { siteUrl } from '@/server/env';
+import { modeloVisualDoSegmento, modeloVisualValido } from '@/domain/proposta/visual';
 import { FormDadosProposta } from './form-dados-proposta';
+import { FormModeloProposta } from './form-modelo-proposta';
 import { FormIdentidade } from './form-identidade';
 import { FormSlug } from './form-slug';
 import { SecaoImagens } from './secao-imagens';
@@ -42,6 +44,15 @@ export default async function IdentidadePage() {
           razaoSocial: empresa.razaoSocial ?? '',
           cnpj: empresa.cnpj ?? '',
           endereco: empresa.endereco ?? '',
+        }}
+      />
+      <FormModeloProposta
+        somenteLeitura={somenteLeitura}
+        padrao={modeloVisualDoSegmento(empresa.segmento)}
+        inicial={{
+          modelo: modeloVisualValido(empresa.modeloProposta)
+            ? empresa.modeloProposta
+            : 'automatico',
         }}
       />
       <SecaoImagens

@@ -57,6 +57,12 @@ export const dadosPropostaSchema = z.object({
 });
 export type DadosPropostaEntrada = z.input<typeof dadosPropostaSchema>;
 
+/** Modelo visual da proposta: 'automatico' grava nulo (padrão do tipo de buffet). */
+export const modeloPropostaSchema = z.object({
+  modelo: z.enum(['automatico', 'elegante', 'alegre'], { message: 'Escolha um modelo.' }),
+});
+export type ModeloPropostaEntrada = z.input<typeof modeloPropostaSchema>;
+
 export const slugSchema = z.object({
   slug: z
     .string()
