@@ -17,7 +17,9 @@ const festivo = Fredoka({
 
 const elegante = Cormorant_Garamond({
   subsets: ['latin'],
-  weight: '700',
+  // 500 só nos títulos finos da proposta elegante (cada peso só é baixado se for usado)
+  weight: ['500', '700'],
+  style: ['normal', 'italic'],
   display: 'swap',
   preload: false,
   variable: '--font-elegante',
