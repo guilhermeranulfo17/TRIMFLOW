@@ -82,7 +82,13 @@ export default async function PaginaComecar({ searchParams }: Props) {
       break;
     case 3: {
       const precos = await carregarPrecos(usuario);
-      conteudo = <PassoPrecos pacotes={precos.pacotes} opcionais={precos.opcionais} />;
+      conteudo = (
+        <PassoPrecos
+          pacotes={precos.pacotes}
+          opcionais={precos.opcionais}
+          modoPreco={precos.modoPreco}
+        />
+      );
       break;
     }
     case 4:

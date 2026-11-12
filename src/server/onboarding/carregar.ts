@@ -1,4 +1,5 @@
 import 'server-only';
+import type { ModoPreco } from '@/domain/publico/tipos';
 import { sql } from 'drizzle-orm';
 import { cache } from 'react';
 import { calcularChecklist, type Checklist } from '@/domain/onboarding/checklist';
@@ -103,7 +104,7 @@ export type OpcionalPreco = {
 /** Pacotes e opcionais ativos com o preço atual (passo 3). */
 export async function carregarPrecos(
   usuario: UsuarioAtual,
-): Promise<{ pacotes: PacotePreco[]; opcionais: OpcionalPreco[] }> {
+): Promise<{ pacotes: PacotePreco[]; opcionais: OpcionalPreco[]; modoPreco: ModoPreco }> {
   return comUsuario(usuario.id, async (tx) => {
     const pacotes = (await tx.execute(sql`
       select p.id, p.nome, p.modelo_preco as "modeloPreco", p.preco_confirmado_em is not null as confirmado,
@@ -118,7 +119,14 @@ export async function carregarPrecos(
       select o.id, o.nome, o.cobranca, o.preco_confirmado_em is not null as confirmado,
              o.preco_centavos as "precoCentavos"
       from public.opcionais o where o.ativo order by o.ordem, o.nome`)) as unknown as OpcionalPreco[];
-    return { pacotes: [...pacotes], opcionais: [...opcionais] };
+    const [regras] = await tx.execute<{ modo: ModoPreco }>(
+      sql`select r.modo_exibicao_preco as modo from public.regras_comerciais r limit 1`,
+    );
+    return {
+      pacotes: [...pacotes],
+      opcionais: [...opcionais],
+      modoPreco: regras?.modo ?? 'exato',
+    };
   });
 }
 

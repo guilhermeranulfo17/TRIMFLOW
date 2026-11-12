@@ -10,7 +10,8 @@ import type { ResultadoAcao } from '@/server/actions/empresa/comum';
 import { exigirPerfil } from '@/server/auth/guards';
 import { exigirSessao, type UsuarioAtual } from '@/server/auth/sessao';
 import { gravarModelo } from '@/server/catalogo/gravar-modelo';
-import { empresas } from '@/server/db/schema';
+import { auditar } from '@/server/actions/empresa/comum';
+import { empresas, regrasComerciais } from '@/server/db/schema';
 import { comUsuario } from '@/server/db/tenant';
 import { tagDoBuffet } from '@/server/publico/cache';
 import { mensagemErroConta } from '@/domain/cobranca/limites';
@@ -98,6 +99,8 @@ const precosSchema = z.object({
     )
     .max(50),
   opcionais: z.array(z.object({ id: z.uuid(), precoCentavos: centavos })).max(100),
+  /** como o preço aparece no link (Fase 6): gravado junto com os preços */
+  modoExibicaoPreco: z.enum(['exato', 'faixa', 'apos_contato']).optional(),
 });
 export type PrecosEntrada = z.input<typeof precosSchema>;
 
@@ -130,11 +133,29 @@ export async function confirmarPrecos(
       })),
       opcionais: v.data.opcionais.map((o) => ({ id: o.id, preco_centavos: o.precoCentavos })),
     };
-    const [r] = await comUsuario(u.id, (tx) =>
-      tx.execute<{ n: number }>(
+    const modo = v.data.modoExibicaoPreco;
+    const [r] = await comUsuario(u.id, async (tx) => {
+      const n = await tx.execute<{ n: number }>(
         sql`select public.confirmar_precos(${JSON.stringify(json)}::jsonb) as n`,
-      ),
-    );
+      );
+      if (modo) {
+        const [antes] = await tx
+          .select({ modo: regrasComerciais.modoExibicaoPreco })
+          .from(regrasComerciais)
+          .limit(1);
+        if (antes && antes.modo !== modo) {
+          await tx
+            .update(regrasComerciais)
+            .set({ modoExibicaoPreco: modo })
+            .where(eq(regrasComerciais.empresaId, u.empresa.id));
+          await auditar(tx, u, 'regras.condicoes_alteradas', 'regras', u.empresa.id, {
+            antes: { modoExibicaoPreco: antes.modo },
+            depois: { modoExibicaoPreco: modo },
+          });
+        }
+      }
+      return n;
+    });
     revalidateTag(tagDoBuffet(u.empresa.slug));
     revalidatePath('/app', 'layout');
     // CRM de prospecção (§81): o primeiro preço de pacote confirmado pelo dono
