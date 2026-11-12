@@ -4,13 +4,17 @@ import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import {
   dadosOpcionalSchema,
+  fotosOpcionalSchema,
   ordemSchema,
   vinculosOpcionalSchema,
   type DadosOpcionalEntrada,
   type VinculosOpcionalEntrada,
 } from '@/domain/validacao/catalogo';
+import { caminhoImagemValido } from '@/domain/validacao/empresa';
 import type { UsuarioAtual } from '@/server/auth/sessao';
+import { fotosAindaEmUso } from '@/server/catalogo/fotos-em-uso';
 import { gravarOrdem, proximaOrdem } from '@/server/catalogo/lista';
+import { apagarArquivosMidia } from '@/server/catalogo/midia';
 import { opcionais, opcionalPacotes, opcionalTiposEvento } from '@/server/db/schema';
 import { comUsuario, type Tx } from '@/server/db/tenant';
 import {
@@ -202,17 +206,52 @@ export async function duplicarOpcional(id: string): Promise<ResultadoAcao<{ id: 
 export async function excluirOpcional(id: string): Promise<ResultadoAcao> {
   return acaoDoDono(async (dono) => {
     if (!idValido(id)) return { ok: false, erro: NAO_ENCONTRADO };
-    const apagado = await comUsuario(dono.id, async (tx) => {
+    const orfas = await comUsuario(dono.id, async (tx) => {
       const [linha] = await tx
         .delete(opcionais)
         .where(and(eq(opcionais.id, id), eq(opcionais.empresaId, dono.empresa.id)))
         .returning();
-      if (linha) await auditar(tx, dono, 'opcional.excluido', 'opcional', id, { antes: linha });
-      return !!linha;
+      if (!linha) return null;
+      await auditar(tx, dono, 'opcional.excluido', 'opcional', id, { antes: linha });
+      const emUso = await fotosAindaEmUso(tx, linha.fotos);
+      return linha.fotos.filter((f) => !emUso.has(f));
     });
-    if (!apagado) return { ok: false, erro: NAO_ENCONTRADO };
+    if (!orfas) return { ok: false, erro: NAO_ENCONTRADO };
+    await apagarArquivosMidia(orfas);
     revalidar();
     return { ok: true, mensagem: 'Opcional excluído.' };
+  });
+}
+
+/**
+ * Grava a foto do opcional (a que vai na proposta, ao lado do item). A que saiu e não é usada
+ * em outro lugar nem congelada numa proposta é apagada do Storage.
+ */
+export async function salvarFotosOpcional(id: string, caminhos: string[]): Promise<ResultadoAcao> {
+  return acaoDoDono(async (dono) => {
+    const v = validar(fotosOpcionalSchema, { caminhos });
+    if (!v.ok) {
+      const r = v.resultado;
+      return { ok: false, erro: (!r.ok && Object.values(r.campos ?? {})[0]) || 'Foto inválida.' };
+    }
+    const lista = v.dados.caminhos;
+    if (lista.some((c) => !caminhoImagemValido(c, dono.empresa.id, 'pacotes')))
+      return { ok: false, erro: 'Foto inválida.' };
+    let removidas: string[] = [];
+    const ok = await comOpcional(dono, id, async (tx, antes) => {
+      await tx.update(opcionais).set({ fotos: lista }).where(eq(opcionais.id, id));
+      await auditar(tx, dono, 'opcional.fotos_alteradas', 'opcional', id, {
+        antes: antes.fotos,
+        depois: lista,
+      });
+      const saindo = antes.fotos.filter((f) => !lista.includes(f));
+      const emUso = await fotosAindaEmUso(tx, saindo);
+      removidas = saindo.filter((f) => !emUso.has(f));
+    });
+    if (!ok) return { ok: false, erro: NAO_ENCONTRADO };
+    await apagarArquivosMidia(removidas);
+    revalidar(id);
+    return { ok: true, mensagem: 'Foto salva.' };
   });
 }
 

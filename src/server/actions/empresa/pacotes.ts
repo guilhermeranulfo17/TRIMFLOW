@@ -1,6 +1,6 @@
 'use server';
 
-import { and, eq, ne, notInArray, sql } from 'drizzle-orm';
+import { and, eq, notInArray, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import {
   cardapioSchema,
@@ -16,9 +16,9 @@ import {
   type PrecoPacoteEntrada,
 } from '@/domain/validacao/catalogo';
 import { caminhoImagemValido } from '@/domain/validacao/empresa';
-import { urlPublicaMidia } from '@/lib/midia';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { gravarOrdem, proximaOrdem } from '@/server/catalogo/lista';
+import { fotosAindaEmUso } from '@/server/catalogo/fotos-em-uso';
 import { apagarArquivosMidia } from '@/server/catalogo/midia';
 import {
   faixasIdade,
@@ -69,35 +69,6 @@ async function comPacote(
     await fn(tx, pacote);
     return true;
   });
-}
-
-/**
- * Fotos que não podem ser apagadas: as usadas por outros pacotes da empresa (duplicar
- * compartilha os arquivos) e as congeladas em alguma versão de proposta (o PDF de uma versão
- * emitida mostra sempre a mesma foto). `candidatas` limita a busca nas propostas.
- */
-async function fotosEmUso(
-  tx: Tx,
-  excetoPacoteId: string,
-  candidatas: string[],
-): Promise<Set<string>> {
-  const linhas = await tx
-    .select({ fotos: pacotes.fotos })
-    .from(pacotes)
-    .where(ne(pacotes.id, excetoPacoteId));
-  const emUso = new Set(linhas.flatMap((l) => l.fotos));
-  const restantes = candidatas.filter((c) => !emUso.has(c));
-  if (restantes.length === 0) return emUso;
-  const urls = restantes.map((c) => ({ caminho: c, url: urlPublicaMidia(c) }));
-  const congeladas = await tx.execute<{ url: string }>(sql`
-    select u.url from jsonb_array_elements_text(${JSON.stringify(urls.map((u) => u.url))}::jsonb) as u(url)
-    where exists (
-      select 1 from public.orcamentos o
-      where o.conteudo is not null and position(u.url in o.conteudo::text) > 0
-    )`);
-  const achadas = new Set(congeladas.map((l) => l.url));
-  for (const u of urls) if (u.url && achadas.has(u.url)) emUso.add(u.caminho);
-  return emUso;
 }
 
 // ---------------------------------------------------------------------------
@@ -214,9 +185,15 @@ export async function duplicarPacote(id: string): Promise<ResultadoAcao<{ id: st
         );
       const secoes = await tx.select().from(secoesCardapio).where(eq(secoesCardapio.pacoteId, id));
       if (secoes.length)
-        await tx
-          .insert(secoesCardapio)
-          .values(secoes.map((s) => ({ ...base, nome: s.nome, itens: s.itens, ordem: s.ordem })));
+        await tx.insert(secoesCardapio).values(
+          secoes.map((s) => ({
+            ...base,
+            nome: s.nome,
+            itens: s.itens,
+            ordem: s.ordem,
+            fotoUrl: s.fotoUrl,
+          })),
+        );
       const idades = await tx.select().from(faixasIdade).where(eq(faixasIdade.pacoteId, id));
       if (idades.length)
         await tx.insert(faixasIdade).values(
@@ -259,14 +236,20 @@ export async function excluirPacote(id: string): Promise<ResultadoAcao> {
   return acaoDoDono(async (dono) => {
     if (!idValido(id)) return { ok: false, erro: NAO_ENCONTRADO };
     const orfas = await comUsuario(dono.id, async (tx) => {
+      // as seções saem junto (cascade): guarda as fotos delas antes
+      const secoesAntes = await tx
+        .select({ foto: secoesCardapio.fotoUrl })
+        .from(secoesCardapio)
+        .where(eq(secoesCardapio.pacoteId, id));
       const [linha] = await tx
         .delete(pacotes)
         .where(and(eq(pacotes.id, id), eq(pacotes.empresaId, dono.empresa.id)))
         .returning();
       if (!linha) return null;
       await auditar(tx, dono, 'pacote.excluido', 'pacote', id, { antes: linha });
-      const emUso = await fotosEmUso(tx, id, linha.fotos);
-      return linha.fotos.filter((f) => !emUso.has(f));
+      const candidatas = [...linha.fotos, ...secoesAntes.flatMap((x) => (x.foto ? [x.foto] : []))];
+      const emUso = await fotosAindaEmUso(tx, candidatas);
+      return candidatas.filter((f) => !emUso.has(f));
     });
     if (!orfas) return { ok: false, erro: NAO_ENCONTRADO };
     await apagarArquivosMidia(orfas);
@@ -379,7 +362,7 @@ export async function salvarFotosPacote(id: string, caminhos: string[]): Promise
         depois: lista,
       });
       const saindo = antes.fotos.filter((f) => !lista.includes(f));
-      const emUso = await fotosEmUso(tx, id, saindo);
+      const emUso = await fotosAindaEmUso(tx, saindo);
       removidas = saindo.filter((f) => !emUso.has(f));
     });
     if (!ok) return { ok: false, erro: NAO_ENCONTRADO };
@@ -394,7 +377,14 @@ export async function salvarCardapio(id: string, entrada: CardapioEntrada): Prom
     const v = validar(cardapioSchema, entrada);
     if (!v.ok) return v.resultado;
     const secoes = v.dados.secoes;
+    if (secoes.some((s) => s.foto && !caminhoImagemValido(s.foto, dono.empresa.id, 'pacotes')))
+      return { ok: false, erro: 'Foto inválida.' };
+    let removidas: string[] = [];
     const ok = await comPacote(dono, id, async (tx) => {
+      const antes = await tx
+        .select({ foto: secoesCardapio.fotoUrl })
+        .from(secoesCardapio)
+        .where(eq(secoesCardapio.pacoteId, id));
       await tx.delete(secoesCardapio).where(eq(secoesCardapio.pacoteId, id));
       if (secoes.length)
         await tx.insert(secoesCardapio).values(
@@ -404,11 +394,16 @@ export async function salvarCardapio(id: string, entrada: CardapioEntrada): Prom
             nome: s.nome,
             itens: s.itens,
             ordem,
+            fotoUrl: s.foto || null,
           })),
         );
       await auditar(tx, dono, 'pacote.cardapio_alterado', 'pacote', id, { depois: secoes });
+      const saindo = antes.flatMap((x) => (x.foto ? [x.foto] : []));
+      const emUso = await fotosAindaEmUso(tx, saindo);
+      removidas = saindo.filter((f) => !emUso.has(f));
     });
     if (!ok) return { ok: false, erro: NAO_ENCONTRADO };
+    await apagarArquivosMidia(removidas);
     revalidar(id);
     return { ok: true, mensagem: 'Cardápio salvo.' };
   });

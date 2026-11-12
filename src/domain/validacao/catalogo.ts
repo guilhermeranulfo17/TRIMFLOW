@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MAX_FOTOS_PACOTE } from '../imagem';
+import { MAX_FOTOS_OPCIONAL, MAX_FOTOS_PACOTE } from '../imagem';
 import {
   validarFaixasIdade,
   validarPrecoPacote,
@@ -95,6 +95,8 @@ export const cardapioSchema = z.object({
           .array(z.string().trim().min(1).max(120, 'Item muito longo.'))
           .min(1, 'Coloque pelo menos um item na seção.')
           .max(60),
+        /** caminho da foto da seção no bucket (opcional) */
+        foto: z.string().max(200).nullable().optional(),
       }),
     )
     .max(20),
@@ -168,6 +170,13 @@ export const faixasIdadePacoteSchema = z
     adicionarProblemas(ctx, validarFaixasIdade(v.faixas));
   });
 export type FaixasIdadePacoteEntrada = z.input<typeof faixasIdadePacoteSchema>;
+
+export const fotosOpcionalSchema = z.object({
+  caminhos: z
+    .array(z.string().max(200))
+    .max(MAX_FOTOS_OPCIONAL, `Use no máximo ${MAX_FOTOS_OPCIONAL} foto.`)
+    .refine((c) => new Set(c).size === c.length, 'Foto repetida.'),
+});
 
 export const fotosPacoteSchema = z.object({
   caminhos: z
