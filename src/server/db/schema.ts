@@ -62,6 +62,8 @@ export const empresas = pgTable('empresas', {
   rodapeOrkestra: boolean('rodape_orkestra').notNull().default(true),
   /** Modelo visual da proposta (web e PDF): 'elegante' | 'alegre'; null = padrão do segmento. */
   modeloProposta: text('modelo_proposta'),
+  /** Modelo visual da página pública: 'elegante' | 'alegre'; null = o da proposta. */
+  modeloPagina: text('modelo_pagina'),
   /** Etapa 8: passo atual do onboarding (1 a 5) e marcos do checklist. */
   onboardingPasso: smallint('onboarding_passo').notNull().default(1),
   onboardingIniciadoEm: timestamp('onboarding_iniciado_em', { withTimezone: true }),

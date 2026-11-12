@@ -276,6 +276,9 @@ describe('leitura pública', () => {
           'endereco',
           'estilo',
           'galeria',
+          // §84: modelo visual da página e da proposta (identidade, nada pessoal)
+          'modelo_pagina',
+          'modelo_proposta',
           'perguntas',
           'segmento',
           'slogan',

@@ -4,9 +4,20 @@ import { Eye, Monitor, RotateCw, Smartphone, X } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
-type Contexto = { versao: number; atualizar: () => void };
+type Contexto = {
+  versao: number;
+  atualizar: () => void;
+  /** modelo mostrado na prévia antes de salvar ('' = o gravado) */
+  modelo: string;
+  definirModelo: (m: string) => void;
+};
 
-const PreviaContexto = createContext<Contexto>({ versao: 0, atualizar: () => {} });
+const PreviaContexto = createContext<Contexto>({
+  versao: 0,
+  atualizar: () => {},
+  modelo: '',
+  definirModelo: () => {},
+});
 
 /** Toda seção do editor chama `atualizar()` depois de salvar: a prévia recarrega. */
 export function usePrevia() {
@@ -15,16 +26,20 @@ export function usePrevia() {
 
 export function ProvedorPrevia({ children }: { children: React.ReactNode }) {
   const [versao, setVersao] = useState(0);
+  const [modelo, definirModelo] = useState('');
   const atualizar = useCallback(() => setVersao((v) => v + 1), []);
-  return <PreviaContexto value={{ versao, atualizar }}>{children}</PreviaContexto>;
+  return (
+    <PreviaContexto value={{ versao, atualizar, modelo, definirModelo }}>{children}</PreviaContexto>
+  );
 }
 
 function Moldura({ slug, largura }: { slug: string; largura: 'celular' | 'pc' }) {
-  const { versao } = usePrevia();
+  const { versao, modelo } = usePrevia();
+  const extra = modelo ? `&modelo=${modelo}` : '';
   return (
     <iframe
-      key={versao}
-      src={`/b/${slug}?previa=1&v=${versao}`}
+      key={`${versao}${modelo}`}
+      src={`/b/${slug}?previa=1&v=${versao}${extra}`}
       title="Prévia da página pública"
       className={
         largura === 'celular'

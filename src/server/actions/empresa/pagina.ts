@@ -30,6 +30,7 @@ export async function salvarTextosPagina(entrada: TextosPaginaEntrada): Promise<
     if (!v.ok) return v.resultado;
     const d = v.dados;
     const p = {
+      ...(d.modelo !== undefined ? { modelo: d.modelo } : {}),
       slogan: d.slogan,
       estilo: d.estilo,
       diferenciais: d.diferenciais,

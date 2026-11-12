@@ -86,7 +86,11 @@ export default async function PaginaLink() {
             </p>
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(360px,440px)]">
               <div className="flex min-w-0 flex-col gap-6">
-                <FormTextosPagina inicial={editor.textos} segmento={editor.segmento} />
+                <FormTextosPagina
+                  inicial={editor.textos}
+                  segmento={editor.segmento}
+                  modeloPadrao={editor.modeloPadrao}
+                />
                 <SecaoGaleria
                   empresaId={usuario.empresa.id}
                   nomeBuffet={usuario.empresa.nome}
