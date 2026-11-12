@@ -36,6 +36,7 @@ const BUFFET: BuffetProposta = {
   endereco: 'Rua das Flores, 100 - Centro',
   whatsappE164: '+5534991355450',
   rodapeOrkestra: true,
+  modeloVisual: 'alegre',
 };
 
 /** Versão congelada de um modelo de segmento (o que o servidor grava ao concluir). */

@@ -16,6 +16,7 @@ import {
   type PrecoPacoteEntrada,
 } from '@/domain/validacao/catalogo';
 import { caminhoImagemValido } from '@/domain/validacao/empresa';
+import { urlPublicaMidia } from '@/lib/midia';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { gravarOrdem, proximaOrdem } from '@/server/catalogo/lista';
 import { apagarArquivosMidia } from '@/server/catalogo/midia';
@@ -70,13 +71,33 @@ async function comPacote(
   });
 }
 
-/** Fotos usadas por outros pacotes da empresa (duplicar compartilha os arquivos). */
-async function fotosEmUso(tx: Tx, excetoPacoteId: string): Promise<Set<string>> {
+/**
+ * Fotos que não podem ser apagadas: as usadas por outros pacotes da empresa (duplicar
+ * compartilha os arquivos) e as congeladas em alguma versão de proposta (o PDF de uma versão
+ * emitida mostra sempre a mesma foto). `candidatas` limita a busca nas propostas.
+ */
+async function fotosEmUso(
+  tx: Tx,
+  excetoPacoteId: string,
+  candidatas: string[],
+): Promise<Set<string>> {
   const linhas = await tx
     .select({ fotos: pacotes.fotos })
     .from(pacotes)
     .where(ne(pacotes.id, excetoPacoteId));
-  return new Set(linhas.flatMap((l) => l.fotos));
+  const emUso = new Set(linhas.flatMap((l) => l.fotos));
+  const restantes = candidatas.filter((c) => !emUso.has(c));
+  if (restantes.length === 0) return emUso;
+  const urls = restantes.map((c) => ({ caminho: c, url: urlPublicaMidia(c) }));
+  const congeladas = await tx.execute<{ url: string }>(sql`
+    select u.url from jsonb_array_elements_text(${JSON.stringify(urls.map((u) => u.url))}::jsonb) as u(url)
+    where exists (
+      select 1 from public.orcamentos o
+      where o.conteudo is not null and position(u.url in o.conteudo::text) > 0
+    )`);
+  const achadas = new Set(congeladas.map((l) => l.url));
+  for (const u of urls) if (u.url && achadas.has(u.url)) emUso.add(u.caminho);
+  return emUso;
 }
 
 // ---------------------------------------------------------------------------
@@ -244,7 +265,7 @@ export async function excluirPacote(id: string): Promise<ResultadoAcao> {
         .returning();
       if (!linha) return null;
       await auditar(tx, dono, 'pacote.excluido', 'pacote', id, { antes: linha });
-      const emUso = await fotosEmUso(tx, id);
+      const emUso = await fotosEmUso(tx, id, linha.fotos);
       return linha.fotos.filter((f) => !emUso.has(f));
     });
     if (!orfas) return { ok: false, erro: NAO_ENCONTRADO };
@@ -357,8 +378,9 @@ export async function salvarFotosPacote(id: string, caminhos: string[]): Promise
         antes: antes.fotos,
         depois: lista,
       });
-      const emUso = await fotosEmUso(tx, id);
-      removidas = antes.fotos.filter((f) => !lista.includes(f) && !emUso.has(f));
+      const saindo = antes.fotos.filter((f) => !lista.includes(f));
+      const emUso = await fotosEmUso(tx, id, saindo);
+      removidas = saindo.filter((f) => !emUso.has(f));
     });
     if (!ok) return { ok: false, erro: NAO_ENCONTRADO };
     await apagarArquivosMidia(removidas);

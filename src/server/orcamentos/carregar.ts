@@ -9,6 +9,7 @@ import { carregarContexto } from '@/server/catalogo/carregar';
 import {
   leads,
   orcamentos,
+  pacotes,
   regrasComerciais,
   reservas,
   tiposEvento,
@@ -59,6 +60,16 @@ export async function carregarBaseInterna(usuario: UsuarioAtual): Promise<BaseIn
     limiteDescontoBp: usuario.perfil === 'dono' ? 10_000 : percentualTextoParaBp(extras.limite),
     hoje: hojeNoFuso(usuario.empresa.fuso),
   };
+}
+
+/** Descrição e fotos (caminhos) de cada pacote, para congelar a foto na versão nova. */
+export async function carregarExtrasPacotes(
+  usuario: UsuarioAtual,
+): Promise<Record<Id, { descricao: string | null; fotos: string[] }>> {
+  const linhas = await comUsuario(usuario.id, (tx) =>
+    tx.select({ id: pacotes.id, descricao: pacotes.descricao, fotos: pacotes.fotos }).from(pacotes),
+  );
+  return Object.fromEntries(linhas.map((l) => [l.id, { descricao: l.descricao, fotos: l.fotos }]));
 }
 
 export type LeadPorWhatsapp = { id: string; nome: string; orcamentos: number } | null;

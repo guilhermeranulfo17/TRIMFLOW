@@ -1,7 +1,14 @@
 import { somarDias } from '@/domain/dates';
 import type { ContextoPreco, ResultadoOrcamento } from '@/domain/preco';
-import { congelarConteudo, type ConteudoCongelado, type TextosComerciais } from '@/domain/proposta';
+import type { Id } from '@/domain/preco';
+import {
+  congelarConteudo,
+  type ConteudoCongelado,
+  type TextosComerciais,
+  type VitrinePacotes,
+} from '@/domain/proposta';
 import type { Escolhas } from '@/domain/publico';
+import { urlPublicaMidia } from '@/lib/midia';
 
 /*
  * Monta o que é gravado numa versão: itens (cópia das linhas do motor, com a referência ao
@@ -41,6 +48,8 @@ export function prepararVersao(d: {
   aberturaModelo: string | null;
   clienteNome: string;
   buffetNome: string;
+  /** descrição e foto de cada pacote (vitrinePacotesDe); sem ela, a versão sai sem foto */
+  vitrinePacotes?: VitrinePacotes;
 }): DadosVersao {
   const { ctx, escolhas: e, resultado } = d;
   const ativos = ctx.espacos.filter((x) => x.ativo);
@@ -73,6 +82,23 @@ export function prepararVersao(d: {
       aberturaModelo: d.aberturaModelo,
       clienteNome: d.clienteNome,
       buffetNome: d.buffetNome,
+      vitrinePacotes: d.vitrinePacotes,
     }),
   };
+}
+
+/**
+ * Descrição e URL pública da PRIMEIRA foto de cada pacote, para congelar na versão: o PDF de
+ * uma versão emitida mostra sempre a mesma foto (o arquivo não é apagado enquanto alguma
+ * proposta o usa: ver fotosEmUso em server/actions/empresa/pacotes).
+ */
+export function vitrinePacotesDe(
+  pacotes: Record<Id, { descricao: string | null; fotos: string[] }>,
+): VitrinePacotes {
+  return Object.fromEntries(
+    Object.entries(pacotes).map(([id, p]) => [
+      id,
+      { descricao: p.descricao, foto: urlPublicaMidia(p.fotos[0] ?? null) },
+    ]),
+  );
 }

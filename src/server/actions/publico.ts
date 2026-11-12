@@ -31,7 +31,7 @@ import {
 } from '@/domain/validacao/publico';
 import { processarAvisosSemFalhar } from '@/server/avisos/processar';
 import { comAnon } from '@/server/db/anon';
-import { prepararVersao, type DadosVersao } from '@/server/proposta/versao';
+import { prepararVersao, vitrinePacotesDe, type DadosVersao } from '@/server/proposta/versao';
 import { carregarBuffet, carregarContextoPublico } from '@/server/publico/carregar';
 import {
   cookieDoOrcamento,
@@ -323,6 +323,7 @@ async function prepararPublica(
       aberturaModelo: contexto.aberturaPorTipo[escolhas.tipoEventoId ?? ''] ?? null,
       clienteNome,
       buffetNome: buffet?.nome ?? '',
+      vitrinePacotes: vitrinePacotesDe(contexto.extras),
     }),
   };
 }

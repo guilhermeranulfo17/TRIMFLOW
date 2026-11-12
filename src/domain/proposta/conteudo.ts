@@ -10,6 +10,7 @@ import { mascaraCnpj } from '../validacao/cnpj';
 import { preencherAbertura } from './abertura';
 import { numeroProposta } from './arquivo';
 import { estadoValidade, type EstadoValidade } from './validade';
+import type { ModeloVisual } from './visual';
 
 // ---------------------------------------------------------------------------
 // Conteúdo congelado na conclusão de cada versão (orcamentos.conteudo)
@@ -25,6 +26,12 @@ export type ConteudoCongelado = {
     nome: string;
     duracaoInclusaMin: number;
     secoes: { nome: string; itens: string[] }[];
+    /**
+     * Descrição e URL pública da primeira foto do pacote no momento da conclusão (desde a
+     * proposta premium). Versões antigas não têm os campos: saem sem foto e sem descrição.
+     */
+    descricao?: string | null;
+    foto?: string | null;
   } | null;
   convidados: { adultos: number; criancas: { rotulo: string; quantidade: number }[] };
   espaco: { nome: string; noLocalDoCliente: boolean; localCliente: string | null } | null;
@@ -41,6 +48,9 @@ export type ConteudoCongelado = {
 
 export type TextosComerciais = Omit<ConteudoCongelado['textos'], 'sinalBp'>;
 
+/** Descrição e URL pública da primeira foto de cada pacote (o servidor monta a URL). */
+export type VitrinePacotes = Record<Id, { descricao: string | null; foto: string | null }>;
+
 export function congelarConteudo(d: {
   ctx: ContextoPreco;
   escolhas: Escolhas;
@@ -49,6 +59,8 @@ export function congelarConteudo(d: {
   aberturaModelo: string | null;
   clienteNome: string;
   buffetNome: string;
+  /** descrição e foto do pacote escolhido; sem a entrada, a versão sai sem foto */
+  vitrinePacotes?: VitrinePacotes;
 }): ConteudoCongelado {
   const { ctx, escolhas: e } = d;
   const pacote = ctx.pacotes.find((p) => p.id === e.pacoteId) ?? null;
@@ -73,6 +85,8 @@ export function congelarConteudo(d: {
             .sort((a, b) => a.ordem - b.ordem)
             .filter((s) => s.itens.length > 0)
             .map((s) => ({ nome: s.nome, itens: s.itens })),
+          descricao: textoOuNull(d.vitrinePacotes?.[pacote.id]?.descricao),
+          foto: d.vitrinePacotes?.[pacote.id]?.foto ?? null,
         }
       : null,
     convidados: { adultos: e.adultos ?? 0, criancas },
@@ -133,6 +147,8 @@ export type BuffetProposta = {
   endereco: string | null;
   whatsappE164: string | null;
   rodapeOrkestra: boolean;
+  /** modelo visual efetivo (modeloVisualEfetivo): identidade, lido ao vivo */
+  modeloVisual: ModeloVisual;
 };
 
 export type LinhaInvestimento = {
@@ -141,9 +157,13 @@ export type LinhaInvestimento = {
   detalhe: string | null;
   valor: string;
   negativo: boolean;
+  /** foto congelada do item (hoje só o pacote) e texto de apresentação dele */
+  foto: string | null;
+  texto: string | null;
 };
 
 export type ModeloProposta = {
+  visual: ModeloVisual;
   cores: CoresMarca;
   cabecalho: {
     buffet: string;
@@ -201,6 +221,11 @@ function textoOuNull(t: string | null | undefined): string | null {
   return t && t.trim() ? t.trim() : null;
 }
 
+/** Só URL https (ou http local): qualquer outra coisa no JSON congelado vira "sem foto". */
+export function fotoValida(url: string | null | undefined): string | null {
+  return typeof url === 'string' && /^https?:\/\/[^\s"'<>]+$/.test(url) ? url : null;
+}
+
 /** Monta o modelo da proposta a partir da versão congelada e da identidade (viva) do buffet. */
 export function montarConteudo(v: VersaoProposta, buffet: BuffetProposta): ModeloProposta {
   const c = v.conteudo;
@@ -228,16 +253,24 @@ export function montarConteudo(v: VersaoProposta, buffet: BuffetProposta): Model
       : c.espaco.nome
     : v.espaco;
 
-  const linhas: LinhaInvestimento[] = v.itens.map((i) => ({
-    tipo: i.tipo,
-    descricao: i.descricao,
-    detalhe: textoOuNull(i.detalhe),
-    valor:
-      i.subtotalCentavos < 0
-        ? `- ${formatBRL(-i.subtotalCentavos)}`
-        : formatBRL(i.subtotalCentavos),
-    negativo: i.subtotalCentavos < 0,
-  }));
+  // A foto e a descrição do pacote vão na linha do pacote (só uma por versão).
+  let pacoteUsado = false;
+  const linhas: LinhaInvestimento[] = v.itens.map((i) => {
+    const ehPacote = i.tipo === 'pacote' && !pacoteUsado && !!c?.pacote;
+    if (ehPacote) pacoteUsado = true;
+    return {
+      tipo: i.tipo,
+      descricao: i.descricao,
+      detalhe: textoOuNull(i.detalhe),
+      valor:
+        i.subtotalCentavos < 0
+          ? `- ${formatBRL(-i.subtotalCentavos)}`
+          : formatBRL(i.subtotalCentavos),
+      negativo: i.subtotalCentavos < 0,
+      foto: ehPacote ? fotoValida(c!.pacote!.foto) : null,
+      texto: ehPacote ? textoOuNull(c!.pacote!.descricao) : null,
+    };
+  });
 
   const rodape = [
     buffet.razaoSocial?.trim() || buffet.nome,
@@ -247,6 +280,7 @@ export function montarConteudo(v: VersaoProposta, buffet: BuffetProposta): Model
   ].filter((x): x is string => !!x);
 
   return {
+    visual: buffet.modeloVisual,
     cores: coresDaMarca(buffet.corMarca),
     cabecalho: {
       buffet: buffet.nome,
