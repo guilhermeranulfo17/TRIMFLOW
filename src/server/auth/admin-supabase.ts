@@ -227,3 +227,52 @@ export function criarAuthDemo(): AuthDemo {
     },
   };
 }
+
+/**
+ * Usuário dono de uma conta de apresentação: criado já confirmado, SEM a marca de demo (é uma
+ * conta comum, editável). A cada recriação o banimento e fatores de MFA são limpos. A entrada é
+ * só pelo /interno (hashDeEntrada, link mágico sem envio de e-mail).
+ */
+export function criarAuthApresentacao(): AuthDemo {
+  return {
+    async garantirUsuario(email) {
+      const admin = clienteAdmin().auth.admin;
+      let id: string | null = null;
+      const criado = await admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { nome: 'Equipe Orkestra' },
+        app_metadata: { apresentacao: true },
+      });
+      if (criado.data.user) {
+        id = criado.data.user.id;
+      } else {
+        const link = await admin.generateLink({ type: 'magiclink', email });
+        falhar('garantirUsuario', link.error);
+        id = link.data.user?.id ?? null;
+      }
+      if (!id) throw new Error('[auth-admin] garantirUsuario: sem id');
+      const { error } = await admin.updateUserById(id, {
+        email,
+        ban_duration: 'none',
+        app_metadata: { apresentacao: true, demo: false, mfa: false, trocar_senha: false },
+      });
+      falhar('garantirUsuario', error);
+      const fatores = await admin.mfa.listFactors({ userId: id });
+      for (const f of fatores.data?.factors ?? []) {
+        await admin.mfa.deleteFactor({ id: f.id, userId: id });
+      }
+      return id;
+    },
+    async hashDeEntrada(email) {
+      const { data, error } = await clienteAdmin().auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+      });
+      falhar('hashDeEntrada', error);
+      const hash = data.properties?.hashed_token;
+      if (!hash) throw new Error('[auth-admin] hashDeEntrada: sem token');
+      return hash;
+    },
+  };
+}

@@ -1,4 +1,5 @@
 import type { DataCivil } from '../dates';
+import type { Segmento } from '../segmento';
 import {
   blocosDoContrato,
   resumoDoContrato,
@@ -23,6 +24,9 @@ export type ReservaExemplo = {
   totalCentavos: number;
   sinalCentavos: number;
   hoje: DataCivil;
+  /** contas de apresentação: modelo de contrato do segmento e dados da festa (padrão: infantil) */
+  segmento?: Segmento;
+  festa?: Partial<FonteContrato['festa']>;
 };
 
 export function contratoDeExemplo(r: ReservaExemplo): {
@@ -31,7 +35,7 @@ export function contratoDeExemplo(r: ReservaExemplo): {
   valores: ReturnType<typeof resumoDoContrato>;
   modeloOrigem: string;
 } {
-  const modelo = MODELOS_PADRAO.infantil;
+  const modelo = MODELOS_PADRAO[r.segmento ?? 'infantil'];
   const fonte: FonteContrato = {
     hoje: r.hoje,
     cliente: { nome: r.cliente, whatsappE164: r.whatsappE164 ?? '+5534997000000', email: null },
@@ -54,6 +58,7 @@ export function contratoDeExemplo(r: ReservaExemplo): {
       pacote: 'Encanto',
       itens: ['Pacote Encanto', 'Decoração temática', 'Monitores de recreação'],
       naoIncluso: 'Bolo e lembrancinhas.',
+      ...r.festa,
     },
     valores: {
       totalCentavos: r.totalCentavos,

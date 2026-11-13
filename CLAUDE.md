@@ -61,6 +61,7 @@ src/
     api/cobranca/    asaas (webhook, token no header) e reconciliar (POST, Bearer CRON_SECRET)
     interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral,
                      empresas/[id] (ações auditadas, "Entrar como esta empresa")
+                     e apresentacoes (uma conta de apresentação por modelo, §88)
     manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)
     auth/            rotas técnicas: confirm (link do e-mail), callback (Google), sair
     b/[slug]/        página pública do buffet (vitrine com estilo), orcamento (wizard),
@@ -173,6 +174,7 @@ src/
     seguranca/       limite de tentativas (publico.limite_acesso)
     saude/           dados do /api/saude (deps injetadas)
     demo/            conta de demonstração: recriar (deps injetadas) e entrada
+    apresentacao/    contas de apresentação por modelo (criar/recriar, deps injetadas, §88)
     log.ts, cron.ts  log estruturado (logar, codigoDoErro) e autorização das rotas do pg_cron
     env.ts, erros.ts
   lib/               utilitários de UI (cn), opções do Sentry
