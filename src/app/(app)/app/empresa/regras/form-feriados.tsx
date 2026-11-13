@@ -3,7 +3,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTransition } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { CampoPercentual } from '@/components/app/campos';
 import { Campo } from '@/components/app/form/campo';
 import { aplicarErrosServidor, lerErro } from '@/components/app/form/erros';
 import { Secao } from '@/components/app/form/secao';
@@ -45,23 +46,23 @@ export function FormFeriados({
   return (
     <Secao
       id="feriados"
-      titulo="Feriados"
-      descricao="Datas em que vale o ajuste de feriado (cadastre o ajuste em Ajustes por dia)."
+      titulo="Feriados e datas especiais"
+      descricao="Sem preço próprio, vale o ajuste de feriado de Ajustes por dia. Com preço próprio, a data tem o ajuste dela. Ex.: Véspera do Dia das Mães, +15%."
       onSubmit={onSubmit}
       salvando={salvando}
       sujo={form.formState.isDirty}
       somenteLeitura={somenteLeitura}
     >
       {fields.length === 0 && (
-        <p className="text-muted-foreground text-sm">Nenhum feriado cadastrado.</p>
+        <p className="text-muted-foreground text-sm">Nenhuma data cadastrada.</p>
       )}
       <ul className="space-y-2">
         {fields.map((campo, i) => (
           <li key={campo.id} className="flex items-start gap-2">
-            <div className="grid min-w-0 flex-1 grid-cols-[9.5rem_1fr] gap-2">
+            <div className="grid min-w-0 flex-1 grid-cols-[9.5rem_1fr] gap-2 sm:grid-cols-[9.5rem_1fr_9rem]">
               <Campo
                 id={`feriado-data-${i}`}
-                rotulo={`Data do feriado ${i + 1}`}
+                rotulo={`Data ${i + 1}`}
                 erro={lerErro(e, `feriados.${i}.data`)}
               >
                 <Input
@@ -73,8 +74,27 @@ export function FormFeriados({
               <Campo id={`feriado-nome-${i}`} rotulo="Nome" erro={lerErro(e, `feriados.${i}.nome`)}>
                 <Input
                   id={`feriado-nome-${i}`}
-                  placeholder="Ex.: Natal"
+                  placeholder="Ex.: Natal ou Véspera do Dia das Mães"
                   {...form.register(`feriados.${i}.nome`)}
+                />
+              </Campo>
+              <Campo
+                id={`feriado-ajuste-${i}`}
+                rotulo="Preço próprio"
+                erro={lerErro(e, `feriados.${i}.ajusteBp`)}
+                className="col-span-2 sm:col-span-1"
+              >
+                <Controller
+                  control={form.control}
+                  name={`feriados.${i}.ajusteBp`}
+                  render={({ field }) => (
+                    <CampoPercentual
+                      id={`feriado-ajuste-${i}`}
+                      permitirNegativo
+                      valor={field.value ?? null}
+                      onChange={(v) => field.onChange(v)}
+                    />
+                  )}
                 />
               </Campo>
             </div>
@@ -83,7 +103,7 @@ export function FormFeriados({
               variant="ghost"
               size="icon"
               className="mt-6"
-              aria-label={`Remover feriado ${i + 1}`}
+              aria-label={`Remover data ${i + 1}`}
               onClick={() => remove(i)}
             >
               <Trash2 aria-hidden />
@@ -95,9 +115,9 @@ export function FormFeriados({
         type="button"
         variant="outline"
         size="sm"
-        onClick={() => append({ data: '', nome: '' })}
+        onClick={() => append({ data: '', nome: '', ajusteBp: null })}
       >
-        <Plus aria-hidden /> Adicionar feriado
+        <Plus aria-hidden /> Adicionar data
       </Button>
     </Secao>
   );

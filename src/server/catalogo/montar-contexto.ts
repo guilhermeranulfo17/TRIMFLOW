@@ -45,7 +45,7 @@ export type LinhasCatalogo = {
     turnoId: string | null;
     ajusteBp: number;
   }>;
-  feriados: Linha<{ data: string; nome: string }>;
+  feriados: Linha<{ data: string; nome: string; id?: string; ajusteBp?: number | null }>;
   faixasIdade: Linha<{
     id: string;
     rotulo: string;
@@ -143,7 +143,12 @@ export function montarContexto(l: LinhasCatalogo): ContextoPreco {
       turnoId: a.turnoId,
       ajusteBp: a.ajusteBp,
     })),
-    feriados: l.feriados.map((f) => ({ data: f.data, nome: f.nome })),
+    feriados: l.feriados.map((f) => ({
+      data: f.data,
+      nome: f.nome,
+      ...(f.id ? { id: f.id } : {}),
+      ajusteBp: f.ajusteBp ?? null,
+    })),
     faixasIdade: l.faixasIdade.map((f) => ({
       id: f.id,
       rotulo: f.rotulo,

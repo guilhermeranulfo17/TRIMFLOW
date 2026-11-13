@@ -67,7 +67,13 @@ export default async function RegrasPage() {
         somenteLeitura={somenteLeitura}
       />
       <FormFeriados
-        inicial={{ feriados: dados.feriados.map((f) => ({ data: f.data, nome: f.nome })) }}
+        inicial={{
+          feriados: dados.feriados.map((f) => ({
+            data: f.data,
+            nome: f.nome,
+            ajusteBp: f.ajusteBp,
+          })),
+        }}
         somenteLeitura={somenteLeitura}
       />
       <FormCriancasEmpresa

@@ -101,6 +101,8 @@ export const feriados = pgTable(
     empresaId: empresaId(),
     data: date('data', { mode: 'string' }).notNull(),
     nome: text('nome').notNull(),
+    /** Data especial: ajuste próprio em bp (vence os outros); nulo = feriado comum. */
+    ajusteBp: integer('ajuste_bp'),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },

@@ -59,7 +59,12 @@ export type AjusteDiaCtx = {
   ajusteBp: number;
 };
 
-export type FeriadoCtx = { data: DataCivil; nome: string };
+/**
+ * Feriado ou data especial. `ajusteBp` preenchido = data especial com preço próprio (ex.:
+ * "Véspera do Dia das Mães", +15%), que vence os outros ajustes; sem ele, vale o ajuste de
+ * feriado de Ajustes por dia.
+ */
+export type FeriadoCtx = { data: DataCivil; nome: string; id?: Id; ajusteBp?: number | null };
 
 export type FaixaIdadeCtx = {
   id: Id;

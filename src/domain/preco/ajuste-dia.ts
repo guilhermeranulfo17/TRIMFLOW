@@ -5,7 +5,8 @@ export type AjusteEscolhido = { ajuste: AjusteDiaCtx; descricao: string };
 
 /**
  * Escolhe UM ajuste para a data e o turno, nesta precedência:
- * feriado com o turno > feriado geral > dia da semana com o turno > dia da semana geral.
+ * data especial (ajuste próprio da data) > feriado com o turno > feriado geral > dia da semana
+ * com o turno > dia da semana geral.
  * Um ajuste de 0 bp também "vence" (ex.: feriado 0% anula o +10% de sábado).
  */
 export function escolherAjusteDia(
@@ -16,6 +17,20 @@ export function escolherAjusteDia(
   const feriado = contexto.feriados.find((f) => f.data === data);
   const dia = diaDaSemanaNumero(data);
   const nomeTurno = contexto.turnos.find((t) => t.id === turnoId)?.nome;
+
+  // Data especial: o ajuste é da própria data, vale para qualquer turno
+  if (feriado && feriado.ajusteBp !== null && feriado.ajusteBp !== undefined) {
+    return {
+      ajuste: {
+        id: feriado.id ?? '',
+        tipo: 'feriado',
+        diaSemana: null,
+        turnoId: null,
+        ajusteBp: feriado.ajusteBp,
+      },
+      descricao: `Ajuste ${feriado.nome}`,
+    };
+  }
 
   const candidatos: [AjusteDiaCtx | undefined, string][] = [];
   if (feriado) {

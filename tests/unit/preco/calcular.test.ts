@@ -207,6 +207,44 @@ describe('ajuste de dia', () => {
     });
   });
 
+  it('data especial com preço próprio vence feriado e dia da semana, em qualquer turno', () => {
+    const r = calc(base, (c) => {
+      comAjustes(c);
+      c.feriados = [
+        { data: SABADO, nome: 'Véspera do Dia das Mães', id: 'fer-maes', ajusteBp: 1500 },
+      ];
+    });
+    expect(linha(r, 'ajuste_dia')[0]).toMatchObject({
+      referenciaId: 'fer-maes',
+      subtotalCentavos: 90000,
+      descricao: 'Ajuste Véspera do Dia das Mães',
+    });
+    expect(linha(r, 'ajuste_dia')).toHaveLength(1);
+  });
+
+  it('data especial com 0% anula os outros ajustes', () => {
+    const r = calc(base, (c) => {
+      comAjustes(c);
+      c.feriados = [{ data: SABADO, nome: 'Sem acréscimo', ajusteBp: 0 }];
+    });
+    expect(linha(r, 'ajuste_dia')).toEqual([]);
+  });
+
+  it('data especial com desconto vira linha negativa', () => {
+    const r = calc(base, (c) => {
+      c.feriados = [{ data: SABADO, nome: 'Promoção', id: 'p', ajusteBp: -1000 }];
+    });
+    expect(linha(r, 'ajuste_dia')[0]).toMatchObject({ subtotalCentavos: -60000 });
+  });
+
+  it('ajuste nulo na data mantém a regra antiga de feriado', () => {
+    const r = calc(base, (c) => {
+      comAjustes(c);
+      c.feriados = [{ data: SABADO, nome: 'Aniversário da cidade', ajusteBp: null }];
+    });
+    expect(linha(r, 'ajuste_dia')[0]).toMatchObject({ referenciaId: 'feriado-turno' });
+  });
+
   it('ajuste de outro turno não vale', () => {
     const r = calc({ ...base, turnoId: 'tu-almoco' }, (c) => {
       c.ajustesDia = [
