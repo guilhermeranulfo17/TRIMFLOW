@@ -18,6 +18,7 @@ export const mensagens = {
     `O espaço ${espaco} comporta até ${capacidade} pessoas.`,
   opcionalIncluso: (opcional: string, pacote: string) =>
     `${opcional} já vem incluso no pacote ${pacote}.`,
+  itemNaoRetiravel: () => 'Esse item não pode ser retirado deste pacote.',
   opcionalIncompativel: (opcional: string) => `${opcional} não está disponível para essa festa.`,
   opcionalQuantidade: (opcional: string, min: number, max: number | null) =>
     max === null

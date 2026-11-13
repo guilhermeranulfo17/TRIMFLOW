@@ -13,7 +13,7 @@ import { entradaDoMotor, ESCOLHAS_VAZIAS, type Escolhas } from '@/domain/publico
 
 /* Fase 5: proposta em planilha (CSV para o Excel em português). */
 
-function modelo() {
+function modelo(extras: VersaoProposta['itens'] = []) {
   const ctx = contextoDoModelo(MODELOS.infantil);
   const tipo = ctx.tiposEvento[0]!;
   const pacote = ctx.pacotes.find((p) => p.tiposEventoIds.length === 0)!;
@@ -36,6 +36,7 @@ function modelo() {
       subtotalCentavos: l.subtotalCentavos,
       detalhe: l.detalhe,
     })),
+    ...extras,
     {
       tipo: 'desconto',
       descricao: 'Desconto',
@@ -118,6 +119,33 @@ describe('proposta em planilha', () => {
     const csv = planilhaDaProposta(modelo());
     // a planilha não leva observações: só investimento e condições
     expect(csv).not.toContain('SEGREDO-NAO-VAI');
+  });
+
+  it('item retirado do pacote (Fase 6.5): "Retirado" sem desconto, valor negativo com', () => {
+    const m = modelo([
+      {
+        tipo: 'retirado',
+        descricao: 'Retirado: Bolo',
+        quantidade: 1,
+        subtotalCentavos: 0,
+        detalhe: 'Retirado do pacote',
+      },
+      {
+        tipo: 'retirado',
+        descricao: 'Retirado: Mesa',
+        quantidade: 1,
+        subtotalCentavos: -2500,
+        detalhe: 'Retirado do pacote, com desconto',
+      },
+    ]);
+    const [bolo, mesa] = m.investimento.linhas.filter((l) => l.tipo === 'retirado');
+    expect(bolo).toMatchObject({ valor: 'Retirado', negativo: false });
+    expect(mesa).toMatchObject({ valor: '- R$ 25,00', negativo: true });
+    const csv = planilhaDaProposta(m);
+    expect(csv).toContain('Retirado do pacote;Retirado: Bolo;Retirado do pacote;Retirado\r\n');
+    expect(csv).toContain(
+      'Retirado do pacote;Retirado: Mesa;Retirado do pacote, com desconto;R$ -25,00',
+    );
   });
 
   it('rótulos dos tipos e nome do arquivo .csv', () => {

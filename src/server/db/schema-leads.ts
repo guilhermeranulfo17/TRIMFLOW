@@ -60,6 +60,8 @@ export const tipoItemOrcamento = pgEnum('tipo_item_orcamento', [
   'avulso',
   'ajuste_dia',
   'desconto',
+  // Fase 6.5 (ALTER TYPE ADD VALUE entra no fim)
+  'retirado',
 ]);
 export const tipoAtividade = pgEnum('tipo_atividade', [
   'lead_criado',

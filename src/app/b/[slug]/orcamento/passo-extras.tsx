@@ -32,11 +32,18 @@ export default function PassoExtras({ vitrine, escolhas, alterar, previa }: Prop
       ],
     });
   const horaExtra = previa?.horaExtraCentavos ?? 0;
+  // inclusos que o buffet deixou retirar (Fase 6.5): marcado = tirar do pacote
+  const retiraveis = previa?.retiraveis ?? [];
+  const retirados = new Set(escolhas.retirados ?? []);
+  const alternarRetirado = (id: string) =>
+    alterar({
+      retirados: retirados.has(id) ? [...retirados].filter((x) => x !== id) : [...retirados, id],
+    });
 
   return (
     <div className="flex flex-col gap-3">
       {previa === null && <p className="text-muted-foreground">Carregando extras…</p>}
-      {previa !== null && extras.length === 0 && horaExtra === 0 && (
+      {previa !== null && extras.length === 0 && horaExtra === 0 && retiraveis.length === 0 && (
         <p className="text-muted-foreground">
           Este pacote não tem extras para escolher. Toque em <strong>Ver minha proposta</strong>.
         </p>
@@ -98,6 +105,46 @@ export default function PassoExtras({ vitrine, escolhas, alterar, previa }: Prop
             aoMudar={(v) => alterar({ horasExtras: v })}
           />
         </div>
+      )}
+      {retiraveis.length > 0 && (
+        <fieldset className="mt-2 flex flex-col gap-2" data-testid="retiraveis">
+          <legend className="mb-1 font-bold">Quer tirar algo do pacote?</legend>
+          {retiraveis.map((r) => {
+            const tirado = retirados.has(r.id);
+            return (
+              <button
+                key={r.id}
+                type="button"
+                role="checkbox"
+                aria-checked={tirado}
+                onClick={() => alternarRetirado(r.id)}
+                className={classeOpcao(tirado)}
+                data-testid="opcao-retirar"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className={`block font-bold ${tirado ? 'line-through' : ''}`}>
+                    {r.nome}
+                  </span>
+                  <span className="text-muted-foreground block text-sm">
+                    {tirado
+                      ? r.descontoCentavos
+                        ? `Retirado. Desconto de ${formatBRL(r.descontoCentavos)}`
+                        : 'Retirado do pacote'
+                      : r.descontoCentavos
+                        ? `Incluso. Tirar desconta ${formatBRL(r.descontoCentavos)}`
+                        : 'Incluso no pacote. Toque para tirar'}
+                  </span>
+                </span>
+                <span
+                  className={`grid size-6 shrink-0 place-items-center rounded-md border-2 ${tirado ? 'border-primary bg-primary text-primary-foreground' : ''}`}
+                  aria-hidden
+                >
+                  {tirado && <Check className="size-4" />}
+                </span>
+              </button>
+            );
+          })}
+        </fieldset>
       )}
       {previa?.avisos.includes(AVISO_DESLOCAMENTO) && (
         <p className="text-muted-foreground text-sm">{AVISO_DESLOCAMENTO}</p>

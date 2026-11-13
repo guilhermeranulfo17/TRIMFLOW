@@ -146,6 +146,7 @@ describe('prévia de preço por modo de exibição', () => {
       aPartirDeCentavos: null,
       pacotes: [],
       opcionais: [],
+      retiraveis: [],
       resultado: null,
       horaExtraCentavos: null,
       avisos: [],

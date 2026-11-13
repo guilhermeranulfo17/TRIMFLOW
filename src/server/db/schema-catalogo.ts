@@ -310,6 +310,8 @@ export const opcionalPacotes = pgTable(
     opcionalId: uuid('opcional_id').notNull(),
     pacoteId: uuid('pacote_id').notNull(),
     relacao: relacaoOpcionalPacote('relacao').notNull(),
+    removivel: boolean('removivel').notNull().default(false),
+    descontoRetiradaCentavos: integer('desconto_retirada_centavos'),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },

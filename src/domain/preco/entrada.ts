@@ -19,6 +19,7 @@ export const entradaOrcamentoSchema = z.object({
   criancas: z.array(z.object({ faixaIdadeId: id, quantidade: inteiro(0, 100_000) })).max(20),
   pacoteId: id,
   opcionais: z.array(z.object({ opcionalId: id, quantidade: inteiro(0, 100_000) })).max(50),
+  retirados: z.array(id).max(50).optional(),
   horasExtras: inteiro(0, 24),
   distanciaKm: z.number().min(0).max(10_000).optional(),
   itensAvulsos: z

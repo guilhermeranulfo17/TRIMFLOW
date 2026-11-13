@@ -239,6 +239,13 @@ export function FormOrcamento(props: PropsFormOrcamento) {
         ...(q > 0 ? [{ opcionalId: id, quantidade: q }] : []),
       ],
     });
+  // inclusos que o buffet deixou retirar (Fase 6.5)
+  const retiraveis = previa?.retiraveis ?? [];
+  const retirados = new Set(escolhas.retirados ?? []);
+  const alternarRetirado = (id: string, tirar: boolean) =>
+    alterar({
+      retirados: tirar ? [...retirados, id] : [...retirados].filter((x) => x !== id),
+    });
   const qtdFaixa = (id: string) =>
     escolhas.criancas.find((c) => c.faixaIdadeId === id)?.quantidade ?? 0;
   const mudarFaixa = (id: string, q: number) =>
@@ -410,7 +417,12 @@ export function FormOrcamento(props: PropsFormOrcamento) {
                   role="radio"
                   aria-checked={marcado}
                   onClick={() =>
-                    alterar({ tipoEventoId: t.id, pacoteId: undefined, opcionais: [] })
+                    alterar({
+                      tipoEventoId: t.id,
+                      pacoteId: undefined,
+                      opcionais: [],
+                      retirados: [],
+                    })
                   }
                   className={`min-h-11 rounded-full border px-4 text-sm font-semibold ${marcado ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'}`}
                 >
@@ -540,7 +552,7 @@ export function FormOrcamento(props: PropsFormOrcamento) {
                   role="radio"
                   aria-checked={marcado}
                   disabled={!disponivel && !marcado}
-                  onClick={() => alterar({ pacoteId: p.id, opcionais: [] })}
+                  onClick={() => alterar({ pacoteId: p.id, opcionais: [], retirados: [] })}
                   className={classeOpcao(marcado, !disponivel)}
                   data-testid="opcao-pacote"
                 >
@@ -565,60 +577,79 @@ export function FormOrcamento(props: PropsFormOrcamento) {
         </Secao>
       )}
 
-      {escolhas.pacoteId && (extras.length > 0 || (previa?.horaExtraCentavos ?? 0) > 0) && (
-        <Secao titulo="Extras" id="sec-extras">
-          <div className="flex flex-col gap-2">
-            {extras.map((o) => {
-              const info = nomesOpcionais.get(o.id)!;
-              const q = qtdExtra(o.id);
-              if (o.cobranca === 'por_unidade' || o.cobranca === 'por_hora') {
+      {escolhas.pacoteId &&
+        (extras.length > 0 || retiraveis.length > 0 || (previa?.horaExtraCentavos ?? 0) > 0) && (
+          <Secao titulo="Extras" id="sec-extras">
+            <div className="flex flex-col gap-2">
+              {extras.map((o) => {
+                const info = nomesOpcionais.get(o.id)!;
+                const q = qtdExtra(o.id);
+                if (o.cobranca === 'por_unidade' || o.cobranca === 'por_hora') {
+                  return (
+                    <div key={o.id} className="rounded-card border px-3" data-testid="opcao-extra">
+                      <Contador
+                        id={`extra-${o.id}`}
+                        rotulo={info.nome}
+                        dica={precoDoExtra(o.cobranca, o.precoCentavos)}
+                        valor={q}
+                        max={o.qtdMax ?? 100}
+                        aoMudar={(v) => mudarExtra(o.id, v > 0 ? Math.max(v, o.qtdMin) : 0)}
+                      />
+                    </div>
+                  );
+                }
                 return (
-                  <div key={o.id} className="rounded-card border px-3" data-testid="opcao-extra">
-                    <Contador
-                      id={`extra-${o.id}`}
-                      rotulo={info.nome}
-                      dica={precoDoExtra(o.cobranca, o.precoCentavos)}
-                      valor={q}
-                      max={o.qtdMax ?? 100}
-                      aoMudar={(v) => mudarExtra(o.id, v > 0 ? Math.max(v, o.qtdMin) : 0)}
+                  <label
+                    key={o.id}
+                    className="rounded-card flex min-h-12 cursor-pointer items-center gap-3 border px-3 py-2"
+                    data-testid="opcao-extra"
+                  >
+                    <input
+                      type="checkbox"
+                      className="accent-primary size-5"
+                      checked={q > 0}
+                      onChange={(e) => mudarExtra(o.id, e.target.checked ? 1 : 0)}
                     />
-                  </div>
+                    <span className="min-w-0 flex-1 font-semibold">{info.nome}</span>
+                    <span className="text-muted-foreground text-sm">
+                      {precoDoExtra(o.cobranca, o.precoCentavos)}
+                    </span>
+                  </label>
                 );
-              }
-              return (
+              })}
+              {(previa?.horaExtraCentavos ?? 0) > 0 && (
+                <div className="rounded-card border px-3">
+                  <Contador
+                    id="horas-extras"
+                    rotulo="Horas extras"
+                    dica={`${formatBRL(previa!.horaExtraCentavos!)} por hora`}
+                    valor={escolhas.horasExtras}
+                    max={12}
+                    aoMudar={(v) => alterar({ horasExtras: v })}
+                  />
+                </div>
+              )}
+              {retiraveis.map((r) => (
                 <label
-                  key={o.id}
+                  key={r.id}
                   className="rounded-card flex min-h-12 cursor-pointer items-center gap-3 border px-3 py-2"
-                  data-testid="opcao-extra"
+                  data-testid="opcao-retirar"
                 >
                   <input
                     type="checkbox"
                     className="accent-primary size-5"
-                    checked={q > 0}
-                    onChange={(e) => mudarExtra(o.id, e.target.checked ? 1 : 0)}
+                    checked={retirados.has(r.id)}
+                    onChange={(e) => alternarRetirado(r.id, e.target.checked)}
                   />
-                  <span className="min-w-0 flex-1 font-semibold">{info.nome}</span>
+                  <span className="min-w-0 flex-1 font-semibold">Tirar do pacote: {r.nome}</span>
                   <span className="text-muted-foreground text-sm">
-                    {precoDoExtra(o.cobranca, o.precoCentavos)}
+                    {r.descontoCentavos ? `- ${formatBRL(r.descontoCentavos)}` : 'sem desconto'}
                   </span>
                 </label>
-              );
-            })}
-            {(previa?.horaExtraCentavos ?? 0) > 0 && (
-              <div className="rounded-card border px-3">
-                <Contador
-                  id="horas-extras"
-                  rotulo="Horas extras"
-                  dica={`${formatBRL(previa!.horaExtraCentavos!)} por hora`}
-                  valor={escolhas.horasExtras}
-                  max={12}
-                  aoMudar={(v) => alterar({ horasExtras: v })}
-                />
-              </div>
-            )}
-          </div>
-        </Secao>
-      )}
+              ))}
+            </div>
+          </Secao>
+        )}
 
       <Secao titulo="Ajustes" id="sec-ajustes">
         <fieldset>

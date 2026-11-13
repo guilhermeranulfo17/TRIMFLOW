@@ -25,6 +25,8 @@ export const escolhasSchema = z.object({
     .array(z.object({ opcionalId: idSchema, quantidade }))
     .max(50)
     .default([]),
+  /** opcionais inclusos que o cliente retirou do pacote (Fase 6.5; o motor confere) */
+  retirados: z.array(idSchema).max(50).optional(),
   horasExtras: z.number().int().min(0).max(12).default(0),
   /** 2ª e 3ª datas de preferência (opcionais; só informam o buffet, não mudam o preço) */
   datasAlternativas: z.array(dataCivil).max(2).optional(),

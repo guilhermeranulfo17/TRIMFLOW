@@ -75,7 +75,9 @@ export default function PassoPacote({ vitrine, escolhas, alterar, previa, buffet
               aria-checked={marcado}
               aria-disabled={!disponivel}
               disabled={!disponivel}
-              onClick={() => alterar({ pacoteId: p.id, opcionais: [], horasExtras: 0 })}
+              onClick={() =>
+                alterar({ pacoteId: p.id, opcionais: [], retirados: [], horasExtras: 0 })
+              }
               className={classeOpcao(marcado, !disponivel)}
               data-testid="opcao-pacote"
             >

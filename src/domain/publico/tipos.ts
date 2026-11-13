@@ -28,6 +28,8 @@ export type Escolhas = {
   localCliente?: string;
   pacoteId?: Id;
   opcionais: { opcionalId: Id; quantidade: number }[];
+  /** opcionais inclusos que o cliente retirou do pacote escolhido (Fase 6.5) */
+  retirados?: Id[];
   horasExtras: number;
   /** 2ª e 3ª datas de preferência (Fase 6): só informam o buffet, não mudam o preço */
   datasAlternativas?: DataCivil[];

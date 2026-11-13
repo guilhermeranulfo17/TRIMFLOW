@@ -115,6 +115,11 @@ export type OpcionalCtx = {
   pacotesCompativeisIds: Id[];
   /** pacotes em que o opcional já vem incluso (não pode ser vendido como extra) */
   pacotesInclusoIds: Id[];
+  /**
+   * Pacotes (entre os inclusos) em que o cliente pode retirar o opcional, com o desconto ao
+   * retirar (nulo = sai sem mudar o preço). Fase 6.5.
+   */
+  retiravelEm?: { pacoteId: Id; descontoCentavos: number | null }[];
   /** vazio = vale para todos os tipos de evento */
   tiposEventoIds: Id[];
 };
@@ -154,6 +159,8 @@ export type EntradaOrcamento = {
   criancas: { faixaIdadeId: Id; quantidade: number }[];
   pacoteId: Id;
   opcionais: { opcionalId: Id; quantidade: number }[];
+  /** opcionais inclusos que o cliente retirou do pacote (Fase 6.5) */
+  retirados?: Id[];
   horasExtras: number;
   distanciaKm?: number;
   itensAvulsos?: ItemAvulso[];
@@ -177,6 +184,7 @@ export type CodigoErro =
   | 'OPCIONAL_JA_INCLUSO'
   | 'OPCIONAL_INCOMPATIVEL'
   | 'OPCIONAL_QUANTIDADE'
+  | 'ITEM_NAO_RETIRAVEL'
   | 'FORA_AREA_ATENDIMENTO'
   | 'DISTANCIA_OBRIGATORIA'
   | 'DESCONTO_ACIMA_LIMITE'
@@ -193,7 +201,14 @@ export type ErroOrcamento = { codigo: CodigoErro; mensagem: string; campo?: stri
 export type AvisoOrcamento = { codigo: CodigoAviso; mensagem: string };
 
 export type TipoLinha =
-  'pacote' | 'ajuste_dia' | 'opcional' | 'hora_extra' | 'deslocamento' | 'avulso' | 'desconto';
+  | 'pacote'
+  | 'ajuste_dia'
+  | 'opcional'
+  | 'retirado'
+  | 'hora_extra'
+  | 'deslocamento'
+  | 'avulso'
+  | 'desconto';
 
 export type LinhaOrcamento = {
   tipo: TipoLinha;

@@ -110,14 +110,32 @@ export async function salvarVinculosOpcional(
     const tipos = [...new Set(tipoEventoIds)];
     const ok = await comOpcional(dono, id, async (tx) => {
       const antes = await tx
-        .select({ pacoteId: opcionalPacotes.pacoteId, relacao: opcionalPacotes.relacao })
+        .select({
+          pacoteId: opcionalPacotes.pacoteId,
+          relacao: opcionalPacotes.relacao,
+          removivel: opcionalPacotes.removivel,
+          descontoRetiradaCentavos: opcionalPacotes.descontoRetiradaCentavos,
+        })
         .from(opcionalPacotes)
         .where(eq(opcionalPacotes.opcionalId, id));
+      // quem continua incluso no mesmo pacote mantém o "pode retirar" e o desconto (Fase 6.5)
+      const retirada = new Map(
+        antes.filter((a) => a.relacao === 'incluso').map((a) => [a.pacoteId, a] as const),
+      );
       await tx.delete(opcionalPacotes).where(eq(opcionalPacotes.opcionalId, id));
       if (relacoes.length)
-        await tx
-          .insert(opcionalPacotes)
-          .values(relacoes.map((r) => ({ ...r, empresaId: dono.empresa.id, opcionalId: id })));
+        await tx.insert(opcionalPacotes).values(
+          relacoes.map((r) => {
+            const a = r.relacao === 'incluso' ? retirada.get(r.pacoteId) : undefined;
+            return {
+              ...r,
+              empresaId: dono.empresa.id,
+              opcionalId: id,
+              removivel: a?.removivel ?? false,
+              descontoRetiradaCentavos: a?.descontoRetiradaCentavos ?? null,
+            };
+          }),
+        );
       await tx.delete(opcionalTiposEvento).where(eq(opcionalTiposEvento.opcionalId, id));
       if (tipos.length)
         await tx.insert(opcionalTiposEvento).values(
@@ -179,9 +197,15 @@ export async function duplicarOpcional(id: string): Promise<ResultadoAcao<{ id: 
         .from(opcionalPacotes)
         .where(eq(opcionalPacotes.opcionalId, id));
       if (vinculos.length)
-        await tx
-          .insert(opcionalPacotes)
-          .values(vinculos.map((o) => ({ ...base, pacoteId: o.pacoteId, relacao: o.relacao })));
+        await tx.insert(opcionalPacotes).values(
+          vinculos.map((o) => ({
+            ...base,
+            pacoteId: o.pacoteId,
+            relacao: o.relacao,
+            removivel: o.removivel,
+            descontoRetiradaCentavos: o.descontoRetiradaCentavos,
+          })),
+        );
       const tipos = await tx
         .select()
         .from(opcionalTiposEvento)

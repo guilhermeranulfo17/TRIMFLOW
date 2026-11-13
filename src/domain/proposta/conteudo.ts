@@ -311,10 +311,13 @@ export function montarConteudo(v: VersaoProposta, buffet: BuffetProposta): Model
       tipo: i.tipo,
       descricao: i.descricao,
       detalhe: textoOuNull(i.detalhe),
+      // item retirado sem desconto (Fase 6.5): "Retirado" em vez de "R$ 0,00"
       valor:
-        i.subtotalCentavos < 0
-          ? `- ${formatBRL(-i.subtotalCentavos)}`
-          : formatBRL(i.subtotalCentavos),
+        i.tipo === 'retirado' && i.subtotalCentavos === 0
+          ? 'Retirado'
+          : i.subtotalCentavos < 0
+            ? `- ${formatBRL(-i.subtotalCentavos)}`
+            : formatBRL(i.subtotalCentavos),
       negativo: i.subtotalCentavos < 0,
       foto: ehPacote ? fotoValida(c!.pacote!.foto) : fotoValida(opcional?.foto),
       texto: ehPacote ? textoOuNull(c!.pacote!.descricao) : textoOuNull(opcional?.descricao),
