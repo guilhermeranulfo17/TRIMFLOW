@@ -86,14 +86,14 @@ const CONSULTA = sql`
   from public.empresas e
   left join lateral (select * from public._assinatura_referencia(e.id)) a on true`;
 
-/** Empresas reais (a de demonstração fica fora da lista e das métricas, Etapa 9B). */
+/** Empresas reais (a de demonstração e as de apresentação ficam fora da lista e das métricas). */
 export async function listarEmpresasInternas(busca?: string | null): Promise<EmpresaInterna[]> {
   const termo = busca?.trim() ? `%${busca.trim().toLowerCase()}%` : null;
   const linhas = await obterDb().execute<Linha>(
     termo
-      ? sql`${CONSULTA} where not e.eh_demo and (lower(e.nome) like ${termo} or e.slug like ${termo})
+      ? sql`${CONSULTA} where not e.eh_demo and not e.eh_apresentacao and (lower(e.nome) like ${termo} or e.slug like ${termo})
           order by e.criado_em desc limit 500`
-      : sql`${CONSULTA} where not e.eh_demo order by e.criado_em desc limit 500`,
+      : sql`${CONSULTA} where not e.eh_demo and not e.eh_apresentacao order by e.criado_em desc limit 500`,
   );
   return [...linhas].map(paraEmpresa);
 }

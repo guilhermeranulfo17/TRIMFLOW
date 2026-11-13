@@ -4,6 +4,9 @@ import { sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect, unstable_rethrow } from 'next/navigation';
 import { z } from 'zod';
+import { contaApresentacao } from '@/domain/apresentacao/contas';
+import { criarApresentacao } from '@/server/apresentacao/criar';
+import { depsApresentacao } from '@/server/apresentacao/deps';
 import { mensagemDeErroAuth } from '@/server/erros';
 import { criarClienteSupabase } from '@/server/auth/supabase-server';
 import { depsCobranca } from '@/server/cobranca/deps';
@@ -263,4 +266,44 @@ export async function sairDoSuporte(): Promise<void> {
     );
   }
   redirect(s ? `/interno/empresas/${s.empresaId}` : '/interno');
+}
+
+// ---------------------------------------------------------------------------
+// Contas de apresentação (uma por modelo de negócio, só a equipe)
+// ---------------------------------------------------------------------------
+
+/** Cria a conta do modelo ou, se já existe, apaga e monta de novo com dados fictícios. */
+export async function criarApresentacaoInterna(chave: string): Promise<ResultadoInterno> {
+  return acaoInterna(async (admin) => {
+    const conta = contaApresentacao(chave);
+    if (!conta) return { ok: false, erro: 'Modelo não encontrado.' };
+    const r = await criarApresentacao(depsApresentacao(), conta.chave);
+    await registrar(admin, 'apresentacao.criada', r.empresaId, { modelo: conta.chave });
+    return { ok: true, mensagem: `Conta de apresentação "${conta.rotulo}" pronta.` };
+  });
+}
+
+/**
+ * Entra na conta de apresentação como o dono, sem senha (link mágico da Admin API, sem e-mail).
+ * A sessão da equipe neste navegador é trocada: para voltar ao /interno, entrar de novo.
+ */
+export async function entrarApresentacao(chave: string): Promise<ResultadoInterno> {
+  const r = await acaoInterna(async (admin) => {
+    const conta = contaApresentacao(chave);
+    if (!conta) return { ok: false, erro: 'Modelo não encontrado.' };
+    const [linha] = await obterDb().execute<{ id: string }>(
+      sql`select id from public.empresas where slug = ${conta.slug} and eh_apresentacao`,
+    );
+    if (!linha) return { ok: false, erro: 'Crie a conta antes de entrar.' };
+    const deps = depsApresentacao();
+    const hash = await deps.auth.hashDeEntrada(conta.email);
+    await registrar(admin, 'apresentacao.entrou', linha.id, { modelo: conta.chave });
+    const supabase = await criarClienteSupabase();
+    await supabase.auth.signOut({ scope: 'local' });
+    const { error } = await supabase.auth.verifyOtp({ type: 'magiclink', token_hash: hash });
+    if (error) return { ok: false, erro: 'Não foi possível entrar agora.' };
+    return { ok: true, mensagem: 'Entrando…' };
+  });
+  if (r.ok) redirect('/app/leads');
+  return r;
 }

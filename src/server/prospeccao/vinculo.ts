@@ -49,7 +49,7 @@ export async function lerConta(
            e.prospeccao->>'r' as r, e.prospeccao->>'crm_lead_id' as crm_lead_id
     from public.empresas e
     join public.usuarios u on u.empresa_id = e.id and u.perfil = 'dono'
-    where ${filtro} and not e.eh_demo
+    where ${filtro} and not e.eh_demo and not e.eh_apresentacao
     order by u.criado_em
     limit 1`);
   if (!l) return null;
@@ -72,7 +72,7 @@ export async function guardarR(db: Db, usuarioId: string, r: string): Promise<vo
     set prospeccao = coalesce(e.prospeccao, '{}'::jsonb) || jsonb_build_object('r', ${r}::text)
     from public.usuarios u
     where u.id = ${usuarioId}::uuid and u.perfil = 'dono' and e.id = u.empresa_id
-      and not e.eh_demo and not coalesce(e.prospeccao, '{}'::jsonb) ? 'crm_lead_id'`);
+      and not e.eh_demo and not e.eh_apresentacao and not coalesce(e.prospeccao, '{}'::jsonb) ? 'crm_lead_id'`);
 }
 
 /** O cadastro foi avisado: a empresa passa a apontar para o lead do CRM. */

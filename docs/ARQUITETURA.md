@@ -2074,3 +2074,26 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   contrato (itens) e na ficha da cozinha ("Retirado do pacote, não servir"). Migration
   `20261115000002_item_retiravel` (colunas com default e `alter type ... add value 'retirado'`).
   Itens do cardápio (texto livre) não são retiráveis nesta entrega.
+
+## 88. Contas de apresentação (novembro de 2026)
+
+- **Para que:** a equipe Orkestra apresenta o sistema em chamada de vídeo com uma conta por
+  modelo de negócio (infantil, casamento e 15 anos, eventos, domicílio), já cheia: catálogo do
+  modelo com preços confirmados, página pública preenchida, 60 dias de visitas ao link, ~54 leads
+  em todos os estados, orçamentos com proposta, perdas, reservas na agenda, uma pré-reserva
+  esperando o sinal, pedido de visita, tarefas, nota, aviso, um contrato assinado, uma data
+  especial e um incluso que o cliente pode retirar.
+- **Diferente da demo da landing (§67):** conta comum e **editável** (não é `eh_demo`), de
+  **cortesia** (`isenta`: situação "ativo", sem cobrança nem suspensão; nada muda no Asaas) e
+  **persistente**: só é recriada quando alguém da equipe pede. Marca `empresas.eh_apresentacao`
+  (fora da lista e das métricas do /interno e do CRM de prospecção). Slug `apresentacao-<modelo>`,
+  dono `apresentacao-<modelo>@orkestra.invalid` (domínio reservado: nunca recebe e-mail).
+- **Onde:** `/interno/apresentacoes` (ORKESTRA_ADMINS + MFA). "Criar conta" / "Recriar do zero"
+  (`apresentacao_criar` apaga a anterior com o mesmo slug, `gravarModelo` grava o catálogo como
+  o dono e `apresentacao_popular` gera os dados, numa transação; auditado em
+  `auditoria_interna`). "Entrar" troca a sessão deste navegador pela do dono da conta (link
+  mágico da Admin API, sem e-mail); para voltar ao /interno, entrar de novo.
+- **Funções** (`20261116000001_contas_apresentacao`): `apresentacao_criar`,
+  `apresentacao_popular`, `apresentacao_contrato_exemplo` e auxiliares, só `service_role`,
+  `search_path = public`. Recusam slug ou usuário de empresa real. Os dados usam os pacotes,
+  espaço, tipo de festa e turnos do próprio catálogo, então servem para qualquer modelo.
