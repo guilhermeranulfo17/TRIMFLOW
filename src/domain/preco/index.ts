@@ -3,6 +3,7 @@ export { aPartirDe, type APartirDe, type EntradaParcial } from './a-partir-de';
 export {
   opcionaisDisponiveis,
   pacotesDisponiveis,
+  retiraveisDoPacote,
   turnosDoDia,
   type PacoteDisponivel,
 } from './disponibilidade';

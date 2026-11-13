@@ -45,7 +45,7 @@ export type LinhasCatalogo = {
     turnoId: string | null;
     ajusteBp: number;
   }>;
-  feriados: Linha<{ data: string; nome: string }>;
+  feriados: Linha<{ data: string; nome: string; id?: string; ajusteBp?: number | null }>;
   faixasIdade: Linha<{
     id: string;
     rotulo: string;
@@ -84,7 +84,14 @@ export type LinhasCatalogo = {
     ordem: number;
     ativo: boolean;
   }>;
-  opcionalPacotes: Linha<{ opcionalId: string; pacoteId: string; relacao: string }>;
+  opcionalPacotes: Linha<{
+    opcionalId: string;
+    pacoteId: string;
+    relacao: string;
+    /** Fase 6.5 (ausentes no cache antigo = não retirável) */
+    removivel?: boolean;
+    descontoRetiradaCentavos?: number | null;
+  }>;
   opcionalTiposEvento: Linha<{ opcionalId: string; tipoEventoId: string }>;
   faixasDeslocamento: Linha<{ ateKm: number; valorCentavos: number }>;
 };
@@ -143,7 +150,12 @@ export function montarContexto(l: LinhasCatalogo): ContextoPreco {
       turnoId: a.turnoId,
       ajusteBp: a.ajusteBp,
     })),
-    feriados: l.feriados.map((f) => ({ data: f.data, nome: f.nome })),
+    feriados: l.feriados.map((f) => ({
+      data: f.data,
+      nome: f.nome,
+      ...(f.id ? { id: f.id } : {}),
+      ajusteBp: f.ajusteBp ?? null,
+    })),
     faixasIdade: l.faixasIdade.map((f) => ({
       id: f.id,
       rotulo: f.rotulo,
@@ -180,6 +192,13 @@ export function montarContexto(l: LinhasCatalogo): ContextoPreco {
     })),
     opcionais: l.opcionais.map((o) => {
       const vinculos = pacotesPorOpcional.get(o.id) ?? [];
+      // Fase 6.5: só aparece quando há item retirável (o contexto dos modelos não tem)
+      const retiravelEm = vinculos
+        .filter((v) => v.relacao === 'incluso' && v.removivel === true)
+        .map((v) => ({
+          pacoteId: v.pacoteId,
+          descontoCentavos: v.descontoRetiradaCentavos ?? null,
+        }));
       return {
         id: o.id,
         nome: o.nome,
@@ -194,6 +213,7 @@ export function montarContexto(l: LinhasCatalogo): ContextoPreco {
           .filter((v) => v.relacao === 'compativel')
           .map((v) => v.pacoteId),
         pacotesInclusoIds: vinculos.filter((v) => v.relacao === 'incluso').map((v) => v.pacoteId),
+        ...(retiravelEm.length ? { retiravelEm } : {}),
         tiposEventoIds: (tiposPorOpcional.get(o.id) ?? []).map((v) => v.tipoEventoId),
       };
     }),

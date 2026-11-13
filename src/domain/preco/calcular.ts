@@ -175,6 +175,36 @@ export function calcularOrcamento(
   });
   const totalOpcionais = linhasOpcionais.reduce((s, l) => s + l.subtotalCentavos, 0);
 
+  // 5b. Itens inclusos retirados pelo cliente (Fase 6.5) ------------------------------
+  // Só o que o buffet marcou como retirável no pacote; o desconto é o que o buffet definiu
+  // (nenhum = sai sem mudar o preço) e, somado, nunca passa do valor do pacote.
+  const linhasRetiradas: LinhaOrcamento[] = [];
+  const retirados = new Set<string>();
+  let descontoDisponivel = linhaPacote?.subtotalCentavos ?? 0;
+  (entrada.retirados ?? []).forEach((opcionalId, i) => {
+    const opcional = contexto.opcionais.find((o) => o.id === opcionalId);
+    const regra =
+      pacote && opcional?.pacotesInclusoIds.includes(pacote.id)
+        ? opcional.retiravelEm?.find((r) => r.pacoteId === pacote.id)
+        : undefined;
+    if (!opcional || !regra || retirados.has(opcionalId)) {
+      erro('ITEM_NAO_RETIRAVEL', mensagens.itemNaoRetiravel(), `retirados.${i}`);
+      return;
+    }
+    retirados.add(opcionalId);
+    const valor = Math.min(Math.max(regra.descontoCentavos ?? 0, 0), descontoDisponivel);
+    descontoDisponivel -= valor;
+    linhasRetiradas.push({
+      tipo: 'retirado',
+      referenciaId: opcional.id,
+      descricao: `Retirado: ${opcional.nome}`,
+      quantidade: 1,
+      valorUnitarioCentavos: valor > 0 ? -valor : 0,
+      subtotalCentavos: valor > 0 ? -valor : 0,
+      detalhe: valor > 0 ? 'Retirado do pacote, com desconto' : 'Retirado do pacote',
+    });
+  });
+
   // 4. Ajuste de dia ------------------------------------------------------------
   let linhaAjuste: LinhaOrcamento | null = null;
   if (linhaPacote && dataValida) {
@@ -276,6 +306,7 @@ export function calcularOrcamento(
     linhaPacote,
     linhaAjuste,
     ...linhasOpcionais,
+    ...linhasRetiradas,
     linhaHoraExtra,
     linhaDeslocamento,
     ...linhasAvulsas,

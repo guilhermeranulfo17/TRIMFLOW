@@ -31,6 +31,7 @@ import {
 } from '@/domain/validacao/publico';
 import { processarAvisosSemFalhar } from '@/server/avisos/processar';
 import { comAnon } from '@/server/db/anon';
+import { limparDatasAlternativas } from '@/domain/publico/datas-alternativas';
 import { prepararVersao, vitrineDoCatalogo, type DadosVersao } from '@/server/proposta/versao';
 import { carregarBuffet, carregarContextoPublico } from '@/server/publico/carregar';
 import {
@@ -77,7 +78,11 @@ function invalido<T>(erro = 'Confira os dados e tente de novo.'): ResultadoPubli
 
 function escolhasValidas(entrada: EscolhasEntrada): Escolhas | null {
   const r = escolhasSchema.safeParse(entrada);
-  return r.success ? r.data : null;
+  if (!r.success) return null;
+  // 2ª e 3ª datas (Fase 6): só as válidas, sem repetir a principal
+  const datasAlternativas = limparDatasAlternativas(r.data.data, r.data.datasAlternativas);
+  const { datasAlternativas: _bruto, ...resto } = r.data;
+  return datasAlternativas.length ? { ...resto, datasAlternativas } : resto;
 }
 
 type EstadoOrcamento = {

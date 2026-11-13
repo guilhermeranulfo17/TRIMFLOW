@@ -93,17 +93,26 @@ export async function salvarFeriados(entrada: FeriadosEntrada): Promise<Resultad
     if (!v.ok) return v.resultado;
     const novos = [...v.dados.feriados].sort((a, b) => a.data.localeCompare(b.data));
     await comUsuario(dono.id, async (tx) => {
-      const antes = await tx.select({ data: feriados.data, nome: feriados.nome }).from(feriados);
+      const antes = await tx
+        .select({ data: feriados.data, nome: feriados.nome, ajusteBp: feriados.ajusteBp })
+        .from(feriados);
       await tx.delete(feriados).where(eq(feriados.empresaId, dono.empresa.id));
       if (novos.length)
-        await tx.insert(feriados).values(novos.map((f) => ({ ...f, empresaId: dono.empresa.id })));
+        await tx.insert(feriados).values(
+          novos.map((f) => ({
+            data: f.data,
+            nome: f.nome,
+            ajusteBp: f.ajusteBp ?? null,
+            empresaId: dono.empresa.id,
+          })),
+        );
       await auditar(tx, dono, 'regras.feriados_alterados', 'regras', dono.empresa.id, {
         antes,
         depois: novos,
       });
     });
     revalidar();
-    return { ok: true, mensagem: 'Feriados salvos.' };
+    return { ok: true, mensagem: 'Feriados e datas especiais salvos.' };
   });
 }
 

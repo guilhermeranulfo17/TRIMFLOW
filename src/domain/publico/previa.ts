@@ -1,7 +1,7 @@
 // módulos específicos (não o índice de ../preco, que traz o Zod da entrada para o navegador)
 import { aPartirDe } from '../preco/a-partir-de';
 import { calcularOrcamento } from '../preco/calcular';
-import { opcionaisDisponiveis } from '../preco/disponibilidade';
+import { opcionaisDisponiveis, retiraveisDoPacote } from '../preco/disponibilidade';
 import type {
   ContextoPreco,
   DataCivil,
@@ -33,6 +33,8 @@ export function entradaDoMotor(
     e,
   );
   if (!e.tipoEventoId || !e.data || !e.turnoId || !espaco || !pacoteId) return null;
+  // retirados valem só para o pacote escolhido (os totais dos outros pacotes vêm sem eles)
+  const retirados = pacoteId === e.pacoteId ? [...new Set(e.retirados ?? [])] : [];
   return {
     canal: 'publico',
     hoje,
@@ -44,6 +46,7 @@ export function entradaDoMotor(
     criancas: e.criancas.filter((c) => c.quantidade > 0),
     pacoteId,
     opcionais: opcionais.filter((o) => o.quantidade > 0),
+    ...(retirados.length ? { retirados } : {}),
     horasExtras: e.horasExtras,
     limiteDescontoBp: 0,
     ...extra,
@@ -64,6 +67,7 @@ export type PacotePrevia = {
   motivo?: string;
   totalCentavos: number | null;
 };
+export type RetiravelPrevia = { id: Id; nome: string; descontoCentavos: number | null };
 export type OpcionalPrevia = {
   id: Id;
   precoCentavos: number;
@@ -79,6 +83,8 @@ export type Previa = {
   aPartirDeCentavos: number | null;
   pacotes: PacotePrevia[];
   opcionais: OpcionalPrevia[];
+  /** inclusos do pacote escolhido que o cliente pode retirar (só depois do contato) */
+  retiraveis: RetiravelPrevia[];
   resultado: ResultadoOrcamento | null;
   /** valor da hora extra do pacote escolhido (0 = o pacote não vende hora extra) */
   horaExtraCentavos: number | null;
@@ -106,6 +112,7 @@ export function montarPrevia(
     aPartirDeCentavos: null,
     pacotes: [],
     opcionais: [],
+    retiraveis: [],
     resultado: null,
     horaExtraCentavos: null,
     avisos,
@@ -157,6 +164,7 @@ export function montarPrevia(
       qtdMin: o.qtdMin,
       qtdMax: o.qtdMax,
     }));
+    previa.retiraveis = retiraveisDoPacote(ctx, e.pacoteId);
     const entrada = entradaDoMotor(ctx, e, opcoes.hoje, e.pacoteId, e.opcionais, opcoes.extra);
     if (entrada) {
       previa.resultado = calcularOrcamento(ctx, entrada);

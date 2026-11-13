@@ -1,4 +1,8 @@
 import 'server-only';
+import {
+  datasAlternativasDoRascunho,
+  textoDatasAlternativas,
+} from '@/domain/publico/datas-alternativas';
 import { carregarContratosDoLead, type LinhaContrato } from '@/server/contratos/painel';
 import type { SituacaoMensagem } from '@/domain/leads/mensagens';
 import { and, asc, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
@@ -261,6 +265,8 @@ export type ResumoOrcamento = {
   totalCentavos: number | null;
   validadeAte: string | null;
   criadoEm: string;
+  /** Fase 6: "Outras datas possíveis: …" (2ª e 3ª datas do cliente) ou null */
+  datasAlternativas: string | null;
 };
 
 export type VersaoDoLead = ResumoOrcamento & {
@@ -382,6 +388,7 @@ async function resumosDosOrcamentos(tx: Tx, leadId: string): Promise<ResumoOrcam
     totalCentavos: o.totalCentavos,
     validadeAte: o.validadeAte,
     criadoEm: o.criadoEm.toISOString(),
+    datasAlternativas: textoDatasAlternativas(datasAlternativasDoRascunho(o.rascunho)),
   }));
 }
 

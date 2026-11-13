@@ -1,4 +1,5 @@
 import 'server-only';
+import type { ModoPreco } from '@/domain/publico/tipos';
 import { sql } from 'drizzle-orm';
 import { cache } from 'react';
 import { calcularChecklist, type Checklist } from '@/domain/onboarding/checklist';
@@ -103,7 +104,7 @@ export type OpcionalPreco = {
 /** Pacotes e opcionais ativos com o preço atual (passo 3). */
 export async function carregarPrecos(
   usuario: UsuarioAtual,
-): Promise<{ pacotes: PacotePreco[]; opcionais: OpcionalPreco[] }> {
+): Promise<{ pacotes: PacotePreco[]; opcionais: OpcionalPreco[]; modoPreco: ModoPreco }> {
   return comUsuario(usuario.id, async (tx) => {
     const pacotes = (await tx.execute(sql`
       select p.id, p.nome, p.modelo_preco as "modeloPreco", p.preco_confirmado_em is not null as confirmado,
@@ -118,8 +119,42 @@ export async function carregarPrecos(
       select o.id, o.nome, o.cobranca, o.preco_confirmado_em is not null as confirmado,
              o.preco_centavos as "precoCentavos"
       from public.opcionais o where o.ativo order by o.ordem, o.nome`)) as unknown as OpcionalPreco[];
-    return { pacotes: [...pacotes], opcionais: [...opcionais] };
+    const [regras] = await tx.execute<{ modo: ModoPreco }>(
+      sql`select r.modo_exibicao_preco as modo from public.regras_comerciais r limit 1`,
+    );
+    return {
+      pacotes: [...pacotes],
+      opcionais: [...opcionais],
+      modoPreco: regras?.modo ?? 'exato',
+    };
   });
+}
+
+/**
+ * O catálogo ainda é só o exemplo do modelo? (Fase 6: só então o dono troca o modelo no passo 1.)
+ * Onboarding não concluído e nenhum preço confirmado, orçamento, reserva ou bloqueio.
+ */
+export async function catalogoSoDeExemplo(
+  tx: Tx,
+  empresaId: string,
+): Promise<{ ok: boolean; segmento: string | null }> {
+  const [r] = await tx.execute<{ ok: boolean; segmento: string }>(sql`
+    select e.onboarding_concluido_em is null
+       and not exists (select 1 from public.orcamentos o where o.empresa_id = e.id)
+       and not exists (select 1 from public.reservas r where r.empresa_id = e.id)
+       and not exists (select 1 from public.bloqueios b where b.empresa_id = e.id)
+       and not exists (select 1 from public.pacotes p
+                       where p.empresa_id = e.id and p.preco_confirmado_em is not null)
+       and not exists (select 1 from public.opcionais o
+                       where o.empresa_id = e.id and o.preco_confirmado_em is not null) as ok,
+           e.segmento::text as segmento
+    from public.empresas e where e.id = ${empresaId}`);
+  return { ok: !!r?.ok, segmento: r?.segmento ?? null };
+}
+
+export async function podeTrocarModelo(usuario: UsuarioAtual): Promise<boolean> {
+  if (usuario.perfil !== 'dono') return false;
+  return (await comUsuario(usuario.id, (tx) => catalogoSoDeExemplo(tx, usuario.empresa.id))).ok;
 }
 
 export type AgendaRapida = {

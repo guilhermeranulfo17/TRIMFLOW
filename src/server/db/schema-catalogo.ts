@@ -101,6 +101,8 @@ export const feriados = pgTable(
     empresaId: empresaId(),
     data: date('data', { mode: 'string' }).notNull(),
     nome: text('nome').notNull(),
+    /** Data especial: ajuste próprio em bp (vence os outros); nulo = feriado comum. */
+    ajusteBp: integer('ajuste_bp'),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },
@@ -308,6 +310,8 @@ export const opcionalPacotes = pgTable(
     opcionalId: uuid('opcional_id').notNull(),
     pacoteId: uuid('pacote_id').notNull(),
     relacao: relacaoOpcionalPacote('relacao').notNull(),
+    removivel: boolean('removivel').notNull().default(false),
+    descontoRetiradaCentavos: integer('desconto_retirada_centavos'),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },

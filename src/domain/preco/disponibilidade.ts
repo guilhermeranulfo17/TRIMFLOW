@@ -47,6 +47,24 @@ export function opcionaisDisponiveis(
     .sort((a, b) => a.ordem - b.ordem);
 }
 
+/**
+ * Opcionais inclusos no pacote que o cliente pode retirar (Fase 6.5), na ordem do catálogo,
+ * com o desconto ao retirar (nulo = sai sem mudar o preço).
+ */
+export function retiraveisDoPacote(
+  contexto: ContextoPreco,
+  pacoteId: Id,
+): { id: Id; nome: string; descontoCentavos: number | null }[] {
+  return contexto.opcionais
+    .filter((o) => o.pacotesInclusoIds.includes(pacoteId))
+    .flatMap((o) => {
+      const regra = o.retiravelEm?.find((r) => r.pacoteId === pacoteId);
+      return regra ? [{ o, descontoCentavos: regra.descontoCentavos }] : [];
+    })
+    .sort((a, b) => a.o.ordem - b.o.ordem)
+    .map(({ o, descontoCentavos }) => ({ id: o.id, nome: o.nome, descontoCentavos }));
+}
+
 /** Turnos ativos que existem no dia da semana da data. */
 export function turnosDoDia(contexto: ContextoPreco, data: DataCivil): TurnoCtx[] {
   if (!dataCivilValida(data)) return [];

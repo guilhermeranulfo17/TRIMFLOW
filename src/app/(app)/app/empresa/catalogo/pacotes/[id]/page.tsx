@@ -33,6 +33,7 @@ import { FormDadosPacote } from '../form-dados-pacote';
 import { FormCardapio } from './form-cardapio';
 import { FormCriancas } from './form-criancas';
 import { FormPrecoPacote } from './form-preco-pacote';
+import { FormRetiraveis } from './form-retiraveis';
 
 export const metadata: Metadata = { title: 'Editar pacote' };
 
@@ -90,7 +91,11 @@ export default async function EditarPacotePage({ params }: Props) {
         .from(opcionais)
         .orderBy(asc(opcionais.ordem), asc(opcionais.nome)),
       inclusos: await tx
-        .select({ id: opcionalPacotes.opcionalId })
+        .select({
+          id: opcionalPacotes.opcionalId,
+          removivel: opcionalPacotes.removivel,
+          descontoCentavos: opcionalPacotes.descontoRetiradaCentavos,
+        })
         .from(opcionalPacotes)
         .where(and(eq(opcionalPacotes.pacoteId, id), eq(opcionalPacotes.relacao, 'incluso'))),
     };
@@ -209,6 +214,24 @@ export default async function EditarPacotePage({ params }: Props) {
         vazio="Nenhum opcional cadastrado ainda."
         somenteLeitura={somenteLeitura}
         onSalvar={salvarInclusosPacote.bind(null, pacote.id)}
+      />
+      <FormRetiraveis
+        key={dados.inclusos.map((i) => i.id).join()}
+        pacoteId={pacote.id}
+        somenteLeitura={somenteLeitura}
+        inicial={dados.inclusos.flatMap((i) => {
+          const o = dados.opcionais.find((x) => x.id === i.id);
+          return o
+            ? [
+                {
+                  opcionalId: i.id,
+                  nome: o.nome,
+                  removivel: i.removivel,
+                  descontoCentavos: i.descontoCentavos,
+                },
+              ]
+            : [];
+        })}
       />
     </div>
   );

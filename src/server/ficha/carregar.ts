@@ -131,6 +131,10 @@ export async function carregarFichaCozinha(
           cobranca: (i.cobranca as CobrancaOpcional | null) ?? null,
           quantidade: i.quantidade,
         })),
+      // itens inclusos que o cliente tirou do pacote (Fase 6.5): a cozinha não serve
+      retirados: itens
+        .filter((i) => i.tipo === 'retirado')
+        .map((i) => i.descricao.replace(/^Retirado: /, '')),
       observacoes: [r.observacoes, r.observacoesOrcamento].filter((o): o is string => !!o),
     });
     return { ficha, cliente: r.cliente, data: r.data };

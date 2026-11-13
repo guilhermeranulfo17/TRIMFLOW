@@ -5,7 +5,9 @@ import { useMemo, useState } from 'react';
 import { CampoDinheiro } from '@/components/app/campos/campo-dinheiro';
 import { useToast } from '@/components/app/toast';
 import { formatBRL } from '@/domain/money';
+import { OPCOES_MODO_PRECO } from '@/domain/onboarding/modo-preco';
 import { faixasProporcionais, type FaixaPreco } from '@/domain/onboarding/precos';
+import type { ModoPreco } from '@/domain/publico/tipos';
 import { cn } from '@/lib/utils';
 import { confirmarPrecos, type PrecosEntrada } from '@/server/actions/onboarding';
 import type { OpcionalPreco, PacotePreco } from '@/server/onboarding/carregar';
@@ -55,11 +57,15 @@ function inicial(p: PacotePreco): Estado {
 export function PassoPrecos({
   pacotes,
   opcionais,
+  modoPreco: modoInicial = 'exato',
 }: {
   pacotes: PacotePreco[];
   opcionais: OpcionalPreco[];
+  /** como o preço aparece no link (regras comerciais) */
+  modoPreco?: ModoPreco;
 }) {
   const toast = useToast();
+  const [modoPreco, setModoPreco] = useState<ModoPreco>(modoInicial);
   const [estados, setEstados] = useState<Record<string, Estado>>(() =>
     Object.fromEntries(pacotes.map((p) => [p.id, inicial(p)])),
   );
@@ -108,6 +114,7 @@ export function PassoPrecos({
       opcionais: opcionais
         .filter((o) => precosOpc[o.id] !== null && precosOpc[o.id] !== undefined)
         .map((o) => ({ id: o.id, precoCentavos: precosOpc[o.id]! })),
+      modoExibicaoPreco: modoPreco,
     };
     const r = await confirmarPrecos(entrada);
     if (!r.ok) toast.erro(r.erro);
@@ -284,6 +291,38 @@ export function PassoPrecos({
           </p>
         </div>
       )}
+
+      <fieldset className="bg-card rounded-card border p-4" data-testid="modo-preco">
+        <legend className="px-1 font-semibold">Como o preço aparece para o cliente</legend>
+        <p className="text-muted-foreground text-sm">
+          Você pode mudar depois em Minha empresa, Regras.
+        </p>
+        <div className="mt-3 grid gap-2" role="radiogroup">
+          {OPCOES_MODO_PRECO.map((o) => (
+            <label
+              key={o.valor}
+              className={cn(
+                'rounded-control hover:border-ring has-focus-visible:ring-ring/50 flex min-h-11 cursor-pointer items-start gap-3 border p-3 has-focus-visible:ring-[3px]',
+                modoPreco === o.valor && 'border-primary bg-secondary',
+              )}
+              data-testid={`modo-preco-${o.valor}`}
+            >
+              <input
+                type="radio"
+                name="modo-preco"
+                value={o.valor}
+                checked={modoPreco === o.valor}
+                onChange={() => setModoPreco(o.valor)}
+                className="accent-primary mt-1 size-4 shrink-0"
+              />
+              <span>
+                <span className="block font-semibold">{o.titulo}</span>
+                <span className="text-muted-foreground block text-sm">{o.frase}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <RodapePasso
         passo={3}

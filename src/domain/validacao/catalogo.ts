@@ -117,6 +117,23 @@ export type FaixasIdadeEntrada = z.input<typeof faixasIdadeSchema>;
 
 export const idsSchema = z.object({ ids: z.array(idSchema).max(200) });
 
+/**
+ * Inclusos que o cliente pode retirar do pacote (Fase 6.5) e o desconto ao retirar (nulo =
+ * sai sem mudar o preço). Só vale para opcionais inclusos no pacote (o banco confere).
+ */
+export const retiraveisPacoteSchema = z.object({
+  itens: z
+    .array(
+      z.object({
+        opcionalId: idSchema,
+        removivel: z.boolean(),
+        descontoCentavos: centavos('o desconto').nullable(),
+      }),
+    )
+    .max(200),
+});
+export type RetiraveisPacoteEntrada = z.input<typeof retiraveisPacoteSchema>;
+
 // ---------------------------------------------------------------------------
 // Opcional
 // ---------------------------------------------------------------------------

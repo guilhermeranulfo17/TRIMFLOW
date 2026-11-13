@@ -113,6 +113,11 @@ export function OrcamentosDoLead({
               </span>
             </div>
             <p className="text-muted-foreground">{resumoDaFesta(v)}</p>
+            {v.datasAlternativas && (
+              <p className="text-info text-sm font-medium" data-testid="datas-alternativas-lead">
+                {v.datasAlternativas}
+              </p>
+            )}
             {v.diferencas.length > 0 && (
               <ul className="text-info mt-1 text-xs" aria-label="O que mudou nesta versão">
                 {v.diferencas.map((d) => (

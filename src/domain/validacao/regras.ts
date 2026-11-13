@@ -73,7 +73,16 @@ export type AjustesDiaEntrada = z.input<typeof ajustesDiaSchema>;
 
 export const feriadosSchema = z
   .object({
-    feriados: z.array(z.object({ data: dataCivil, nome: nomeCurto('o nome do feriado') })).max(100),
+    feriados: z
+      .array(
+        z.object({
+          data: dataCivil,
+          nome: nomeCurto('o nome do feriado'),
+          /** data especial: preço próprio (nulo ou ausente = feriado comum) */
+          ajusteBp: bp(-9000, 20_000, 'o ajuste').nullable().optional(),
+        }),
+      )
+      .max(100),
   })
   .superRefine((v, ctx) => {
     const datas = new Set<string>();

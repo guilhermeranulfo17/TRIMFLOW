@@ -292,7 +292,14 @@ export async function modeloParaContrato(
   };
 }
 
-const TIPOS_INCLUSOS = ['pacote', 'opcional', 'hora_extra', 'avulso', 'deslocamento'] as const;
+const TIPOS_INCLUSOS = [
+  'pacote',
+  'opcional',
+  'retirado',
+  'hora_extra',
+  'avulso',
+  'deslocamento',
+] as const;
 
 /**
  * Tudo o que o contrato precisa a partir de um orçamento (sempre a versão vigente do número):

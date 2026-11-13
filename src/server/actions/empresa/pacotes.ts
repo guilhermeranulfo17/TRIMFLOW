@@ -10,10 +10,12 @@ import {
   fotosPacoteSchema,
   idsSchema,
   precoPacoteSchema,
+  retiraveisPacoteSchema,
   type CardapioEntrada,
   type DadosPacoteEntrada,
   type FaixasIdadePacoteEntrada,
   type PrecoPacoteEntrada,
+  type RetiraveisPacoteEntrada,
 } from '@/domain/validacao/catalogo';
 import { caminhoImagemValido } from '@/domain/validacao/empresa';
 import type { UsuarioAtual } from '@/server/auth/sessao';
@@ -219,9 +221,15 @@ export async function duplicarPacote(id: string): Promise<ResultadoAcao<{ id: st
         .from(opcionalPacotes)
         .where(eq(opcionalPacotes.pacoteId, id));
       if (vinculos.length)
-        await tx
-          .insert(opcionalPacotes)
-          .values(vinculos.map((o) => ({ ...base, opcionalId: o.opcionalId, relacao: o.relacao })));
+        await tx.insert(opcionalPacotes).values(
+          vinculos.map((o) => ({
+            ...base,
+            opcionalId: o.opcionalId,
+            relacao: o.relacao,
+            removivel: o.removivel,
+            descontoRetiradaCentavos: o.descontoRetiradaCentavos,
+          })),
+        );
 
       await auditar(tx, dono, 'pacote.duplicado', 'pacote', pid, { origem: id });
       return pid;
@@ -484,6 +492,49 @@ export async function salvarInclusosPacote(id: string, ids: string[]): Promise<R
     if (!ok) return { ok: false, erro: NAO_ENCONTRADO };
     revalidar(id);
     return { ok: true, mensagem: 'Opcionais inclusos salvos.' };
+  });
+}
+
+/**
+ * Inclusos que o cliente pode retirar no orçamento e o desconto ao retirar (Fase 6.5). Só mexe
+ * nos vínculos "incluso" do pacote; o que não estiver na lista fica como está.
+ */
+export async function salvarRetiraveisPacote(
+  id: string,
+  entrada: RetiraveisPacoteEntrada,
+): Promise<ResultadoAcao> {
+  return acaoDoDono(async (dono) => {
+    const v = validar(retiraveisPacoteSchema, entrada);
+    if (!v.ok) return v.resultado;
+    const ok = await comPacote(dono, id, async (tx) => {
+      const filtro = and(eq(opcionalPacotes.pacoteId, id), eq(opcionalPacotes.relacao, 'incluso'));
+      const antes = await tx
+        .select({
+          opcionalId: opcionalPacotes.opcionalId,
+          removivel: opcionalPacotes.removivel,
+          descontoCentavos: opcionalPacotes.descontoRetiradaCentavos,
+        })
+        .from(opcionalPacotes)
+        .where(filtro);
+      const inclusos = new Set(antes.map((a) => a.opcionalId));
+      const depois = v.dados.itens
+        .filter((i) => inclusos.has(i.opcionalId))
+        .map((i) => ({
+          opcionalId: i.opcionalId,
+          removivel: i.removivel,
+          // sem "pode retirar", desconto não faz sentido (o banco também recusa)
+          descontoCentavos: i.removivel && i.descontoCentavos ? i.descontoCentavos : null,
+        }));
+      for (const i of depois)
+        await tx
+          .update(opcionalPacotes)
+          .set({ removivel: i.removivel, descontoRetiradaCentavos: i.descontoCentavos })
+          .where(and(filtro, eq(opcionalPacotes.opcionalId, i.opcionalId)));
+      await auditar(tx, dono, 'pacote.retiraveis_alterados', 'pacote', id, { antes, depois });
+    });
+    if (!ok) return { ok: false, erro: NAO_ENCONTRADO };
+    revalidar(id);
+    return { ok: true, mensagem: 'Itens que o cliente pode retirar salvos.' };
   });
 }
 
