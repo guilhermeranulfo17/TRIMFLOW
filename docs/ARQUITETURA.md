@@ -2004,3 +2004,25 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
 - **Desempenho:** Lighthouse no celular, mediana 96 antes e depois (detalhes e capturas em
   `docs/capturas/pagina-elegante/`). A galeria em grade precisa de `min-w-0` na célula: sem
   ele, a largura original da foto alargava a página no celular.
+
+## 85. Ficha da cozinha (novembro de 2026)
+
+- **O que é:** para cada reserva fechada (`tipo = 'confirmada'`, `status` ativa ou realizada), o
+  item da reserva (Agenda e detalhe do lead, o mesmo componente `ItemReserva`) mostra "Ficha da
+  cozinha" (PDF) e "Planilha" (CSV). Sem nenhum preço.
+- **Conteúdo** (`domain/ficha/cozinha`, função pura `montarFicha`): cliente, tipo de evento,
+  data, horário de início e fim (início da reserva + duração incluída do pacote + horas extras;
+  sem conteúdo congelado, a duração do turno), espaço ou local do cliente (domicílio),
+  convidados por faixa (do conteúdo congelado; versões antigas só o total), pacote, cardápio
+  por seção, opcionais com quantidade e observações (da reserva e as visíveis do orçamento;
+  nunca as internas).
+- **Quantidades:** só onde o catálogo tem quantidade. Pacote e opcional por pessoa = "para N
+  convidados"; por unidade e por hora = a quantidade escolhida; fixo = só o item. Nenhum consumo
+  médio inventado (o catálogo não tem consumo por convidado).
+- **Acesso:** rotas `GET /app/agenda/ficha/[id]/pdf` e `/csv` exigem sessão e leem pelo RLS
+  (`carregarFichaCozinha`, duas consultas em pipeline): só usuários da empresa da reserva. O
+  vendedor também baixa (não há valores).
+- **CSV:** o mesmo gerador das exportações da LGPD (`domain/lgpd/csv`): `;`, UTF-8 com BOM e
+  proteção contra fórmula.
+- **PDF:** o mesmo motor da proposta (`@react-pdf/renderer`, Manrope), rota incluída em
+  `ROTAS_PDF`. Exemplos em `docs/capturas/ficha-cozinha/`.

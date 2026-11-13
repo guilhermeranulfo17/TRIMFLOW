@@ -21,6 +21,8 @@ const ROTAS_PDF = [
   '/b/[slug]/contrato/[token]',
   '/b/[slug]/contrato/[token]/pdf',
   '/app/contratos/[id]/pdf',
+  // Fase 4: ficha da cozinha
+  '/app/agenda/ficha/[id]/pdf',
 ];
 
 const nextConfig: NextConfig = {
