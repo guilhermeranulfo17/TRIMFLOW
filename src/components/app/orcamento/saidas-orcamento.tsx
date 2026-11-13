@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck, CircleCheck, Copy, Download, Loader2, Plus } from 'lucide-react';
+import { CalendarCheck, CircleCheck, Copy, Download, Loader2, Plus, Sheet } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useToast } from '@/components/app/toast';
@@ -99,6 +99,14 @@ export function SaidasOrcamento({
       >
         <Download className="size-4" aria-hidden />
         Baixar PDF
+      </a>
+      <a
+        href={`/app/orcamentos/${salvo.id}/planilha`}
+        className={ACAO}
+        data-testid="baixar-planilha-interno"
+      >
+        <Sheet className="size-4" aria-hidden />
+        Baixar planilha
       </a>
       {reservadoAte ? (
         <p
