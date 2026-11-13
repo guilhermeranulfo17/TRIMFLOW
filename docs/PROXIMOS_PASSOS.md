@@ -341,3 +341,12 @@ nova depois das decisões abaixo (o código já recusa módulo não implementado
   dos "Arquivos soltos" da Etapa 2).
 - **Foto do opcional no link público:** hoje só a proposta mostra. Avaliar mostrar no passo de
   extras do orçamento.
+
+## Depois dos ajustes da Fase 6 (ARQUITETURA §87)
+
+- **Retirar item do cardápio:** hoje só opcionais inclusos são retiráveis. Os itens do cardápio
+  são texto livre por seção; para retirar um prato seria preciso item estruturado.
+- **Datas de preferência no painel:** a 2ª e a 3ª datas aparecem no orçamento do lead. Avaliar
+  mostrar a disponibilidade delas na agenda ao lado da principal.
+- **Diferenças entre versões:** a lista "o que mudou" ainda não cita itens retirados (o total
+  mostra a diferença).

@@ -2041,3 +2041,36 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   contra fórmula. Valores como na proposta ("R$ 1.234,56"); o desconto sai "R$ -297,50" porque
   célula começando com "-" ganharia o apóstrofo da proteção e viraria texto.
 - Nome do arquivo: o do PDF com `.csv` (`arquivoProposta(…, 'csv')`).
+
+## 87. Ajustes menores da Fase 6 (novembro de 2026)
+
+- **Modo "sem valor" no onboarding (6.1):** o passo de preços pergunta como o preço aparece no
+  link (preço exato, faixa ou só depois do contato), com uma frase explicando cada um. Grava em
+  `regras_comerciais.modo_exibicao_preco` (coluna que já existia) com auditoria.
+- **Modelo de casamento e 15 anos (6.2):** `domain/modelos/casamento` (pacotes Clássico,
+  Premium e Gala por pessoa, cardápio de recepção e jantar, opcionais de casamento, regras com
+  antecedência de 60 dias e 10 parcelas). Grava o segmento `eventos`: o contrato de exemplo de
+  eventos já cobre casamento e 15 anos. No passo 1 o dono troca de modelo **só enquanto o
+  catálogo ainda é o de exemplo** (nenhum preço confirmado nem orçamento): `trocarModelo` apaga
+  o catálogo de exemplo e grava o novo na mesma transação (`MODELO_EM_USO` se já foi usado).
+- **Até 3 datas de preferência (6.3):** a 1ª data define o preço; a 2ª e a 3ª são opcionais,
+  só informam o buffet e aparecem no orçamento do lead. Ficam no rascunho do orçamento
+  (`escolhas.datasAlternativas`, jsonb): sem migration. Datas inválidas, passadas ou iguais à
+  principal são descartadas no servidor (`limparDatasAlternativas`).
+- **Data especial (6.4):** feriado com preço próprio. `feriados.ajuste_bp` (nulo = feriado
+  comum, regra antiga). Com valor, a data tem o ajuste dela e vence todos os outros (feriado
+  com turno, feriado geral, dia da semana), em qualquer turno; 0% anula os outros. Faixa de
+  -90% a +200% no Zod e no banco (`feriados_ajuste_bp_valido`). Editado em Regras, "Feriados e
+  datas especiais". Migration `20261115000001_data_especial`.
+- **Remover item incluso (6.5):** o dono marca, no pacote, quais opcionais inclusos o cliente
+  pode retirar e, se quiser, o desconto ao retirar (`opcional_pacotes.removivel` e
+  `desconto_retirada_centavos`; o banco só aceita em vínculo incluso e desconto só com
+  "pode retirar"). O cliente tira no passo de extras (só depois do contato, como os preços dos
+  extras); o painel tem a mesma opção no "+ Orçamento". O motor (`calcularOrcamento`,
+  `entrada.retirados`) gera uma linha `retirado` por item: valor zero sem desconto (a proposta
+  mostra "Retirado"), negativo com desconto; a soma dos descontos nunca passa do valor do
+  pacote. Não é desconto do vendedor (não entra no limite). Item não marcado, de outro pacote
+  ou repetido: `ITEM_NAO_RETIRAVEL`. A linha aparece na proposta (web, PDF e planilha), no
+  contrato (itens) e na ficha da cozinha ("Retirado do pacote, não servir"). Migration
+  `20261115000002_item_retiravel` (colunas com default e `alter type ... add value 'retirado'`).
+  Itens do cardápio (texto livre) não são retiráveis nesta entrega.
