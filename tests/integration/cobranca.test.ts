@@ -511,7 +511,9 @@ describe('conta suspensa = somente leitura', () => {
           'aceites_termos',
           -- Nossas soluções: como assinaturas e cobrancas, a cobrança dos adicionais segue
           -- gravável (o webhook registra pagamentos); escrita só pela conexão administrativa
-          'modulo_assinaturas', 'modulo_compras', 'modulo_cobrancas')
+          'modulo_assinaturas', 'modulo_compras', 'modulo_cobrancas',
+          -- Radar de uso (§92): contagem agregada, como funil_eventos, segue com a conta suspensa
+          'uso_painel')
         and not exists (select 1 from pg_trigger g
           where g.tgrelid = format('public.%I', c.table_name)::regclass
             and g.tgfoid = 'public._exigir_escrita()'::regprocedure)`;
@@ -550,6 +552,8 @@ describe('conta suspensa = somente leitura', () => {
     // o contrato) seguem com a conta suspensa
     'ler_cpf_contrato',
     'contrato_marcar_pdf',
+    // Radar de uso (§92): só soma a contagem da área aberta (sem dado do negócio)
+    'registrar_uso',
   ];
   const BLOQUEADAS = [
     'alterar_slug',
