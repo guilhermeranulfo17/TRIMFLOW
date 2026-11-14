@@ -202,3 +202,17 @@ export const landingContagem = pgTable(
   },
   (t) => [primaryKey({ columns: [t.dia, t.evento] })],
 );
+
+/** §92: radar de uso do painel por empresa, dia e área (sem nada pessoal). Só registrar_uso grava. */
+export const usoPainel = pgTable(
+  'uso_painel',
+  {
+    empresaId: uuid('empresa_id')
+      .notNull()
+      .references(() => empresas.id, { onDelete: 'cascade' }),
+    dia: date('dia', { mode: 'string' }).notNull(),
+    area: text('area').notNull(),
+    acessos: integer('acessos').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.empresaId, t.dia, t.area] })],
+);

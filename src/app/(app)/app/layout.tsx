@@ -1,3 +1,4 @@
+import { RastreioUso } from '@/components/app/rastreio-uso';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { AppHeader } from '@/components/app/app-header';
@@ -63,6 +64,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
         <BotaoOrcamento />
+        <RastreioUso />
         <Suspense fallback={<BottomNav dono={usuario.perfil === 'dono'} />}>
           <BottomNavComBadges usuario={usuario} />
         </Suspense>

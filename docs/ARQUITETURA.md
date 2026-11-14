@@ -2118,3 +2118,21 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   "Atendimento na casa do cliente" com o limite de convidados e quantas festas a equipe faz no
   mesmo turno. O link público já pergunta o local da festa quando o espaço é na casa do
   cliente. O passo 1 continua permitindo trocar o modelo enquanto o catálogo é o de exemplo.
+
+## 92. Radar de uso do painel (novembro de 2026)
+
+- **O que mede:** quantas vezes cada área do painel é aberta, por empresa e dia (fuso da
+  empresa). Tabela `uso_painel` (empresa, dia, área, acessos): só contagem, sem usuário, IP ou
+  caminho completo. Demo e contas de apresentação não contam; o modo suporte também não.
+- **Como grava:** o painel (e o onboarding) avisa a área a cada tela aberta (`RastreioUso`,
+  `fetch` com `keepalive` para `POST /api/uso`); a rota chama `registrar_uso(area)` como o
+  usuário (security definer, área fora da lista é ignorada). Áreas e rotas em
+  `domain/uso/areas` (= lista do SQL, teste de integração confere). Nunca atrapalha o painel:
+  erro vira 204 e log com código.
+- **Onde vê:** `/interno/radar` (ORKESTRA_ADMINS + MFA, conexão administrativa): mapa de calor
+  das últimas 8 semanas (`montarRadar`, nível 0 a 4 relativo à célula mais quente), alcance (%
+  das empresas ativas que abriram a área), áreas pouco usadas (< 20%) e nunca abertas, e as
+  empresas dos últimos 30 dias com acessos e quantas áreas usam.
+- **Regras:** RLS ligado sem leitura nem escrita para `authenticated`; trigger
+  `_exigir_nao_demo`; fora do `_exigir_escrita` de propósito (como `funil_eventos`: a contagem
+  segue com a conta suspensa). Migration `20261117000001_radar_uso`.
