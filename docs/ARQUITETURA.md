@@ -2136,3 +2136,21 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
 - **Regras:** RLS ligado sem leitura nem escrita para `authenticated`; trigger
   `_exigir_nao_demo`; fora do `_exigir_escrita` de propósito (como `funil_eventos`: a contagem
   segue com a conta suspensa). Migration `20261117000001_radar_uso`.
+
+## 93. Mensagem programada com envio em um toque e lembrete de notificações (novembro de 2026)
+
+- **Programar:** em "Nova tarefa" no lead, "Programar uma mensagem para o cliente" grava a
+  tarefa com a mensagem pronta (`agendar_mensagem`, mesmas regras de `criar_tarefa`, coluna
+  `tarefas.mensagem_sugerida` que já existia). A tarefa já mostra "Enviar no WhatsApp" com o
+  texto preenchido (abre o WhatsApp do vendedor e registra o contato).
+- **Na hora:** o job `orkestra-avisos-mensagens` (5 em 5 min, `gerar_avisos_mensagens`) cria o
+  aviso `mensagem_programada` para o responsável (painel e push; chave com o vencimento: adiar
+  avisa de novo na nova hora; feita ou cancelada, não avisa). Demo e lead de teste fora.
+- **Nada automático ao cliente final** (regra do produto): o sistema só prepara e avisa; quem
+  envia é o vendedor, pelo próprio WhatsApp. Envio automático pela API oficial da Meta fica para
+  depois (modelos aprovados, custo por mensagem, número de cada buffet).
+- **Lembrete de notificações:** no Início, enquanto este aparelho não estiver inscrito no push,
+  um cartão leva a Minha conta → Avisos ("Agora não" pausa 7 dias neste navegador). No iPhone sem
+  o app instalado, explica como instalar.
+- Migrations `20261118000001_mensagem_programada_enum` (valor novo do enum, sozinho) e
+  `20261118000002_mensagem_programada` (funções e job).

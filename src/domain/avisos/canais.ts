@@ -26,6 +26,8 @@ export const TIPOS_AVISO = [
   'contrato_assinado',
   'contrato_ajuste',
   'contrato_vencendo',
+  // §93: mensagem programada chegou na hora (o vendedor envia com um toque)
+  'mensagem_programada',
 ] as const;
 export type TipoAviso = (typeof TIPOS_AVISO)[number];
 
@@ -103,6 +105,7 @@ export const CANAIS_PADRAO: Record<TipoAviso, CanalExterno[]> = {
   contrato_assinado: ['push'],
   contrato_ajuste: ['push'],
   contrato_vencendo: ['push'],
+  mensagem_programada: ['push'],
 };
 
 export const ROTULO_TIPO_AVISO: Record<TipoAviso, string> = {
@@ -127,6 +130,7 @@ export const ROTULO_TIPO_AVISO: Record<TipoAviso, string> = {
   contrato_assinado: 'Contrato assinado',
   contrato_ajuste: 'Cliente pediu ajuste no contrato',
   contrato_vencendo: 'Link do contrato vencendo',
+  mensagem_programada: 'Mensagem programada na hora',
 };
 
 /** Avisos do contrato (Etapa 10): só para o dono (o vendedor não vê contratos). */

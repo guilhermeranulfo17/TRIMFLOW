@@ -574,6 +574,8 @@ describe('conta suspensa = somente leitura', () => {
     'editar_nota',
     'apagar_nota',
     'criar_tarefa',
+    // §93: mensagem programada é uma tarefa (escrita do negócio)
+    'agendar_mensagem',
     'concluir_tarefa',
     'adiar_tarefa',
     'reabrir_tarefa',
@@ -649,6 +651,11 @@ describe('conta suspensa = somente leitura', () => {
           'criar_tarefa',
           (sp) =>
             sp`select public.criar_tarefa(${lead!.id}, 'Ligar', now() + interval '1 day', null, null, null)`,
+        ],
+        [
+          'agendar_mensagem',
+          (sp) =>
+            sp`select public.agendar_mensagem(${lead!.id}, 'Mensagem', now() + interval '1 day', 'Oi!', null)`,
         ],
         ['concluir_tarefa', (sp) => sp`select public.concluir_tarefa(${tarefa!.id})`],
         [

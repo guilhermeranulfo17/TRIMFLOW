@@ -185,13 +185,21 @@ export async function criarTarefa(
     if (!v.ok) return v.resultado;
     const vence = instante(usuario, v.dados.quando);
     if (!vence) return DATA_INVALIDA;
+    // §93: com mensagem, a tarefa vira mensagem programada (aviso na hora, envio com um toque)
     const [r] = await chamar(
       usuario,
-      sql`select public.criar_tarefa(${leadId}::uuid, ${v.dados.titulo},
-        ${vence.toISOString()}::timestamptz, ${v.dados.descricao || null}) as id`,
+      v.dados.mensagem
+        ? sql`select public.agendar_mensagem(${leadId}::uuid, ${v.dados.titulo},
+            ${vence.toISOString()}::timestamptz, ${v.dados.mensagem}) as id`
+        : sql`select public.criar_tarefa(${leadId}::uuid, ${v.dados.titulo},
+            ${vence.toISOString()}::timestamptz, ${v.dados.descricao || null}) as id`,
     );
     revalidar(leadId);
-    return { ok: true, mensagem: 'Tarefa criada.', dados: { id: r!.id as string } };
+    return {
+      ok: true,
+      mensagem: v.dados.mensagem ? 'Mensagem programada.' : 'Tarefa criada.',
+      dados: { id: r!.id as string },
+    };
   });
 }
 

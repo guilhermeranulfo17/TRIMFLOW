@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { EmptyState } from '@/components/app/empty-state';
+import { LembretePush } from '@/components/app/avisos/lembrete-push';
 import { ChecklistPainel } from '@/components/app/onboarding/checklist-painel';
 import { FiltrosCaixa } from '@/components/app/leads/filtros-caixa';
 import { FunilLeads } from '@/components/app/leads/funil-leads';
@@ -90,6 +91,7 @@ export default async function LeadsPage({ searchParams }: Props) {
         </div>
       </div>
       <ChecklistPainel usuario={usuario} checklist={checklist} />
+      <LembretePush />
       {!funil && <TopoHoje resumo={resumo} filtros={filtros} />}
       <FiltrosCaixa filtros={filtros} usuarios={usuarios} />
       {colunas ? (
