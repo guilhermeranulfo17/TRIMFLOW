@@ -225,7 +225,7 @@ test.describe('contrato no painel', () => {
   test('vendedor não vê Contratos; o dono vê o cartão em Números', async ({ page }) => {
     await entrar(page, 'vendedor@demo.local', SENHA_SEED);
     const nav = page.getByRole('navigation', { name: 'Principal' });
-    await expect(nav.getByRole('link', { name: 'Leads' })).toBeVisible();
+    await expect(nav.getByRole('link', { name: 'Início' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Contratos' })).toHaveCount(0);
     await page.goto('/app/numeros');
     await expect(page.getByTestId('numeros-contratos')).toHaveCount(0);

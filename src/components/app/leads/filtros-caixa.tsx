@@ -103,7 +103,7 @@ function Controles({
         </div>
       </fieldset>
       {/* no funil a coluna já é a etapa: o filtro de status não se aplica */}
-      {f.visao !== 'funil' && (
+      {f.visao === 'lista' && (
         <fieldset>
           <legend className="mb-1.5 text-sm font-semibold">Status</legend>
           <div className="flex flex-wrap gap-2">

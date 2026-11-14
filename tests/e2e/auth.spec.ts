@@ -60,7 +60,7 @@ test.describe('cadastro', () => {
     await expect(page.getByTestId('passo-onboarding')).toHaveText('Passo 1 de 5');
     await page.goto('/app/leads');
     await expect(page.getByTestId('nome-buffet')).toHaveText('Buffet Alegria & Cia');
-    await expect(page.getByRole('heading', { name: 'Leads', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Início', level: 1 })).toBeVisible();
     await expect(page.getByTestId('faixa-onboarding')).toContainText('passo 1 de 5');
 
     // Logado não volta para o login

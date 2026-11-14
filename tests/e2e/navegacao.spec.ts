@@ -38,8 +38,8 @@ const AREAS: Area[] = [
     titulo: 'Minha empresa',
     vazio: 'Identidade do buffet',
   },
-  // Os leads do Buffet Demo vêm do seed (Etapa 4): confere a lista.
-  { rotulo: 'Leads', url: /\/app\/leads$/, titulo: 'Leads', lista: 'lista-leads' },
+  // Os leads do Buffet Demo vêm do seed (Etapa 4): o Início abre no funil (§89).
+  { rotulo: 'Início', url: /\/app\/leads$/, titulo: 'Início', lista: 'funil' },
 ];
 
 test('navega pelas áreas do menu sem rolagem horizontal', async ({ page }, info) => {

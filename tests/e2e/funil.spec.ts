@@ -30,10 +30,10 @@ test.describe('funil de leads', () => {
     const nome = await leadNovo();
     await entrar(page, 'dono@demo.local', SENHA_SEED);
 
-    // Lista → Funil mantém a busca
-    await page.goto(`/app/leads?q=${encodeURIComponent(nome)}`);
+    // Lista → Funil (o padrão) mantém a busca
+    await page.goto(`/app/leads?visao=lista&q=${encodeURIComponent(nome)}`);
     await page.getByTestId('visao-funil').click();
-    await expect(page).toHaveURL(/visao=funil/);
+    await expect(page).not.toHaveURL(/visao=/);
     await expect(page).toHaveURL(/q=Funil/);
     await expect(page.getByTestId('aba-novo')).toContainText('1');
     expect(await semRolagemHorizontal(page)).toBe(true);

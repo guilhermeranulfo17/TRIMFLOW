@@ -22,13 +22,14 @@ import { listarCaixa, resumoHoje, usuariosDaEmpresa } from '@/server/leads/carre
 import { carregarFunil } from '@/server/leads/funil';
 import { carregarChecklist } from '@/server/onboarding/carregar';
 
-export const metadata: Metadata = { title: 'Leads' };
+export const metadata: Metadata = { title: 'Início' };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 /**
- * Caixa de leads (tela inicial do painel): topo "Hoje" e a lista priorizada (pré-reserva >
- * visita > tarefa > quente > novo > em andamento). Filtros e busca vivem na URL.
+ * Início (tela inicial do painel, §89): o funil em colunas (Kanban) por padrão; na "Lista", o
+ * topo "Hoje" e a caixa priorizada (pré-reserva > visita > tarefa > quente > novo > em
+ * andamento). Filtros e busca vivem na URL.
  */
 export default async function LeadsPage({ searchParams }: Props) {
   const busca = await searchParams;
@@ -43,7 +44,7 @@ export default async function LeadsPage({ searchParams }: Props) {
   // (PendenteLink) e nos filtros (transição).
   // Tudo numa transação só (uma leva em pipeline). A página não usa o contexto do painel: ele
   // fica no layout, atrás de Suspense.
-  const funil = filtros.visao === 'funil';
+  const funil = filtros.visao !== 'lista';
   const [resumo, pagina, colunas, usuarios, checklist] = await comUsuario(usuario.id, (tx) =>
     Promise.all([
       resumoHoje(usuario, tx),
@@ -61,7 +62,7 @@ export default async function LeadsPage({ searchParams }: Props) {
     <div className={cn('mx-auto flex flex-col gap-4', funil ? 'max-w-7xl' : 'max-w-3xl')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-extrabold tracking-tight">Leads</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Início</h1>
           <AlternarVisao filtros={filtros} />
         </div>
         <div className="flex gap-2">
@@ -114,11 +115,11 @@ export default async function LeadsPage({ searchParams }: Props) {
   );
 }
 
-/** Lista (quem atender primeiro) ou Funil (onde está cada negociação), com os mesmos filtros. */
+/** Funil (onde está cada negociação, o padrão) ou Lista (quem atender primeiro), mesmos filtros. */
 function AlternarVisao({ filtros }: { filtros: Filtros }) {
   const opcoes = [
-    { visao: undefined, rotulo: 'Lista', Icone: List },
-    { visao: 'funil' as const, rotulo: 'Funil', Icone: Columns3 },
+    { visao: undefined, rotulo: 'Funil', Icone: Columns3 },
+    { visao: 'lista' as const, rotulo: 'Lista', Icone: List },
   ];
   return (
     <nav aria-label="Visão dos leads" className="bg-muted flex rounded-full p-0.5">
@@ -128,7 +129,7 @@ function AlternarVisao({ filtros }: { filtros: Filtros }) {
         const qs = filtrosParaUrl({
           ...filtros,
           visao,
-          atalho: visao ? undefined : filtros.atalho,
+          atalho: visao ? filtros.atalho : undefined,
         });
         return (
           <Link
@@ -139,7 +140,7 @@ function AlternarVisao({ filtros }: { filtros: Filtros }) {
               'inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold',
               ativo ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground',
             )}
-            data-testid={`visao-${visao ?? 'lista'}`}
+            data-testid={`visao-${visao ?? 'funil'}`}
           >
             <Icone className="size-4" aria-hidden />
             {rotulo}
