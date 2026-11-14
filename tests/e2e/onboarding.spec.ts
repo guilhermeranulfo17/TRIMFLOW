@@ -107,6 +107,8 @@ test('onboarding em conversa: uma pergunta por vez até o link no ar (§91)', as
 
   // capacidade de cada espaço do modelo, depois os horários
   for (let i = 0; i < 5; i++) {
+    // espera a pergunta trocar (capacidade ou horários) antes de ler o texto
+    await expect(pergunta).toContainText(/convidados|horários/);
     const texto = await pergunta.innerText();
     if (texto.includes('horários')) break;
     await page.getByLabel('Quantidade de convidados').fill('80');
