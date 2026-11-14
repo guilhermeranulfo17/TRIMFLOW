@@ -113,6 +113,8 @@ describe('filtros da caixa ↔ URL', () => {
       atrasadas: true,
       busca: 'ana',
       atalho: 'visitas',
+      // atalho do topo "Hoje" só existe na lista (o Início abre no funil, §89)
+      visao: 'lista',
     });
     expect(filtrosDaUrl(new URLSearchParams(filtrosParaUrl(f)))).toEqual(f);
     expect(contarFiltros(f)).toBe(6);

@@ -108,7 +108,7 @@ test.describe('financeiro da festa', () => {
   test('vendedor não vê o Financeiro', async ({ page }) => {
     await entrar(page, 'vendedor@demo.local', SENHA_SEED);
     const nav = page.getByRole('navigation', { name: 'Principal' });
-    await expect(nav.getByRole('link', { name: 'Leads' })).toBeVisible();
+    await expect(nav.getByRole('link', { name: 'Início' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Financeiro' })).toHaveCount(0);
     await page.goto('/app/agenda');
     await expect(page.getByTestId('atalho-financeiro')).toHaveCount(0);
