@@ -37,6 +37,8 @@ test('demonstração: entra sem senha, vê tudo, não salva nada e termina no ca
   });
   await expect(page).toHaveURL(/\/app\/leads$/, { timeout: 30_000 });
   await expect(page.getByTestId('faixa-demo')).toBeVisible();
+  // o Início abre no funil (§89); a Lista mostra os leads sem rolar as colunas
+  await page.goto('/app/leads?visao=lista');
   await expect(page.getByText('Patrícia Lima').first()).toBeVisible();
 
   // as telas principais abrem com os dados (nenhuma leitura tenta gravar)
