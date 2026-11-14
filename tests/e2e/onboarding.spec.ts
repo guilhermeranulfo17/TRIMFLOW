@@ -74,7 +74,7 @@ test('onboarding em conversa: uma pergunta por vez até o link no ar (§91)', as
   await expect(page).toHaveURL(/\/app\/comecar$/);
   const pergunta = page.getByTestId('pergunta-atual');
   const responder = page.getByRole('button', { name: 'Responder' });
-  await expect(pergunta).toContainText('Buffet infantil');
+  await expect(pergunta).toContainText(/buffet infantil/i);
   expect(await semRolagemHorizontal(page)).toBe(true);
   await page.getByRole('button', { name: 'Sim, é isso' }).click();
 
@@ -224,8 +224,10 @@ test('fechar no passo 3, voltar e continuar do mesmo ponto; a faixa some ao conc
   const faixa = page.getByTestId('faixa-onboarding');
   await expect(faixa).toContainText('Termine de configurar seu link (passo 3 de 5)');
 
-  // volta pela faixa direto no passo 3
+  // volta pela faixa: abre a conversa (padrão, §91) e o formulário continua no passo 3
   await faixa.click();
+  await expect(page.getByTestId('conversa-onboarding')).toBeVisible();
+  await page.getByTestId('prefiro-formulario').click();
   await noPasso(page, 3);
   // sem preço não avança (o botão fica desligado)
   await expect(page.getByRole('button', { name: 'Confirmar preços e continuar' })).toBeDisabled();
