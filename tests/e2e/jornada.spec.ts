@@ -76,7 +76,9 @@ test('jornada do buffet: da landing à assinatura, sem sair do celular', async (
     return e!.id;
   });
 
-  // 2. Onboarding: modelo pronto, preços digitados, agenda, pronto
+  // 2. Onboarding (pelo formulário em passos; a conversa tem teste próprio): modelo pronto,
+  // preços digitados, agenda, pronto
+  await page.getByTestId('prefiro-formulario').click();
   await expect(page.getByTestId('resumo-modelo')).toContainText('Alegria');
   await page.getByTestId('continuar-onboarding').click();
   await page.getByRole('button', { name: 'Pular por agora' }).click();

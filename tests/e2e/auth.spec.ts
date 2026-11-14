@@ -57,7 +57,7 @@ test.describe('cadastro', () => {
     });
     // a conta nasce com o modelo do segmento e cai no onboarding
     await expect(page).toHaveURL(/\/app\/comecar$/);
-    await expect(page.getByTestId('passo-onboarding')).toHaveText('Passo 1 de 5');
+    await expect(page.getByTestId('conversa-onboarding')).toBeVisible();
     await page.goto('/app/leads');
     await expect(page.getByTestId('nome-buffet')).toHaveText('Buffet Alegria & Cia');
     await expect(page.getByRole('heading', { name: 'Início', level: 1 })).toBeVisible();

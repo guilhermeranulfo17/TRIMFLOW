@@ -7,6 +7,8 @@ import { PassoAgenda } from '@/components/app/onboarding/comecar/passo-agenda';
 import { PassoIdentidade } from '@/components/app/onboarding/comecar/passo-identidade';
 import { CHAVES_MODELO, MODELOS_ONBOARDING } from '@/domain/modelos';
 import { PassoModelo } from '@/components/app/onboarding/comecar/passo-modelo';
+import { ConversaOnboarding } from '@/components/app/onboarding/conversa/conversa-onboarding';
+import { rotuloDoCatalogo, trechoDoPasso } from '@/domain/onboarding/conversa';
 import { PassoPrecos } from '@/components/app/onboarding/comecar/passo-precos';
 import { PassoPronto } from '@/components/app/onboarding/comecar/passo-pronto';
 import { bioInstagram, respostaAutomaticaWhatsApp } from '@/domain/divulgacao/textos';
@@ -52,6 +54,52 @@ export default async function PaginaComecar({ searchParams }: Props) {
   );
   if (!empresa) redirect('/app/leads');
   const link = `${siteUrl()}/b/${empresa.slug}`;
+
+  // Sem ?passo= (e com catálogo carregado), o onboarding é uma conversa (§91): uma pergunta por
+  // vez, com as mesmas ações dos passos. O formulário continua em ?passo=N.
+  if (!busca.passo && !estado.catalogoVazio && passo < 5) {
+    const [resumo, precos, agenda, podeTrocar] = await Promise.all([
+      carregarResumoModelo(usuario),
+      carregarPrecos(usuario),
+      carregarAgendaRapida(usuario),
+      podeTrocarModelo(usuario),
+    ]);
+    return (
+      <ConversaOnboarding
+        // trocar o modelo muda o catálogo: a conversa recomeça com os pacotes novos
+        key={resumo.pacotes.join('|')}
+        d={{
+          nomeUsuario: usuario.nome,
+          nomeBuffet: empresa.nome,
+          empresaId: empresa.id,
+          logoPath: empresa.logoPath,
+          identidade: {
+            nome: empresa.nome,
+            whatsappE164: empresa.whatsappE164 ?? '',
+            email: empresa.email ?? '',
+            cidade: empresa.cidade ?? '',
+            uf: (empresa.uf ?? '') as '',
+            fuso: empresa.fuso,
+            corMarca: empresa.corMarca,
+            sobre: empresa.sobre ?? '',
+          },
+          modeloRotulo: rotuloDoCatalogo(empresa.segmento, resumo.tiposEvento),
+          pacotesDoModelo: resumo.pacotes,
+          podeTrocar,
+          modelos: CHAVES_MODELO.map((chave) => ({
+            chave,
+            rotulo: MODELOS_ONBOARDING[chave].rotulo,
+            descricao: MODELOS_ONBOARDING[chave].descricao,
+          })),
+          pacotes: precos.pacotes,
+          opcionais: precos.opcionais,
+          modoPreco: precos.modoPreco,
+          agenda,
+          trechoInicial: trechoDoPasso(passo),
+        }}
+      />
+    );
+  }
 
   let conteudo: React.ReactNode;
   switch (passo) {
