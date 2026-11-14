@@ -323,7 +323,8 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   escuro `#1E7A3F`, preto `#0A0A0A`, off-white `#F4F4EE`; títulos `.ld-titulo` (Bricolage
   Grotesque) e destaque `.ld-serif` (Instrument Serif itálico). Origem do anúncio (utm_, ref) só
   por `registrar_origem_cadastro`; contagem agregada só por `publico.landing_contar` (sem nada
-  pessoal). Cadastro pede só nome, buffet, WhatsApp, e-mail e senha (segmento padrão `infantil`).
+  pessoal). Cadastro pede nome, buffet, tipo de buffet (infantil, casamento e 15 anos, eventos,
+  domicílio: escolhe o modelo e o segmento, §90), WhatsApp, e-mail e senha.
 - **CRM de prospecção (§81, `docs/PROSPECCAO_CRM.md`):** o servidor avisa o CRM de prospecção em
   cinco eventos (abriu a demonstração com `?r=<id do lead>`, montou um orçamento, criou conta,
   cadastrou pacote, publicou a página). Só por `server/prospeccao` (token `CRM_PROSPECCAO_TOKEN`

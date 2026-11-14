@@ -8,7 +8,7 @@ const valido = {
   whatsapp: '(34) 99135-5450',
   senha: 'senha-forte',
   nomeBuffet: 'Buffet Alegria & Cia',
-  segmento: 'infantil',
+  tipoBuffet: 'infantil',
   aceite: true,
 };
 
@@ -29,10 +29,12 @@ describe('cadastroSchema', () => {
     expect(r.success).toBe(false);
   });
 
-  it('rejeita segmento desconhecido', () => {
-    const r = cadastroSchema.safeParse({ ...valido, segmento: 'pizzaria' });
+  it('exige o tipo de buffet e recusa tipo desconhecido', () => {
+    const r = cadastroSchema.safeParse({ ...valido, tipoBuffet: 'pizzaria' });
     expect(r.success).toBe(false);
-    expect(r.error?.issues[0]?.message).toBe('Escolha o tipo de buffet');
+    expect(r.error?.issues[0]?.message).toBe('Escolha o tipo do seu buffet');
+    const { tipoBuffet: _t, ...semTipo } = valido;
+    expect(cadastroSchema.safeParse(semTipo).success).toBe(false);
   });
 });
 

@@ -2097,3 +2097,15 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   `apresentacao_popular`, `apresentacao_contrato_exemplo` e auxiliares, só `service_role`,
   `search_path = public`. Recusam slug ou usuário de empresa real. Os dados usam os pacotes,
   espaço, tipo de festa e turnos do próprio catálogo, então servem para qualquer modelo.
+
+## 90. Tipo de buffet no cadastro e telas por modelo (novembro de 2026)
+
+- O cadastro (e o "completar" de quem entra pelo Google) pergunta **que tipo de buffet** é:
+  infantil, casamento e 15 anos, espaço de eventos ou domicílio (`domain/modelos/tipos-buffet`,
+  módulo leve para o navegador; teste confere que são os mesmos modelos do onboarding). O tipo
+  escolhe o catálogo de exemplo (`modeloDaChave`) e grava o segmento (casamento usa `eventos`).
+  Obrigatório; antes a conta nascia sempre infantil.
+- **Telas por modelo:** no domicílio o passo da agenda do onboarding não pede salão: mostra
+  "Atendimento na casa do cliente" com o limite de convidados e quantas festas a equipe faz no
+  mesmo turno. O link público já pergunta o local da festa quando o espaço é na casa do
+  cliente. O passo 1 continua permitindo trocar o modelo enquanto o catálogo é o de exemplo.

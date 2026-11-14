@@ -180,7 +180,8 @@ test('o botão final leva ao cadastro mínimo e a conta nasce com a origem do an
   const campos = page.locator('form').locator('input:not([type="checkbox"])');
   await expect(campos).toHaveCount(5);
   await expect(page.getByLabel('WhatsApp (com DDD)')).toBeVisible();
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  // tipo de buffet (§90): quatro opções em botões, não campos de texto
+  await expect(page.getByRole('radio')).toHaveCount(4);
 
   // WhatsApp é obrigatório e precisa do DDD
   await page.getByLabel('Seu nome').fill('Lia Landing');
