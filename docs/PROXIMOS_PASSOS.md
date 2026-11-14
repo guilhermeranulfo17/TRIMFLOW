@@ -350,3 +350,9 @@ nova depois das decisões abaixo (o código já recusa módulo não implementado
   mostrar a disponibilidade delas na agenda ao lado da principal.
 - **Diferenças entre versões:** a lista "o que mudou" ainda não cita itens retirados (o total
   mostra a diferença).
+
+## Depois da mensagem programada (ARQUITETURA §93)
+
+- **Envio automático ao cliente pela API oficial do WhatsApp:** exige cada buffet conectar o
+  próprio número na Meta, modelos de mensagem aprovados e custo por conversa; muda a regra
+  "nenhuma mensagem automática ao cliente final". Decidir com o Gui antes.

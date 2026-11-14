@@ -148,6 +148,8 @@ function variaveis(tipo: TipoAviso, d: DadosAviso, agora: Date, fuso: string) {
         quando: expira ? quandoCurto(expira, agora, fuso) : 'em breve',
       };
     }
+    case 'mensagem_programada':
+      return { nome };
   }
 }
 
@@ -332,6 +334,12 @@ export function textoAviso(
       return {
         titulo: `Contrato vencendo: ${v.nome}`,
         corpo: `O link do contrato${v.contrato ? ` ${v.contrato}` : ''} de ${v.nome} vence ${v.quando} sem assinatura. Lembre o cliente ou mande um link novo.`,
+        caminho,
+      };
+    case 'mensagem_programada':
+      return {
+        titulo: `Hora de mandar a mensagem para ${v.nome}`,
+        corpo: 'A mensagem está pronta. Abra o lead e envie pelo WhatsApp com um toque.',
         caminho,
       };
   }

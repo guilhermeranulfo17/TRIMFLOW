@@ -31,6 +31,8 @@ export const tarefaSchema = z.object({
   titulo: z.string().trim().min(1, 'Descreva a tarefa.').max(160, 'Use no máximo 160 caracteres.'),
   quando,
   descricao: z.string().trim().max(1000, 'Use no máximo 1000 caracteres.').default(''),
+  /** §93: mensagem pronta para o cliente (vira aviso na hora e vai pelo WhatsApp com um toque) */
+  mensagem: z.string().trim().max(1000, 'Use no máximo 1000 caracteres.').default(''),
 });
 
 export const adiarSchema = z.union([

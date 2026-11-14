@@ -79,12 +79,24 @@ function FormTarefa({ leadId, fechar }: { leadId: string; fechar: () => void }) 
   const { executar, executando, campos } = useAcao();
   const [titulo, setTitulo] = useState('');
   const [quando, setQuando] = useState('amanhã 9h');
+  // §93: mensagem programada (o aviso chega na hora e o envio é pelo WhatsApp, com um toque)
+  const [comMensagem, setComMensagem] = useState(false);
+  const [mensagem, setMensagem] = useState('');
+  const tituloFinal = titulo.trim() || (comMensagem ? 'Enviar mensagem no WhatsApp' : '');
   return (
     <form
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        executar(() => criarTarefa(leadId, { titulo, quando }), fechar);
+        executar(
+          () =>
+            criarTarefa(leadId, {
+              titulo: tituloFinal,
+              quando,
+              mensagem: comMensagem ? mensagem : '',
+            }),
+          fechar,
+        );
       }}
     >
       <Campo id="tarefa-titulo" rotulo="O que fazer" erro={campos.titulo}>
@@ -100,8 +112,40 @@ function FormTarefa({ leadId, fechar }: { leadId: string; fechar: () => void }) 
       <Campo id="tarefa-quando" rotulo="Quando" erro={undefined}>
         <CampoQuando id="tarefa-quando" valor={quando} onChange={setQuando} erro={campos.quando} />
       </Campo>
-      <Button type="submit" size="lg" disabled={executando || !titulo.trim()}>
-        Criar tarefa
+      <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm">
+        <input
+          type="checkbox"
+          className="accent-primary mt-0.5 size-5 shrink-0"
+          checked={comMensagem}
+          onChange={(e) => setComMensagem(e.target.checked)}
+          data-testid="tarefa-com-mensagem"
+        />
+        <span>
+          <span className="font-medium">Programar uma mensagem para o cliente</span>
+          <span className="text-muted-foreground block text-xs">
+            Na hora marcada você recebe o aviso e envia pelo seu WhatsApp com um toque. Nada sai
+            sozinho.
+          </span>
+        </span>
+      </label>
+      {comMensagem && (
+        <Campo id="tarefa-mensagem" rotulo="Mensagem" erro={campos.mensagem}>
+          <Textarea
+            id="tarefa-mensagem"
+            rows={4}
+            maxLength={1000}
+            value={mensagem}
+            placeholder="Oi! Passando para saber se ficou alguma dúvida sobre a proposta."
+            onChange={(e) => setMensagem(e.target.value)}
+          />
+        </Campo>
+      )}
+      <Button
+        type="submit"
+        size="lg"
+        disabled={executando || !tituloFinal || (comMensagem && !mensagem.trim())}
+      >
+        {comMensagem ? 'Programar mensagem' : 'Criar tarefa'}
       </Button>
     </form>
   );
