@@ -2097,3 +2097,17 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   `apresentacao_popular`, `apresentacao_contrato_exemplo` e auxiliares, só `service_role`,
   `search_path = public`. Recusam slug ou usuário de empresa real. Os dados usam os pacotes,
   espaço, tipo de festa e turnos do próprio catálogo, então servem para qualquer modelo.
+
+## 91. Onboarding em conversa (novembro de 2026)
+
+- `/app/comecar` sem `?passo=` abre o onboarding **em conversa**: balões, uma pergunta por vez
+  (tipo de buffet, cidade, logo, preço de cada pacote, preços dos extras, como o preço aparece,
+  capacidade de cada espaço ou limite na casa do cliente, horários). Sem IA: textos e ordem em
+  `domain/onboarding/conversa` (puros, testados).
+- Cada resposta grava com **as mesmas ações** dos passos em formulário (`salvarIdentidade`,
+  `confirmarPrecos`, `salvarEspaco`, `irParaPasso`, `trocarModeloDoOnboarding`): nenhuma regra
+  nova. O passo continua salvo em `empresas.onboarding_passo`; fechar e voltar recomeça no trecho
+  do passo. Preço de exemplo vai só como dica: o dono digita cada valor (faixas proporcionais
+  como no passo 3).
+- O formulário em passos continua em `?passo=N` ("Prefiro o formulário"); o passo 5 (link no ar,
+  QR e textos prontos) é o mesmo nos dois.

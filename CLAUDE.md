@@ -36,7 +36,7 @@ src/
                      pelo Google), recuperar-senha, nova-senha; layout dividido no PC
     (aceite)/app/aceite/  aceite dos Termos e da Privacidade novos (Etapa 9B)
     (marketing)/     landing em `/` (§80): página de vendas estática em seis blocos, imagem de compartilhamento
-    (onboarding)/app/comecar/  onboarding guiado em 5 passos (tela cheia, sem menu)
+    (onboarding)/app/comecar/  onboarding guiado: conversa por padrão (§91) ou 5 passos em formulário
     (app)/app/       área logada: leads (caixa em Lista ou Funil) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
                      [id]/editar, [id]/pdf), avisos (histórico), conta/avisos e conta/seguranca

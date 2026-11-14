@@ -43,6 +43,9 @@ async function novaConta(page: Page, buffet: string) {
     buffet,
   });
   await expect(page).toHaveURL(/\/app\/comecar$/);
+  // o onboarding abre em conversa (§91); estes testes seguem pelo formulário em passos
+  await expect(page.getByTestId('conversa-onboarding')).toBeVisible();
+  await page.getByTestId('prefiro-formulario').click();
   await expect(page.getByTestId('passo-onboarding')).toHaveText('Passo 1 de 5');
 }
 
@@ -58,6 +61,73 @@ async function visitante(browser: Browser): Promise<Page> {
   });
   return ctx.newPage();
 }
+
+test('onboarding em conversa: uma pergunta por vez até o link no ar (§91)', async ({ page }) => {
+  const buffet = `Buffet Conversa ${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  await cadastrar(page, {
+    nome: 'Dona Conversa',
+    email: emailUnico('conversa'),
+    whatsapp: '34991355450',
+    senha: 'senha-forte-123',
+    buffet,
+  });
+  await expect(page).toHaveURL(/\/app\/comecar$/);
+  const pergunta = page.getByTestId('pergunta-atual');
+  const responder = page.getByRole('button', { name: 'Responder' });
+  await expect(pergunta).toContainText('Buffet infantil');
+  expect(await semRolagemHorizontal(page)).toBe(true);
+  await page.getByRole('button', { name: 'Sim, é isso' }).click();
+
+  await expect(pergunta).toContainText('Em que cidade');
+  await page.getByLabel('Cidade').fill('Uberlândia');
+  await page.getByLabel('Estado').selectOption('MG');
+  await responder.click();
+
+  await expect(pergunta).toContainText('logo');
+  await page.getByRole('button', { name: 'Depois eu coloco' }).click();
+
+  // um pacote por vez (a ordem é a do catálogo)
+  const valores: Record<string, string> = {
+    Alegria: '3.333,00',
+    Super: '3.900,00',
+    Encanto: '4.800,00',
+  };
+  for (let i = 0; i < 3; i++) {
+    await expect(pergunta).toContainText('Quanto custa o pacote');
+    const texto = await pergunta.innerText();
+    const nome = Object.keys(valores).find((n) => texto.includes(`pacote ${n}`))!;
+    await page.getByLabel(`Preço do pacote ${nome}`).fill(valores[nome]!);
+    await responder.click();
+    await expect(pergunta).not.toContainText(`pacote ${nome}`);
+  }
+  await expect(pergunta).toContainText('extras');
+  await page.getByRole('button', { name: 'Depois', exact: true }).click();
+  await expect(pergunta).toContainText('como ele aparece');
+  await page.getByRole('button', { name: /Mostrar o preço/ }).click();
+
+  // capacidade de cada espaço do modelo, depois os horários
+  for (let i = 0; i < 5; i++) {
+    const texto = await pergunta.innerText();
+    if (texto.includes('horários')) break;
+    await page.getByLabel('Quantidade de convidados').fill('80');
+    await responder.click();
+    await expect(pergunta).not.toHaveText(texto);
+  }
+  await expect(pergunta).toContainText('horários');
+  expect(await semRolagemHorizontal(page)).toBe(true);
+  await page.getByTestId('turnos-certos').click();
+
+  await expect(page).toHaveURL(/\/app\/comecar\?passo=5$/);
+  await expect(page.getByTestId('link-pronto')).toContainText('/b/buffet-conversa-');
+  const [e] = await noBanco(
+    (sql) => sql<{ cidade: string; uf: string; passo: number; precos: number }[]>`
+      select e.cidade, e.uf, e.onboarding_passo as passo,
+        (select count(*)::int from public.pacotes p
+          where p.empresa_id = e.id and p.preco_confirmado_em is not null) as precos
+      from public.empresas e where e.nome = ${buffet}`,
+  );
+  expect(e).toMatchObject({ cidade: 'Uberlândia', uf: 'MG', passo: 5, precos: 3 });
+});
 
 test('cadastro → onboarding digitando só os preços → link no ar com os preços digitados', async ({
   page,
