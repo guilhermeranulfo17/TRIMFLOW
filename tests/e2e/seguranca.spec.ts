@@ -103,7 +103,7 @@ test('percurso inteiro sem violação de CSP', async ({ page }) => {
     await page.goto(rota);
     await expect(page.getByRole('main').first()).toBeVisible();
   }
-  await page.goto('/app/leads');
+  await page.goto('/app/leads?visao=lista');
   await page.getByTestId('card-lead').first().getByRole('link').first().click();
   await expect(page.getByTestId('detalhe-lead')).toBeVisible();
 

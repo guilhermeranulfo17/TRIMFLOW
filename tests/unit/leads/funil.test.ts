@@ -142,11 +142,19 @@ describe('proximoPasso', () => {
 });
 
 describe('visão na URL', () => {
-  it('funil fica na URL e não vai para o SQL', () => {
-    const f = filtrosDaUrl({ visao: 'funil', q: 'ana' });
-    expect(f.visao).toBe('funil');
-    expect(filtrosParaUrl(f)).toBe('visao=funil&q=ana');
+  it('funil é o padrão; lista fica na URL e não vai para o SQL', () => {
+    const f = filtrosDaUrl({ visao: 'lista', q: 'ana' });
+    expect(f.visao).toBe('lista');
+    expect(filtrosParaUrl(f)).toBe('visao=lista&q=ana');
     expect(filtrosParaSql(f)).toEqual({ busca: 'ana' });
+    // links antigos com "funil" e valores desconhecidos abrem o padrão (funil)
+    expect(filtrosDaUrl({ visao: 'funil' }).visao).toBeUndefined();
     expect(filtrosDaUrl({ visao: 'outra' }).visao).toBeUndefined();
+  });
+
+  it('atalho do topo "Hoje" implica a lista, com o link curto', () => {
+    const f = filtrosDaUrl({ ver: 'pre_reservas' });
+    expect(f.visao).toBe('lista');
+    expect(filtrosParaUrl(f)).toBe('ver=pre_reservas');
   });
 });

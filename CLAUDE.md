@@ -37,7 +37,7 @@ src/
     (aceite)/app/aceite/  aceite dos Termos e da Privacidade novos (Etapa 9B)
     (marketing)/     landing em `/` (§80): página de vendas estática em seis blocos, imagem de compartilhamento
     (onboarding)/app/comecar/  onboarding guiado em 5 passos (tela cheia, sem menu)
-    (app)/app/       área logada: leads (caixa em Lista ou Funil) e leads/[id] (detalhe com ações), tarefas, agenda
+    (app)/app/       área logada: leads (Início: funil por padrão ou Lista, §89) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
                      [id]/editar, [id]/pdf), avisos (histórico), conta/avisos e conta/seguranca
                      (Minha conta: avisos e MFA), numeros (Números), leads/[id]/exportar (LGPD),
