@@ -95,7 +95,7 @@ async function orcamentoInterno(
 
 /** Abre o detalhe do lead pela busca da caixa. */
 async function abrirLead(page: Page, nome: string, filtros = '') {
-  await page.goto(`/app/leads?q=${encodeURIComponent(nome)}${filtros}`);
+  await page.goto(`/app/leads?visao=lista&q=${encodeURIComponent(nome)}${filtros}`);
   const card = page.getByTestId('card-lead').filter({ hasText: nome });
   await card.getByRole('link', { name: nome }).click();
   await expect(page).toHaveURL(/\/app\/leads\/[0-9a-f-]{36}$/);
@@ -125,7 +125,7 @@ test.describe('no desktop', () => {
     await page.getByRole('button', { name: 'Pré-reservar a data' }).click();
     await expect(page.getByText(/Pré-reservado até/)).toBeVisible();
 
-    await page.goto('/app/leads');
+    await page.goto('/app/leads?visao=lista');
     await expect(page.getByTestId('topo-hoje')).toBeVisible();
     await expect(async () => {
       await page.getByTestId('hoje-pre_reservas').click();
@@ -158,9 +158,9 @@ test.describe('no desktop', () => {
     // Fora da caixa padrão e do atalho; aparece só filtrando por Reservado.
     await page.goto(`/app/leads?ver=pre_reservas&q=${encodeURIComponent(nome)}`);
     await expect(page.getByTestId('caixa-vazia')).toBeVisible();
-    await page.goto(`/app/leads?q=${encodeURIComponent(nome)}`);
+    await page.goto(`/app/leads?visao=lista&q=${encodeURIComponent(nome)}`);
     await expect(page.getByTestId('caixa-vazia')).toBeVisible();
-    await page.goto(`/app/leads?q=${encodeURIComponent(nome)}&status=reservado`);
+    await page.goto(`/app/leads?visao=lista&q=${encodeURIComponent(nome)}&status=reservado`);
     await expect(page.getByTestId('card-lead').filter({ hasText: nome })).toContainText(
       'Reservado',
     );
@@ -175,7 +175,7 @@ test('registrar contato num lead novo muda para Em andamento e tira a prioridade
   await leadNovoPeloLink(browser, nome, whatsappNovo());
   await entrar(page, 'vendedor@demo.local', SENHA_SEED);
 
-  await page.goto(`/app/leads?q=${encodeURIComponent(nome)}`);
+  await page.goto(`/app/leads?visao=lista&q=${encodeURIComponent(nome)}`);
   const card = page.getByTestId('card-lead').filter({ hasText: nome });
   await expect(card).toHaveAttribute('data-grupo', '5');
   await expect(card).toContainText('Novo');
@@ -308,7 +308,7 @@ test('confirmar com dia e hora uma visita pedida pelo link', async ({ page, brow
   await cliente.getByRole('button', { name: 'Pedir visita' }).click();
   await expect(cliente.getByRole('status')).toContainText('Pedido de visita enviado!');
 
-  await page.goto(`/app/leads?q=${encodeURIComponent(nome)}`);
+  await page.goto(`/app/leads?visao=lista&q=${encodeURIComponent(nome)}`);
   const card = page.getByTestId('card-lead').filter({ hasText: nome });
   await expect(card).toHaveAttribute('data-grupo', '2');
   await expect(card.getByTestId('motivo')).toContainText('Pediu visita');

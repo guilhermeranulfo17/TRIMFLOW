@@ -105,7 +105,7 @@ test.describe('link público', () => {
     await expect(cliente.getByTestId('pre-reserva-ok')).toContainText('Data pré-reservada!');
 
     // Dono: o lead aparece pré-reservado, com a linha do tempo.
-    await page.goto('/app/leads');
+    await page.goto('/app/leads?visao=lista');
     const card = page.getByTestId('card-lead').filter({ hasText: 'Fernanda Cliente' });
     await expect(card).toContainText('Pré-reservado');
     await card.getByRole('link', { name: 'Fernanda Cliente' }).click();
@@ -226,7 +226,7 @@ test.describe('link público', () => {
     await expect(page.getByTestId(`lista-dia-${data}`)).toHaveCount(0);
     await page.goto('/app/leads');
     await expect(page.getByText('Dona Testando')).toHaveCount(0);
-    await page.goto('/app/leads?teste=1');
+    await page.goto('/app/leads?visao=lista&teste=1');
     const card = page.getByTestId('card-lead').filter({ hasText: 'Dona Testando' });
     await expect(card).toContainText('Teste');
   });

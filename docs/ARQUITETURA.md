@@ -2097,3 +2097,12 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   `apresentacao_popular`, `apresentacao_contrato_exemplo` e auxiliares, só `service_role`,
   `search_path = public`. Recusam slug ou usuário de empresa real. Os dados usam os pacotes,
   espaço, tipo de festa e turnos do próprio catálogo, então servem para qualquer modelo.
+
+## 89. Início com o funil (Kanban) como tela principal (novembro de 2026)
+
+- O menu chama a primeira área de **Início** (antes "Leads"); a rota continua `/app/leads`
+  (links, avisos, PWA e destino do login não mudam).
+- O Início abre no **funil** (colunas, §74). A **Lista** (caixa priorizada com o topo "Hoje")
+  fica a um toque: `?visao=lista`. Links antigos com `?visao=funil` abrem o padrão.
+- Um atalho do topo "Hoje" (`?ver=…`) só existe na lista, então já implica a lista; o link
+  continua curto (`?ver=pre_reservas`).

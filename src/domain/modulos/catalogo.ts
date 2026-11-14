@@ -116,7 +116,7 @@ export const MODULOS: Record<CodigoModulo, TextoModulo> = {
       'Revisar a regra do produto "nenhuma mensagem automática ao cliente final" e os Termos.',
       ...POLITICAS_COMUNS,
     ],
-    ondeUsar: { href: '/app/leads', rotulo: 'Ir para Leads' },
+    ondeUsar: { href: '/app/leads', rotulo: 'Ir para o Início' },
     temDemonstracao: false,
     soDono: false,
   },
