@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { celularBRParaE164 } from '../phone';
-import { SEGMENTOS } from '../segmento';
+import { TIPOS_BUFFET } from '../modelos/tipos-buffet';
 import { email, senha } from './auth';
 
 /** Cadastro do dono. Separado de ./auth para o login não carregar a validação de telefone. */
 
 export { ROTULO_SEGMENTO, SEGMENTOS, type Segmento } from '../segmento';
+export { INFO_TIPO_BUFFET, TIPOS_BUFFET, type TipoBuffet } from '../modelos/tipos-buffet';
 
 const dadosDoBuffet = {
   nome: z.string().trim().min(2, 'Informe seu nome').max(120, 'Nome muito longo'),
@@ -15,8 +16,8 @@ const dadosDoBuffet = {
     .trim()
     .min(1, 'Informe seu WhatsApp')
     .refine((v) => celularBRParaE164(v) !== null, 'Informe um celular válido com DDD'),
-  // o formulário não pergunta mais (nov/2026): sem escolha, a conta nasce com o modelo infantil
-  segmento: z.enum(SEGMENTOS, { error: 'Escolha o tipo de buffet' }).default('infantil'),
+  // tipo de buffet (§90): escolhe o modelo do catálogo e o segmento da empresa
+  tipoBuffet: z.enum(TIPOS_BUFFET, { error: 'Escolha o tipo do seu buffet' }),
   aceite: z.boolean().refine((v) => v, 'Para criar a conta, aceite os termos de uso.'),
 };
 
