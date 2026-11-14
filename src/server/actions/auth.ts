@@ -8,9 +8,9 @@ import { ehSessaoDemo, MENSAGEM_DEMO } from '@/domain/auth/demo';
 import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
 import { COOKIE_PROSPECCAO, idDoLead } from '@/domain/prospeccao';
-import { modeloDoSegmento } from '@/domain/modelos';
+import { modeloDaChave } from '@/domain/modelos';
+import { segmentoDoTipo, type TipoBuffet } from '@/domain/modelos/tipos-buffet';
 import { celularBRParaE164 } from '@/domain/phone';
-import type { Segmento } from '@/domain/segmento';
 import { slugBaseDaEmpresa } from '@/domain/slug';
 import {
   loginSchema,
@@ -70,7 +70,8 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
         nome: dados.nome,
         nome_buffet: dados.nomeBuffet,
         whatsapp_e164: whatsappE164,
-        segmento: dados.segmento,
+        segmento: segmentoDoTipo(dados.tipoBuffet),
+        tipo_buffet: dados.tipoBuffet,
         slug_base: slugBaseDaEmpresa(dados.nomeBuffet),
         termos_aceitos_em: new Date().toISOString(),
       },
@@ -92,7 +93,7 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
     };
   }
   if (data.user) {
-    await aplicarModeloDoCadastro(data.user.id, dados.segmento);
+    await aplicarModeloDoCadastro(data.user.id, dados.tipoBuffet);
     await registrarOrigem(data.user.id);
   }
   redirect('/app/comecar');
@@ -120,7 +121,8 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
     await comUsuario(user.id, (tx) =>
       tx.execute(sql`select public.completar_conta_dono(
         ${dados.nome}, ${dados.nomeBuffet}, ${whatsappE164},
-        ${dados.segmento}::public.segmento_empresa, ${slugBaseDaEmpresa(dados.nomeBuffet)})`),
+        ${segmentoDoTipo(dados.tipoBuffet)}::public.segmento_empresa,
+        ${slugBaseDaEmpresa(dados.nomeBuffet)})`),
     );
   } catch {
     logar('erro', 'cadastro.completar_falhou');
@@ -129,7 +131,7 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
   await registrarAceite(user.id);
   await avisarBoasVindas(user.id);
   await avisarProspeccao(user.id);
-  await aplicarModeloDoCadastro(user.id, dados.segmento);
+  await aplicarModeloDoCadastro(user.id, dados.tipoBuffet);
   await registrarOrigem(user.id);
   redirect('/app/comecar');
 }
@@ -202,13 +204,13 @@ async function registrarOrigem(usuarioId: string) {
  * do link até o dono confirmar no passo 3). Idempotente (gravarModelo nunca sobrescreve e tem
  * trava por empresa). Se falhar, o cadastro segue: o passo 1 oferece carregar o modelo.
  */
-async function aplicarModeloDoCadastro(usuarioId: string, segmento: Segmento) {
+async function aplicarModeloDoCadastro(usuarioId: string, tipo: TipoBuffet) {
   try {
     const [linha] = (await comUsuario(usuarioId, (tx) =>
       tx.execute(sql`select empresa_id from public.usuarios where id = ${usuarioId}`),
     )) as unknown as { empresa_id: string }[];
     if (!linha) return;
-    await gravarModelo(comUsuario, usuarioId, linha.empresa_id, modeloDoSegmento(segmento));
+    await gravarModelo(comUsuario, usuarioId, linha.empresa_id, modeloDaChave(tipo));
   } catch {
     logar('erro', 'cadastro.modelo_nao_aplicado');
   }
