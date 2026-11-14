@@ -35,6 +35,9 @@ export default async function PaginaInterna({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Orkestra interno</h1>
         <div className="flex flex-wrap items-center gap-3 text-sm">
+          <Link href="/interno/radar" className="font-semibold underline">
+            Radar de uso
+          </Link>
           <Link href="/interno/apresentacoes" className="font-semibold underline">
             Contas de apresentação
           </Link>

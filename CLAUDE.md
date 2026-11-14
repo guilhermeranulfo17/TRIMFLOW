@@ -59,7 +59,7 @@ src/
     api/prospeccao/  evento (POST público: abriu a demonstração e montou um orçamento, com ?r=)
     robots.ts, sitemap.ts  indexação (landing, termos, privacidade e vitrines)
     api/cobranca/    asaas (webhook, token no header) e reconciliar (POST, Bearer CRON_SECRET)
-    interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral,
+    interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral, radar (§92),
                      empresas/[id] (ações auditadas, "Entrar como esta empresa")
                      e apresentacoes (uma conta de apresentação por modelo, §88)
     manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)

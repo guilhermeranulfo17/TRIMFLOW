@@ -1,3 +1,4 @@
+import { RastreioUso } from '@/components/app/rastreio-uso';
 import { redirect } from 'next/navigation';
 import { ProvedorToast } from '@/components/app/toast';
 import { precisaAceitarTermos } from '@/domain/legal/versao';
@@ -14,6 +15,7 @@ export default async function LayoutComecar({ children }: { children: React.Reac
     <ProvedorToast>
       <div className="min-h-dvh" data-painel data-tema={await lerTema()}>
         <main className="mx-auto flex max-w-xl flex-col gap-6 px-4 pt-6 pb-32">{children}</main>
+        <RastreioUso />
       </div>
     </ProvedorToast>
   );
