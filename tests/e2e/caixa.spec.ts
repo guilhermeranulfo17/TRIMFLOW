@@ -372,6 +372,8 @@ test('mensagem pronta abre o WhatsApp com o texto certo (link wa.me)', async ({
 
 test('filtros e busca ficam na URL e voltar do navegador mantém os filtros', async ({ page }) => {
   await entrar(page, 'dono@demo.local', SENHA_SEED);
+  // o Início abre no funil (§89); os filtros de status são da Lista
+  await page.goto('/app/leads?visao=lista');
 
   // Filtro pelo sheet (celular): Perdido
   await page.getByRole('button', { name: 'Filtros', exact: true }).click();
@@ -379,7 +381,7 @@ test('filtros e busca ficam na URL e voltar do navegador mantém os filtros', as
   await folha.getByRole('button', { name: 'Perdido', exact: true }).click();
   await folha.getByRole('button', { name: 'Aplicar' }).click();
   await expect(folha).toBeHidden();
-  await expect(page).toHaveURL(/\/app\/leads\?status=perdido$/);
+  await expect(page).toHaveURL(/\/app\/leads\?visao=lista&status=perdido$/);
   await expect(page.getByRole('button', { name: 'Filtros (1 ligados)' })).toBeVisible();
   const cards = page.getByTestId('card-lead');
   await expect(cards.first()).toBeVisible();
@@ -408,14 +410,14 @@ test('filtros e busca ficam na URL e voltar do navegador mantém os filtros', as
 
   // Voltar mais uma vez tira a busca e mantém o filtro de status
   await page.goBack();
-  await expect(page).toHaveURL(/\/app\/leads\?status=perdido$/);
+  await expect(page).toHaveURL(/\/app\/leads\?visao=lista&status=perdido$/);
   await expect(busca).toHaveValue('');
   await expect(page.getByRole('button', { name: 'Filtros (1 ligados)' })).toBeVisible();
 
   // Limpar volta para a caixa padrão (sem fechados)
   await expect(async () => {
     await page.getByTestId('filtros-ativos').getByRole('button', { name: 'Limpar' }).click();
-    await expect(page).toHaveURL(/\/app\/leads$/, { timeout: 2_000 });
+    await expect(page).toHaveURL(/\/app\/leads\?visao=lista$/, { timeout: 2_000 });
   }).toPass();
   await expect(page.getByTestId('card-lead').filter({ hasText: 'Camila Duarte' })).toHaveCount(0);
 });

@@ -241,7 +241,8 @@ test.describe('leads no desktop', () => {
     await page.getByLabel('Senha', { exact: true }).fill('demo12345');
     await page.getByRole('button', { name: 'Entrar' }).click();
     await expect(page).toHaveURL(/\/app\/leads$/);
-    // logo depois do login a navegação do próprio login ainda pode estar terminando
+    // o topo "Hoje" é da Lista (o Início abre no funil, §89)
+    await page.goto('/app/leads?visao=lista');
     await expect(async () => {
       await page.getByTestId('hoje-pre_reservas').click();
       await expect(page).toHaveURL(/ver=pre_reservas/, { timeout: 2_000 });
