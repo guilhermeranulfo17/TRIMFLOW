@@ -8,11 +8,16 @@ import { salvarEspaco, salvarTurno } from '@/server/actions/empresa/agenda-confi
 import type { AgendaRapida } from '@/server/onboarding/carregar';
 import { RodapePasso } from './navegacao';
 
-/** Passo 4: espaços, capacidade e horário dos turnos sugeridos pelo modelo (edição rápida). */
+/**
+ * Passo 4: espaços, capacidade e horário dos turnos sugeridos pelo modelo (edição rápida). No
+ * buffet em domicílio (§90) não há salão: o "espaço" é a casa do cliente, então o passo pede só
+ * o limite de convidados e quantas festas a equipe faz no mesmo turno.
+ */
 export function PassoAgenda({ inicial }: { inicial: AgendaRapida }) {
   const toast = useToast();
   const [espacos, setEspacos] = useState(inicial.espacos);
   const [turnos, setTurnos] = useState(inicial.turnos);
+  const soNoCliente = espacos.length > 0 && espacos.every((e) => e.noLocalDoCliente);
 
   async function salvar(): Promise<boolean> {
     for (const e of espacos) {
@@ -41,46 +46,91 @@ export function PassoAgenda({ inicial }: { inicial: AgendaRapida }) {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-muted-foreground">
-        Confira onde e quando as festas acontecem. A agenda mostra ao cliente só as datas livres.
+        {soNoCliente
+          ? 'Você vai até o cliente, então não precisa cadastrar salão. Confira quantas festas a sua equipe faz por turno e os horários.'
+          : 'Confira onde e quando as festas acontecem. A agenda mostra ao cliente só as datas livres.'}
       </p>
-      <section className="flex flex-col gap-3">
-        <h2 className="font-semibold">Espaços</h2>
-        {espacos.map((e, i) => (
-          <div
-            key={e.id}
-            className="bg-card rounded-card grid grid-cols-[1fr_7rem] gap-3 border p-4"
-          >
-            <label className="flex flex-col gap-1.5 text-sm font-medium">
-              Nome do espaço
-              <Input
-                value={e.nome}
-                onChange={(ev) =>
-                  setEspacos((xs) =>
-                    xs.map((x, j) => (j === i ? { ...x, nome: ev.target.value } : x)),
-                  )
-                }
-              />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm font-medium">
-              Convidados
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                value={e.capacidadeMax}
-                aria-label={`Capacidade de ${e.nome}`}
-                onChange={(ev) =>
-                  setEspacos((xs) =>
-                    xs.map((x, j) =>
-                      j === i ? { ...x, capacidadeMax: Number(ev.target.value) || 0 } : x,
-                    ),
-                  )
-                }
-              />
-            </label>
-          </div>
-        ))}
-      </section>
+      {soNoCliente ? (
+        <section className="flex flex-col gap-3" data-testid="atendimento-no-cliente">
+          <h2 className="font-semibold">Atendimento na casa do cliente</h2>
+          {espacos.map((e, i) => (
+            <div key={e.id} className="bg-card rounded-card grid grid-cols-2 gap-3 border p-4">
+              <label className="flex flex-col gap-1.5 text-sm font-medium">
+                Até quantos convidados
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={e.capacidadeMax}
+                  onChange={(ev) =>
+                    setEspacos((xs) =>
+                      xs.map((x, j) =>
+                        j === i ? { ...x, capacidadeMax: Number(ev.target.value) || 0 } : x,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm font-medium">
+                Festas no mesmo turno
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={50}
+                  value={e.eventosSimultaneos}
+                  onChange={(ev) =>
+                    setEspacos((xs) =>
+                      xs.map((x, j) =>
+                        j === i ? { ...x, eventosSimultaneos: Number(ev.target.value) || 0 } : x,
+                      ),
+                    )
+                  }
+                />
+              </label>
+            </div>
+          ))}
+        </section>
+      ) : (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-semibold">Espaços</h2>
+          {espacos.map((e, i) => (
+            <div
+              key={e.id}
+              className="bg-card rounded-card grid grid-cols-[1fr_7rem] gap-3 border p-4"
+            >
+              <label className="flex flex-col gap-1.5 text-sm font-medium">
+                Nome do espaço
+                <Input
+                  value={e.nome}
+                  onChange={(ev) =>
+                    setEspacos((xs) =>
+                      xs.map((x, j) => (j === i ? { ...x, nome: ev.target.value } : x)),
+                    )
+                  }
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm font-medium">
+                Convidados
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={e.capacidadeMax}
+                  aria-label={`Capacidade de ${e.nome}`}
+                  onChange={(ev) =>
+                    setEspacos((xs) =>
+                      xs.map((x, j) =>
+                        j === i ? { ...x, capacidadeMax: Number(ev.target.value) || 0 } : x,
+                      ),
+                    )
+                  }
+                />
+              </label>
+            </div>
+          ))}
+        </section>
+      )}
       <section className="flex flex-col gap-3">
         <h2 className="font-semibold">Turnos</h2>
         {turnos.map((t, i) => (

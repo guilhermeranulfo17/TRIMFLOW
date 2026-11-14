@@ -12,17 +12,20 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { mascaraTelefoneBR } from '@/domain/mascara';
+import { INFO_TIPO_BUFFET, TIPOS_BUFFET, type TipoBuffet } from '@/domain/modelos/tipos-buffet';
+import { cn } from '@/lib/utils';
 
 type CamposBuffet = {
   nome: string;
   nomeBuffet: string;
   whatsapp: string;
+  tipoBuffet: TipoBuffet;
   aceite: boolean;
 };
 
 /**
- * Nome, buffet e WhatsApp (cadastro e "completar" de quem entrou pelo Google). Só o mínimo: o
- * tipo de buffet não é mais perguntado aqui (a conta nasce com o modelo infantil).
+ * Nome, buffet, WhatsApp e o tipo de buffet (cadastro e "completar" de quem entrou pelo Google).
+ * O tipo escolhe o catálogo de exemplo e adapta as telas (§90).
  */
 export function CamposDoBuffet({ focoNoNome = false }: { focoNoNome?: boolean }) {
   const { control } = useFormContext<CamposBuffet>();
@@ -50,6 +53,46 @@ export function CamposDoBuffet({ focoNoNome = false }: { focoNoNome?: boolean })
             <FormControl>
               <Input autoComplete="organization" {...field} />
             </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name="tipoBuffet"
+        render={({ field, fieldState }) => (
+          <FormItem>
+            <fieldset>
+              <legend className="mb-2 text-sm font-medium">Que tipo de buffet é o seu?</legend>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup">
+                {TIPOS_BUFFET.map((t) => {
+                  const ativo = field.value === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      role="radio"
+                      aria-checked={ativo}
+                      onClick={() => field.onChange(t)}
+                      onBlur={field.onBlur}
+                      className={cn(
+                        'rounded-control flex min-h-16 flex-col items-start justify-center border px-3 py-2 text-left',
+                        ativo
+                          ? 'border-primary bg-primary/10 ring-primary ring-1'
+                          : 'hover:border-ring',
+                        fieldState.error && !ativo && 'border-destructive',
+                      )}
+                      data-testid={`tipo-buffet-${t}`}
+                    >
+                      <span className="text-sm font-semibold">{INFO_TIPO_BUFFET[t].rotulo}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {INFO_TIPO_BUFFET[t].dica}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
             <FormMessage />
           </FormItem>
         )}

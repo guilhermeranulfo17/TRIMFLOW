@@ -33,8 +33,8 @@ test.describe('cadastro', () => {
     await expect(page.getByText('Informe seu nome')).toBeVisible();
     await expect(page.getByText('Informe seu WhatsApp')).toBeVisible();
     await expect(page.getByText('Informe o nome do buffet')).toBeVisible();
-    // o cadastro pede só o mínimo: "Tipo de buffet" não é mais perguntado
-    await expect(page.getByText('Tipo de buffet')).toHaveCount(0);
+    // o tipo de buffet é obrigatório (§90)
+    await expect(page.getByText('Escolha o tipo do seu buffet')).toBeVisible();
     expect(await semRolagemHorizontal(page)).toBe(true);
   });
 
