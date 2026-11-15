@@ -1,3 +1,4 @@
+import { formatBRL } from '../money';
 import { formatBp } from '../percent';
 
 /** Mensagens em português simples, escritas para o cliente final. */
@@ -34,6 +35,12 @@ export const mensagens = {
   descontoLimitado: () => 'O desconto foi limitado ao valor do subtotal.',
   canalNaoPermite: () => 'Itens avulsos e descontos só podem ser lançados pela equipe do buffet.',
   referenciaInvalida: (oque: string) => `${oque} não está disponível. Escolha outra opção.`,
+  pacoteObrigatorio: () => 'Escolha um pacote.',
+  itensObrigatorios: () => 'Escolha pelo menos um item para a sua festa.',
+  minimoItens: (minimo: number) =>
+    `O orçamento montado por itens é a partir de ${minimo} convidados.`,
+  pedidoMinimo: (minimo: number, falta: number) =>
+    `O pedido mínimo é de ${formatBRL(minimo)}. Faltam ${formatBRL(falta)}.`,
   prazoCurto: () =>
     'Não há tempo para parcelar o saldo antes do evento: ele fica em uma parcela, com vencimento hoje.',
 };

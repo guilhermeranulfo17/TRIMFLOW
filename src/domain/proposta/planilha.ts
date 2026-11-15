@@ -10,6 +10,7 @@ import type { ModeloProposta } from './conteudo';
 
 const TIPO: Record<string, string> = {
   pacote: 'Pacote',
+  festa: 'Festa',
   opcional: 'Opcional',
   retirado: 'Retirado do pacote',
   ajuste_dia: 'Ajuste do dia',

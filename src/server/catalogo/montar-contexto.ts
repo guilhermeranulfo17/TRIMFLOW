@@ -7,6 +7,23 @@ import type { ContextoPreco } from '@/domain/preco';
  */
 
 type Linha<T> = T[];
+type Faixa = { ateConvidados: number; valorCentavos: number };
+
+/** Faixas gravadas em jsonb: só as válidas, em ordem (o banco só confere que é uma lista). */
+function faixasValidas(v: unknown): Faixa[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter(
+      (f): f is Faixa =>
+        !!f &&
+        Number.isInteger((f as Faixa).ateConvidados) &&
+        (f as Faixa).ateConvidados > 0 &&
+        Number.isInteger((f as Faixa).valorCentavos) &&
+        (f as Faixa).valorCentavos >= 0,
+    )
+    .map((f) => ({ ateConvidados: f.ateConvidados, valorCentavos: f.valorCentavos }))
+    .sort((a, b) => a.ateConvidados - b.ateConvidados);
+}
 
 export type LinhasCatalogo = {
   regras: {
@@ -20,6 +37,11 @@ export type LinhasCatalogo = {
     deslocamentoModelo: ContextoPreco['regras']['deslocamentoModelo'];
     deslocamentoKmGratis: number;
     deslocamentoValorKmCentavos: number;
+    /** §96 (ausentes no cache antigo = só pacotes) */
+    modoVenda?: 'pacotes' | 'itens' | 'ambos';
+    minConvidadosItens?: number;
+    pedidoMinimoCentavos?: number;
+    faixasFestaPorPessoa?: Faixa[];
   };
   tiposEvento: Linha<{ id: string; nome: string; ativo: boolean }>;
   espacos: Linha<{
@@ -83,6 +105,10 @@ export type LinhasCatalogo = {
     qtdMax: number | null;
     ordem: number;
     ativo: boolean;
+    /** §96 (ausentes no cache antigo = sem categoria, quantidade informada, sem faixas) */
+    categoria?: string | null;
+    qtdPorConvidadoCent?: number | null;
+    faixasPorPessoa?: unknown;
   }>;
   opcionalPacotes: Linha<{
     opcionalId: string;
@@ -125,6 +151,10 @@ export function montarContexto(l: LinhasCatalogo): ContextoPreco {
       deslocamentoModelo: r.deslocamentoModelo,
       deslocamentoKmGratis: r.deslocamentoKmGratis,
       deslocamentoValorKmCentavos: r.deslocamentoValorKmCentavos,
+      modoVenda: r.modoVenda ?? 'pacotes',
+      minConvidadosItens: r.minConvidadosItens ?? 0,
+      pedidoMinimoCentavos: r.pedidoMinimoCentavos ?? 0,
+      faixasFestaPorPessoa: faixasValidas(r.faixasFestaPorPessoa),
     },
     tiposEvento: l.tiposEvento.map((t) => ({ id: t.id, nome: t.nome, ativo: t.ativo })),
     espacos: l.espacos.map((e) => ({
@@ -215,6 +245,9 @@ export function montarContexto(l: LinhasCatalogo): ContextoPreco {
         pacotesInclusoIds: vinculos.filter((v) => v.relacao === 'incluso').map((v) => v.pacoteId),
         ...(retiravelEm.length ? { retiravelEm } : {}),
         tiposEventoIds: (tiposPorOpcional.get(o.id) ?? []).map((v) => v.tipoEventoId),
+        categoria: o.categoria ?? null,
+        qtdPorConvidadoCent: o.qtdPorConvidadoCent ?? null,
+        faixasPorPessoa: faixasValidas(o.faixasPorPessoa),
       };
     }),
     faixasDeslocamento: l.faixasDeslocamento.map((d) => ({

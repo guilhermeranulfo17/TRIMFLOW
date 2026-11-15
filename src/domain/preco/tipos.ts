@@ -27,7 +27,23 @@ export type RegrasPreco = {
   deslocamentoModelo: 'nenhum' | 'por_km' | 'por_faixa';
   deslocamentoKmGratis: number;
   deslocamentoValorKmCentavos: number;
+  /**
+   * Orçamento por itens (§96). `pacotes` (padrão): todo orçamento tem pacote. `itens`: o cliente
+   * monta a festa escolhendo os itens, sem pacote. `ambos`: o cliente escolhe um dos jeitos.
+   */
+  modoVenda?: ModoVenda;
+  /** sem pacote: mínimo de convidados equivalentes (0 = sem mínimo) */
+  minConvidadosItens?: number;
+  /** sem pacote: valor mínimo do pedido antes do desconto (0 = sem mínimo) */
+  pedidoMinimoCentavos?: number;
+  /**
+   * Sem pacote: preço da festa por pessoa conforme o número de convidados (ex.: até 90, R$ 45;
+   * até 120, R$ 40). Vazio = a festa não tem preço base, só a soma dos itens.
+   */
+  faixasFestaPorPessoa?: FaixaPrecoCtx[];
 };
+
+export type ModoVenda = 'pacotes' | 'itens' | 'ambos';
 
 export type TipoEventoCtx = { id: Id; nome: string; ativo: boolean };
 
@@ -122,6 +138,19 @@ export type OpcionalCtx = {
   retiravelEm?: { pacoteId: Id; descontoCentavos: number | null }[];
   /** vazio = vale para todos os tipos de evento */
   tiposEventoIds: Id[];
+  /** agrupa os itens no orçamento por itens ("Salgados", "Bolos e tortas"); null = "Outros" */
+  categoria?: string | null;
+  /**
+   * Por unidade: quantidade calculada pelos convidados, em centésimos por convidado equivalente
+   * (1200 = 12 por convidado), arredondada para cima. O cliente vê só o valor; o buffet vê a
+   * quantidade. null = o cliente informa a quantidade.
+   */
+  qtdPorConvidadoCent?: number | null;
+  /**
+   * Por pessoa: preço por pessoa conforme o número de convidados (`valorCentavos` = valor por
+   * pessoa até `ateConvidados`). Acima da maior faixa (ou sem faixas), vale `precoCentavos`.
+   */
+  faixasPorPessoa?: FaixaPrecoCtx[];
 };
 
 export type FaixaDeslocamentoCtx = { ateKm: number; valorCentavos: number };
@@ -157,7 +186,8 @@ export type EntradaOrcamento = {
   espacoId: Id;
   adultos: number;
   criancas: { faixaIdadeId: Id; quantidade: number }[];
-  pacoteId: Id;
+  /** null = orçamento por itens, sem pacote (só quando `regras.modoVenda` permite) */
+  pacoteId: Id | null;
   opcionais: { opcionalId: Id; quantidade: number }[];
   /** opcionais inclusos que o cliente retirou do pacote (Fase 6.5) */
   retirados?: Id[];
@@ -189,19 +219,24 @@ export type CodigoErro =
   | 'DISTANCIA_OBRIGATORIA'
   | 'DESCONTO_ACIMA_LIMITE'
   | 'CANAL_NAO_PERMITE'
+  | 'PACOTE_OBRIGATORIO'
+  | 'ITENS_OBRIGATORIOS'
+  | 'PEDIDO_MINIMO'
   | 'REFERENCIA_INVALIDA';
 
 export type CodigoAviso =
   | 'ANTECEDENCIA_MINIMA'
   | 'FORA_AREA_ATENDIMENTO'
   | 'DESCONTO_LIMITADO_AO_SUBTOTAL'
-  | 'PRAZO_PARCELAS_CURTO';
+  | 'PRAZO_PARCELAS_CURTO'
+  | 'PEDIDO_MINIMO';
 
 export type ErroOrcamento = { codigo: CodigoErro; mensagem: string; campo?: string };
 export type AvisoOrcamento = { codigo: CodigoAviso; mensagem: string };
 
 export type TipoLinha =
   | 'pacote'
+  | 'festa'
   | 'ajuste_dia'
   | 'opcional'
   | 'retirado'
@@ -219,6 +254,11 @@ export type LinhaOrcamento = {
   subtotalCentavos: number;
   /** explicação do cálculo em português, pronta para a proposta */
   detalhe: string;
+  /**
+   * A conta (quantidade e valor unitário) é do buffet: o cliente vê só a descrição e o valor
+   * (item com quantidade por convidado, §96).
+   */
+  ocultarConta?: boolean;
 };
 
 export type Parcela = { numero: number; valorCentavos: number; vencimento: DataCivil };
