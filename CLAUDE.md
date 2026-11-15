@@ -35,7 +35,7 @@ src/
     (auth)/          login (+ verificacao: código da MFA), cadastro (+ completar, para quem entrou
                      pelo Google), recuperar-senha, nova-senha; layout dividido no PC
     (aceite)/app/aceite/  aceite dos Termos e da Privacidade novos (Etapa 9B)
-    (marketing)/     landing em `/` (§80): página de vendas estática em seis blocos, imagem de compartilhamento
+    (marketing)/     landing em `/` (§95): página de vendas estática completa, imagem de compartilhamento
     (onboarding)/app/comecar/  onboarding guiado: conversa por padrão (§91) ou 5 passos em formulário
     (app)/app/       área logada: leads (Início: funil por padrão ou Lista, §89) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
@@ -92,9 +92,10 @@ src/
                      fontes dos estilos, cor da marca, rodapé
     auth/            peças dos formulários de autenticação
     marca/           logotipo (traçado da arte oficial) e símbolo (o "O" sobre o limão)
-    marketing/       seções da landing (topo, benefícios, preço, chamada final, rodapé) e ilhas
-                     (demonstração com os passos reais do link público + resultado, "Entrar",
-                     contagem/origem); estilos `ld-*` em globals.css
+    marketing/       seções da landing (cabeçalho, topo, para quem, rotina, como funciona,
+                     recursos, painel, preço, dúvidas, chamada final, rodapé), maquetes em HTML e
+                     ilhas (demonstração com os passos reais do link público + resultado,
+                     "Entrar", contagem/origem); estilos `ld-*` em globals.css
   domain/            REGRAS DE NEGÓCIO PURAS: money, percent, phone, dates, slug, mascara, validacao/,
                      conversao (campos), senha, forca-senha, tema, imagem, plano
     auth/            destino depois do login (destinoPosLogin, destinoSeguro)
@@ -312,9 +313,12 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `trocar_senha`), chame `refreshSession()`: os claims vêm do token. Login com Google:
   `/auth/callback` → `decidirVoltaExterna` (`server/auth/volta-externa.ts`, regra em
   `domain/auth/destino`); conta nova completa em `/cadastro/completar` (`completar_conta_dono`).
-- **Landing (§62 e §80):** `/` estática (ISR 5 min) e fora do middleware (não toca no
-  Auth). Seis blocos e nada mais: topo, demonstração, resultado, três benefícios, um preço e botão
-  final; pouco texto, sem travessão, feita para o celular. Um preço só, de
+- **Landing (§62, §80 e §95):** `/` estática (ISR 5 min) e fora do middleware (não toca no
+  Auth). Página completa (§95): cabeçalho fixo com "Testar grátis", topo, para quem é, rotina,
+  demonstração e resultado, como funciona, recursos, painel por dentro, preço com o que inclui,
+  dúvidas (também em JSON-LD FAQPage), chamada final e rodapé; sem travessão, feita para o
+  celular, sem imagem (maquetes em HTML com `data-exemplo` e "Exemplo ilustrativo"). Só o que o
+  produto faz hoje (textos das dúvidas e do plano em `domain/marketing/landing`). Um preço só, de
   `publico.planos_vitrine` (a mensalidade do plano do teste; nunca valor fixo no código; sem preço
   de fundador); quem mudar plano invalida a tag `planos-vitrine`. Nada de depoimento, logo de
   cliente, nota ou número inventado. A demonstração desenha os passos reais do link público
@@ -360,6 +364,10 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - Nova tabela = migration com RLS, policies, grants mínimos, teste de integração de isolamento
   e espelho em `server/db/schema.ts` (catálogo em `server/db/schema-catalogo.ts`).
 - Tabela filha usa FK composta `(pai_id, empresa_id)` → `(id, empresa_id)` do pai.
+- **Orçamento por itens (§96):** `regras_comerciais.modo_venda` (pacotes, itens, ambos); sem
+  pacote, `pacoteId` null no motor, os itens são os opcionais sem "compatível", o passo 4 vira
+  "Monte sua festa" e o de extras some (`Escolhas.semPacote`, `escolhasNoModo`). Linha com
+  `ocultarConta` (quantidade por convidado) nunca mostra a conta ao cliente (proposta e contrato).
 - O preço é calculado **sempre no servidor** com `calcularOrcamento`; "hoje" e o limite de
   desconto vêm do servidor, nunca do navegador. O banco confere de novo o limite do vendedor.
 - **Versões:** alterar um orçamento cria uma versão nova (mesmo número, outra linha, outro

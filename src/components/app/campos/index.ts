@@ -6,3 +6,4 @@ export { EditorItensCardapio } from './editor-itens-cardapio';
 export { ListaOrdenavel, mover } from './lista-ordenavel';
 export { SeletorDiasSemana } from './seletor-dias-semana';
 export { UploadImagem } from './upload-imagem';
+export { EditorFaixasPorPessoa, type FaixaPorPessoa } from './editor-faixas-por-pessoa';

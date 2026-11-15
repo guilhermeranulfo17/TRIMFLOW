@@ -82,6 +82,16 @@ export function montarContextoPainel(
     tiposEvento: catalogo.tipo_evento_ativo ? [{ ativo: true }] : [],
     turnos: catalogo.turno_ativo ? [{ ativo: true }] : [],
     espacos: catalogo.espaco_ativo ? [{ ativo: true }] : [],
+    // §96 (chave ausente = banco anterior: só pacotes)
+    ...(catalogo.modo_venda
+      ? {
+          venda: {
+            modo: catalogo.modo_venda as 'pacotes' | 'itens' | 'ambos',
+            itensComPreco: catalogo.itens_com_preco === true,
+            festaComPreco: catalogo.festa_com_preco === true,
+          },
+        }
+      : {}),
   });
 
   const concluidoEm = data(empresa.onboarding_concluido_em);

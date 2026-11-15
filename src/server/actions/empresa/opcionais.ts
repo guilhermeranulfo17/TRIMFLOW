@@ -57,6 +57,10 @@ function normalizar(d: ReturnType<typeof dadosOpcionalSchema.parse>) {
     qtdMin: d.qtdMin,
     qtdMax: d.qtdMax,
     ativo: d.ativo,
+    // §96: só o que vale para a cobrança escolhida (o resto grava limpo)
+    categoria: d.categoria?.trim() || null,
+    qtdPorConvidadoCent: d.cobranca === 'por_unidade' ? (d.qtdPorConvidadoCent ?? null) : null,
+    faixasPorPessoa: d.cobranca === 'por_pessoa' ? (d.faixasPorPessoa ?? []) : [],
   };
 }
 

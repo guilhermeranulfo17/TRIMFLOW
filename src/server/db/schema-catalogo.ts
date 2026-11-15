@@ -163,6 +163,14 @@ export const regrasComerciais = pgTable('regras_comerciais', {
   deslocamentoKmGratis: integer('deslocamento_km_gratis').notNull().default(0),
   deslocamentoValorKmCentavos: integer('deslocamento_valor_km_centavos').notNull().default(0),
   intervaloEntreEventosMin: integer('intervalo_entre_eventos_min').notNull().default(60),
+  /** Orçamento por itens (§96): pacotes | itens | ambos */
+  modoVenda: text('modo_venda').$type<'pacotes' | 'itens' | 'ambos'>().notNull().default('pacotes'),
+  minConvidadosItens: integer('min_convidados_itens').notNull().default(0),
+  pedidoMinimoCentavos: integer('pedido_minimo_centavos').notNull().default(0),
+  faixasFestaPorPessoa: jsonb('faixas_festa_por_pessoa')
+    .$type<{ ateConvidados: number; valorCentavos: number }[]>()
+    .notNull()
+    .default([]),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 });
@@ -297,6 +305,13 @@ export const opcionais = pgTable(
     precoConfirmadoEm: timestamp('preco_confirmado_em', { withTimezone: true }),
     /** Caminhos no bucket midia ({empresa_id}/pacotes/{uuid}.webp); a primeira vai na proposta. */
     fotos: jsonb('fotos').$type<string[]>().notNull().default([]),
+    /** Orçamento por itens (§96): grupo no link, quantidade por convidado e faixas por pessoa */
+    categoria: text('categoria'),
+    qtdPorConvidadoCent: integer('qtd_por_convidado_cent'),
+    faixasPorPessoa: jsonb('faixas_por_pessoa')
+      .$type<{ ateConvidados: number; valorCentavos: number }[]>()
+      .notNull()
+      .default([]),
     criadoEm: criadoEm(),
     atualizadoEm: atualizadoEm(),
   },

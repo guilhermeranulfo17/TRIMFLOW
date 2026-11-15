@@ -62,6 +62,8 @@ export const tipoItemOrcamento = pgEnum('tipo_item_orcamento', [
   'desconto',
   // Fase 6.5 (ALTER TYPE ADD VALUE entra no fim)
   'retirado',
+  // §96: preço da festa por pessoa no orçamento por itens
+  'festa',
 ]);
 export const tipoAtividade = pgEnum('tipo_atividade', [
   'lead_criado',

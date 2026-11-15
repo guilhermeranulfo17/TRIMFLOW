@@ -19,14 +19,14 @@ import {
   passoAnterior,
   passoPermitido,
   passoValido,
-  PASSOS,
   pessoas,
   primeiroPasso,
   proximoPasso,
+  tituloDoPasso,
   type DadosPassos,
   type NumeroPasso,
 } from '@/domain/publico/passos';
-import type { Previa } from '@/domain/publico/previa';
+import { escolhasNoModo, type Previa } from '@/domain/publico/previa';
 import type { Escolhas, OrigemLead } from '@/domain/publico/tipos';
 import type { VitrinePublica } from '@/domain/publico/vitrine';
 import { calcularPrevia, concluirOrcamento, registrarFunil } from '@/server/actions/publico';
@@ -115,10 +115,11 @@ export function Wizard({
 }: Props) {
   const router = useRouter();
   const busca = useSearchParams();
-  const [escolhas, setEscolhas] = useState<Escolhas>(() => {
-    if (retomada) return retomada.escolhas;
-    return daUrl(VAZIAS, tipoNaUrl, pacoteNaUrl);
-  });
+  // §96: as escolhas seguem o jeito de vender do buffet (só itens = sempre sem pacote)
+  const noModo = useCallback((e: Escolhas) => escolhasNoModo(vitrine.modoVenda, e), [vitrine]);
+  const [escolhas, setEscolhas] = useState<Escolhas>(() =>
+    noModo(retomada ? retomada.escolhas : daUrl(VAZIAS, tipoNaUrl, pacoteNaUrl)),
+  );
   const [comContato, setComContato] = useState(retomada !== null);
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [carregando, setCarregando] = useState(false);
@@ -137,8 +138,8 @@ export function Wizard({
   useEffect(() => {
     if (retomada) return;
     const local = lerLocal(slug);
-    if (local) setEscolhas(daUrl(local, tipoNaUrl, pacoteNaUrl));
-  }, [slug, retomada, tipoNaUrl, pacoteNaUrl]);
+    if (local) setEscolhas(noModo(daUrl(local, tipoNaUrl, pacoteNaUrl)));
+  }, [slug, retomada, tipoNaUrl, pacoteNaUrl, noModo]);
 
   useEffect(() => salvarLocal(slug, escolhas), [slug, escolhas]);
 
@@ -158,6 +159,9 @@ export function Wizard({
           : escolhas.pacoteId
             ? [{ id: escolhas.pacoteId, disponivel: true }]
             : undefined,
+      // §96: o servidor diz se a festa tem preço base e o erro do pedido sem pacote
+      festaComPreco: previa?.festaComPreco ?? false,
+      erroSemPacote: previa?.erroSemPacote ?? null,
     }),
     [vitrine, previa, escolhas.pacoteId],
   );
@@ -208,6 +212,8 @@ export function Wizard({
       : !contato.aceite
         ? 'Aceite a Política de Privacidade para continuar.'
         : null;
+  // §96: sem pacote, os itens (passo 4) são o último passo antes da proposta
+  const ultimoPasso: NumeroPasso = escolhas.semPacote ? 4 : 5;
   const motivo = passo === 3 ? motivoContato : motivoDoBotaoDesabilitado(passo, escolhas, dados);
 
   function avancar() {
@@ -218,7 +224,7 @@ export function Wizard({
       evento: 'passo_concluido',
       origem,
     });
-    if (passo === 5) {
+    if (passo === ultimoPasso) {
       iniciarConclusao(async () => {
         const r = await concluirOrcamento(slug, escolhas);
         if (r.ok) router.push(`/b/${slug}/proposta/${r.dados.token}`);
@@ -226,7 +232,7 @@ export function Wizard({
       });
       return;
     }
-    const proximo = proximoPasso(passo);
+    const proximo = proximoPasso(passo, !!escolhas.semPacote);
     if (proximo) irPara(proximo);
   }
 
@@ -236,8 +242,8 @@ export function Wizard({
     irPara(4);
   }
 
-  const anterior = passoAnterior(passo, !!tipoNaUrl);
-  const info = PASSOS.find((p) => p.numero === passo)!;
+  const anterior = passoAnterior(passo, !!tipoNaUrl, !!escolhas.semPacote);
+  const info = tituloDoPasso(passo, escolhas);
   const props: PropsPasso = { slug, vitrine, escolhas, alterar, previa, carregando, buffet };
 
   const tipo = vitrine.tiposEvento.find((t) => t.id === escolhas.tipoEventoId);
@@ -260,7 +266,13 @@ export function Wizard({
   }
 
   const rotulo =
-    passo === 3 ? 'Ver pacotes e valores' : passo === 5 ? 'Ver minha proposta' : 'Continuar';
+    passo === 3
+      ? vitrine.modoVenda === 'itens'
+        ? 'Ver itens e valores'
+        : 'Ver pacotes e valores'
+      : passo === ultimoPasso
+        ? 'Ver minha proposta'
+        : 'Continuar';
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col lg:max-w-6xl">
@@ -331,7 +343,7 @@ export function Wizard({
                 />
               )}
               {passo === 4 && <PassoPacote {...props} />}
-              {passo === 5 && <PassoExtras {...props} />}
+              {passo === 5 && !escolhas.semPacote && <PassoExtras {...props} />}
             </Suspense>
           </div>
           <RodapePublico />

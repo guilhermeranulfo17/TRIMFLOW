@@ -235,6 +235,48 @@ test.describe('link público', () => {
 test.describe('leads no desktop', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
+  test('montar do meu jeito: o cliente escolhe os itens sem pacote e a conta por convidado fica com o buffet', async ({
+    page,
+    browser,
+  }) => {
+    const slug = await empresaComModelo(page, 'Buffet Itens');
+    // dono: Jeito de vender → os dois (pacote pronto ou montar do jeito do cliente)
+    await page.goto('/app/empresa/regras');
+    const venda = page.locator('#venda');
+    await venda.getByRole('radio', { name: /Os dois/ }).check();
+    await venda.getByRole('button', { name: 'Salvar' }).click();
+    await expect(page.getByText('Jeito de vender salvo.')).toBeVisible();
+    // um item vendido pela quantidade por convidado (12 salgados por convidado, R$ 0,90 cada)
+    await noBanco(
+      (sql) => sql`insert into public.opcionais (empresa_id, nome, cobranca, preco_centavos,
+        qtd_min, categoria, qtd_por_convidado_cent)
+        select id, 'Salgados fritos', 'por_unidade', 90, 1, 'Salgados', 1200
+        from public.empresas where slug = ${slug}`,
+    );
+
+    const cliente = await visitante(browser);
+    await cliente.goto(`/b/${slug}/orcamento`);
+    await festaEData(cliente); // 40 adultos
+    await contato(cliente, 'Bia Itens', '34992224455');
+    await cliente.getByTestId('jeito-itens').click();
+    await expect(cliente.getByTestId('passo-atual')).toHaveText(/Passo 4 de 6 · Itens/);
+    await expect(cliente.getByRole('heading', { name: 'Monte sua festa', level: 1 })).toBeVisible();
+    await expect(cliente.getByRole('heading', { name: 'Salgados', level: 2 })).toBeVisible();
+    // o cliente vê o valor para a festa (40 × 12 × R$ 0,90), não a quantidade
+    const item = cliente.getByRole('checkbox', { name: /Salgados fritos/ });
+    await expect(item).toContainText('R$ 432,00');
+    await expect(item).not.toContainText('480');
+    await item.click();
+    await expect(item).toHaveAttribute('aria-checked', 'true');
+    await expect(cliente.getByTestId('motivo')).toHaveText('');
+    await cliente.getByRole('button', { name: 'Ver minha proposta' }).click();
+    await expect(cliente).toHaveURL(/\/proposta\/[A-Za-z0-9_-]{32,}$/);
+    await expect(cliente.getByTestId('total-proposta')).toContainText('R$');
+    await expect(cliente.getByText('Salgados fritos')).toBeVisible();
+    await expect(cliente.locator('body')).not.toContainText('480 unidades');
+    expect(await semRolagemHorizontal(cliente)).toBe(true);
+  });
+
   test('dono vê a lista e a linha do tempo do lead do seed', async ({ page }) => {
     await page.goto('/login');
     await page.getByLabel('E-mail').fill('dono@demo.local');

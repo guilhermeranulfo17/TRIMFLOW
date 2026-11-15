@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { CampoDinheiro } from '@/components/app/campos';
+import { CampoDinheiro, EditorFaixasPorPessoa } from '@/components/app/campos';
 import { Campo, CampoCheck } from '@/components/app/form/campo';
-import { aplicarErrosServidor } from '@/components/app/form/erros';
+import { aplicarErrosServidor, lerErro } from '@/components/app/form/erros';
 import { classeCampo } from '@/components/app/form/estilos';
 import { Secao } from '@/components/app/form/secao';
 import { useToast } from '@/components/app/toast';
@@ -18,10 +18,30 @@ import { criarOpcional, salvarDadosOpcional } from '@/server/actions/empresa/opc
 
 const numeroOuNulo = (v: unknown) => (v === '' || v === null || v === undefined ? null : Number(v));
 
+/** Sugestões de categoria para o orçamento por itens (§96); o dono pode digitar outra. */
+const CATEGORIAS_SUGERIDAS = [
+  'Salgados',
+  'Doces',
+  'Bolos e tortas',
+  'Pratos',
+  'Bebidas',
+  'Equipe',
+  'Decoração',
+  'Diversão',
+];
+
+/** 1200 centésimos ↔ "12" (aceita "12,5"). */
+const centParaTexto = (c: number | null | undefined) =>
+  c ? (c / 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '';
+const textoParaCent = (t: string): number | null => {
+  const n = Number(t.replace(',', '.'));
+  return t.trim() && Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null;
+};
+
 const DICAS_COBRANCA: Record<DadosOpcionalEntrada['cobranca'], string> = {
   por_pessoa: 'Multiplica pelo número de convidados.',
   fixo: 'Um valor único, não importa a quantidade de convidados.',
-  por_unidade: 'O cliente escolhe a quantidade (ex.: 2 garçons extras).',
+  por_unidade: 'Por unidade (ex.: 2 garçons extras ou salgados).',
   por_hora: 'O cliente escolhe quantas horas.',
 };
 
@@ -43,7 +63,8 @@ export function FormDadosOpcional({
   });
   const e = form.formState.errors;
   const cobranca = form.watch('cobranca');
-  const comQuantidade = cobranca === 'por_unidade' || cobranca === 'por_hora';
+  const porConvidado = cobranca === 'por_unidade' && !!form.watch('qtdPorConvidadoCent');
+  const comQuantidade = (cobranca === 'por_unidade' || cobranca === 'por_hora') && !porConvidado;
 
   const onSubmit = form.handleSubmit((valores) =>
     iniciar(async () => {
@@ -86,6 +107,25 @@ export function FormDadosOpcional({
       <Campo id="opcional-descricao" rotulo="Descrição (opcional)" erro={e.descricao?.message}>
         <Textarea id="opcional-descricao" rows={3} {...form.register('descricao')} />
       </Campo>
+      <Campo
+        id="opcional-categoria"
+        rotulo="Categoria (opcional)"
+        dica="Agrupa os itens quando o cliente monta a festa sem pacote. Vazio = Outros."
+        erro={e.categoria?.message}
+      >
+        <Input
+          id="opcional-categoria"
+          list="opcional-categorias"
+          placeholder="Ex.: Salgados"
+          maxLength={40}
+          {...form.register('categoria')}
+        />
+        <datalist id="opcional-categorias">
+          {CATEGORIAS_SUGERIDAS.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
+      </Campo>
       <div className="grid gap-4 sm:grid-cols-2">
         <Campo
           id="opcional-cobranca"
@@ -117,6 +157,64 @@ export function FormDadosOpcional({
           />
         </Campo>
       </div>
+      {cobranca === 'por_unidade' && (
+        <div className="space-y-3">
+          <CampoCheck
+            id="opcional-por-convidado"
+            rotulo="Calcular a quantidade pelo número de convidados"
+            dica="O cliente só escolhe o item e vê o valor; a quantidade fica para você (ex.: 12 salgados por convidado)."
+            checked={porConvidado}
+            onChange={(ev) =>
+              form.setValue('qtdPorConvidadoCent', ev.target.checked ? 100 : null, {
+                shouldDirty: true,
+              })
+            }
+          />
+          {porConvidado && (
+            <Campo
+              id="opcional-qtd-convidado"
+              rotulo="Quantidade por convidado"
+              dica="Pode ter vírgula (ex.: 1,5). O total é arredondado para cima."
+              erro={e.qtdPorConvidadoCent?.message}
+            >
+              <Controller
+                control={form.control}
+                name="qtdPorConvidadoCent"
+                render={({ field }) => (
+                  <Input
+                    id="opcional-qtd-convidado"
+                    inputMode="decimal"
+                    className="w-32"
+                    defaultValue={centParaTexto(field.value)}
+                    onChange={(ev) => field.onChange(textoParaCent(ev.target.value) ?? 1)}
+                  />
+                )}
+              />
+            </Campo>
+          )}
+        </div>
+      )}
+      {cobranca === 'por_pessoa' && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Preço por faixa de convidados (opcional)</p>
+          <p className="text-muted-foreground text-sm">
+            Ex.: até 90 convidados, R$ 45,00 por pessoa; até 120, R$ 40,00. Acima da maior faixa (ou
+            sem faixas), vale o preço acima.
+          </p>
+          <Controller
+            control={form.control}
+            name="faixasPorPessoa"
+            render={({ field }) => (
+              <EditorFaixasPorPessoa
+                id="opcional-faixa"
+                valor={field.value ?? []}
+                onChange={field.onChange}
+                erro={(c) => lerErro(e, `faixasPorPessoa.${c}`)}
+              />
+            )}
+          />
+        </div>
+      )}
       {comQuantidade && (
         <div className="grid grid-cols-2 gap-3">
           <Campo id="opcional-qtd-min" rotulo="Quantidade mínima" erro={e.qtdMin?.message}>

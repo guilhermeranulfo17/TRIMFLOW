@@ -1,6 +1,7 @@
 /**
  * O que falta para o link público funcionar: ao menos um pacote ativo com preço CONFIRMADO pelo
- * dono (Etapa 8: preço de exemplo do modelo não conta), um tipo de
+ * dono (Etapa 8: preço de exemplo do modelo não conta) ou, vendendo por itens (§96), um item
+ * vendável sem pacote com preço confirmado (ou o preço da festa por faixa), um tipo de
  * festa ativo (o motor exige o tipo), um turno ativo e um espaço ativo. Alimenta os badges do
  * menu Minha empresa.
  */
@@ -18,10 +19,20 @@ export type ResumoCatalogo = {
   tiposEvento: { ativo: boolean }[];
   turnos: { ativo: boolean }[];
   espacos: { ativo: boolean }[];
+  /**
+   * Jeito de vender (§96). Ausente = só pacotes. `itensComPreco`: algum opcional ativo, com preço
+   * confirmado e sem ligação de "compatível" com pacote (vendável sem pacote); `festaComPreco`:
+   * a empresa tem faixas de preço da festa por pessoa.
+   */
+  venda?: { modo: 'pacotes' | 'itens' | 'ambos'; itensComPreco: boolean; festaComPreco: boolean };
 };
 
 export type CodigoPendencia =
-  'SEM_PACOTE_COM_PRECO' | 'SEM_TIPO_EVENTO_ATIVO' | 'SEM_TURNO_ATIVO' | 'SEM_ESPACO_ATIVO';
+  | 'SEM_PACOTE_COM_PRECO'
+  | 'SEM_ITEM_COM_PRECO'
+  | 'SEM_TIPO_EVENTO_ATIVO'
+  | 'SEM_TURNO_ATIVO'
+  | 'SEM_ESPACO_ATIVO';
 
 export type Pendencia = {
   codigo: CodigoPendencia;
@@ -38,13 +49,35 @@ export function pacoteTemPreco(p: ResumoCatalogo['pacotes'][number]): boolean {
 
 export function pendenciasDoLinkPublico(resumo: ResumoCatalogo): Pendencia[] {
   const pendencias: Pendencia[] = [];
-  if (!resumo.pacotes.some((p) => p.ativo && pacoteTemPreco(p))) {
-    pendencias.push({
-      codigo: 'SEM_PACOTE_COM_PRECO',
-      mensagem:
-        'Nenhum pacote ativo com preço confirmado. Sem pacote, o cliente não consegue montar o orçamento.',
-      secao: 'catalogo',
-    });
+  const modo = resumo.venda?.modo ?? 'pacotes';
+  const temPacote = resumo.pacotes.some((p) => p.ativo && pacoteTemPreco(p));
+  const temItens = !!resumo.venda && (resumo.venda.itensComPreco || resumo.venda.festaComPreco);
+  // no "os dois", basta um dos jeitos funcionar
+  const vende =
+    modo === 'pacotes' ? temPacote : modo === 'itens' ? temItens : temPacote || temItens;
+  if (!vende) {
+    pendencias.push(
+      modo === 'pacotes'
+        ? {
+            codigo: 'SEM_PACOTE_COM_PRECO',
+            mensagem:
+              'Nenhum pacote ativo com preço confirmado. Sem pacote, o cliente não consegue montar o orçamento.',
+            secao: 'catalogo',
+          }
+        : modo === 'itens'
+          ? {
+              codigo: 'SEM_ITEM_COM_PRECO',
+              mensagem:
+                'Nenhum item ativo com preço confirmado. Cadastre os itens (opcionais) que o cliente pode escolher.',
+              secao: 'catalogo',
+            }
+          : {
+              codigo: 'SEM_PACOTE_COM_PRECO',
+              mensagem:
+                'Nenhum pacote nem item ativo com preço confirmado. Sem eles, o cliente não consegue montar o orçamento.',
+              secao: 'catalogo',
+            },
+    );
   }
   if (!resumo.tiposEvento.some((t) => t.ativo)) {
     pendencias.push({

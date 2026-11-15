@@ -9,7 +9,7 @@ import { dividirArredondando, formatBRL, pctBp } from '../money';
 import { formatBp } from '../percent';
 import { escolherAjusteDia } from './ajuste-dia';
 import { contarConvidados } from './equivalentes';
-import { descreverOpcional } from './opcional';
+import { descreverOpcional, quantidadePorConvidado } from './opcional';
 import { mensagens } from './mensagens';
 import { calcularParcelas } from './parcelas';
 import { buscarAtivo, pacoteValeParaTipo, valorDoPacote } from './pacote';
@@ -27,8 +27,11 @@ import {
 
 /**
  * Motor de preço: função pura. A mesma entrada sempre gera o mesmo resultado.
- * Ordem: equivalentes → validações → pacote → ajuste de dia → opcionais → horas extras →
- * deslocamento → avulsos → subtotal → desconto → total → por convidado → sinal/saldo → parcelas.
+ * Ordem: equivalentes → validações → pacote (ou base da festa) → ajuste de dia → opcionais →
+ * horas extras → deslocamento → avulsos → subtotal → pedido mínimo → desconto → total → por
+ * convidado → sinal/saldo → parcelas.
+ * Sem pacote (`pacoteId` null, §96): só quando `regras.modoVenda` é `itens` ou `ambos`; a festa
+ * é a soma dos itens escolhidos (mais a base por pessoa, se o buffet tiver faixas da festa).
  * Com erro, `ok = false`, mas as linhas que puderam ser calculadas continuam no resultado.
  */
 export function calcularOrcamento(
@@ -52,8 +55,13 @@ export function calcularOrcamento(
   if (!turno) erro('REFERENCIA_INVALIDA', mensagens.referenciaInvalida('O turno'), 'turnoId');
   const espaco = buscarAtivo(contexto.espacos, entrada.espacoId);
   if (!espaco) erro('REFERENCIA_INVALIDA', mensagens.referenciaInvalida('O espaço'), 'espacoId');
-  const pacote = buscarAtivo(contexto.pacotes, entrada.pacoteId);
-  if (!pacote) erro('REFERENCIA_INVALIDA', mensagens.referenciaInvalida('O pacote'), 'pacoteId');
+  const semPacote = entrada.pacoteId === null;
+  const pacote = semPacote ? null : buscarAtivo(contexto.pacotes, entrada.pacoteId!);
+  if (semPacote && (regras.modoVenda ?? 'pacotes') === 'pacotes') {
+    erro('PACOTE_OBRIGATORIO', mensagens.pacoteObrigatorio(), 'pacoteId');
+  } else if (!semPacote && !pacote) {
+    erro('REFERENCIA_INVALIDA', mensagens.referenciaInvalida('O pacote'), 'pacoteId');
+  }
 
   // Data --------------------------------------------------------------------
   const dataValida = dataCivilValida(entrada.data) && dataCivilValida(entrada.hoje);
@@ -108,6 +116,10 @@ export function calcularOrcamento(
       'adultos',
     );
   }
+  const minimoItens = regras.minConvidadosItens ?? 0;
+  if (semPacote && minimoItens > 0 && eq < minimoItens) {
+    erro('CONVIDADOS_ABAIXO_MINIMO', mensagens.minimoItens(minimoItens), 'adultos');
+  }
   if (espaco && contagem.pessoasFisicas > espaco.capacidadeMax) {
     erro('CAPACIDADE_ESPACO', mensagens.capacidade(espaco.nome, espaco.capacidadeMax), 'espacoId');
   }
@@ -135,6 +147,23 @@ export function calcularOrcamento(
     }
   }
 
+  // 3b. Sem pacote: base da festa por pessoa, pela faixa de convidados ---------------
+  let linhaFesta: LinhaOrcamento | null = null;
+  const faixasFesta = [...(regras.faixasFestaPorPessoa ?? [])].sort(
+    (a, b) => a.ateConvidados - b.ateConvidados,
+  );
+  if (semPacote && faixasFesta.length > 0) {
+    const faixa = faixasFesta.find((f) => f.ateConvidados >= eq) ?? faixasFesta.at(-1)!;
+    linhaFesta = {
+      tipo: 'festa',
+      descricao: 'Festa',
+      quantidade: eq,
+      valorUnitarioCentavos: faixa.valorCentavos,
+      subtotalCentavos: eq * faixa.valorCentavos,
+      detalhe: `${eq} ${eq === 1 ? 'convidado' : 'convidados'} × ${formatBRL(faixa.valorCentavos)} por pessoa`,
+    };
+  }
+
   // 5. Opcionais (calculados antes do ajuste, que pode incidir sobre eles) ------
   const linhasOpcionais: LinhaOrcamento[] = [];
   const vistos = new Set<string>();
@@ -150,19 +179,22 @@ export function calcularOrcamento(
       erro('OPCIONAL_JA_INCLUSO', mensagens.opcionalIncluso(opcional.nome, pacote.nome), campo);
       return;
     }
+    // item ligado a pacotes é complemento deles: não entra no orçamento sem pacote
     const foraDoPacote =
-      pacote &&
       opcional.pacotesCompativeisIds.length > 0 &&
-      !opcional.pacotesCompativeisIds.includes(pacote.id);
+      (semPacote || (pacote !== null && !opcional.pacotesCompativeisIds.includes(pacote.id)));
     const foraDoTipo =
       tipo && opcional.tiposEventoIds.length > 0 && !opcional.tiposEventoIds.includes(tipo.id);
     if (foraDoPacote || foraDoTipo) {
       erro('OPCIONAL_INCOMPATIVEL', mensagens.opcionalIncompativel(opcional.nome), campo);
       return;
     }
+    // quantidade pelos convidados: o cliente só marca o item (a conta é do buffet)
+    const automatica = quantidadePorConvidado(opcional, eq) !== null;
     if (
-      item.quantidade < opcional.qtdMin ||
-      (opcional.qtdMax !== null && item.quantidade > opcional.qtdMax)
+      !automatica &&
+      (item.quantidade < opcional.qtdMin ||
+        (opcional.qtdMax !== null && item.quantidade > opcional.qtdMax))
     ) {
       erro(
         'OPCIONAL_QUANTIDADE',
@@ -174,6 +206,9 @@ export function calcularOrcamento(
     linhasOpcionais.push(descreverOpcional(opcional, item.quantidade, eq));
   });
   const totalOpcionais = linhasOpcionais.reduce((s, l) => s + l.subtotalCentavos, 0);
+  if (semPacote && entrada.opcionais.length === 0 && !linhaFesta) {
+    erro('ITENS_OBRIGATORIOS', mensagens.itensObrigatorios(), 'opcionais');
+  }
 
   // 5b. Itens inclusos retirados pelo cliente (Fase 6.5) ------------------------------
   // Só o que o buffet marcou como retirável no pacote; o desconto é o que o buffet definiu
@@ -207,11 +242,14 @@ export function calcularOrcamento(
 
   // 4. Ajuste de dia ------------------------------------------------------------
   let linhaAjuste: LinhaOrcamento | null = null;
-  if (linhaPacote && dataValida) {
+  if ((linhaPacote || semPacote) && dataValida) {
     const escolhido = escolherAjusteDia(contexto, entrada.data, turno?.id ?? null);
     if (escolhido && escolhido.ajuste.ajusteBp !== 0) {
-      const sobreOpcionais = regras.ajusteIncide === 'pacote_opcionais';
-      const base = linhaPacote.subtotalCentavos + (sobreOpcionais ? totalOpcionais : 0);
+      // sem pacote, a festa inteira é feita dos itens: o ajuste do dia vale sobre tudo
+      const sobreOpcionais = semPacote || regras.ajusteIncide === 'pacote_opcionais';
+      const base =
+        (linhaPacote?.subtotalCentavos ?? linhaFesta?.subtotalCentavos ?? 0) +
+        (sobreOpcionais ? totalOpcionais : 0);
       const valor = pctBp(base, escolhido.ajuste.ajusteBp);
       linhaAjuste = {
         tipo: 'ajuste_dia',
@@ -222,7 +260,7 @@ export function calcularOrcamento(
         subtotalCentavos: valor,
         detalhe:
           `${formatBp(escolhido.ajuste.ajusteBp, { sinal: true })} sobre ` +
-          `${sobreOpcionais ? 'pacote e opcionais' : 'o pacote'} (${formatBRL(base)})`,
+          `${semPacote ? 'a festa' : sobreOpcionais ? 'pacote e opcionais' : 'o pacote'} (${formatBRL(base)})`,
       };
     }
   }
@@ -302,16 +340,27 @@ export function calcularOrcamento(
   }
 
   // 9. Subtotal -----------------------------------------------------------------------
+  // sem pacote, o ajuste do dia vale sobre a festa inteira: vem depois dos itens
   const linhasSemDesconto = [
     linhaPacote,
-    linhaAjuste,
+    linhaFesta,
+    semPacote ? null : linhaAjuste,
     ...linhasOpcionais,
+    semPacote ? linhaAjuste : null,
     ...linhasRetiradas,
     linhaHoraExtra,
     linhaDeslocamento,
     ...linhasAvulsas,
   ].filter((l): l is LinhaOrcamento => l !== null);
   const subtotal = linhasSemDesconto.reduce((s, l) => s + l.subtotalCentavos, 0);
+
+  // 9b. Pedido mínimo (sem pacote) -------------------------------------------------------
+  const pedidoMinimo = regras.pedidoMinimoCentavos ?? 0;
+  if (semPacote && pedidoMinimo > 0 && subtotal < pedidoMinimo) {
+    const msg = mensagens.pedidoMinimo(pedidoMinimo, pedidoMinimo - subtotal);
+    if (interno) aviso('PEDIDO_MINIMO', msg);
+    else erro('PEDIDO_MINIMO', msg, 'opcionais');
+  }
 
   // 10. Desconto (só interno) ---------------------------------------------------------
   let desconto = 0;

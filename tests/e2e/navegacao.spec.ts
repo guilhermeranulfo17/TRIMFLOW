@@ -68,6 +68,14 @@ test('navega pelas áreas do menu sem rolagem horizontal', async ({ page }, info
     expect(await semRolagemHorizontal(page)).toBe(true);
   }
 
+  // O "+ Orçamento" fica só nas telas comerciais: some em Minha empresa e em Nossas soluções.
+  for (const tela of ['/app/empresa', '/app/solucoes']) {
+    await page.goto(tela);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Novo orçamento' })).toHaveCount(0);
+  }
+  await page.goto('/app/leads');
+
   // "+ Orçamento" leva ao orçamento interno (e some dentro dele).
   const botao = page.getByRole('link', { name: 'Novo orçamento' });
   await expect(botao).toBeVisible();

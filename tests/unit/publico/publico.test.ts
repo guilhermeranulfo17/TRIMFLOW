@@ -150,6 +150,9 @@ describe('prévia de preço por modo de exibição', () => {
       resultado: null,
       horaExtraCentavos: null,
       avisos: [],
+      itens: [],
+      erroSemPacote: null,
+      festaComPreco: false,
     });
   });
 

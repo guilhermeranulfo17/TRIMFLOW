@@ -1,5 +1,5 @@
 import { aPartirDe } from '../preco/a-partir-de';
-import type { ContextoPreco, DataCivil, Id } from '../preco/tipos';
+import type { ContextoPreco, DataCivil, Id, ModoVenda } from '../preco/tipos';
 import { valorDoPacote } from '../preco/pacote';
 import type { ModoPreco } from './tipos';
 
@@ -14,6 +14,8 @@ export type ExtrasPacote = { descricao: string | null; fotos: string[] };
  */
 export type VitrinePublica = {
   modoPreco: ModoPreco;
+  /** §96: pacotes, itens (sem pacote) ou os dois */
+  modoVenda: ModoVenda;
   aPartirDeCentavos: number | null;
   hoje: DataCivil;
   antecedenciaMinDias: number;
@@ -42,6 +44,10 @@ export type VitrinePublica = {
     cobranca: string;
     qtdMin: number;
     qtdMax: number | null;
+    /** §96: grupo no orçamento por itens (null = Outros) */
+    categoria: string | null;
+    /** §96: quantidade calculada pelos convidados (o cliente só marca o item) */
+    porConvidado: boolean;
   }[];
 };
 
@@ -61,6 +67,7 @@ export function montarVitrine(
   }
   return {
     modoPreco: modo,
+    modoVenda: ctx.regras.modoVenda ?? 'pacotes',
     aPartirDeCentavos: minimo,
     hoje,
     antecedenciaMinDias: ctx.regras.antecedenciaMinDias,
@@ -114,6 +121,8 @@ export function montarVitrine(
         cobranca: o.cobranca,
         qtdMin: o.qtdMin,
         qtdMax: o.qtdMax,
+        categoria: o.categoria ?? null,
+        porConvidado: o.cobranca === 'por_unidade' && !!o.qtdPorConvidadoCent,
       })),
   };
 }

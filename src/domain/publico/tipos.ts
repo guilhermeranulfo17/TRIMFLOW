@@ -27,6 +27,11 @@ export type Escolhas = {
   /** bairro e cidade, só para espaço "no local do cliente" */
   localCliente?: string;
   pacoteId?: Id;
+  /**
+   * Orçamento por itens (§96): o cliente monta a festa sem pacote. No modo "só itens" o servidor
+   * liga sempre; no "só pacotes", desliga (`escolhasNoModo`).
+   */
+  semPacote?: boolean;
   opcionais: { opcionalId: Id; quantidade: number }[];
   /** opcionais inclusos que o cliente retirou do pacote escolhido (Fase 6.5) */
   retirados?: Id[];

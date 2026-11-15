@@ -21,6 +21,8 @@ export const escolhasSchema = z.object({
     .default([]),
   localCliente: z.string().trim().max(120).optional(),
   pacoteId: idSchema.optional(),
+  /** §96: montar a festa por itens, sem pacote (o servidor ajusta ao jeito de vender) */
+  semPacote: z.boolean().optional(),
   opcionais: z
     .array(z.object({ opcionalId: idSchema, quantidade }))
     .max(50)

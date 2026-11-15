@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { MAX_FOTOS_OPCIONAL, MAX_FOTOS_PACOTE } from '../imagem';
 import {
   validarFaixasIdade,
+  validarFaixasPorPessoa,
   validarPrecoPacote,
   validarTurno,
   validarVinculosOpcional,
@@ -138,6 +139,12 @@ export type RetiraveisPacoteEntrada = z.input<typeof retiraveisPacoteSchema>;
 // Opcional
 // ---------------------------------------------------------------------------
 
+/** Faixa de preço por pessoa (valor por pessoa até N convidados), §96. */
+export const faixaPorPessoaSchema = z.object({
+  ateConvidados: inteiro('o número de convidados da faixa', 1, 100_000),
+  valorCentavos: centavos('o valor por pessoa'),
+});
+
 export const dadosOpcionalSchema = z
   .object({
     nome: nomeCurto('o nome do opcional'),
@@ -149,8 +156,15 @@ export const dadosOpcionalSchema = z
     qtdMin: inteiro('a quantidade mínima', 0, 100_000),
     qtdMax: inteiro('a quantidade máxima', 0, 100_000).nullable(),
     ativo: z.boolean(),
+    /** §96: grupo no orçamento por itens ("Salgados"); vazio = "Outros" */
+    categoria: textoOpcional(40).optional(),
+    /** §96, por unidade: quantidade por convidado em centésimos (1200 = 12); null = o cliente escolhe */
+    qtdPorConvidadoCent: inteiro('a quantidade por convidado', 1, 100_000).nullable().optional(),
+    /** §96, por pessoa: preço por pessoa conforme o número de convidados */
+    faixasPorPessoa: z.array(faixaPorPessoaSchema).max(20).optional(),
   })
   .superRefine((o, ctx) => {
+    adicionarProblemas(ctx, validarFaixasPorPessoa(o.faixasPorPessoa ?? [], 'faixasPorPessoa'));
     if (o.qtdMax !== null && o.qtdMax < o.qtdMin) {
       ctx.addIssue({
         code: 'custom',

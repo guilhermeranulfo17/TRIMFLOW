@@ -1,41 +1,64 @@
-import type { EstadoSlot, ResumoDia } from '@/domain/agenda';
+import type { EstadoSlot, Marcacao, ResumoDia } from '@/domain/agenda';
 import { cn } from '@/lib/utils';
 
-/** Rótulo e cor de cada estado de slot (a mesma cor em lista, calendário e painel). */
-export const ESTADOS: Record<EstadoSlot, { rotulo: string; ponto: string; selo: string }> = {
+/**
+ * Rótulo e cor de cada estado de slot (a mesma cor em lista, calendário e painel): livre verde,
+ * pré-reservado amarelo, reservado azul e bloqueado vermelho. Sem bolinhas: o estado aparece como
+ * selo com fundo bem leve.
+ */
+export const ESTADOS: Record<
+  EstadoSlot,
+  { rotulo: string; selo: string; fundo: string; texto: string }
+> = {
   livre: {
     rotulo: 'Livre',
-    ponto: 'bg-primary',
-    selo: 'bg-primary/10 text-primary-texto border-primary/30',
+    selo: 'bg-sucesso/10 text-sucesso border-sucesso/30',
+    fundo: 'bg-sucesso/10',
+    texto: 'text-sucesso',
   },
   pre_reservado: {
     rotulo: 'Pré-reservado',
-    ponto: 'bg-alerta',
     selo: 'bg-alerta/10 text-alerta border-alerta/30',
+    fundo: 'bg-alerta/10',
+    texto: 'text-alerta',
   },
   reservado: {
     rotulo: 'Reservado',
-    ponto: 'bg-info',
     selo: 'bg-info/10 text-info border-info/30',
+    fundo: 'bg-info/10',
+    texto: 'text-info',
   },
   lotado: {
     rotulo: 'Lotado',
-    ponto: 'bg-info',
     selo: 'bg-info/10 text-info border-info/30',
+    fundo: 'bg-info/10',
+    texto: 'text-info',
   },
   bloqueado: {
     rotulo: 'Bloqueado',
-    ponto: 'bg-zinc-500',
-    selo: 'bg-muted text-muted-foreground border-border',
+    selo: 'bg-erro/10 text-erro border-erro/30',
+    fundo: 'bg-erro/10',
+    texto: 'text-erro',
   },
 };
 
-export const RESUMOS: Record<ResumoDia, { rotulo: string; fundo: string }> = {
-  sem_turno: { rotulo: 'Sem turno', fundo: 'bg-muted/40 text-muted-foreground' },
-  livre: { rotulo: 'Livre', fundo: 'bg-card' },
-  parcial: { rotulo: 'Parcialmente ocupado', fundo: 'bg-alerta/10' },
-  cheio: { rotulo: 'Cheio', fundo: 'bg-info/15' },
-  bloqueado: { rotulo: 'Bloqueado', fundo: 'bg-zinc-500/20' },
+/** Texto curto da marcação no dia do calendário ("2 reservados", "1 livre"). */
+const PLURAIS: Record<Marcacao, [string, string]> = {
+  reservado: ['reservado', 'reservados'],
+  pre_reservado: ['pré-reservado', 'pré-reservados'],
+  bloqueado: ['bloqueado', 'bloqueados'],
+  livre: ['livre', 'livres'],
+};
+
+export const textoMarcacao = (estado: Marcacao, quantidade: number) =>
+  `${quantidade} ${PLURAIS[estado][quantidade === 1 ? 0 : 1]}`;
+
+export const RESUMOS: Record<ResumoDia, { rotulo: string }> = {
+  sem_turno: { rotulo: 'Sem turno' },
+  livre: { rotulo: 'Livre' },
+  parcial: { rotulo: 'Parcialmente ocupado' },
+  cheio: { rotulo: 'Cheio' },
+  bloqueado: { rotulo: 'Bloqueado' },
 };
 
 export function SeloEstado({
@@ -51,12 +74,11 @@ export function SeloEstado({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-semibold',
+        'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold',
         e.selo,
         className,
       )}
     >
-      <span className={cn('size-2 rounded-full', e.ponto)} aria-hidden />
       {children ?? e.rotulo}
     </span>
   );
@@ -65,14 +87,10 @@ export function SeloEstado({
 export function Legenda() {
   const itens: EstadoSlot[] = ['livre', 'pre_reservado', 'reservado', 'bloqueado'];
   return (
-    <ul
-      className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs"
-      aria-label="Legenda"
-    >
+    <ul className="flex flex-wrap gap-2 text-xs" aria-label="Legenda">
       {itens.map((e) => (
-        <li key={e} className="flex items-center gap-1.5">
-          <span className={cn('size-2.5 rounded-full', ESTADOS[e].ponto)} aria-hidden />
-          {ESTADOS[e].rotulo}
+        <li key={e}>
+          <SeloEstado estado={e} />
         </li>
       ))}
     </ul>

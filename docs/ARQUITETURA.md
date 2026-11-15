@@ -2168,3 +2168,94 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   o app instalado, explica como instalar.
 - Migrations `20261118000001_mensagem_programada_enum` (valor novo do enum, sozinho) e
   `20261118000002_mensagem_programada` (funções e job).
+
+## 94. Ajustes visuais do painel (novembro de 2026)
+
+- **Agenda sem bolinhas:** o calendário mensal não desenha mais um ponto por turno. Dia sem nada
+  marcado (só turnos livres ou sem turno) fica limpo. Com reserva, pré-reserva ou bloqueio, o dia
+  ganha um fundo bem leve na cor do estado mais forte (reservado > pré-reservado > bloqueado) e a
+  lista curta dos turnos ("1 reservado", "2 livres"). Regra em `marcacoesDoDia`
+  (`domain/agenda/calendario`, com teste). Cores fixas dos estados em toda a agenda (calendário,
+  lista, painel do dia, legenda e simulador): livre verde (`sucesso`), pré-reservado amarelo
+  (`alerta`), reservado azul (`info`) e bloqueado vermelho (`erro`, antes cinza). O selo perdeu a
+  bolinha; a legenda usa os próprios selos.
+- **Números:** a linha "dd/mm/aaaa a dd/mm/aaaa" abaixo do filtro saiu (os campos De/Até já
+  mostram o período).
+- **"+ Orçamento" fixo** só nas telas comerciais: Início/leads, Tarefas, Agenda e Clientes
+  (`mostraBotaoOrcamento`, com teste). Some em Minha empresa, Minha conta, Nossas soluções,
+  Números, Contratos, Financeiro, OrkMargem e Avisos, além do lead e das telas de orçamento.
+- **Fundo off-white:** o claro da marca (painel claro, "seguir o sistema" no claro, termos e
+  privacidade) usa `#F4F4EE`, o mesmo off-white da landing; muted, accent e borda ficaram num cinza
+  quente para combinar. Cartões continuam brancos. Contraste AA conferido pelo teste do tema.
+
+## 95. Landing completa (novembro de 2026)
+
+- **Decisão do dono:** a landing de seis blocos (§80) era curta demais. Agora é uma página de
+  vendas completa, no estilo dos sites de buffet: **cabeçalho fixo** (logo, âncoras Como funciona,
+  Recursos, Preço e Dúvidas no computador, Entrar e "Testar grátis"), **topo** ("Para buffets de
+  festa", a mesma frase, "Testar grátis por 14 dias" e "Montar um orçamento de exemplo", e o link
+  do buffet desenhado num celular com o aviso do pedido), **para quem é** (os quatro tipos de
+  buffet do cadastro), **rotina** (três situações, sem e com o Orkestra), **demonstração** e
+  **resultado** (as mesmas; agora com "Quero receber pedidos assim" logo abaixo do pedido),
+  **como funciona** (três passos), **recursos** (nove), **painel por dentro** (o Início em funil
+  desenhado e, com `NEXT_PUBLIC_DEMO_SLUG`, o botão "Ver o painel de demonstração", POST para
+  `/demo/entrar`), **preço** (um só, do banco, com "O que está incluso" a partir dos limites do
+  plano e botão), **dúvidas** (`details`, sem JavaScript) e **chamada final** (com "Fale com a
+  gente no WhatsApp" quando `NEXT_PUBLIC_WHATSAPP_VENDAS` existe). Rodapé com colunas Produto,
+  Conta, Legal e Contato.
+- **Continua valendo:** um preço só (do banco, sem anual nem outro plano), nada de depoimento,
+  nota ou número inventado, nenhuma imagem (as maquetes são HTML com `data-exemplo` e a etiqueta
+  "Exemplo ilustrativo", com os valores fictícios do Buffet Exemplo), sem travessão, página
+  estática e fora do Auth. Todo botão de teste leva a `/cadastro` com `data-cta-teste`.
+- **Textos com regra** em `domain/marketing/landing` (com teste): `itensDoPlanoNaLanding` (o que a
+  mensalidade inclui, pelos limites do plano), `duvidasDaLanding` (as respostas dizem só o que o
+  produto faz: o sistema não conversa sozinho com o cliente, contrato com assinatura eletrônica
+  simples, sem ICP-Brasil) e `jsonLdDuvidas` (FAQPage com as mesmas perguntas).
+- No celular os recursos viram linhas compactas (ícone ao lado do texto) para a página não ficar
+  longa demais.
+
+## 96. Orçamento por itens, sem pacote (novembro de 2026)
+
+- **Pedido do dono:** muito buffet não vende pacote. O cliente escolhe o que quer (salgados, bolos
+  e tortas, massas…) e o preço sai dos itens. Decisões do dono: o cliente continua informando os
+  convidados; o buffet escolhe vender **só pacotes, só itens ou os dois**; pode haver **mínimo de
+  convidados** e **pedido mínimo** (valor); a **quantidade por convidado** (ex.: 12 salgados por
+  convidado) não é mostrada ao cliente, que vê só o valor; e há os dois jeitos de faixa por número
+  de convidados: **por item** (massas a R$ 45 por pessoa até 90, R$ 40 até 120) e **pela festa
+  inteira** (o cliente só monta o cardápio e o preço por pessoa vem da faixa).
+- **Banco** (`20261119000001_orcamento_por_itens`, aditiva, e `20261119000002_tipo_item_festa`,
+  só o valor novo do enum): `regras_comerciais.modo_venda` (`pacotes` padrão | `itens` | `ambos`),
+  `min_convidados_itens`, `pedido_minimo_centavos`, `faixas_festa_por_pessoa` (jsonb
+  `[{ateConvidados, valorCentavos}]`); `opcionais.categoria`, `qtd_por_convidado_cent`
+  (centésimos: 1200 = 12) e `faixas_por_pessoa` (jsonb). As colunas entram sozinhas no JSON de
+  `publico._contexto_da_empresa` (`to_jsonb` da linha). `_confirmar_preco` também reconfirma o
+  preço quando muda a quantidade por convidado ou as faixas. `painel_contexto` ganhou
+  `modo_venda`, `itens_com_preco` e `festa_com_preco` (chaves novas, o código anterior ignora).
+- **Os itens são os opcionais.** Item ligado a pacote como "compatível" é complemento daquele
+  pacote e não entra no orçamento sem pacote. Categoria vazia = "Outros"; as categorias aparecem
+  na ordem do primeiro item de cada uma no catálogo.
+- **Motor** (`calcularOrcamento`, testes em `tests/unit/preco/itens.test.ts`): `pacoteId` null só
+  com `modoVenda` itens ou ambos (`PACOTE_OBRIGATORIO`); sem pacote, linha `festa` (convidados ×
+  valor por pessoa da faixa; acima da maior, vale a maior) quando há faixas da festa; itens por
+  unidade com quantidade calculada (`ceil(equivalentes × cent / 100)`, linha com `ocultarConta`);
+  item por pessoa usa a faixa do item (acima da maior ou sem faixa, o preço base); o ajuste do dia
+  vale sobre a festa inteira e vem depois dos itens; sem item nem base da festa,
+  `ITENS_OBRIGATORIOS`; mínimo de convidados (`CONVIDADOS_ABAIXO_MINIMO`) e pedido mínimo
+  (`PEDIDO_MINIMO`, erro no link e aviso no interno). Com pacote, nada mudou.
+- **Link público:** `Escolhas.semPacote`; `escolhasNoModo` (servidor e navegador) liga sempre no
+  "só itens" e desliga no "só pacotes". Sem pacote o passo 4 vira "Monte sua festa" (itens por
+  categoria, valor da festa de cada um; item por convidado só se marca) e o passo de extras (5)
+  não existe: do 4 vai para a proposta. No "os dois", o passo 4 começa com "Pacote pronto" ou
+  "Montar do meu jeito". A vitrine (antes do WhatsApp) leva só o jeito de vender, a categoria e se
+  o item é por convidado, nunca preço; a prévia (depois) leva `itens`, `erroSemPacote` e
+  `festaComPreco`. Abaixo do pedido mínimo, o resumo mostra o total parcial e o passo diz quanto
+  falta; o "a partir de" (de pacote) não aparece.
+- **Conta do buffet:** a proposta (web e PDF) e a lista de itens do contrato não mostram a conta
+  das linhas com `ocultarConta` (a marca vem do `resultado` congelado). O buffet vê a conta
+  ("480 unidades (12 por convidado) × R$ 0,90") no detalhe do item, na lista de orçamentos do
+  lead; a proposta do painel é a mesma do cliente (gera o PDF), então também esconde.
+- **Telas do dono:** Preços e regras → "Jeito de vender" (modo, mínimo de convidados, pedido
+  mínimo e faixas da festa; no "só pacotes" grava os mínimos zerados); opcional com categoria,
+  "Calcular a quantidade pelo número de convidados" (por unidade) e faixas por pessoa (por
+  pessoa). Pendências do link: no "só itens" pede item vendável com preço confirmado (ou faixas
+  da festa), `SEM_ITEM_COM_PRECO`; no "os dois", basta um jeito funcionar.

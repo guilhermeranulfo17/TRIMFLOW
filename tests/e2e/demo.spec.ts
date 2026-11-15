@@ -25,8 +25,8 @@ test('demonstração: entra sem senha, vê tudo, não salva nada e termina no ca
     if (r.url().includes('/api/landing/contar')) contagens.push(r.postData() ?? '');
   });
 
-  // a landing nova não tem mais o botão da demonstração: a entrada continua sendo o POST de
-  // /demo/entrar (formulário, nunca um link), enviado aqui a partir da própria landing
+  // a entrada é o POST de /demo/entrar (formulário, nunca um link; a landing mostra o botão só
+  // com NEXT_PUBLIC_DEMO_SLUG), enviado aqui a partir da própria landing
   await page.goto('/');
   await page.evaluate(() => {
     const form = document.createElement('form');

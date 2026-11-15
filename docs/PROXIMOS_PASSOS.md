@@ -356,3 +356,23 @@ nova depois das decisões abaixo (o código já recusa módulo não implementado
 - **Envio automático ao cliente pela API oficial do WhatsApp:** exige cada buffet conectar o
   próprio número na Meta, modelos de mensagem aprovados e custo por conversa; muda a regra
   "nenhuma mensagem automática ao cliente final". Decidir com o Gui antes.
+
+## Orçamento por itens: o que ficou para depois (ARQUITETURA §96)
+
+- **"+ Orçamento" do painel sem pacote:** o orçamento interno ainda pede pacote. Ligar o
+  "Montar por itens" ali (mesmo motor; o pedido mínimo já vira aviso no canal interno).
+- **Simulador** (Minha empresa) e **demonstração da landing** só com pacote.
+- **Onboarding:** o passo 3 exige pacote com preço confirmado; para quem vende só por itens,
+  aceitar item com preço (e oferecer o jeito de vender no começo).
+- **OrkMargem:** custos previstos são por pacote; festa sem pacote fica sem previsão.
+- **Modelos de segmento** com itens prontos (ex.: domicílio por itens) e categorias de exemplo.
+- **Vitrine `/b/[slug]`:** mostrar os itens por categoria (hoje mostra só pacotes).
+- **"A partir de"** para quem vende só por itens (hoje não aparece).
+- **Painel:** destacar a quantidade a produzir (hoje aparece no detalhe de cada item, na lista
+  de orçamentos do lead) e somar por dia na Agenda.
+
+## Nossas soluções: imagem por solução
+
+O dono vai mandar uma imagem para cada solução, para ficar no canto direito do cartão no lugar
+da etiqueta atual. Quando chegarem: `public/solucoes/<codigo>.webp`, sem fundo claro fixo no
+tema escuro, e a etiqueta passa para junto do nome.

@@ -7,6 +7,7 @@ import { limitesDoMes } from '@/domain/agenda';
 import { hojeNoFuso } from '@/domain/dates';
 import { celularBRParaE164 } from '@/domain/phone';
 import {
+  escolhasNoModo,
   dadosDoContexto,
   motivoDoBotaoDesabilitado,
   montarPrevia,
@@ -185,13 +186,15 @@ export async function calcularPrevia(
   entrada: EscolhasEntrada,
   passo: number,
 ): Promise<ResultadoPublico<Previa>> {
-  const escolhas = escolhasValidas(entrada);
-  if (!slugValido(slug) || !escolhas || !Number.isInteger(passo) || passo < 1 || passo > 6) {
+  const brutas = escolhasValidas(entrada);
+  if (!slugValido(slug) || !brutas || !Number.isInteger(passo) || passo < 1 || passo > 6) {
     return invalido();
   }
   try {
     const contexto = await carregarContextoPublico(slug);
     if (!contexto) return invalido('Este buffet não está recebendo orçamentos pelo link agora.');
+    // §96: ajusta ao jeito de vender (só itens monta sem pacote; só pacotes, nunca)
+    const escolhas = escolhasNoModo(contexto.ctx.regras.modoVenda, brutas);
     const token = await tokenEmAndamento(slug);
     const previa = montarPrevia(contexto.ctx, escolhas, {
       hoje: hojeNoFuso(contexto.fuso),
@@ -222,8 +225,8 @@ export async function iniciarOrcamento(
   slug: string,
   dados: { contato: ContatoEntrada; escolhas: EscolhasEntrada; origem?: string },
 ): Promise<ResultadoPublico<Previa>> {
-  const escolhas = escolhasValidas(dados.escolhas);
-  if (!slugValido(slug) || !escolhas) return invalido();
+  const brutas = escolhasValidas(dados.escolhas);
+  if (!slugValido(slug) || !brutas) return invalido();
   const contato = contatoSchema.safeParse(dados.contato);
   if (!contato.success) {
     const campos: Record<string, string> = {};
@@ -252,6 +255,8 @@ export async function iniciarOrcamento(
   try {
     const contexto = await carregarContextoPublico(slug);
     if (!contexto) return invalido('Este buffet não está recebendo orçamentos pelo link agora.');
+    // §96: ajusta ao jeito de vender (só itens monta sem pacote; só pacotes, nunca)
+    const escolhas = escolhasNoModo(contexto.ctx.regras.modoVenda, brutas);
     for (const passo of [1, 2] as const) {
       const motivo = motivoDoBotaoDesabilitado(
         passo,
@@ -338,11 +343,13 @@ async function concluir(
   entrada: EscolhasEntrada,
   tokenInformado: string | null,
 ): Promise<ResultadoPublico<{ token: string }>> {
-  const escolhas = escolhasValidas(entrada);
-  if (!slugValido(slug) || !escolhas) return invalido();
+  const brutas = escolhasValidas(entrada);
+  if (!slugValido(slug) || !brutas) return invalido();
   try {
     const contexto = await carregarContextoPublico(slug);
     if (!contexto) return invalido('Este buffet não está recebendo orçamentos pelo link agora.');
+    // §96: ajusta ao jeito de vender (só itens monta sem pacote; só pacotes, nunca)
+    const escolhas = escolhasNoModo(contexto.ctx.regras.modoVenda, brutas);
     const atual = await emAndamento(slug, tokenInformado);
     if (!atual) {
       return {

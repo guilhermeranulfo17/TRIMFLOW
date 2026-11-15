@@ -86,6 +86,11 @@ export function contextoDoModelo(modelo: Modelo): ContextoPreco {
       deslocamentoModelo: r.deslocamentoModelo,
       deslocamentoKmGratis: r.deslocamentoKmGratis,
       deslocamentoValorKmCentavos: r.deslocamentoValorKmCentavos,
+      // os modelos de segmento vendem por pacote (§96): o dono liga os itens em Regras
+      modoVenda: 'pacotes',
+      minConvidadosItens: 0,
+      pedidoMinimoCentavos: 0,
+      faixasFestaPorPessoa: [],
     },
     tiposEvento: modelo.tiposEvento.map((t) => ({
       id: idDoModelo.tipoEvento(t.chave),
@@ -156,6 +161,9 @@ export function contextoDoModelo(modelo: Modelo): ContextoPreco {
       pacotesCompativeisIds: o.pacotesCompativeis.map(idDoModelo.pacote),
       pacotesInclusoIds: o.pacotesInclusos.map(idDoModelo.pacote),
       tiposEventoIds: o.tiposEvento.map(idDoModelo.tipoEvento),
+      categoria: null,
+      qtdPorConvidadoCent: null,
+      faixasPorPessoa: [],
     })),
     faixasDeslocamento: modelo.faixasDeslocamento,
   };

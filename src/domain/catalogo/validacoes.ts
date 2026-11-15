@@ -27,6 +27,27 @@ export function validarFaixasPreco(faixas: FaixaPrecoEntrada[]): Problema[] {
   return problemas;
 }
 
+/**
+ * Faixas de preço por pessoa (opcionais, §96): podem ficar vazias; se houver, em ordem crescente
+ * de convidados e sem repetir. `campo` = caminho da lista no formulário.
+ */
+export function validarFaixasPorPessoa(faixas: FaixaPrecoEntrada[], campo: string): Problema[] {
+  const problemas: Problema[] = [];
+  faixas.forEach((f, i) => {
+    const anterior = faixas[i - 1];
+    if (anterior && f.ateConvidados <= anterior.ateConvidados) {
+      problemas.push({
+        campo: `${campo}.${i}.ateConvidados`,
+        mensagem:
+          f.ateConvidados === anterior.ateConvidados
+            ? 'Faixa repetida.'
+            : 'As faixas precisam estar em ordem crescente de convidados.',
+      });
+    }
+  });
+  return problemas;
+}
+
 export type PrecoPacoteEntrada = {
   modeloPreco: 'por_pessoa' | 'por_faixa';
   precoPessoaCentavos: number | null;
