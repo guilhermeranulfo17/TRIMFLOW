@@ -2259,3 +2259,14 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   "Calcular a quantidade pelo número de convidados" (por unidade) e faixas por pessoa (por
   pessoa). Pendências do link: no "só itens" pede item vendável com preço confirmado (ou faixas
   da festa), `SEM_ITEM_COM_PRECO`; no "os dois", basta um jeito funcionar.
+
+### 95.1 Foto no topo da landing (novembro de 2026)
+
+- Pedido do dono: a foto da mulher de avental do Orkestra conferindo o celular num salão de buffet
+  é o topo da landing. No celular ela fica em cima (34svh, recorte na pessoa) e o texto começa
+  sobre o fim dela, para o "Testar grátis" aparecer na primeira tela; no computador vira o fundo
+  do topo, escurecido à esquerda para o texto. A maquete do celular saiu do topo.
+- `next.config` usa `images.unoptimized`: os tamanhos (640, 1024 e 1672 px, WEBP qualidade 72,
+  26 a 87 KB) são gerados com o `sharp` e vão em `public/landing/topo-*.webp`, com `srcSet`,
+  `sizes`, largura e altura (sem pulo de layout) e `fetchPriority="high"`. O E2E confere que é a
+  única imagem da página e que tem texto alternativo.

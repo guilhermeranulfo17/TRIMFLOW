@@ -259,7 +259,15 @@ test('nada inventado e nenhum travessão na página', async ({ page }) => {
   // o exemplo é identificado como exemplo
   await expect(page.getByText(/Valores fictícios/)).toBeVisible();
   await expect(page.getByText('Exemplo ilustrativo')).toBeVisible();
-  await expect(page.locator('img, video')).toHaveCount(0);
+  // uma imagem só: a foto do topo (com texto alternativo); nenhum vídeo
+  await expect(page.locator('video')).toHaveCount(0);
+  await expect(page.locator('img')).toHaveCount(1);
+  await expect(page.getByTestId('foto-topo')).toHaveAttribute('alt', /avental do Orkestra/);
+  expect(
+    await page
+      .getByTestId('foto-topo')
+      .evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0),
+  ).toBe(true);
 });
 
 test('dúvidas abrem sem JavaScript e viram FAQPage para o Google', async ({ page }) => {
