@@ -1,16 +1,19 @@
 // módulos específicos (não o índice de ../preco, que traz o Zod da entrada para o navegador)
 import { aPartirDe } from '../preco/a-partir-de';
+import { contarConvidados } from '../preco/equivalentes';
 import { calcularOrcamento } from '../preco/calcular';
 import { opcionaisDisponiveis, retiraveisDoPacote } from '../preco/disponibilidade';
+import { descreverOpcional } from '../preco/opcional';
 import type {
   ContextoPreco,
   DataCivil,
   EntradaOrcamento,
   Id,
+  ModoVenda,
   ResultadoOrcamento,
 } from '../preco/tipos';
 import { contextoSemDeslocamento } from './contexto';
-import { espacoEscolhido, pacotesDoPasso, pessoas } from './passos';
+import { espacoEscolhido, itensSemPacote, pacotesDoPasso, pessoas, vendeSemPacote } from './passos';
 import type { Escolhas, ModoPreco } from './tipos';
 
 export const AVISO_DESLOCAMENTO =
@@ -24,7 +27,8 @@ export function entradaDoMotor(
   ctx: ContextoPreco,
   e: Escolhas,
   hoje: DataCivil,
-  pacoteId: Id | undefined = e.pacoteId,
+  /** null = sem pacote (§96); por padrão, o das escolhas */
+  pacoteId: Id | null | undefined = e.semPacote ? null : e.pacoteId,
   opcionais: Escolhas['opcionais'] = e.opcionais,
   extra: ExtraInterno = {},
 ): EntradaOrcamento | null {
@@ -32,9 +36,10 @@ export function entradaDoMotor(
     ctx.espacos.filter((x) => x.ativo),
     e,
   );
-  if (!e.tipoEventoId || !e.data || !e.turnoId || !espaco || !pacoteId) return null;
+  if (!e.tipoEventoId || !e.data || !e.turnoId || !espaco || pacoteId === undefined) return null;
   // retirados valem só para o pacote escolhido (os totais dos outros pacotes vêm sem eles)
-  const retirados = pacoteId === e.pacoteId ? [...new Set(e.retirados ?? [])] : [];
+  const retirados =
+    pacoteId !== null && pacoteId === e.pacoteId ? [...new Set(e.retirados ?? [])] : [];
   return {
     canal: 'publico',
     hoje,
@@ -76,6 +81,21 @@ export type OpcionalPrevia = {
   qtdMax: number | null;
 };
 
+/**
+ * Item do orçamento sem pacote (§96), depois do WhatsApp. `valorCentavos` = quanto o item custa
+ * para os convidados informados (por unidade com quantidade escolhida: o valor de cada um).
+ * Com quantidade por convidado, o cliente só marca o item: a conta fica com o buffet.
+ */
+export type ItemPrevia = {
+  id: Id;
+  cobranca: string;
+  valorCentavos: number;
+  porUnidade: boolean;
+  automatica: boolean;
+  qtdMin: number;
+  qtdMax: number | null;
+};
+
 export type Previa = {
   /** total das escolhas atuais (só depois do contato e com pacote escolhido) */
   totalCentavos: number | null;
@@ -89,6 +109,12 @@ export type Previa = {
   /** valor da hora extra do pacote escolhido (0 = o pacote não vende hora extra) */
   horaExtraCentavos: number | null;
   avisos: string[];
+  /** §96: itens para montar a festa sem pacote (só depois do contato) */
+  itens: ItemPrevia[];
+  /** §96: erro do pedido sem pacote para mostrar no passo (pedido mínimo, nenhum item…) */
+  erroSemPacote: string | null;
+  /** §96: a festa sem pacote tem preço base por pessoa (dá para pedir sem item com preço) */
+  festaComPreco: boolean;
 };
 
 /**
@@ -116,6 +142,9 @@ export function montarPrevia(
     resultado: null,
     horaExtraCentavos: null,
     avisos,
+    itens: [],
+    erroSemPacote: null,
+    festaComPreco: false,
   };
   if (!e.tipoEventoId) return vazia;
 
@@ -151,6 +180,47 @@ export function montarPrevia(
     };
   });
 
+  if (e.semPacote && vendeSemPacote(ctx.regras.modoVenda)) {
+    const eq = calcularEquivalentes(ctx, e);
+    previa.festaComPreco = (ctx.regras.faixasFestaPorPessoa?.length ?? 0) > 0;
+    previa.itens = itensSemPacote(ctx, e.tipoEventoId).map((o) => {
+      const linha = descreverOpcional(o, Math.max(o.qtdMin, 1), eq);
+      const porUnidade =
+        (o.cobranca === 'por_unidade' || o.cobranca === 'por_hora') && !linha.ocultarConta;
+      return {
+        id: o.id,
+        cobranca: o.cobranca,
+        valorCentavos: porUnidade ? o.precoCentavos : linha.subtotalCentavos,
+        porUnidade,
+        automatica: !!linha.ocultarConta,
+        qtdMin: o.qtdMin,
+        qtdMax: o.qtdMax,
+      };
+    });
+    const entrada = entradaDoMotor(ctx, e, opcoes.hoje, null, e.opcionais, opcoes.extra);
+    // o "a partir de" é dos pacotes: montando por itens, vale o total do que foi escolhido
+    previa.aPartirDeCentavos = null;
+    if (entrada) {
+      previa.resultado = calcularOrcamento(ctx, entrada);
+      // abaixo do pedido mínimo, o cliente vê quanto já deu (e o passo diz quanto falta)
+      const soMinimo =
+        previa.resultado.erros.length > 0 &&
+        previa.resultado.erros.every((x) => x.codigo === 'PEDIDO_MINIMO');
+      previa.totalCentavos =
+        previa.resultado.ok || soMinimo ? previa.resultado.totalCentavos : null;
+      previa.erroSemPacote =
+        previa.resultado.erros.find((x) =>
+          [
+            'ITENS_OBRIGATORIOS',
+            'PEDIDO_MINIMO',
+            'CONVIDADOS_ABAIXO_MINIMO',
+            'OPCIONAL_QUANTIDADE',
+          ].includes(x.codigo),
+        )?.mensagem ?? null;
+    }
+    return previa;
+  }
+
   if (e.pacoteId) {
     previa.horaExtraCentavos =
       ctx.pacotes.find((p) => p.id === e.pacoteId)?.valorHoraExtraCentavos ?? null;
@@ -172,4 +242,25 @@ export function montarPrevia(
     }
   }
   return previa;
+}
+
+function calcularEquivalentes(ctx: ContextoPreco, e: Escolhas): number {
+  return contarConvidados(ctx, null, e.adultos ?? 0, e.criancas).equivalentes;
+}
+
+/**
+ * Ajusta as escolhas ao jeito de vender do buffet (servidor e navegador): "só itens" monta sempre
+ * sem pacote; "só pacotes" nunca. No "os dois", vale a escolha do cliente.
+ */
+export function escolhasNoModo(modo: ModoVenda | undefined, e: Escolhas): Escolhas {
+  const m = modo ?? 'pacotes';
+  if (m === 'itens') {
+    const { pacoteId: _p, retirados: _r, ...resto } = e;
+    return { ...resto, semPacote: true, horasExtras: 0 };
+  }
+  if (m === 'pacotes' && e.semPacote) {
+    const { semPacote: _s, ...resto } = e;
+    return resto;
+  }
+  return e;
 }

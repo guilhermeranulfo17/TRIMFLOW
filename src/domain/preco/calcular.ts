@@ -340,11 +340,13 @@ export function calcularOrcamento(
   }
 
   // 9. Subtotal -----------------------------------------------------------------------
+  // sem pacote, o ajuste do dia vale sobre a festa inteira: vem depois dos itens
   const linhasSemDesconto = [
     linhaPacote,
     linhaFesta,
-    linhaAjuste,
+    semPacote ? null : linhaAjuste,
     ...linhasOpcionais,
+    semPacote ? linhaAjuste : null,
     ...linhasRetiradas,
     linhaHoraExtra,
     linhaDeslocamento,

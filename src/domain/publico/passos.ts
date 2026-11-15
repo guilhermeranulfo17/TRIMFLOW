@@ -2,7 +2,14 @@ import { contarConvidados } from '../preco/equivalentes';
 import { dataCivilValida, diaDaSemanaNumero } from '../dates';
 // módulos específicos (não o índice de ../preco, que traz o Zod da entrada para o navegador)
 import { pacotesDisponiveis } from '../preco/disponibilidade';
-import type { ContextoPreco, DataCivil, Id, PacoteCtx } from '../preco/tipos';
+import type {
+  ContextoPreco,
+  DataCivil,
+  Id,
+  ModoVenda,
+  OpcionalCtx,
+  PacoteCtx,
+} from '../preco/tipos';
 import type { Escolhas } from './tipos';
 
 export type NumeroPasso = 1 | 2 | 3 | 4 | 5 | 6;
@@ -15,6 +22,14 @@ export const PASSOS: { numero: NumeroPasso; titulo: string; curto: string }[] = 
   { numero: 5, titulo: 'Quer algum extra?', curto: 'Extras' },
   { numero: 6, titulo: 'Sua proposta', curto: 'Proposta' },
 ];
+
+/** §96: sem pacote, o passo 4 é "Monte sua festa" e o de extras (5) não existe. */
+export const TITULO_ITENS = { titulo: 'Monte sua festa', curto: 'Itens' } as const;
+
+export function tituloDoPasso(passo: NumeroPasso, e: Pick<Escolhas, 'semPacote'>) {
+  const p = PASSOS.find((x) => x.numero === passo)!;
+  return passo === 4 && e.semPacote ? { ...p, ...TITULO_ITENS } : p;
+}
 
 /** O passo do WhatsApp: antes dele, nenhum dado pessoal; depois dele, o servidor guarda tudo. */
 export const PASSO_CONTATO = 3;
@@ -29,12 +44,17 @@ export function primeiroPasso(tipoNaUrl: boolean): NumeroPasso {
   return tipoNaUrl ? 2 : 1;
 }
 
-export function proximoPasso(passo: NumeroPasso): NumeroPasso | null {
+export function proximoPasso(passo: NumeroPasso, semPacote = false): NumeroPasso | null {
+  if (passo === 4 && semPacote) return 6;
   return passo < 6 ? ((passo + 1) as NumeroPasso) : null;
 }
 
-export function passoAnterior(passo: NumeroPasso, tipoNaUrl = false): NumeroPasso | null {
-  const anterior = passo - 1;
+export function passoAnterior(
+  passo: NumeroPasso,
+  tipoNaUrl = false,
+  semPacote = false,
+): NumeroPasso | null {
+  const anterior = passo === 6 && semPacote ? 4 : passo - 1;
   if (anterior < primeiroPasso(tipoNaUrl)) return null;
   return anterior as NumeroPasso;
 }
@@ -50,6 +70,10 @@ export type DadosPassos = {
   espacos: { id: Id; nome: string; capacidadeMax: number; noLocalDoCliente: boolean }[];
   /** pacotes do tipo escolhido, com disponibilidade pelos convidados (prévia do servidor) */
   pacotes?: { id: Id; disponivel: boolean; motivo?: string }[];
+  /** §96: o pedido sem pacote tem preço base da festa (dá para pedir sem item com preço) */
+  festaComPreco?: boolean;
+  /** §96: erro do motor no pedido sem pacote (pedido mínimo…), vindo da prévia */
+  erroSemPacote?: string | null;
 };
 
 export function dadosDoContexto(ctx: ContextoPreco, e: Escolhas): DadosPassos {
@@ -62,8 +86,46 @@ export function dadosDoContexto(ctx: ContextoPreco, e: Escolhas): DadosPassos {
       disponivel: p.disponivel,
       ...(p.motivo ? { motivo: p.motivo } : {}),
     })),
+    festaComPreco: (ctx.regras.faixasFestaPorPessoa?.length ?? 0) > 0,
   };
 }
+
+/**
+ * Itens do orçamento sem pacote (§96): opcionais ativos, do tipo de festa, que não são
+ * complemento de pacote (sem "compatível"), na ordem do catálogo (o dono controla). As
+ * categorias aparecem na ordem do primeiro item de cada uma (`agruparPorCategoria`).
+ */
+export function itensSemPacote(ctx: ContextoPreco, tipoEventoId: Id | undefined): OpcionalCtx[] {
+  if (!tipoEventoId) return [];
+  return ctx.opcionais
+    .filter(
+      (o) =>
+        o.ativo &&
+        o.pacotesCompativeisIds.length === 0 &&
+        (o.tiposEventoIds.length === 0 || o.tiposEventoIds.includes(tipoEventoId)),
+    )
+    .sort((a, b) => a.ordem - b.ordem);
+}
+
+/** Categoria vazia vira "Outros" (e fica no fim da lista). */
+export const nomeCategoria = (c: string | null | undefined): string => c?.trim() || 'Outros';
+
+/** Agrupa itens por categoria, mantendo a ordem de chegada; "Outros" no fim. */
+export function agruparPorCategoria<T extends { categoria?: string | null }>(
+  itens: T[],
+): { categoria: string; itens: T[] }[] {
+  const grupos = new Map<string, T[]>();
+  for (const i of itens) {
+    const c = nomeCategoria(i.categoria);
+    grupos.set(c, [...(grupos.get(c) ?? []), i]);
+  }
+  return [...grupos.entries()]
+    .sort(([a], [b]) => Number(a === 'Outros') - Number(b === 'Outros'))
+    .map(([categoria, lista]) => ({ categoria, itens: lista }));
+}
+
+/** O jeito de vender permite montar sem pacote? */
+export const vendeSemPacote = (m: ModoVenda | undefined) => m === 'itens' || m === 'ambos';
 
 /** Com um só espaço, ele é escolhido sozinho. */
 export function espacoEscolhido<T extends { id: Id }>(espacos: T[], e: Escolhas): T | null {
@@ -119,6 +181,12 @@ export function motivoDoBotaoDesabilitado(
     case 3:
       return null;
     case 4: {
+      if (e.semPacote) {
+        if (e.opcionais.length === 0 && !d.festaComPreco) {
+          return 'Escolha pelo menos um item para a sua festa.';
+        }
+        return d.erroSemPacote ?? null;
+      }
       if (!e.pacoteId) return 'Escolha um pacote.';
       const pacote = d.pacotes?.find((p) => p.id === e.pacoteId);
       if (!pacote) return 'Escolha um pacote.';
@@ -137,8 +205,15 @@ export function passoPermitido(
   d: DadosPassos,
   opcoes: { temToken: boolean; tipoNaUrl?: boolean },
 ): NumeroPasso {
+  // §96: sem pacote não existe o passo de extras
+  const alvo: NumeroPasso = e.semPacote && pedido === 5 ? 4 : pedido;
   let passo = primeiroPasso(opcoes.tipoNaUrl ?? false);
-  while (passo < pedido) {
+  while (passo < alvo) {
+    if (e.semPacote && passo === 4) {
+      // os itens são o último passo de escolha: dali vai direto para a proposta
+      if (motivoDoBotaoDesabilitado(4, e, d)) return 4;
+      return alvo === 6 ? 6 : 4;
+    }
     if (passo === PASSO_CONTATO && !opcoes.temToken) return passo;
     if (motivoDoBotaoDesabilitado(passo, e, d)) return passo;
     passo = (passo + 1) as NumeroPasso;

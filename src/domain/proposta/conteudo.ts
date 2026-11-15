@@ -301,7 +301,12 @@ export function montarConteudo(v: VersaoProposta, buffet: BuffetProposta): Model
   // opcional, na linha do opcional de mesmo nome (cada um usado uma vez).
   let pacoteUsado = false;
   const opcionaisLivres = [...(c?.opcionais ?? [])];
-  const linhas: LinhaInvestimento[] = v.itens.map((i) => {
+  // §96: a conta do item por convidado (ex.: "600 unidades × R$ 0,90") é do buffet: a proposta
+  // mostra só o item e o valor. A marca vem do resultado congelado, linha a linha.
+  const ocultas = new Set(
+    (r.linhas ?? []).flatMap((l, idx) => (l.ocultarConta ? [`${idx}:${l.descricao}`] : [])),
+  );
+  const linhas: LinhaInvestimento[] = v.itens.map((i, idx) => {
     const ehPacote = i.tipo === 'pacote' && !pacoteUsado && !!c?.pacote;
     if (ehPacote) pacoteUsado = true;
     const iOpcional =
@@ -310,7 +315,7 @@ export function montarConteudo(v: VersaoProposta, buffet: BuffetProposta): Model
     return {
       tipo: i.tipo,
       descricao: i.descricao,
-      detalhe: textoOuNull(i.detalhe),
+      detalhe: ocultas.has(`${idx}:${i.descricao}`) ? null : textoOuNull(i.detalhe),
       // item retirado sem desconto (Fase 6.5): "Retirado" em vez de "R$ 0,00"
       valor:
         i.tipo === 'retirado' && i.subtotalCentavos === 0

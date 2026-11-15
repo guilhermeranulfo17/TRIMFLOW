@@ -357,25 +357,19 @@ nova depois das decisões abaixo (o código já recusa módulo não implementado
   próprio número na Meta, modelos de mensagem aprovados e custo por conversa; muda a regra
   "nenhuma mensagem automática ao cliente final". Decidir com o Gui antes.
 
-## Orçamento por itens, sem pacote (pedido do dono, novembro de 2026)
+## Orçamento por itens: o que ficou para depois (ARQUITETURA §96)
 
-Muitos buffets não vendem pacote: o cliente escolhe os produtos e as quantidades (100 salgados,
-1 bolo de 3 kg, 2 monitores…). Hoje todo orçamento exige um pacote (`calcularOrcamento` recusa
-sem `pacoteId`) e o "item avulso" é só do orçamento interno, digitado pela equipe com valor à mão.
-
-Proposta (etapa própria, a decidir com o dono antes):
-
-- **Modo de venda da empresa:** "Pacotes", "Itens" ou "Pacotes e itens" (em Regras).
-- **Catálogo:** os opcionais já têm cobrança por unidade, por pessoa, fixo e por hora, com
-  quantidade mínima e máxima: viram os "produtos" do modo Itens (talvez com categoria e foto).
-- **Motor de preço:** aceitar orçamento sem pacote quando o modo permitir; pedido mínimo
-  (valor ou quantidade) opcional; ajustes de dia valendo sobre os itens. Testes de equivalência.
-- **Link público:** no modo Itens o passo "Pacote" vira "Monte sua festa" (lista por categoria com
-  contador de quantidade e total na hora).
-- **Proposta, contrato, OrkMargem e Números:** tratar orçamento sem pacote (hoje assumem um).
-- **Dúvidas para o dono:** convidados continuam obrigatórios no modo Itens? O mesmo buffet vende
-  os dois jeitos no mesmo link? Tem pedido mínimo? Itens têm categorias (salgados, doces,
-  bebidas, equipe)?
+- **"+ Orçamento" do painel sem pacote:** o orçamento interno ainda pede pacote. Ligar o
+  "Montar por itens" ali (mesmo motor; o pedido mínimo já vira aviso no canal interno).
+- **Simulador** (Minha empresa) e **demonstração da landing** só com pacote.
+- **Onboarding:** o passo 3 exige pacote com preço confirmado; para quem vende só por itens,
+  aceitar item com preço (e oferecer o jeito de vender no começo).
+- **OrkMargem:** custos previstos são por pacote; festa sem pacote fica sem previsão.
+- **Modelos de segmento** com itens prontos (ex.: domicílio por itens) e categorias de exemplo.
+- **Vitrine `/b/[slug]`:** mostrar os itens por categoria (hoje mostra só pacotes).
+- **"A partir de"** para quem vende só por itens (hoje não aparece).
+- **Painel:** destacar a quantidade a produzir (hoje aparece no detalhe de cada item, na lista
+  de orçamentos do lead) e somar por dia na Agenda.
 
 ## Nossas soluções: imagem por solução
 

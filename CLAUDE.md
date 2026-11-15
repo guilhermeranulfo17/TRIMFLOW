@@ -364,6 +364,10 @@ validam entrada, chamam o domínio, leem e gravam no banco.
 - Nova tabela = migration com RLS, policies, grants mínimos, teste de integração de isolamento
   e espelho em `server/db/schema.ts` (catálogo em `server/db/schema-catalogo.ts`).
 - Tabela filha usa FK composta `(pai_id, empresa_id)` → `(id, empresa_id)` do pai.
+- **Orçamento por itens (§96):** `regras_comerciais.modo_venda` (pacotes, itens, ambos); sem
+  pacote, `pacoteId` null no motor, os itens são os opcionais sem "compatível", o passo 4 vira
+  "Monte sua festa" e o de extras some (`Escolhas.semPacote`, `escolhasNoModo`). Linha com
+  `ocultarConta` (quantidade por convidado) nunca mostra a conta ao cliente (proposta e contrato).
 - O preço é calculado **sempre no servidor** com `calcularOrcamento`; "hoje" e o limite de
   desconto vêm do servidor, nunca do navegador. O banco confere de novo o limite do vendedor.
 - **Versões:** alterar um orçamento cria uma versão nova (mesmo número, outra linha, outro

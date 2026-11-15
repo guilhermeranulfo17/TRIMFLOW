@@ -127,6 +127,7 @@ describe('orçamento por itens', () => {
       contexto(),
       semPacote([{ opcionalId: 'it-bolo', quantidade: 1 }], { data: SABADO }),
     );
+    expect(r.linhas.map((l) => l.tipo)).toEqual(['opcional', 'ajuste_dia']);
     const ajuste = r.linhas.find((l) => l.tipo === 'ajuste_dia')!;
     expect(ajuste.subtotalCentavos).toBe(2500); // +10% de R$ 250,00
     expect(ajuste.detalhe).toBe('+10% sobre a festa (R$ 250,00)');

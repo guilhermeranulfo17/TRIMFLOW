@@ -373,9 +373,15 @@ export async function carregarOrigemDoOrcamento(
       .filter((i) => i.tipo === 'hora_extra')
       .reduce((n, i) => n + i.quantidade, 0);
     const duracao = conteudo?.pacote ? conteudo.pacote.duracaoInclusaMin + horasExtras * 60 : null;
+    // §96: item com quantidade pelos convidados não mostra a conta ao cliente (é do buffet)
+    const semConta = new Set(
+      (resultado.linhas ?? []).filter((l) => l.ocultarConta).map((l) => l.descricao),
+    );
     const listaItens = [
       ...itens.map((i) =>
-        i.quantidade > 1 && i.tipo !== 'pacote' ? `${i.descricao} (${i.quantidade}x)` : i.descricao,
+        i.quantidade > 1 && i.tipo !== 'pacote' && !semConta.has(i.descricao)
+          ? `${i.descricao} (${i.quantidade}x)`
+          : i.descricao,
       ),
       ...(conteudo?.pacote?.secoes ?? []).map((s) => `${s.nome}: ${s.itens.join(', ')}`),
     ];
