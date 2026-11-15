@@ -2168,3 +2168,22 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   o app instalado, explica como instalar.
 - Migrations `20261118000001_mensagem_programada_enum` (valor novo do enum, sozinho) e
   `20261118000002_mensagem_programada` (funções e job).
+
+## 94. Ajustes visuais do painel (novembro de 2026)
+
+- **Agenda sem bolinhas:** o calendário mensal não desenha mais um ponto por turno. Dia sem nada
+  marcado (só turnos livres ou sem turno) fica limpo. Com reserva, pré-reserva ou bloqueio, o dia
+  ganha um fundo bem leve na cor do estado mais forte (reservado > pré-reservado > bloqueado) e a
+  lista curta dos turnos ("1 reservado", "2 livres"). Regra em `marcacoesDoDia`
+  (`domain/agenda/calendario`, com teste). Cores fixas dos estados em toda a agenda (calendário,
+  lista, painel do dia, legenda e simulador): livre verde (`sucesso`), pré-reservado amarelo
+  (`alerta`), reservado azul (`info`) e bloqueado vermelho (`erro`, antes cinza). O selo perdeu a
+  bolinha; a legenda usa os próprios selos.
+- **Números:** a linha "dd/mm/aaaa a dd/mm/aaaa" abaixo do filtro saiu (os campos De/Até já
+  mostram o período).
+- **"+ Orçamento" fixo** só nas telas comerciais: Início/leads, Tarefas, Agenda e Clientes
+  (`mostraBotaoOrcamento`, com teste). Some em Minha empresa, Minha conta, Nossas soluções,
+  Números, Contratos, Financeiro, OrkMargem e Avisos, além do lead e das telas de orçamento.
+- **Fundo off-white:** o claro da marca (painel claro, "seguir o sistema" no claro, termos e
+  privacidade) usa `#F4F4EE`, o mesmo off-white da landing; muted, accent e borda ficaram num cinza
+  quente para combinar. Cartões continuam brancos. Contraste AA conferido pelo teste do tema.

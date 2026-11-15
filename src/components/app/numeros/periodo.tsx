@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { PERIODOS, type Periodo } from '@/domain/numeros';
-import { formatData } from '@/domain/dates';
 import { cn } from '@/lib/utils';
 import { PendenteLink } from '../pendente-link';
 
@@ -52,9 +51,6 @@ export function SeletorPeriodo({ periodo }: { periodo: Periodo }) {
         >
           Ver
         </button>
-        <span className="text-muted-foreground basis-full" data-testid="periodo-atual">
-          {formatData(periodo.de)} a {formatData(periodo.ate)}
-        </span>
       </form>
     </div>
   );

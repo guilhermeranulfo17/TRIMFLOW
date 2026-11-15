@@ -3,6 +3,7 @@ import {
   estadoDoSlot,
   intervaloDoSlot,
   limitesDoMes,
+  marcacoesDoDia,
   montarCalendario,
   prazoRestante,
   resumirDia,
@@ -243,5 +244,44 @@ describe('schemas', () => {
     expect(bloqueioSchema.safeParse(b).success).toBe(true);
     expect(bloqueioSchema.safeParse({ ...b, ate: '2026-12-19' }).success).toBe(false);
     expect(bloqueioSchema.safeParse({ ...b, ate: '2027-12-21' }).success).toBe(false);
+  });
+});
+
+describe('marcacoesDoDia', () => {
+  const c = (
+    p: Partial<Record<'livre' | 'pre_reservado' | 'reservado' | 'bloqueado' | 'lotado', number>>,
+  ) => ({
+    livre: 0,
+    pre_reservado: 0,
+    reservado: 0,
+    bloqueado: 0,
+    lotado: 0,
+    ...p,
+  });
+
+  it('dia sem nada marcado não mostra nada (nem os livres)', () => {
+    expect(marcacoesDoDia(c({}))).toEqual({ cor: null, itens: [] });
+    expect(marcacoesDoDia(c({ livre: 3 }))).toEqual({ cor: null, itens: [] });
+  });
+
+  it('com algo marcado, mostra cada estado e os livres que sobram', () => {
+    expect(marcacoesDoDia(c({ livre: 2, pre_reservado: 1 }))).toEqual({
+      cor: 'pre_reservado',
+      itens: [
+        { estado: 'pre_reservado', quantidade: 1 },
+        { estado: 'livre', quantidade: 2 },
+      ],
+    });
+  });
+
+  it('a cor é a do estado mais forte e lotado conta como reservado', () => {
+    const m = marcacoesDoDia(c({ bloqueado: 1, pre_reservado: 1, lotado: 1, reservado: 1 }));
+    expect(m.cor).toBe('reservado');
+    expect(m.itens).toEqual([
+      { estado: 'reservado', quantidade: 2 },
+      { estado: 'pre_reservado', quantidade: 1 },
+      { estado: 'bloqueado', quantidade: 1 },
+    ]);
+    expect(marcacoesDoDia(c({ bloqueado: 2 })).cor).toBe('bloqueado');
   });
 });

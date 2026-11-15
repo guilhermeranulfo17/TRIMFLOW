@@ -38,6 +38,45 @@ export function resumirDia(slots: SlotDisponibilidade[]): ResumoDia {
   return 'parcial';
 }
 
+/** O que o dia do calendário mostra: o estado de cada turno (lotado conta como reservado). */
+export type Marcacao = 'reservado' | 'pre_reservado' | 'bloqueado' | 'livre';
+
+const ORDEM_MARCACOES: Marcacao[] = ['reservado', 'pre_reservado', 'bloqueado', 'livre'];
+
+/**
+ * Marcações do dia no calendário mensal. Dia sem nada marcado (só turnos livres, ou sem turno)
+ * não mostra nada: `cor` null e lista vazia. Com alguma reserva, pré-reserva ou bloqueio, mostra
+ * cada estado com a quantidade de turnos (os livres também, para ver o que sobra) e a cor do dia
+ * é a do estado mais forte: reservado > pré-reservado > bloqueado.
+ */
+export function marcacoesDoDia(contagem: Record<EstadoSlot, number>): {
+  cor: Exclude<Marcacao, 'livre'> | null;
+  itens: { estado: Marcacao; quantidade: number }[];
+} {
+  const quantidade: Record<Marcacao, number> = {
+    reservado: contagem.reservado + contagem.lotado,
+    pre_reservado: contagem.pre_reservado,
+    bloqueado: contagem.bloqueado,
+    livre: contagem.livre,
+  };
+  const cor =
+    quantidade.reservado > 0
+      ? 'reservado'
+      : quantidade.pre_reservado > 0
+        ? 'pre_reservado'
+        : quantidade.bloqueado > 0
+          ? 'bloqueado'
+          : null;
+  if (!cor) return { cor: null, itens: [] };
+  return {
+    cor,
+    itens: ORDEM_MARCACOES.filter((e) => quantidade[e] > 0).map((estado) => ({
+      estado,
+      quantidade: quantidade[estado],
+    })),
+  };
+}
+
 /** Primeiro e último dia de um mês "yyyy-MM". */
 export function limitesDoMes(mes: string): { de: DataCivil; ate: DataCivil } {
   const [ano, m] = mes.split('-').map(Number) as [number, number];

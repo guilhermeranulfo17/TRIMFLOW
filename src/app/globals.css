@@ -138,7 +138,7 @@
   --quente: #fb923c;
 }
 
-/* Claro da marca: fundo gelo, cartão branco, botão limão com texto grafite, textos em verde escuro */
+/* Claro da marca: fundo off-white (#F4F4EE, o mesmo da landing), cartão branco, botão limão com texto grafite, textos em verde escuro */
 :root:has([data-orkestra-claro]),
 :root:has([data-painel][data-tema='claro']) {
   color-scheme: light;
@@ -146,7 +146,7 @@
   --radius-control: 14px;
   --radius-botao: 9999px;
 
-  --background: #f6f7f5;
+  --background: #f4f4ee;
   --foreground: #161616;
 
   --card: #ffffff;
@@ -159,13 +159,13 @@
   --primary-foreground: #0c0c0c;
   --primary-texto: #3f6d0a;
 
-  --secondary: #eceeea;
+  --secondary: #e9e9e1;
   --secondary-foreground: #161616;
 
-  --muted: #edefeb;
+  --muted: #ebebe4;
   --muted-foreground: #565a52;
 
-  --accent: #eceeea;
+  --accent: #e9e9e1;
   --accent-foreground: #161616;
 
   --destructive: #c62828;
@@ -173,7 +173,7 @@
 
   --success: #15803d;
 
-  --border: #e1e4de;
+  --border: #dfdfd6;
   --input: #c9cdc4;
   --ring: #3f6d0a;
 
@@ -181,7 +181,7 @@
   --sidebar-foreground: #161616;
 
   --destaque: #161616;
-  --destaque-foreground: #f6f7f5;
+  --destaque-foreground: #f4f4ee;
 
   --alerta: #92400e;
   --erro: #b91c1c;
@@ -258,7 +258,7 @@
     --radius-card: 22px;
     --radius-control: 14px;
     --radius-botao: 9999px;
-    --background: #f6f7f5;
+    --background: #f4f4ee;
     --foreground: #161616;
     --card: #ffffff;
     --card-foreground: #161616;
@@ -268,22 +268,22 @@
     --primary-hover: #a3ec45;
     --primary-foreground: #0c0c0c;
     --primary-texto: #3f6d0a;
-    --secondary: #eceeea;
+    --secondary: #e9e9e1;
     --secondary-foreground: #161616;
-    --muted: #edefeb;
+    --muted: #ebebe4;
     --muted-foreground: #565a52;
-    --accent: #eceeea;
+    --accent: #e9e9e1;
     --accent-foreground: #161616;
     --destructive: #c62828;
     --destructive-foreground: #ffffff;
     --success: #15803d;
-    --border: #e1e4de;
+    --border: #dfdfd6;
     --input: #c9cdc4;
     --ring: #3f6d0a;
     --sidebar: #ffffff;
     --sidebar-foreground: #161616;
     --destaque: #161616;
-    --destaque-foreground: #f6f7f5;
+    --destaque-foreground: #f4f4ee;
     --alerta: #92400e;
     --erro: #b91c1c;
     --sucesso: #166534;
