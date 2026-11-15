@@ -19,8 +19,20 @@ async function badgesDe(usuario: UsuarioAtual) {
   return { '/app/empresa': pendencias.length, '/app/leads': resumo.pedemAcao };
 }
 
-export async function SidebarComBadges({ usuario }: { usuario: UsuarioAtual }) {
-  return <Sidebar badges={await badgesDe(usuario)} dono={usuario.perfil === 'dono'} />;
+export async function SidebarComBadges({
+  usuario,
+  recolhido,
+}: {
+  usuario: UsuarioAtual;
+  recolhido: boolean;
+}) {
+  return (
+    <Sidebar
+      badges={await badgesDe(usuario)}
+      dono={usuario.perfil === 'dono'}
+      recolhido={recolhido}
+    />
+  );
 }
 
 export async function BottomNavComBadges({ usuario }: { usuario: UsuarioAtual }) {

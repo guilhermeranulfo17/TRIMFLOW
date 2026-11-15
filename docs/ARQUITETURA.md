@@ -2276,3 +2276,14 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   altura (`svh`); os botões ficam lado a lado a partir de `lg`. Conferido de 1024×640 a 1920×950
   (área útil do navegador): foto, texto, botões e a lista cabem na primeira tela. No celular a foto
   ficou com 29svh para o "Testar grátis" seguir na primeira tela com o selo em duas linhas.
+
+## 97. Menu lateral recolhível (novembro de 2026)
+
+- Pedido do dono: no computador o menu lateral pode ficar **recolhido** (só os ícones, 88 px, o
+  símbolo da marca no lugar do nome, os números de pendência no canto do ícone e o nome numa dica
+  ao passar o mouse) ou **aberto** (ícones e nomes, como antes). O botão fica no rodapé do menu
+  ("Recolher menu" / "Abrir o menu").
+- A escolha é do aparelho, como o tema: cookie `orkestra_menu` (`recolhido` | `aberto`, httpOnly,
+  um ano) gravado por `definirMenuRecolhido` e lido no servidor (`lerMenuRecolhido`) para o layout
+  já sair do jeito certo, sem piscar. Regra em `menuRecolhido` (`domain/tema`, com teste). No
+  celular nada muda (a barra de baixo).

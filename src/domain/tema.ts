@@ -13,3 +13,11 @@ export const ROTULO_TEMA: Record<Tema, string> = {
   claro: 'Claro',
   sistema: 'Seguir o sistema',
 };
+
+/**
+ * Menu lateral do painel recolhido (só ícones) ou aberto (ícones e nomes): preferência do
+ * aparelho, no cookie orkestra_menu. Padrão: aberto.
+ */
+export const COOKIE_MENU = 'orkestra_menu';
+
+export const menuRecolhido = (valor: string | null | undefined): boolean => valor === 'recolhido';

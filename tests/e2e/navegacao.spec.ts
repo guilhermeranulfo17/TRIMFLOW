@@ -91,3 +91,30 @@ test('vendedor vê o mesmo painel com o próprio nome no menu', async ({ page })
   await page.getByRole('button', { name: /Menu do usuário Vendedor Demo/ }).click();
   await expect(page.getByRole('menu')).toContainText('Vendedor');
 });
+
+test('menu lateral recolhe para os ícones, guarda a escolha e abre de novo', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name === 'celular', 'o menu lateral é do computador (≥ md)');
+  await entrar(page, 'dono@demo.local', SENHA_SEED);
+  const menu = page.getByTestId('menu-lateral');
+  const nav = page.getByRole('navigation', { name: 'Principal' });
+  await expect(menu).toHaveAttribute('data-recolhido', 'false');
+  await expect(nav.getByRole('link', { name: 'Agenda' })).toContainText('Agenda');
+
+  await page.getByRole('button', { name: 'Recolher o menu' }).click();
+  await expect(menu).toHaveAttribute('data-recolhido', 'true');
+  // só ícones, mas cada link continua com nome (leitor de tela e dica ao passar o mouse)
+  await expect(nav.getByRole('link', { name: 'Agenda' })).not.toContainText('Agenda');
+  await nav.getByRole('link', { name: 'Agenda' }).click();
+  await expect(page).toHaveURL(/\/app\/agenda$/);
+
+  // a escolha fica no aparelho: recarregar mantém recolhido
+  await page.reload();
+  await expect(menu).toHaveAttribute('data-recolhido', 'true');
+  await page.getByRole('button', { name: 'Abrir o menu' }).click();
+  await expect(menu).toHaveAttribute('data-recolhido', 'false');
+  await page.reload();
+  await expect(menu).toHaveAttribute('data-recolhido', 'false');
+  expect(await semRolagemHorizontal(page)).toBe(true);
+});
