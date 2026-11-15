@@ -2270,3 +2270,9 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   26 a 87 KB) são gerados com o `sharp` e vão em `public/landing/topo-*.webp`, com `srcSet`,
   `sizes`, largura e altura (sem pulo de layout) e `fetchPriority="high"`. O E2E confere que é a
   única imagem da página e que tem texto alternativo.
+- **Convite e notebook (pedido do dono):** o selo do topo virou o link "ver como funciona"
+  (`#como-funciona`) com "Feche mais eventos, aumente seu faturamento e trabalhe menos". No
+  computador o topo tem a altura da janela menos o cabeçalho e o título e os espaços encolhem com a
+  altura (`svh`); os botões ficam lado a lado a partir de `lg`. Conferido de 1024×640 a 1920×950
+  (área útil do navegador): foto, texto, botões e a lista cabem na primeira tela. No celular a foto
+  ficou com 29svh para o "Testar grátis" seguir na primeira tela com o selo em duas linhas.

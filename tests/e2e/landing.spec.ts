@@ -35,7 +35,11 @@ test('é a landing (sem redirecionar), com todas as seções, e não chama o Aut
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Seu cliente monta o orçamento sozinho.',
   );
-  await expect(page.getByText('Para buffets de festa')).toBeVisible();
+  // o convite do topo leva a "Como funciona"
+  await expect(page.getByTestId('ver-como-funciona')).toHaveText(
+    'Feche mais eventos, aumente seu faturamento e trabalhe menos',
+  );
+  await expect(page.getByTestId('ver-como-funciona')).toHaveAttribute('href', '#como-funciona');
   await expect(page.getByRole('link', { name: 'Montar um orçamento de exemplo' })).toHaveAttribute(
     'href',
     '#demonstracao',
