@@ -2187,3 +2187,29 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
 - **Fundo off-white:** o claro da marca (painel claro, "seguir o sistema" no claro, termos e
   privacidade) usa `#F4F4EE`, o mesmo off-white da landing; muted, accent e borda ficaram num cinza
   quente para combinar. Cartões continuam brancos. Contraste AA conferido pelo teste do tema.
+
+## 95. Landing completa (novembro de 2026)
+
+- **Decisão do dono:** a landing de seis blocos (§80) era curta demais. Agora é uma página de
+  vendas completa, no estilo dos sites de buffet: **cabeçalho fixo** (logo, âncoras Como funciona,
+  Recursos, Preço e Dúvidas no computador, Entrar e "Testar grátis"), **topo** ("Para buffets de
+  festa", a mesma frase, "Testar grátis por 14 dias" e "Montar um orçamento de exemplo", e o link
+  do buffet desenhado num celular com o aviso do pedido), **para quem é** (os quatro tipos de
+  buffet do cadastro), **rotina** (três situações, sem e com o Orkestra), **demonstração** e
+  **resultado** (as mesmas; agora com "Quero receber pedidos assim" logo abaixo do pedido),
+  **como funciona** (três passos), **recursos** (nove), **painel por dentro** (o Início em funil
+  desenhado e, com `NEXT_PUBLIC_DEMO_SLUG`, o botão "Ver o painel de demonstração", POST para
+  `/demo/entrar`), **preço** (um só, do banco, com "O que está incluso" a partir dos limites do
+  plano e botão), **dúvidas** (`details`, sem JavaScript) e **chamada final** (com "Fale com a
+  gente no WhatsApp" quando `NEXT_PUBLIC_WHATSAPP_VENDAS` existe). Rodapé com colunas Produto,
+  Conta, Legal e Contato.
+- **Continua valendo:** um preço só (do banco, sem anual nem outro plano), nada de depoimento,
+  nota ou número inventado, nenhuma imagem (as maquetes são HTML com `data-exemplo` e a etiqueta
+  "Exemplo ilustrativo", com os valores fictícios do Buffet Exemplo), sem travessão, página
+  estática e fora do Auth. Todo botão de teste leva a `/cadastro` com `data-cta-teste`.
+- **Textos com regra** em `domain/marketing/landing` (com teste): `itensDoPlanoNaLanding` (o que a
+  mensalidade inclui, pelos limites do plano), `duvidasDaLanding` (as respostas dizem só o que o
+  produto faz: o sistema não conversa sozinho com o cliente, contrato com assinatura eletrônica
+  simples, sem ICP-Brasil) e `jsonLdDuvidas` (FAQPage com as mesmas perguntas).
+- No celular os recursos viram linhas compactas (ícone ao lado do texto) para a página não ficar
+  longa demais.

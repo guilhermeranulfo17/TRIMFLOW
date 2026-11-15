@@ -18,6 +18,7 @@ import {
 import { formatBRL } from '@/domain/money';
 import { pessoas } from '@/domain/publico/passos';
 import type { Escolhas } from '@/domain/publico/tipos';
+import { BotaoTeste } from './ctas';
 import { avisarProspeccao } from './prospeccao';
 
 const PASSOS = [
@@ -241,6 +242,9 @@ export function Demonstracao({ exemplo }: { exemplo: ExemploDemonstracao }) {
             <p className="mt-4 max-w-sm text-base text-white/70 md:text-lg">
               Organizado, com data, convidados, pacote e valor.
             </p>
+            <BotaoTeste className="mt-8 hidden w-full max-w-md lg:inline-flex">
+              Quero receber pedidos assim
+            </BotaoTeste>
           </div>
 
           {/* a chave refaz a animação de chegada quando a pessoa termina de montar */}
@@ -296,6 +300,7 @@ export function Demonstracao({ exemplo }: { exemplo: ExemploDemonstracao }) {
               Abrir no Orkestra
             </div>
           </div>
+          <BotaoTeste className="w-full lg:hidden">Quero receber pedidos assim</BotaoTeste>
         </div>
       </section>
     </>

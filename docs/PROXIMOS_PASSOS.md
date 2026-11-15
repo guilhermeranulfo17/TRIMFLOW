@@ -356,3 +356,29 @@ nova depois das decisões abaixo (o código já recusa módulo não implementado
 - **Envio automático ao cliente pela API oficial do WhatsApp:** exige cada buffet conectar o
   próprio número na Meta, modelos de mensagem aprovados e custo por conversa; muda a regra
   "nenhuma mensagem automática ao cliente final". Decidir com o Gui antes.
+
+## Orçamento por itens, sem pacote (pedido do dono, novembro de 2026)
+
+Muitos buffets não vendem pacote: o cliente escolhe os produtos e as quantidades (100 salgados,
+1 bolo de 3 kg, 2 monitores…). Hoje todo orçamento exige um pacote (`calcularOrcamento` recusa
+sem `pacoteId`) e o "item avulso" é só do orçamento interno, digitado pela equipe com valor à mão.
+
+Proposta (etapa própria, a decidir com o dono antes):
+
+- **Modo de venda da empresa:** "Pacotes", "Itens" ou "Pacotes e itens" (em Regras).
+- **Catálogo:** os opcionais já têm cobrança por unidade, por pessoa, fixo e por hora, com
+  quantidade mínima e máxima: viram os "produtos" do modo Itens (talvez com categoria e foto).
+- **Motor de preço:** aceitar orçamento sem pacote quando o modo permitir; pedido mínimo
+  (valor ou quantidade) opcional; ajustes de dia valendo sobre os itens. Testes de equivalência.
+- **Link público:** no modo Itens o passo "Pacote" vira "Monte sua festa" (lista por categoria com
+  contador de quantidade e total na hora).
+- **Proposta, contrato, OrkMargem e Números:** tratar orçamento sem pacote (hoje assumem um).
+- **Dúvidas para o dono:** convidados continuam obrigatórios no modo Itens? O mesmo buffet vende
+  os dois jeitos no mesmo link? Tem pedido mínimo? Itens têm categorias (salgados, doces,
+  bebidas, equipe)?
+
+## Nossas soluções: imagem por solução
+
+O dono vai mandar uma imagem para cada solução, para ficar no canto direito do cartão no lugar
+da etiqueta atual. Quando chegarem: `public/solucoes/<codigo>.webp`, sem fundo claro fixo no
+tema escuro, e a etiqueta passa para junto do nome.

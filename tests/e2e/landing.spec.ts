@@ -3,10 +3,11 @@ import { noBanco } from './banco';
 import { cadastrar, emailUnico, entrar, SENHA_SEED, semRolagemHorizontal } from './helpers';
 
 /*
- * Landing em `/` (nov/2026): seis blocos e nada mais. Topo, demonstração (o "Buffet Exemplo" com
- * os passos reais do link público, rodando no navegador), resultado (o pedido como chega para o
- * dono), três benefícios, um preço só (do banco) e o botão final para o cadastro. A página não
- * toca no Auth e a origem do anúncio vai para empresas.origem_cadastro.
+ * Landing completa em `/` (§95): cabeçalho fixo, topo, para quem é, rotina, demonstração (o
+ * "Buffet Exemplo" com os passos reais do link público, rodando no navegador), resultado (o
+ * pedido como chega para o dono), como funciona, recursos, painel por dentro, um preço só (do
+ * banco) com o que inclui, dúvidas e o botão final para o cadastro. A página não toca no Auth e a
+ * origem do anúncio vai para empresas.origem_cadastro.
  */
 
 const normal = (s: string) => s.replace(/ /g, ' ');
@@ -21,7 +22,9 @@ async function irParaDemonstracao(page: Page) {
   await expect(page.getByTestId('demonstracao')).toBeInViewport();
 }
 
-test('é a landing (sem redirecionar), com os seis blocos, e não chama o Auth', async ({ page }) => {
+test('é a landing (sem redirecionar), com todas as seções, e não chama o Auth', async ({
+  page,
+}) => {
   const auth: string[] = [];
   page.on('request', (r) => {
     if (r.url().includes('/auth/v1')) auth.push(r.url());
@@ -32,19 +35,30 @@ test('é a landing (sem redirecionar), com os seis blocos, e não chama o Auth',
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Seu cliente monta o orçamento sozinho.',
   );
-  await expect(
-    page.getByRole('link', { name: 'Monte um orçamento como se fosse seu cliente' }),
-  ).toHaveAttribute('href', '#demonstracao');
-  // topo, demonstração, resultado, benefícios, preço e botão final: nada além disso
-  await expect(page.locator('main > section')).toHaveCount(6);
-  await expect(page.getByText('É assim que o pedido chega pra você.')).toBeVisible();
-  for (const beneficio of [
-    'Seu cliente não espera.',
-    'Você não gasta tempo com curioso.',
-    'Nenhum pedido fica sem retorno.',
+  await expect(page.getByText('Para buffets de festa')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Montar um orçamento de exemplo' })).toHaveAttribute(
+    'href',
+    '#demonstracao',
+  );
+  // topo, para quem, rotina, demonstração, resultado, como funciona, recursos, painel, preço,
+  // dúvidas e chamada final
+  await expect(page.locator('main > section')).toHaveCount(11);
+  for (const titulo of [
+    'Você conhece essa rotina.',
+    'É assim que o pedido chega pra você.',
+    'Do cadastro ao primeiro pedido.',
+    'Do primeiro contato à festa.',
+    'Seu dia em uma tela.',
+    'Perguntas de quem está começando.',
+    'Agora com a sua marca.',
   ]) {
-    await expect(page.getByText(beneficio, { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: titulo, level: 2 })).toBeVisible();
   }
+  // o cabeçalho fica fixo e leva às seções que existem
+  const cabecalho = page.locator('header').first();
+  await expect(cabecalho.getByTestId('cabecalho-testar')).toHaveAttribute('href', '/cadastro');
+  await page.mouse.wheel(0, 3000);
+  await expect(cabecalho.getByTestId('cabecalho-testar')).toBeInViewport();
   await page.waitForLoadState('networkidle');
   expect(auth).toEqual([]);
   expect(await semRolagemHorizontal(page)).toBe(true);
@@ -67,12 +81,26 @@ test('um preço só, vindo do banco: sem outro plano, sem anual e sem valor de i
   await expect(preco.getByTestId('preco')).toContainText('por mês');
   await expect(preco).toContainText('14 dias grátis, sem cartão');
   await expect(preco).toContainText('Implantação assistida grátis');
+  // o que inclui sai dos limites do plano (nada fixo)
+  const [limites] = await noBanco(
+    (sql) =>
+      sql<
+        { max_usuarios: number }[]
+      >`select max_usuarios from public.planos where codigo = 'profissional'`,
+  );
+  await expect(preco.getByTestId('preco-inclui')).toContainText(
+    `Até ${limites!.max_usuarios} usuários da equipe`,
+  );
 
-  // fora da demonstração (valores fictícios do Buffet Exemplo), a página tem um único valor
+  // fora da demonstração e das maquetes (valores fictícios do Buffet Exemplo), um único valor
   const fora = normal(
     await page.evaluate(() =>
       [...document.querySelectorAll('main > section:not(#demonstracao):not(#resultado), footer')]
-        .map((e) => (e as HTMLElement).innerText)
+        .map((e) => {
+          const copia = e.cloneNode(true) as HTMLElement;
+          copia.querySelectorAll('[data-exemplo]').forEach((x) => x.remove());
+          return copia.textContent ?? '';
+        })
         .join('\n'),
     ),
   );
@@ -152,12 +180,24 @@ test('demonstração: convidados, pacote e extras mudam o valor na hora, e o ped
   expect(await semRolagemHorizontal(page)).toBe(true);
 });
 
-test('destinos: Entrar e o botão final; nenhum link quebrado', async ({ page }) => {
+test('destinos: Entrar e os botões de teste; nenhum link quebrado', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('entrar')).toHaveAttribute('href', '/login');
-  const final = page.getByRole('link', { name: 'Quero isso com o nome do meu buffet' });
-  await expect(final).toHaveAttribute('href', '/cadastro');
-  await expect(final).toHaveAttribute('data-cta-teste');
+  // todo botão de teste vai ao cadastro e conta como "Testar grátis"
+  for (const nome of [
+    'Testar grátis',
+    'Testar grátis por 14 dias',
+    'Quero receber pedidos assim',
+    'Começar meu teste grátis',
+    'Quero isso com o nome do meu buffet',
+  ]) {
+    const botoes = await page.getByRole('link', { name: nome, exact: true }).all();
+    expect(botoes.length, nome).toBeGreaterThan(0);
+    for (const botao of botoes) {
+      await expect(botao, nome).toHaveAttribute('href', '/cadastro');
+      await expect(botao, nome).toHaveAttribute('data-cta-teste');
+    }
+  }
   // nenhum link sem destino e nenhuma âncora para seção que não existe
   const quebrados = await page.evaluate(() =>
     [...document.querySelectorAll('a')]
@@ -218,7 +258,18 @@ test('nada inventado e nenhum travessão na página', async ({ page }) => {
   expect(texto).not.toMatch(/[—–]/);
   // o exemplo é identificado como exemplo
   await expect(page.getByText(/Valores fictícios/)).toBeVisible();
+  await expect(page.getByText('Exemplo ilustrativo')).toBeVisible();
   await expect(page.locator('img, video')).toHaveCount(0);
+});
+
+test('dúvidas abrem sem JavaScript e viram FAQPage para o Google', async ({ page }) => {
+  await page.goto('/');
+  const duvidas = page.getByTestId('lista-duvidas');
+  await duvidas.getByText('O sistema conversa com o cliente sozinho?').click();
+  await expect(duvidas.getByText(/^Não\. O Orkestra organiza os pedidos/)).toBeVisible();
+  const ld = await page.locator('script[type="application/ld+json"]').allTextContents();
+  const faq = ld.map((t) => JSON.parse(t)).find((j) => j['@type'] === 'FAQPage');
+  expect(faq.mainEntity.length).toBe(await duvidas.locator('details').count());
 });
 
 test('logado, o topo leva ao painel', async ({ page }) => {
