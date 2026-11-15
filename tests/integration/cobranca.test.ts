@@ -639,7 +639,15 @@ describe('conta suspensa = somente leitura', () => {
       const [reserva] =
         await tx`select id from public.reservas where empresa_id = ${empresa} and status = 'ativa'
         and tipo = 'pre_reserva' and expira_em > now() limit 1`;
-      const amanha = await hojeSP(tx, 40);
+      // um dia sem reserva ativa a partir de hoje + 40 (o seed muda com a data de hoje): o
+      // bloqueio precisa ser recusado pela conta suspensa, não por conflito com uma reserva
+      const [livre] = await tx<{ d: string }[]>`select d::date::text as d
+        from generate_series(${await hojeSP(tx, 40)}::date, ${await hojeSP(tx, 400)}::date,
+          interval '1 day') d
+        where not exists (select 1 from public.reservas r
+          where r.empresa_id = ${empresa} and r.status = 'ativa' and r.data = d::date)
+        order by d limit 1`;
+      const amanha = livre!.d;
       // marcar_link_testado só grava a primeira vez
       await tx`update public.empresas set plano = 'suspenso', link_testado_em = null where id = ${empresa}`;
 
