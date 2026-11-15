@@ -95,6 +95,9 @@ export default async function EditarOpcionalPage({ params }: Props) {
           qtdMin: opcional.qtdMin,
           qtdMax: opcional.qtdMax,
           ativo: opcional.ativo,
+          categoria: opcional.categoria ?? '',
+          qtdPorConvidadoCent: opcional.qtdPorConvidadoCent,
+          faixasPorPessoa: opcional.faixasPorPessoa,
         }}
       />
       <SecaoFotos

@@ -17,6 +17,7 @@ import { FormCondicoes } from './form-condicoes';
 import { FormCriancasEmpresa } from './form-criancas-empresa';
 import { FormDeslocamento } from './form-deslocamento';
 import { FormFeriados } from './form-feriados';
+import { FormVenda } from './form-venda';
 
 export const metadata: Metadata = { title: 'Preços e regras' };
 
@@ -56,6 +57,15 @@ export default async function RegrasPage() {
         </p>
         {!somenteLeitura && <LinkTestarPrecos />}
       </div>
+      <FormVenda
+        inicial={{
+          modoVenda: regras.modoVenda,
+          minConvidadosItens: regras.minConvidadosItens,
+          pedidoMinimoCentavos: regras.pedidoMinimoCentavos,
+          faixasFestaPorPessoa: regras.faixasFestaPorPessoa,
+        }}
+        somenteLeitura={somenteLeitura}
+      />
       <FormAjustes
         ajustes={ajustesOrdenados.map((a) => ({
           tipo: a.tipo,

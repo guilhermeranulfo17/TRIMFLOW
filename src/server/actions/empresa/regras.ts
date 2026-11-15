@@ -9,11 +9,13 @@ import {
   condicoesSchema,
   deslocamentoSchema,
   feriadosSchema,
+  vendaSchema,
   type AgendaRegrasEntrada,
   type AjustesDiaEntrada,
   type CondicoesEntrada,
   type DeslocamentoEntrada,
   type FeriadosEntrada,
+  type VendaEntrada,
 } from '@/domain/validacao/regras';
 import {
   ajustesDia,
@@ -54,6 +56,41 @@ export async function salvarCondicoes(entrada: CondicoesEntrada): Promise<Result
     if (!ok) return { ok: false, erro: 'Regras da empresa não encontradas. Recarregue a página.' };
     revalidar();
     return { ok: true, mensagem: 'Condições salvas.' };
+  });
+}
+
+/** Jeito de vender (§96): pacotes, itens ou os dois, e os mínimos do orçamento por itens. */
+export async function salvarVenda(entrada: VendaEntrada): Promise<ResultadoAcao> {
+  return acaoDoDono(async (dono) => {
+    const v = validar(vendaSchema, entrada);
+    if (!v.ok) return v.resultado;
+    const novos = {
+      ...v.dados,
+      // sem itens, os mínimos e a base da festa não valem: grava limpo
+      ...(v.dados.modoVenda === 'pacotes'
+        ? { minConvidadosItens: 0, pedidoMinimoCentavos: 0, faixasFestaPorPessoa: [] }
+        : {}),
+    };
+    const ok = await comUsuario(dono.id, async (tx) => {
+      const [antes] = await tx.select().from(regrasComerciais);
+      if (!antes) return false;
+      await tx
+        .update(regrasComerciais)
+        .set(novos)
+        .where(eq(regrasComerciais.empresaId, dono.empresa.id));
+      await auditar(
+        tx,
+        dono,
+        'regras.venda_alterada',
+        'regras',
+        dono.empresa.id,
+        diferencas(antes, novos),
+      );
+      return true;
+    });
+    if (!ok) return { ok: false, erro: 'Regras da empresa não encontradas. Recarregue a página.' };
+    revalidar();
+    return { ok: true, mensagem: 'Jeito de vender salvo.' };
   });
 }
 

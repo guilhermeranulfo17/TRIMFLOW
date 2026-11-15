@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { validarFaixasDeslocamento } from '../catalogo/validacoes';
+import { validarFaixasDeslocamento, validarFaixasPorPessoa } from '../catalogo/validacoes';
+import { faixaPorPessoaSchema } from './catalogo';
 import {
   adicionarProblemas,
   bp,
@@ -126,3 +127,19 @@ export const agendaRegrasSchema = z.object({
   intervaloEntreEventosMin: inteiro('o intervalo entre eventos', 0, 720),
 });
 export type AgendaRegrasEntrada = z.input<typeof agendaRegrasSchema>;
+
+/**
+ * Jeito de vender (§96): só pacotes, só itens ou os dois; e, sem pacote, o mínimo de
+ * convidados, o pedido mínimo e o preço da festa por pessoa em faixas (opcional).
+ */
+export const vendaSchema = z
+  .object({
+    modoVenda: z.enum(['pacotes', 'itens', 'ambos']),
+    minConvidadosItens: inteiro('o mínimo de convidados', 0, 100_000),
+    pedidoMinimoCentavos: centavos('o pedido mínimo'),
+    faixasFestaPorPessoa: z.array(faixaPorPessoaSchema).max(20),
+  })
+  .superRefine((v, ctx) => {
+    adicionarProblemas(ctx, validarFaixasPorPessoa(v.faixasFestaPorPessoa, 'faixasFestaPorPessoa'));
+  });
+export type VendaEntrada = z.input<typeof vendaSchema>;

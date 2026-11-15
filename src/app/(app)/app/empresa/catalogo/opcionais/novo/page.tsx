@@ -29,6 +29,9 @@ export default async function NovoOpcionalPage() {
           precoCentavos: Number.NaN,
           qtdMin: 1,
           qtdMax: null,
+          categoria: '',
+          qtdPorConvidadoCent: null,
+          faixasPorPessoa: [],
           ativo: true,
         }}
       />

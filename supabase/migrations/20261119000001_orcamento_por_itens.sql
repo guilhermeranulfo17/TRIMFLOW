@@ -80,3 +80,60 @@ begin
   return new;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- painel_contexto: as pendências do link sabem o jeito de vender (chaves novas; o código
+-- anterior as ignora). Mesmo corpo de 20261010000001_desempenho.sql, mais três chaves.
+-- ---------------------------------------------------------------------------
+create or replace function public.painel_contexto()
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'resumo', (select to_jsonb(r) from public.resumo_hoje() r),
+    'nao_lidos', (select count(*)::int from public.avisos a
+                  where a.usuario_id = (select auth.uid()) and a.lido_em is null),
+    'empresa', (select jsonb_build_object(
+                  'plano', e.plano,
+                  'trial_ate', e.trial_ate,
+                  'fuso', e.fuso,
+                  'onboarding_passo', e.onboarding_passo,
+                  'onboarding_iniciado_em', e.onboarding_iniciado_em,
+                  'onboarding_concluido_em', e.onboarding_concluido_em)
+                from public.empresas e where e.id = (select public.empresa_do_usuario())),
+    'catalogo', jsonb_build_object(
+      'pacotes', coalesce((select jsonb_agg(jsonb_build_object(
+                    'id', p.id,
+                    'ativo', p.ativo,
+                    'modelo_preco', p.modelo_preco,
+                    'preco_pessoa_centavos', p.preco_pessoa_centavos,
+                    'valor_excedente_centavos', p.valor_excedente_centavos,
+                    'preco_confirmado', p.preco_confirmado_em is not null,
+                    'faixas', (select count(*)::int from public.faixas_preco f
+                               where f.pacote_id = p.id)))
+                  from public.pacotes p), '[]'::jsonb),
+      'tipo_evento_ativo', exists (select 1 from public.tipos_evento t where t.ativo),
+      'turno_ativo', exists (select 1 from public.turnos t where t.ativo),
+      'espaco_ativo', exists (select 1 from public.espacos s where s.ativo),
+      -- §96: jeito de vender e se o orçamento por itens tem o que vender
+      'modo_venda', (select r.modo_venda from public.regras_comerciais r),
+      'festa_com_preco', coalesce((select jsonb_array_length(r.faixas_festa_por_pessoa) > 0
+                                   from public.regras_comerciais r), false),
+      'itens_com_preco', exists (
+        select 1 from public.opcionais o
+        where o.ativo and o.preco_confirmado_em is not null
+          and not exists (select 1 from public.opcional_pacotes v
+                          where v.opcional_id = o.id and v.relacao = 'compativel'))),
+    -- só o dono lê assinaturas (RLS); para o vendedor a lista vem vazia
+    'assinaturas', coalesce((select jsonb_agg(jsonb_build_object(
+                      'status', a.status,
+                      'pago_ate', a.pago_ate,
+                      'atrasada_desde', a.atrasada_desde,
+                      'criada_em', a.criada_em))
+                    from public.assinaturas a), '[]'::jsonb),
+    'plano', public.plano_vigente_da_empresa()
+  );
+$$;

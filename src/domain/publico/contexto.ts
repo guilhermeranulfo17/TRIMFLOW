@@ -24,6 +24,12 @@ export function pendenciasDoContexto(ctx: ContextoPreco): Pendencia[] {
     tiposEvento: ctx.tiposEvento,
     turnos: ctx.turnos,
     espacos: ctx.espacos,
+    venda: {
+      modo: ctx.regras.modoVenda ?? 'pacotes',
+      // o contexto público só traz itens com preço confirmado
+      itensComPreco: ctx.opcionais.some((o) => o.ativo && o.pacotesCompativeisIds.length === 0),
+      festaComPreco: (ctx.regras.faixasFestaPorPessoa?.length ?? 0) > 0,
+    },
   });
 }
 
