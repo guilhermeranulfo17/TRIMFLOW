@@ -314,7 +314,9 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `/auth/callback` → `decidirVoltaExterna` (`server/auth/volta-externa.ts`, regra em
   `domain/auth/destino`); conta nova completa em `/cadastro/completar` (`completar_conta_dono`).
 - **Landing (§62, §80 e §95):** `/` estática (ISR 5 min) e fora do middleware (não toca no
-  Auth). Página completa (§95): cabeçalho fixo com "Testar grátis", topo, para quem é, rotina,
+  Auth). Página completa (§95): cabeçalho fixo com "Testar grátis", topo (título "Feche mais eventos,
+  aumente seu faturamento e trabalhe menos" em Jost `.ld-hero` e um botão só, "Ver como funciona",
+  §95.2), faixa limão rolando com tipos de festa (nunca nomes de buffet), rotina,
   demonstração e resultado, como funciona, recursos, painel por dentro, preço com o que inclui,
   dúvidas (também em JSON-LD FAQPage), chamada final e rodapé; sem travessão, feita para o
   celular; uma foto só, a do topo (`public/landing/topo-{640,1024,1672}.webp`, sem otimizador:
@@ -327,7 +329,7 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   (`passo-pacote`, `passo-extras`) com o `montarPrevia` do domínio e preços fictícios, no
   navegador, sem enviar nada. Identidade só da landing: limão `#C0F05A`, verde `#6FD36A`, verde
   escuro `#1E7A3F`, preto `#0A0A0A`, off-white `#F4F4EE`; títulos `.ld-titulo` (Bricolage
-  Grotesque) e destaque `.ld-serif` (Instrument Serif itálico). Origem do anúncio (utm_, ref) só
+  Grotesque), título do topo `.ld-hero` (Jost) e destaque `.ld-serif` (Instrument Serif itálico). Origem do anúncio (utm_, ref) só
   por `registrar_origem_cadastro`; contagem agregada só por `publico.landing_contar` (sem nada
   pessoal). Cadastro pede nome, buffet, tipo de buffet (infantil, casamento e 15 anos, eventos,
   domicílio: escolhe o modelo e o segmento, §90), WhatsApp, e-mail e senha.
