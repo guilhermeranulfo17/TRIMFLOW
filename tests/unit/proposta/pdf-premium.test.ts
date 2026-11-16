@@ -95,11 +95,12 @@ beforeAll(async () => {
   });
   await new Promise<void>((ok) => servidor.listen(0, '127.0.0.1', ok));
   base = `http://127.0.0.1:${(servidor.address() as AddressInfo).port}`;
-});
+  // 12 imagens WEBP pelo sharp: no runner do CI, com os outros arquivos em paralelo, passa de 10 s
+}, 60_000);
 
 afterAll(() => {
-  servidor.closeAllConnections();
-  servidor.close();
+  servidor?.closeAllConnections();
+  servidor?.close();
 });
 
 function versao(
