@@ -21,10 +21,14 @@ import Link from 'next/link';
 import { Logo } from '@/components/app/logo';
 import { IconeWhatsApp } from '@/components/publico/icone-whatsapp';
 import type { Duvida } from '@/domain/marketing';
+import { algumPixel } from '@/domain/marketing/pixels';
+import { PAGINAS_SEGMENTO } from '@/domain/marketing/segmentos';
+import { idsPixels } from '@/server/env';
 import { cn } from '@/lib/utils';
 import { BotaoTeste } from './ctas';
 import { LinkEntrar } from './entrar';
 import { PainelDeExemplo } from './maquetes';
+import { PreferenciasCookies } from './pixels';
 
 /*
  * Landing completa (§95), toda do servidor: cabeçalho fixo, topo, para quem é, a rotina sem e com
@@ -163,13 +167,6 @@ export function Topo({ diasTeste }: { diasTeste: number }) {
   );
 }
 
-const SEGMENTOS = [
-  'Buffet infantil',
-  'Casamento e 15 anos',
-  'Eventos e corporativo',
-  'Buffet em domicílio',
-];
-
 /** 2. Para quem é: os tipos de buffet que já nascem com modelo pronto. */
 export function ParaQuem() {
   return (
@@ -179,12 +176,15 @@ export function ParaQuem() {
           Já vem com modelo pronto para
         </h2>
         <ul className="flex flex-wrap gap-2">
-          {SEGMENTOS.map((s) => (
-            <li
-              key={s}
-              className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold"
-            >
-              {s}
+          {/* cada tipo leva à página dele (§98): links internos para o Google */}
+          {PAGINAS_SEGMENTO.map((s) => (
+            <li key={s.chave}>
+              <Link
+                href={s.caminho}
+                className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-4 py-2 text-sm font-semibold transition-colors hover:border-[var(--ld-limao)]/60"
+              >
+                {s.rotulo}
+              </Link>
             </li>
           ))}
         </ul>
@@ -576,6 +576,10 @@ export function Rodape({ whatsappVendas }: { whatsappVendas: string | null }) {
       links: NAV.map(([href, rotulo]) => ({ href, rotulo })),
     },
     {
+      titulo: 'Para o seu buffet',
+      links: PAGINAS_SEGMENTO.map((s) => ({ href: s.caminho, rotulo: s.rotulo })),
+    },
+    {
       titulo: 'Conta',
       links: [
         { href: '/cadastro', rotulo: 'Testar grátis' },
@@ -604,7 +608,7 @@ export function Rodape({ whatsappVendas }: { whatsappVendas: string | null }) {
   return (
     <footer className="border-t border-white/10 px-5 pt-14 pb-8 text-sm">
       <div className="mx-auto max-w-6xl">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(4,1fr)]">
+        <div className="grid gap-10 md:grid-cols-3 lg:grid-cols-[1.4fr_repeat(5,1fr)]">
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-white/60">
@@ -637,9 +641,15 @@ export function Rodape({ whatsappVendas }: { whatsappVendas: string | null }) {
             </nav>
           ))}
         </div>
-        <p className="mt-10 border-t border-white/10 pt-6 text-xs text-white/50">
-          © {new Date().getFullYear()} Orkestra{razao ? ` · ${razao}` : ''}
-        </p>
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/50">
+          <p>
+            © {new Date().getFullYear()} Orkestra{razao ? ` · ${razao}` : ''}
+          </p>
+          {/* com os pixels ligados, o visitante muda a escolha dos cookies quando quiser (§98) */}
+          {algumPixel(idsPixels()) && (
+            <PreferenciasCookies className="min-h-11 underline-offset-4 hover:text-white hover:underline" />
+          )}
+        </div>
       </div>
     </footer>
   );

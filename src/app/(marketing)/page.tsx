@@ -21,6 +21,8 @@ import {
   duvidasDaLanding,
   itensDoPlanoNaLanding,
   jsonLdDuvidas,
+  jsonLdOrganizacao,
+  jsonLdSite,
   jsonLdSoftware,
   planoDaLanding,
   precoCurto,
@@ -31,11 +33,11 @@ import { carregarPrecosVitrine, exemploDaDemonstracao } from '@/server/marketing
 // Página estática, refeita a cada 5 min (preço em cache com a tag dos planos). Não toca no Auth.
 export const revalidate = 300;
 
-const DESCRICAO =
-  'Seu cliente monta o orçamento da festa sozinho, no link do seu buffet, e o pedido chega organizado no seu WhatsApp. Teste grátis por 14 dias, sem cartão.';
+// Título e descrição com o que o dono de buffet procura no Google ("sistema para buffet") (§98).
+const DESCRICAO = `Sistema para buffet: o cliente monta o orçamento sozinho no seu link e você cuida de agenda, proposta, contrato e pagamentos. Teste grátis por ${DIAS_TESTE_GRATIS} dias.`;
 
 export const metadata: Metadata = {
-  title: { absolute: 'Orkestra: seu cliente monta o orçamento sozinho' },
+  title: { absolute: 'Sistema para buffet de festas com orçamento online | Orkestra' },
   description: DESCRICAO,
   metadataBase: new URL(siteUrl()),
   alternates: { canonical: '/' },
@@ -73,6 +75,8 @@ export default async function Landing() {
   const jsonLd = [
     jsonLdSoftware({ url: siteUrl(), descricao: DESCRICAO, plano }),
     jsonLdDuvidas(duvidas),
+    jsonLdOrganizacao({ url: siteUrl(), email: process.env.NEXT_PUBLIC_EMAIL_CONTATO || null }),
+    jsonLdSite(siteUrl()),
   ];
 
   return (
