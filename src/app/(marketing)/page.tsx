@@ -8,7 +8,7 @@ import {
   ComoFunciona,
   Duvidas,
   PainelPorDentro,
-  FaixaFestas,
+  ParaQuem,
   Preco,
   Recursos,
   Rodape,
@@ -32,10 +32,10 @@ import { carregarPrecosVitrine, exemploDaDemonstracao } from '@/server/marketing
 export const revalidate = 300;
 
 const DESCRICAO =
-  'Feche mais eventos, aumente seu faturamento e trabalhe menos. O Orkestra é o sistema de vendas do buffet: link de orçamento, agenda, proposta, contrato e pagamentos. Teste grátis por 14 dias, sem cartão.';
+  'Seu cliente monta o orçamento da festa sozinho, no link do seu buffet, e o pedido chega organizado no seu WhatsApp. Teste grátis por 14 dias, sem cartão.';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Orkestra: feche mais eventos, aumente seu faturamento e trabalhe menos' },
+  title: { absolute: 'Orkestra: seu cliente monta o orçamento sozinho' },
   description: DESCRICAO,
   metadataBase: new URL(siteUrl()),
   alternates: { canonical: '/' },
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'pt_BR',
     siteName: 'Orkestra',
-    title: 'Feche mais eventos, aumente seu faturamento e trabalhe menos',
+    title: 'Seu cliente monta o orçamento sozinho.',
     description: DESCRICAO,
     url: '/',
   },
@@ -79,8 +79,8 @@ export default async function Landing() {
     <>
       <Cabecalho />
       <main>
-        <Topo />
-        <FaixaFestas />
+        <Topo diasTeste={DIAS_TESTE_GRATIS} />
+        <ParaQuem />
         <Rotina />
         <Demonstracao exemplo={exemplo} />
         <ComoFunciona />

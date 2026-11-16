@@ -530,30 +530,6 @@ dialog.lightbox::backdrop {
   line-height: 0.98;
   text-wrap: balance;
 }
-/* título do topo (§95.2): Jost, a fonte mais próxima da logo, em letras normais */
-.ld-hero {
-  font-family: var(--font-ld-hero), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.04;
-  text-wrap: balance;
-}
-
-/* faixa limão com os tipos de festa: rola para a esquerda (duas cópias da lista) */
-@keyframes ld-faixa {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .ld-faixa {
-    animation: ld-faixa 40s linear infinite;
-  }
-}
-
 /* a palavra de destaque: serifada e itálica (nos títulos, um pouco maior: text-[1.1em]) */
 .ld-serif {
   font-family: var(--font-ld-serif), Georgia, 'Times New Roman', serif;

@@ -1,4 +1,4 @@
-import { Bricolage_Grotesque, Instrument_Serif, Jost } from 'next/font/google';
+import { Bricolage_Grotesque, Instrument_Serif } from 'next/font/google';
 
 /*
  * Fontes da landing: só o peso e o estilo usados (títulos em Bricolage Grotesque ExtraBold e a
@@ -18,20 +18,12 @@ const serif = Instrument_Serif({
   variable: '--font-ld-serif',
 });
 
-// Título do topo (§95.2): Jost, geométrica e de traço uniforme, a mais próxima do desenho da logo
-const hero = Jost({
-  subsets: ['latin'],
-  weight: '500',
-  display: 'swap',
-  variable: '--font-ld-hero',
-});
-
 /** Landing: preto e off-white da marca (tokens de [data-landing] em globals.css). */
 export default function LayoutMarketing({ children }: { children: React.ReactNode }) {
   return (
     <div
       data-landing
-      className={`bg-background text-foreground min-h-dvh ${titulo.variable} ${serif.variable} ${hero.variable}`}
+      className={`bg-background text-foreground min-h-dvh ${titulo.variable} ${serif.variable}`}
     >
       {children}
     </div>

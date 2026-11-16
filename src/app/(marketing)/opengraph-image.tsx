@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { LOGOTIPO, svgDoLogotipo } from '@/components/marca/logotipo';
 
-export const alt = 'Orkestra: feche mais eventos, aumente seu faturamento e trabalhe menos';
+export const alt = 'Orkestra: seu cliente monta o orçamento sozinho.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -31,10 +31,10 @@ export default function Imagem() {
       />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
         <div style={{ fontSize: 64, fontWeight: 800, lineHeight: 1.08, letterSpacing: -1.5 }}>
-          Feche mais eventos, aumente seu faturamento e
+          Seu cliente monta o orçamento sozinho.
         </div>
-        <div style={{ fontSize: 64, color: '#C0F05A', fontWeight: 800, letterSpacing: -1.5 }}>
-          trabalhe menos
+        <div style={{ fontSize: 40, color: '#C0F05A', fontWeight: 700 }}>
+          E o pedido chega pronto no seu WhatsApp.
         </div>
       </div>
       <div style={{ fontSize: 28, opacity: 0.75 }}>

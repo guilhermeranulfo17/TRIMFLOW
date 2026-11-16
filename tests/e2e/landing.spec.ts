@@ -15,15 +15,11 @@ const normal = (s: string) => s.replace(/ /g, ' ');
 const ehEnvio = (metodo: string, url: string) =>
   metodo !== 'GET' && !url.includes('/api/landing/contar') && !url.includes('/api/prospeccao/');
 
-/** Leva a página até a demonstração (o topo só tem "Ver como funciona"). */
-async function rolarAteDemonstracao(page: Page) {
-  await page.getByTestId('demonstracao').scrollIntoViewIfNeeded();
-  await expect(page.getByTestId('demonstracao')).toBeInViewport();
-}
-
 async function irParaDemonstracao(page: Page) {
   await page.goto('/');
-  await rolarAteDemonstracao(page);
+  await page.getByTestId('ir-para-demonstracao').click();
+  await expect(page).toHaveURL(/#demonstracao$/);
+  await expect(page.getByTestId('demonstracao')).toBeInViewport();
 }
 
 test('é a landing (sem redirecionar), com todas as seções, e não chama o Auth', async ({
@@ -37,20 +33,18 @@ test('é a landing (sem redirecionar), com todas as seções, e não chama o Aut
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Seu cliente monta o orçamento sozinho.',
+  );
+  // o convite do topo leva a "Como funciona"
+  await expect(page.getByTestId('ver-como-funciona')).toHaveText(
     'Feche mais eventos, aumente seu faturamento e trabalhe menos',
   );
-  // as frases antigas saíram de vez (topo, título da página e descrição)
-  const html = await page.content();
-  expect(html).not.toMatch(/monta o orçamento sozinho|pedido chega pronto/i);
-  // um botão só no topo: "Ver como funciona", que desce até a seção
-  const topo = page.locator('main > section').first();
-  await expect(topo.getByRole('link')).toHaveCount(1);
-  await expect(topo.getByTestId('ver-como-funciona')).toHaveText('Ver como funciona');
-  await expect(topo.getByTestId('ver-como-funciona')).toHaveAttribute('href', '#como-funciona');
-  await expect(topo).not.toContainText(/Sem cartão|Cancele quando quiser/);
-  // faixa limão com os tipos de festa (nenhum nome de buffet)
-  await expect(page.getByTestId('faixa-festas')).toContainText('Buffet infantil');
-  // topo, faixa, rotina, demonstração, resultado, como funciona, recursos, painel, preço,
+  await expect(page.getByTestId('ver-como-funciona')).toHaveAttribute('href', '#como-funciona');
+  await expect(page.getByRole('link', { name: 'Montar um orçamento de exemplo' })).toHaveAttribute(
+    'href',
+    '#demonstracao',
+  );
+  // topo, para quem, rotina, demonstração, resultado, como funciona, recursos, painel, preço,
   // dúvidas e chamada final
   await expect(page.locator('main > section')).toHaveCount(11);
   for (const titulo of [
@@ -196,6 +190,7 @@ test('destinos: Entrar e os botões de teste; nenhum link quebrado', async ({ pa
   // todo botão de teste vai ao cadastro e conta como "Testar grátis"
   for (const nome of [
     'Testar grátis',
+    'Testar grátis por 14 dias',
     'Quero receber pedidos assim',
     'Começar meu teste grátis',
     'Quero isso com o nome do meu buffet',
@@ -330,7 +325,7 @@ test('link com ?r=: guarda o r, avisa que abriu a demonstração e que montou um
   expect(avisos).toHaveLength(1);
 
   // chegar ao resultado avisa uma vez (mesmo voltando e chegando de novo)
-  await rolarAteDemonstracao(page);
+  await page.getByTestId('ir-para-demonstracao').click();
   const demo = page.getByTestId('demonstracao');
   await demo.getByRole('button', { name: 'Continuar' }).click();
   await demo.getByRole('button', { name: 'Ver como o buffet recebe' }).click();
@@ -349,7 +344,7 @@ test('sem r (ou com r inválido), a landing não avisa nada', async ({ page, con
   const avisos = await vigiarProspeccao(page);
   for (const url of ['/', '/?r=123', '/?r=../leads']) {
     await page.goto(url);
-    await rolarAteDemonstracao(page);
+    await page.getByTestId('ir-para-demonstracao').click();
     const demo = page.getByTestId('demonstracao');
     await demo.getByRole('button', { name: 'Aumentar convidados' }).click();
     await demo.getByRole('button', { name: 'Continuar' }).click();

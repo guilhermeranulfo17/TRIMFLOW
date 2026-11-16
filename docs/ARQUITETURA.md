@@ -2277,29 +2277,6 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   (área útil do navegador): foto, texto, botões e a lista cabem na primeira tela. No celular a foto
   ficou com 29svh para o "Testar grátis" seguir na primeira tela com o selo em duas linhas.
 
-### 95.2 Topo novo: a frase é o título (novembro de 2026)
-
-- Correção do dono sobre o §95.1: "Feche mais eventos, aumente seu faturamento e trabalhe menos"
-  (sem ponto final) **é o título principal** (h1, "trabalhe menos" em limão), não um selo. As frases
-  "Seu cliente monta o orçamento sozinho." e "No link do seu buffet, com o seu preço. E o pedido
-  chega pronto no seu WhatsApp…" saíram do sistema inteiro (topo, título e descrição da página,
-  imagem de compartilhamento e o texto da tela do link); o E2E confere que não voltam.
-- O topo tem **um botão só**: "Ver como funciona" (`#como-funciona`). Saíram o "Testar grátis por
-  14 dias" do topo, o link "Montar um orçamento de exemplo" e a linha "Sem cartão · Implantação
-  assistida grátis · Cancele quando quiser". O "Testar grátis" continua no cabeçalho, no preço e
-  na chamada final.
-- **Fonte do título:** Jost 500 (Google Fonts, `next/font`, OFL), geométrica como a marca, só no
-  h1 do topo (`.ld-hero`); o resto da landing segue com Bricolage Grotesque e Instrument Serif.
-  Caixa normal (não maiúsculas) para a frase longa caber no celular.
-- **Faixa limão rolando para a esquerda** logo abaixo do topo (`FaixaFestas`), no lugar de "Já vem
-  com modelo pronto para…": **tipos de festa** (Buffet infantil, Casamento, 15 anos, Formatura…),
-  não nomes de buffet. Nomes fictícios de buffet passando na tela parecem clientes, e a landing não
-  mostra cliente, logo nem número inventado. Duas cópias da lista e `translateX(-50%)` em 40 s; com
-  `prefers-reduced-motion` fica parada. A segunda cópia é `aria-hidden`; um h2 só para leitor de
-  tela dá nome à seção. A seção "Para quem é" (cartões de segmento) saiu: a faixa faz esse papel.
-- Conferido de 1024×640 a 1920×950: foto, título e botão cabem na primeira tela. No celular (iPhone
-  SE, 13 e Pixel 7) o botão termina dentro da primeira tela, sem rolagem lateral.
-
 ## 97. Menu lateral recolhível (novembro de 2026)
 
 - Pedido do dono: no computador o menu lateral pode ficar **recolhido** (só os ícones, 88 px, o

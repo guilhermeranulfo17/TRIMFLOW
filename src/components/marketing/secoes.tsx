@@ -9,11 +9,11 @@ import {
   FileText,
   KanbanSquare,
   Link2,
-  Sparkle,
   MessageCircleQuestion,
   NotebookPen,
   Store,
   Timer,
+  TrendingUp,
   Wallet,
   X,
 } from 'lucide-react';
@@ -22,7 +22,7 @@ import { Logo } from '@/components/app/logo';
 import { IconeWhatsApp } from '@/components/publico/icone-whatsapp';
 import type { Duvida } from '@/domain/marketing';
 import { cn } from '@/lib/utils';
-import { BOTAO_LANDING, BotaoTeste } from './ctas';
+import { BotaoTeste } from './ctas';
 import { LinkEntrar } from './entrar';
 import { PainelDeExemplo } from './maquetes';
 
@@ -86,11 +86,11 @@ export function Cabecalho() {
 }
 
 /**
- * 1. Topo: a foto, a frase principal (fonte Jost, a mais próxima do desenho da logo) e um botão só,
- * "Ver como funciona". No computador e no notebook cabe inteiro na primeira tela: altura da
- * janela menos o cabeçalho, e título e espaços que encolhem com a altura (svh).
+ * 1. Topo: a foto, o convite para ver como funciona, a frase e os dois caminhos. No computador e
+ * no notebook o topo inteiro (foto, texto e botões) cabe na primeira tela: altura da janela menos
+ * o cabeçalho, e título e espaços que encolhem com a altura (svh).
  */
-export function Topo() {
+export function Topo({ diasTeste }: { diasTeste: number }) {
   return (
     <section
       className="relative isolate overflow-hidden md:flex md:min-h-[calc(100svh-4rem)] md:items-center"
@@ -98,7 +98,7 @@ export function Topo() {
     >
       {/* No celular a foto fica em cima (recorte na pessoa); no computador vira o fundo do
           topo, escurecido à esquerda para o texto. Gerada em 640, 1024 e 1672 px (sem otimizador). */}
-      <div className="relative h-[42svh] min-h-64 md:absolute md:inset-0 md:h-auto">
+      <div className="relative h-[29svh] min-h-48 md:absolute md:inset-0 md:h-auto">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/landing/topo-1024.webp"
@@ -117,75 +117,77 @@ export function Topo() {
           className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/25 to-transparent md:bg-gradient-to-r md:from-[#0a0a0a] md:via-[#0a0a0a]/85 md:to-[#0a0a0a]/5"
         />
       </div>
-      <div className="relative mx-auto w-full max-w-6xl px-5 pb-14 md:px-8 md:py-[clamp(1.5rem,6svh,5rem)]">
-        <div className="-mt-14 md:mt-0 md:max-w-xl lg:max-w-2xl">
-          <h1
-            id="titulo-topo"
-            className="ld-hero text-[clamp(2.4rem,10.5vw,5rem)] md:text-[clamp(2.6rem,min(5.8vw,9.5svh),5rem)]"
-          >
-            Feche mais eventos, aumente seu faturamento e{' '}
-            <span className="text-[var(--ld-limao)]">trabalhe menos</span>
-          </h1>
+      <div className="relative mx-auto w-full max-w-6xl px-5 pb-16 md:px-8 md:py-[clamp(1.5rem,6svh,5rem)]">
+        <div className="-mt-12 md:mt-0 md:max-w-xl lg:max-w-2xl">
           <a
             href="#como-funciona"
-            className={`${BOTAO_LANDING} ld-subir mt-8 w-full max-w-md [--i:1] md:mt-[clamp(1.25rem,5svh,2.75rem)] md:w-auto`}
+            className="ld-subir inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/20 bg-[#0a0a0a]/60 px-4 py-2 text-sm font-semibold text-white/90 backdrop-blur transition-colors hover:border-[var(--ld-limao)]/60 hover:text-white md:rounded-full"
             data-testid="ver-como-funciona"
           >
-            <span>Ver como funciona</span>
-            <ArrowDown className="size-5 shrink-0" aria-hidden />
+            <TrendingUp className="size-4 shrink-0 text-[var(--ld-limao)]" aria-hidden />
+            Feche mais eventos, aumente seu faturamento e trabalhe menos
           </a>
+          <h1
+            id="titulo-topo"
+            className="ld-titulo mt-4 text-[clamp(2.9rem,11vw,5.5rem)] md:mt-[clamp(1rem,3svh,1.5rem)] md:text-[clamp(2.75rem,min(6.4vw,9.5svh),5.5rem)]"
+          >
+            Seu cliente monta o orçamento{' '}
+            <span className="ld-serif text-[1.1em] text-[var(--ld-limao)]">sozinho</span>.
+          </h1>
+          <p className="ld-subir mt-4 max-w-lg text-lg text-white/80 [--i:1] md:mt-[clamp(0.75rem,2.5svh,1.5rem)] md:text-xl">
+            No link do seu buffet, com o seu preço. E o pedido chega pronto no seu WhatsApp, com
+            data, convidados e valor.
+          </p>
+          <div className="ld-subir mt-6 flex max-w-md flex-col gap-3 [--i:2] md:mt-[clamp(1rem,4svh,2.25rem)] lg:max-w-none lg:flex-row">
+            <BotaoTeste className="w-full lg:w-auto">Testar grátis por {diasTeste} dias</BotaoTeste>
+            <a
+              href="#demonstracao"
+              className="inline-flex min-h-14 items-center justify-between gap-4 rounded-[1.75rem] border border-white/25 bg-[#0a0a0a]/40 px-6 py-4 text-base font-bold text-white backdrop-blur transition-colors hover:bg-white/10 lg:w-auto"
+              data-testid="ir-para-demonstracao"
+            >
+              <span>Montar um orçamento de exemplo</span>
+              <ArrowDown className="size-5 shrink-0" aria-hidden />
+            </a>
+          </div>
+          <ul className="ld-subir mt-5 flex flex-wrap gap-x-5 gap-y-1 text-sm text-white/70 [--i:3] md:mt-[clamp(0.75rem,2.5svh,1.25rem)]">
+            {['Sem cartão', 'Implantação assistida grátis', 'Cancele quando quiser'].map((t) => (
+              <li key={t} className="flex items-center gap-1.5">
+                <Check className="size-4 text-[var(--ld-limao)]" aria-hidden />
+                {t}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>
   );
 }
 
-/** Tipos de festa que passam na faixa limão (só tipos de festa: nada de nome de buffet). */
-const TIPOS_DE_FESTA = [
+const SEGMENTOS = [
   'Buffet infantil',
-  'Casamento',
-  '15 anos',
-  'Formatura',
-  'Eventos corporativos',
+  'Casamento e 15 anos',
+  'Eventos e corporativo',
   'Buffet em domicílio',
-  'Chá revelação',
-  'Bodas',
-  'Batizado',
-  'Aniversário adulto',
-  'Confraternização',
-  'Festa junina',
 ];
 
-/**
- * 2. Faixa limão com os tipos de festa rolando para a esquerda, sem parar (duas cópias da lista,
- * a segunda só para a emenda; leitor de tela lê uma vez). Com "reduzir movimento", fica parada.
- */
-export function FaixaFestas() {
-  const lista = (copia: boolean) => (
-    <ul
-      className="flex shrink-0 items-center gap-8 pr-8"
-      aria-hidden={copia || undefined}
-      data-testid={copia ? undefined : 'faixa-festas'}
-    >
-      {TIPOS_DE_FESTA.map((t) => (
-        <li key={t} className="flex items-center gap-8 whitespace-nowrap">
-          <span>{t}</span>
-          <Sparkle className="size-4 shrink-0" aria-hidden />
-        </li>
-      ))}
-    </ul>
-  );
+/** 2. Para quem é: os tipos de buffet que já nascem com modelo pronto. */
+export function ParaQuem() {
   return (
-    <section
-      className="overflow-hidden bg-[var(--ld-limao)] py-4 text-[#0a0a0a] md:py-5"
-      aria-labelledby="titulo-faixa"
-    >
-      <h2 id="titulo-faixa" className="sr-only">
-        Para todo tipo de festa
-      </h2>
-      <div className="ld-faixa flex w-max text-lg font-bold md:text-xl">
-        {lista(false)}
-        {lista(true)}
+    <section className="border-y border-white/10 px-5 py-8" aria-labelledby="titulo-para-quem">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <h2 id="titulo-para-quem" className="text-sm font-semibold text-white/60">
+          Já vem com modelo pronto para
+        </h2>
+        <ul className="flex flex-wrap gap-2">
+          {SEGMENTOS.map((s) => (
+            <li
+              key={s}
+              className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold"
+            >
+              {s}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

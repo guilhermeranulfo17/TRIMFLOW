@@ -54,7 +54,7 @@ export default async function PaginaLink() {
       <section className="bg-card rounded-card border p-4 sm:p-5">
         <h2 className="text-lg font-bold">Seu link</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Divulgue este endereço: o cliente escolhe a festa, vê o preço e você recebe o lead aqui.
+          Divulgue este endereço: o cliente monta o orçamento sozinho e você recebe o lead aqui.
         </p>
         <div className="mt-3">
           <LinhaDoLink link={base} principal />
