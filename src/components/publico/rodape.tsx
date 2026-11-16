@@ -20,12 +20,19 @@ export function RodapePublico({ comEspaco = false }: { comEspaco?: boolean }) {
           Termos de uso
         </Link>
       </nav>
-      <p className="flex items-center gap-1.5">
+      {/* leva ao site do Orkestra (§98): o ref marca a origem de quem se cadastra pela vitrine */}
+      <Link
+        href="/?ref=vitrine"
+        // nova aba: na prévia do editor (iframe) o site do Orkestra não abre dentro do quadro
+        target="_blank"
+        className="hover:text-foreground flex min-h-6 items-center gap-1.5"
+        data-testid="feito-com-orkestra"
+      >
         Feito com
         <span className="rounded-full bg-[#161616] px-2 py-0.5 font-bold text-[#B2F759]">
           Orkestra
         </span>
-      </p>
+      </Link>
     </footer>
   );
 }
