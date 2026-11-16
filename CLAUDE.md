@@ -35,7 +35,8 @@ src/
     (auth)/          login (+ verificacao: código da MFA), cadastro (+ completar, para quem entrou
                      pelo Google), recuperar-senha, nova-senha; layout dividido no PC
     (aceite)/app/aceite/  aceite dos Termos e da Privacidade novos (Etapa 9B)
-    (marketing)/     landing em `/` (§95): página de vendas estática completa, imagem de compartilhamento
+    (marketing)/     landing em `/` (§95): página de vendas estática completa, imagem de compartilhamento;
+                     páginas por tipo de buffet `/sistema-para-buffet-*` (§98, SEO)
     (onboarding)/app/comecar/  onboarding guiado: conversa por padrão (§91) ou 5 passos em formulário
     (app)/app/       área logada: leads (Início: funil por padrão ou Lista, §89) e leads/[id] (detalhe com ações), tarefas, agenda
                      (lista/calendário/painel do dia), numeros, empresa, orcamentos (novo,
@@ -322,7 +323,10 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   ilustrativo"). Só o que o
   produto faz hoje (textos das dúvidas e do plano em `domain/marketing/landing`). Um preço só, de
   `publico.planos_vitrine` (a mensalidade do plano do teste; nunca valor fixo no código; sem preço
-  de fundador); quem mudar plano invalida a tag `planos-vitrine`. Nada de depoimento, logo de
+  de fundador); quem mudar plano invalida a tag `planos-vitrine`. **SEO (§98):** páginas por tipo
+  de buffet com texto próprio em `domain/marketing/segmentos` (nova entra em `PAGINAS_ESTATICAS`,
+  no sitemap e no rodapé); pixels (GA4, Meta) só em `rotaComPixels`, só depois do "Aceitar" do
+  aviso de cookies, nunca no painel nem na vitrine, e a conversão do cadastro sem dado pessoal. Nada de depoimento, logo de
   cliente, nota ou número inventado. A demonstração desenha os passos reais do link público
   (`passo-pacote`, `passo-extras`) com o `montarPrevia` do domínio e preços fictícios, no
   navegador, sem enviar nada. Identidade só da landing: limão `#C0F05A`, verde `#6FD36A`, verde
@@ -514,7 +518,10 @@ Sem Docker, a integração roda num Postgres puro com shim do schema `auth`:
   GitHub: `BACKUP_SENHA` (workflow de backup, `docs/BACKUP.md`). Desde a Etapa 10:
   `CONTRATOS_CHAVE` (secreta, obrigatória para o cliente assinar; mesma em Production e Preview;
   guardar cópia fora da Vercel). Desde o rastreio da prospecção (§81): `CRM_PROSPECCAO_TOKEN`
-  (secreta; sem ela, o rastreio fica desligado) e `CRM_PROSPECCAO_URL` (opcional). **Roteiro do lançamento, na
+  (secreta; sem ela, o rastreio fica desligado) e `CRM_PROSPECCAO_URL` (opcional). Desde o SEO
+  (§98, todas opcionais): `NEXT_PUBLIC_GA4_ID`, `NEXT_PUBLIC_META_PIXEL_ID` (pixels, só com aviso
+  de cookies e a Privacidade revisada), `GOOGLE_SITE_VERIFICATION` e `META_DOMAIN_VERIFICATION`;
+  passo a passo em `docs/SEO_E_PIXELS.md`. **Roteiro do lançamento, na
   ordem:** `docs/LANCAMENTO.md`.
   - O schema `publico` **não** pode entrar em Settings → API → Exposed schemas do Supabase.
   - Nunca rode o seed nem comandos manuais no banco de produção.

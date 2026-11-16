@@ -2287,3 +2287,59 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   um ano) gravado por `definirMenuRecolhido` e lido no servidor (`lerMenuRecolhido`) para o layout
   já sair do jeito certo, sem piscar. Regra em `menuRecolhido` (`domain/tema`, com teste). No
   celular nada muda (a barra de baixo).
+
+## 98. SEO e pixels de anúncio (novembro de 2026)
+
+- **Pedido do dono:** o site aparecer melhor no Google e ter os pixels dos anúncios.
+- **Títulos com a busca:** a landing passa a se chamar "Sistema para buffet de festas com
+  orçamento online | Orkestra" no Google (até 60 caracteres) e a descrição começa por "Sistema
+  para buffet" (até 160). O texto visível da landing não muda; a imagem de compartilhamento
+  continua a mesma.
+- **Páginas por tipo de buffet:** `/sistema-para-buffet-infantil`, `-de-casamento`
+  (casamento e 15 anos), `-de-eventos` (eventos, formatura e corporativo) e `-em-domicilio`.
+  - Cada uma tem título, descrição, h1, abertura, quatro recursos e dúvidas próprios
+    (`domain/marketing/segmentos`, só o que o produto faz hoje). O resto reaproveita as seções
+    da landing: rotina, como funciona, recursos, preço, dúvidas e chamada final.
+  - São estáticas como a landing (`PAGINAS_ESTATICAS`), ficam fora da sessão no middleware e
+    entram no sitemap.
+  - A imagem de compartilhamento é a da landing, reexportada em cada pasta: um `openGraph`
+    próprio não herda a imagem do segmento pai.
+  - Links internos: as pílulas "Já vem com modelo pronto para" da landing e a coluna "Para o seu
+    buffet" do rodapé levam a essas páginas.
+- **Dados estruturados:** a landing ganha `Organization` e `WebSite`, além de
+  `SoftwareApplication` e `FAQPage`. As páginas por tipo levam `SoftwareApplication`, `FAQPage`
+  (com as dúvidas do tipo e as gerais) e `BreadcrumbList`.
+- **Vitrine (`/b/slug`):**
+  - Sem frase do buffet, o título leva a cidade ("Buffet Alegria em Uberlândia, MG"), e a
+    descrição também (`domain/publico/seo`).
+  - A demonstração e as contas de apresentação (`apresentacao-*`) saem do Google (`noindex`).
+  - O "Feito com Orkestra" do rodapé vira link para o site (`/?ref=vitrine`, nova aba: a prévia
+    do editor é um iframe).
+  - As vitrines ainda não entram no sitemap: listar os slugs pede uma função nova no schema
+    `publico` (anotado em PROXIMOS_PASSOS).
+- **Verificação do domínio:** `GOOGLE_SITE_VERIFICATION` (Search Console) e
+  `META_DOMAIN_VERIFICATION` (Gerenciador de Negócios) viram as metatags do layout raiz.
+  Opcionais; sem elas, nada é desenhado.
+- **Pixels:** GA4 (`NEXT_PUBLIC_GA4_ID`, "G-...") e Pixel da Meta (`NEXT_PUBLIC_META_PIXEL_ID`).
+  - Desligados sem o id. Ids lidos por extenso, porque o Next embute o `NEXT_PUBLIC_` no build:
+    mudar o id pede um novo deploy.
+  - Só carregam onde se vende (`rotaComPixels`): landing, páginas por tipo e `/cadastro`.
+    Nunca no painel, na vitrine do buffet, no login nem nas páginas legais.
+  - **Consentimento (LGPD):** com algum id configurado, aparece o aviso "Usamos cookies do Google
+    e da Meta…", com Recusar e Aceitar. Nada de fora carrega antes do "Aceitar".
+    - A escolha fica no cookie `orkestra_cookies` (um ano).
+    - O rodapé da landing tem "Preferências de cookies", que apaga a escolha e mostra o aviso de
+      novo.
+  - **CSP:** o middleware só acrescenta as origens do Google e da Meta nas rotas com pixel e só
+    com o id ligado. Nas páginas com nonce, o `'strict-dynamic'` já deixa passar o script criado
+    pelo site; nas estáticas, vale a lista de origens.
+  - **Meta:** `autoConfig` desligado, então o pixel não captura cliques nem campos de formulário
+    sozinho. Só vão o `PageView` e a conversão.
+  - **Conversão do cadastro:** `cadastrar` e `completarConta` gravam o cookie curto
+    `orkestra_conversao=cadastro` (10 min). A primeira tela do onboarding (`/app/comecar`)
+    dispara `sign_up` (GA4) e `CompleteRegistration` (Meta) uma vez, sem PageView e sem dado
+    pessoal, e só se o visitante aceitou os cookies. Depois apaga o cookie.
+- **Pendente (jurídico):** a Política de Privacidade ainda não fala de cookies de terceiros na
+  landing. Antes de ligar os ids em produção, o advogado inclui a seção de cookies (Google e
+  Meta, finalidade, prazo, como recusar), e `VERSAO_DOCUMENTOS` sobe. Passo a passo em
+  `docs/SEO_E_PIXELS.md`.
