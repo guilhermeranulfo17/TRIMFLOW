@@ -268,7 +268,7 @@ describe('contratar, pagar e cancelar (mensal)', () => {
         );
         expect(await acesso(e.empresaId, 'orkmargem')).toBe(true);
         // passou o período: expirado, sem acesso, histórico guardado
-        await sql`update public.modulo_assinaturas set pago_ate = current_date - 1 where empresa_id = ${e.empresaId}`;
+        await sql`update public.modulo_assinaturas set pago_ate = (now() at time zone 'America/Sao_Paulo')::date - 1 where empresa_id = ${e.empresaId}`;
         expect((await situacaoDoPainel(e.donoId, 'orkmargem')).situacao).toBe('expirado');
         expect(await acesso(e.empresaId, 'orkmargem')).toBe(false);
         expect(

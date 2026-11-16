@@ -35,7 +35,11 @@ test('é a landing (sem redirecionar), com todas as seções, e não chama o Aut
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Seu cliente monta o orçamento sozinho.',
   );
-  await expect(page.getByText('Para buffets de festa')).toBeVisible();
+  // o convite do topo leva a "Como funciona"
+  await expect(page.getByTestId('ver-como-funciona')).toHaveText(
+    'Feche mais eventos, aumente seu faturamento e trabalhe menos',
+  );
+  await expect(page.getByTestId('ver-como-funciona')).toHaveAttribute('href', '#como-funciona');
   await expect(page.getByRole('link', { name: 'Montar um orçamento de exemplo' })).toHaveAttribute(
     'href',
     '#demonstracao',
@@ -259,7 +263,15 @@ test('nada inventado e nenhum travessão na página', async ({ page }) => {
   // o exemplo é identificado como exemplo
   await expect(page.getByText(/Valores fictícios/)).toBeVisible();
   await expect(page.getByText('Exemplo ilustrativo')).toBeVisible();
-  await expect(page.locator('img, video')).toHaveCount(0);
+  // uma imagem só: a foto do topo (com texto alternativo); nenhum vídeo
+  await expect(page.locator('video')).toHaveCount(0);
+  await expect(page.locator('img')).toHaveCount(1);
+  await expect(page.getByTestId('foto-topo')).toHaveAttribute('alt', /avental do Orkestra/);
+  expect(
+    await page
+      .getByTestId('foto-topo')
+      .evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0),
+  ).toBe(true);
 });
 
 test('dúvidas abrem sem JavaScript e viram FAQPage para o Google', async ({ page }) => {

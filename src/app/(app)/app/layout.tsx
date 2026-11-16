@@ -20,10 +20,15 @@ import { FaixaSuporte } from '@/components/app/plano/faixa-suporte';
 import { precisaAceitarTermos } from '@/domain/legal/versao';
 import { exigirSessao } from '@/server/auth/sessao';
 import { lerTema } from '@/server/tema/ler';
+import { lerMenuRecolhido } from '@/server/tema/menu';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // só a identidade bloqueia (redirect); badges, sino e faixas chegam por Suspense
-  const [usuario, tema] = await Promise.all([exigirSessao(), lerTema()]);
+  const [usuario, tema, menuRecolhido] = await Promise.all([
+    exigirSessao(),
+    lerTema(),
+    lerMenuRecolhido(),
+  ]);
   // Termos e Privacidade novos: o dono aceita antes de usar (não no modo suporte)
   if (precisaAceitarTermos(usuario.perfil, usuario.termosVersao) && !usuario.suporte) {
     redirect('/app/aceite');
@@ -34,8 +39,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <ProvedorToast>
         {/* data-painel + data-tema escolhem os tokens do painel (globals.css, ARQUITETURA §59) */}
         <div className="flex min-h-dvh" data-painel data-tema={tema}>
-          <Suspense fallback={<Sidebar dono={usuario.perfil === 'dono'} />}>
-            <SidebarComBadges usuario={usuario} />
+          <Suspense
+            fallback={<Sidebar dono={usuario.perfil === 'dono'} recolhido={menuRecolhido} />}
+          >
+            <SidebarComBadges usuario={usuario} recolhido={menuRecolhido} />
           </Suspense>
           <div className="flex min-w-0 flex-1 flex-col">
             {usuario.suporte && (

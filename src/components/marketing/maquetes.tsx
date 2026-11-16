@@ -1,10 +1,9 @@
-import { CalendarDays, Check, Flame, MessageCircle, Users } from 'lucide-react';
-import { IconeWhatsApp } from '@/components/publico/icone-whatsapp';
+import { Flame, MessageCircle } from 'lucide-react';
 import { ROTULO_ETAPA } from '@/domain/leads/funil';
 import { cn } from '@/lib/utils';
 
 /*
- * Maquetes da landing (§95): desenhos em HTML e CSS do link público e do painel, não capturas.
+ * Maquete da landing (§95): desenho em HTML e CSS do painel, não captura.
  * Só dados fictícios (primeiro nome, sem telefone), marcados com `data-exemplo` e a etiqueta
  * "Exemplo ilustrativo". Os valores são os mesmos do Buffet Exemplo da demonstração.
  */
@@ -19,62 +18,6 @@ export function EtiquetaExemplo({ className }: { className?: string }) {
     >
       Exemplo ilustrativo
     </span>
-  );
-}
-
-/** O link do buffet no celular, com o aviso do pedido chegando por cima. */
-export function CelularDoLink() {
-  return (
-    <div className="relative mx-auto w-full max-w-[19rem]" data-exemplo aria-hidden>
-      <div className="rounded-[2.6rem] border border-white/15 bg-[#151815] p-2.5 shadow-[0_50px_120px_-50px_rgb(192_240_90/0.45)]">
-        <div className="overflow-hidden rounded-[2.1rem] bg-white text-[#0a0a0a]">
-          <div className="bg-[#0f766e] px-5 pt-6 pb-5 text-white">
-            <div className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-full bg-white/20 text-sm font-bold">
-                BE
-              </span>
-              <div>
-                <p className="text-sm font-bold">Buffet Exemplo</p>
-                <p className="text-xs text-white/80">Festas infantis</p>
-              </div>
-            </div>
-            <p className="mt-4 text-lg leading-tight font-bold">Monte o orçamento da sua festa</p>
-          </div>
-          <div className="space-y-2.5 px-4 pt-4 pb-20">
-            <p className="flex items-center gap-2 text-xs text-black/60">
-              <CalendarDays className="size-3.5" />
-              Sáb, 19/12 · Tarde
-              <Users className="ml-2 size-3.5" />
-              50 convidados
-            </p>
-            <div className="rounded-xl border border-black/10 p-3">
-              <p className="text-sm font-bold">Alegria</p>
-              <p className="text-sm font-semibold text-[#0f766e]">R$ 4.290,00</p>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border-2 border-[#0f766e] bg-[#0f766e]/5 p-3">
-              <div>
-                <p className="text-sm font-bold">Super</p>
-                <p className="text-sm font-semibold text-[#0f766e]">R$ 4.950,00</p>
-              </div>
-              <Check className="size-4 text-[#0f766e]" />
-            </div>
-            <div className="rounded-xl bg-[#0f766e] py-2.5 text-center text-sm font-bold text-white">
-              Pedir pré-reserva
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="absolute -right-2 bottom-4 w-[15.5rem] rounded-2xl border border-white/10 bg-[#1c221c]/95 p-3 text-white shadow-2xl backdrop-blur sm:-right-10">
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--ld-verde)]">
-          <IconeWhatsApp className="size-4" />
-          WhatsApp · agora
-        </p>
-        <p className="mt-1.5 text-xs font-bold text-[var(--ld-limao)]">
-          Nova pré-reserva pelo link
-        </p>
-        <p className="text-sm font-bold">Mariana · R$ 4.950,00</p>
-      </div>
-    </div>
   );
 }
 

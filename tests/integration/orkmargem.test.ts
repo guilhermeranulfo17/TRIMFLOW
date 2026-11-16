@@ -140,7 +140,7 @@ describe('OrkMargem', () => {
 
         // módulo encerrado: o histórico continua visível, mas nada novo é gravado
         await tx`reset role`;
-        await tx`update public.modulo_assinaturas set status = 'cancelada', pago_ate = current_date - 1
+        await tx`update public.modulo_assinaturas set status = 'cancelada', pago_ate = (now() at time zone 'America/Sao_Paulo')::date - 1
           where empresa_id = ${e.empresaId}`;
         await assumirUsuario(tx, e.donoId);
         expect(

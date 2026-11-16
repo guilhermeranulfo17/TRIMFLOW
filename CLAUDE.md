@@ -317,7 +317,9 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   Auth). Página completa (§95): cabeçalho fixo com "Testar grátis", topo, para quem é, rotina,
   demonstração e resultado, como funciona, recursos, painel por dentro, preço com o que inclui,
   dúvidas (também em JSON-LD FAQPage), chamada final e rodapé; sem travessão, feita para o
-  celular, sem imagem (maquetes em HTML com `data-exemplo` e "Exemplo ilustrativo"). Só o que o
+  celular; uma foto só, a do topo (`public/landing/topo-{640,1024,1672}.webp`, sem otimizador:
+  os tamanhos são gerados antes), e a maquete do painel em HTML (`data-exemplo`, "Exemplo
+  ilustrativo"). Só o que o
   produto faz hoje (textos das dúvidas e do plano em `domain/marketing/landing`). Um preço só, de
   `publico.planos_vitrine` (a mensalidade do plano do teste; nunca valor fixo no código; sem preço
   de fundador); quem mudar plano invalida a tag `planos-vitrine`. Nada de depoimento, logo de

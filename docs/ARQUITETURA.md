@@ -2259,3 +2259,31 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   "Calcular a quantidade pelo número de convidados" (por unidade) e faixas por pessoa (por
   pessoa). Pendências do link: no "só itens" pede item vendável com preço confirmado (ou faixas
   da festa), `SEM_ITEM_COM_PRECO`; no "os dois", basta um jeito funcionar.
+
+### 95.1 Foto no topo da landing (novembro de 2026)
+
+- Pedido do dono: a foto da mulher de avental do Orkestra conferindo o celular num salão de buffet
+  é o topo da landing. No celular ela fica em cima (34svh, recorte na pessoa) e o texto começa
+  sobre o fim dela, para o "Testar grátis" aparecer na primeira tela; no computador vira o fundo
+  do topo, escurecido à esquerda para o texto. A maquete do celular saiu do topo.
+- `next.config` usa `images.unoptimized`: os tamanhos (640, 1024 e 1672 px, WEBP qualidade 72,
+  26 a 87 KB) são gerados com o `sharp` e vão em `public/landing/topo-*.webp`, com `srcSet`,
+  `sizes`, largura e altura (sem pulo de layout) e `fetchPriority="high"`. O E2E confere que é a
+  única imagem da página e que tem texto alternativo.
+- **Convite e notebook (pedido do dono):** o selo do topo virou o link "ver como funciona"
+  (`#como-funciona`) com "Feche mais eventos, aumente seu faturamento e trabalhe menos". No
+  computador o topo tem a altura da janela menos o cabeçalho e o título e os espaços encolhem com a
+  altura (`svh`); os botões ficam lado a lado a partir de `lg`. Conferido de 1024×640 a 1920×950
+  (área útil do navegador): foto, texto, botões e a lista cabem na primeira tela. No celular a foto
+  ficou com 29svh para o "Testar grátis" seguir na primeira tela com o selo em duas linhas.
+
+## 97. Menu lateral recolhível (novembro de 2026)
+
+- Pedido do dono: no computador o menu lateral pode ficar **recolhido** (só os ícones, 88 px, o
+  símbolo da marca no lugar do nome, os números de pendência no canto do ícone e o nome numa dica
+  ao passar o mouse) ou **aberto** (ícones e nomes, como antes). O botão fica no rodapé do menu
+  ("Recolher menu" / "Abrir o menu").
+- A escolha é do aparelho, como o tema: cookie `orkestra_menu` (`recolhido` | `aberto`, httpOnly,
+  um ano) gravado por `definirMenuRecolhido` e lido no servidor (`lerMenuRecolhido`) para o layout
+  já sair do jeito certo, sem piscar. Regra em `menuRecolhido` (`domain/tema`, com teste). No
+  celular nada muda (a barra de baixo).
