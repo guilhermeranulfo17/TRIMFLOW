@@ -2,6 +2,12 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { COOKIE_DEMO, demoVencida, ehSessaoDemo } from '@/domain/auth/demo';
 import { precisaSegundoFator } from '@/domain/auth/mfa';
+import {
+  algumPixel,
+  idsDosPixels,
+  origensDosPixels,
+  rotaComPixels,
+} from '@/domain/marketing/pixels';
 import { redirecionamentoDeDominio } from '@/domain/seguranca/dominio';
 import {
   cabecalhosFixos,
@@ -29,6 +35,12 @@ import {
  *    - usuário logado em /login ou /cadastro vai para /app/leads
  *    - usuário com senha temporária (app_metadata.trocar_senha) vai para /nova-senha
  */
+// Ids lidos um a um: o Next só embute no build o NEXT_PUBLIC_ escrito por extenso.
+const PIXELS = idsDosPixels({
+  NEXT_PUBLIC_GA4_ID: process.env.NEXT_PUBLIC_GA4_ID,
+  NEXT_PUBLIC_META_PIXEL_ID: process.env.NEXT_PUBLIC_META_PIXEL_ID,
+});
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   // 0. Domínio antigo → domínio de NEXT_PUBLIC_SITE_URL (308, mesmo caminho e query)
@@ -50,6 +62,7 @@ export async function middleware(request: NextRequest) {
     sentry: origemDoSentry(process.env.NEXT_PUBLIC_SENTRY_DSN),
     desenvolvimento: process.env.NODE_ENV === 'development',
     https: request.nextUrl.protocol === 'https:',
+    pixels: rotaComPixels(pathname) && algumPixel(PIXELS) ? origensDosPixels(PIXELS) : null,
   });
   const idRequisicao = request.headers.get('x-vercel-id') ?? crypto.randomUUID();
 
@@ -159,6 +172,7 @@ export function usaSessao(pathname: string): boolean {
   return !(
     pathname === '/' ||
     pathname === '/opengraph-image' ||
+    pathname.startsWith('/sistema-para-') ||
     pathname.startsWith('/b/') ||
     pathname.startsWith('/api/landing/') ||
     pathname.startsWith('/api/prospeccao/') ||

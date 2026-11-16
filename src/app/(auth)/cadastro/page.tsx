@@ -3,8 +3,10 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BotaoGoogle, DivisorOu } from '@/components/auth/botao-google';
 import { CapturaProspeccao } from '@/components/marketing/prospeccao';
+import { Pixels } from '@/components/marketing/pixels';
 import { CapturaOrigem } from '@/components/marketing/rastreio';
 import { loginGoogleLigado } from '@/lib/login-google';
+import { idsPixels } from '@/server/env';
 import { FormCadastro } from './form-cadastro';
 
 export const metadata: Metadata = { title: 'Criar conta' };
@@ -50,6 +52,8 @@ export default async function CadastroPage({
         <CapturaOrigem />
         {/* link da prospecção direto para o cadastro (?r=): guarda o r também aqui */}
         <CapturaProspeccao />
+        {/* pixels de anúncio (§98): só depois do aceite dos cookies */}
+        <Pixels ids={idsPixels()} />
         {loginGoogleLigado() && (
           <>
             <BotaoGoogle next="/app/comecar" />
