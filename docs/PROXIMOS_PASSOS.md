@@ -376,3 +376,14 @@ nova depois das decisões abaixo (o código já recusa módulo não implementado
 O dono vai mandar uma imagem para cada solução, para ficar no canto direito do cartão no lugar
 da etiqueta atual. Quando chegarem: `public/solucoes/<codigo>.webp`, sem fundo claro fixo no
 tema escuro, e a etiqueta passa para junto do nome.
+
+## SEO e pixels (§98)
+
+- **Vitrines no sitemap:** função `publico.vitrines_indexaveis()` (só `anon`, sem demo,
+  apresentação, conta suspensa ou cancelada, e com preço confirmado) e o `sitemap.ts` listando os
+  `/b/slug`. Hoje o Google acha as vitrines pelos links que os buffets divulgam.
+- **Política de cookies:** seção da Privacidade sobre os pixels da landing, escrita pelo
+  advogado, antes de ligar `NEXT_PUBLIC_GA4_ID`/`NEXT_PUBLIC_META_PIXEL_ID` em produção.
+- **API de Conversões da Meta** (servidor) e conversões do Google Ads, se os anúncios pedirem.
+- **Conteúdo:** artigos ("como montar orçamento de buffet", "preço de buffet infantil por
+  pessoa") e páginas por cidade, só quando houver texto de verdade para elas.

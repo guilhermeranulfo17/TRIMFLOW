@@ -1,4 +1,6 @@
 import { Bricolage_Grotesque, Instrument_Serif } from 'next/font/google';
+import { Pixels } from '@/components/marketing/pixels';
+import { idsPixels } from '@/server/env';
 
 /*
  * Fontes da landing: só o peso e o estilo usados (títulos em Bricolage Grotesque ExtraBold e a
@@ -26,6 +28,8 @@ export default function LayoutMarketing({ children }: { children: React.ReactNod
       className={`bg-background text-foreground min-h-dvh ${titulo.variable} ${serif.variable}`}
     >
       {children}
+      {/* pixels de anúncio (§98): aviso de cookies e, com o aceite, GA4 e Meta */}
+      <Pixels ids={idsPixels()} />
     </div>
   );
 }

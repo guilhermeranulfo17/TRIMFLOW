@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { idsDosPixels, type IdsPixels } from '@/domain/marketing/pixels';
 
 /**
  * Leitura centralizada de variáveis de ambiente.
@@ -134,4 +135,15 @@ export function chaveContratos(): Buffer | null {
 /** Endereço da API do Resend. RESEND_API_URL só existe para os testes (API falsa do E2E). */
 export function urlResend(): string {
   return process.env.RESEND_API_URL?.trim() || 'https://api.resend.com/emails';
+}
+
+/**
+ * Ids dos pixels da landing (§98). Lidos um a um: o Next só embute no build o NEXT_PUBLIC_
+ * escrito por extenso. Sem id, o pixel fica desligado.
+ */
+export function idsPixels(): IdsPixels {
+  return idsDosPixels({
+    NEXT_PUBLIC_GA4_ID: process.env.NEXT_PUBLIC_GA4_ID,
+    NEXT_PUBLIC_META_PIXEL_ID: process.env.NEXT_PUBLIC_META_PIXEL_ID,
+  });
 }

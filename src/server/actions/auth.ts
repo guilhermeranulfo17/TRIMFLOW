@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation';
 import { ehSessaoDemo, MENSAGEM_DEMO } from '@/domain/auth/demo';
 import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { COOKIE_ORIGEM, lerOrigemDoCookie } from '@/domain/marketing/origem';
+import { COOKIE_CONVERSAO, SEGUNDOS_COOKIE_CONVERSAO } from '@/domain/marketing/pixels';
 import { COOKIE_PROSPECCAO, idDoLead } from '@/domain/prospeccao';
 import { modeloDaChave } from '@/domain/modelos';
 import { segmentoDoTipo, type TipoBuffet } from '@/domain/modelos/tipos-buffet';
@@ -96,6 +97,7 @@ export async function cadastrar(input: CadastroInput): Promise<ResultadoAcao> {
     await aplicarModeloDoCadastro(data.user.id, dados.tipoBuffet);
     await registrarOrigem(data.user.id);
   }
+  await marcarConversaoCadastro();
   redirect('/app/comecar');
 }
 
@@ -133,7 +135,25 @@ export async function completarConta(input: CompletarInput): Promise<ResultadoAc
   await avisarProspeccao(user.id);
   await aplicarModeloDoCadastro(user.id, dados.tipoBuffet);
   await registrarOrigem(user.id);
+  await marcarConversaoCadastro();
   redirect('/app/comecar');
+}
+
+/**
+ * Conversão do cadastro para os pixels (§98): cookie curto, sem dado pessoal, que a primeira tela
+ * do onboarding lê e apaga. Os pixels só disparam se o visitante aceitou os cookies.
+ */
+async function marcarConversaoCadastro() {
+  try {
+    (await cookies()).set(COOKIE_CONVERSAO, 'cadastro', {
+      maxAge: SEGUNDOS_COOKIE_CONVERSAO,
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+  } catch {
+    // sem o cookie, só a conversão deixa de ser contada
+  }
 }
 
 /**

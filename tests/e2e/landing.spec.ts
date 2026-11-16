@@ -284,6 +284,82 @@ test('dúvidas abrem sem JavaScript e viram FAQPage para o Google', async ({ pag
   expect(faq.mainEntity.length).toBe(await duvidas.locator('details').count());
 });
 
+/*
+ * SEO (ARQUITETURA §98): título com "sistema para buffet", páginas por tipo de buffet com texto
+ * próprio, sitemap, dados estruturados e nenhum pixel sem id configurado.
+ */
+const SEGMENTOS = [
+  ['/sistema-para-buffet-infantil', 'Sistema para buffet infantil'],
+  ['/sistema-para-buffet-de-casamento', 'Sistema para buffet de casamento e 15 anos'],
+  ['/sistema-para-buffet-de-eventos', 'Sistema para buffet de eventos e corporativo'],
+  ['/sistema-para-buffet-em-domicilio', 'Sistema para buffet em domicílio'],
+] as const;
+
+test('SEO da landing: título com a busca, Organization e WebSite, links para os tipos', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle(/^Sistema para buffet de festas/);
+  const descricao = await page.locator('meta[name="description"]').getAttribute('content');
+  expect(descricao!.length).toBeLessThanOrEqual(160);
+  const ld = (await page.locator('script[type="application/ld+json"]').allTextContents()).map(
+    (t) => JSON.parse(t)['@type'],
+  );
+  expect(ld).toEqual(
+    expect.arrayContaining(['SoftwareApplication', 'FAQPage', 'Organization', 'WebSite']),
+  );
+  // "Já vem com modelo pronto para": cada tipo leva à sua página
+  for (const [caminho] of SEGMENTOS) {
+    await expect(page.locator(`main a[href="${caminho}"]`)).toHaveCount(1);
+    await expect(page.locator(`footer a[href="${caminho}"]`)).toHaveCount(1);
+  }
+  // sem id de pixel no ambiente: nem aviso de cookies, nem script de fora
+  await expect(page.getByTestId('aviso-cookies')).toHaveCount(0);
+  expect(
+    await page.locator('script[src*="googletagmanager"], script[src*="facebook"]').count(),
+  ).toBe(0);
+});
+
+test('páginas por tipo de buffet: h1 próprio, canonical, trilha e sem link quebrado', async ({
+  page,
+}) => {
+  for (const [caminho, h1] of SEGMENTOS) {
+    const resposta = await page.goto(caminho);
+    expect(resposta!.status()).toBe(200);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(h1);
+    await expect(page).toHaveTitle(/Sistema para buffet .*\| Orkestra$/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      new RegExp(`${caminho}$`),
+    );
+    await expect(page.getByTestId('recursos-segmento').locator('li')).toHaveCount(4);
+    const ld = (await page.locator('script[type="application/ld+json"]').allTextContents()).map(
+      (t) => JSON.parse(t),
+    );
+    const trilha = ld.find((j) => j['@type'] === 'BreadcrumbList');
+    expect(trilha.itemListElement[1].item).toMatch(new RegExp(`${caminho}$`));
+    const faq = ld.find((j) => j['@type'] === 'FAQPage');
+    expect(faq.mainEntity.length).toBe(
+      await page.getByTestId('lista-duvidas').locator('details').count(),
+    );
+    const texto = await page.locator('body').innerText();
+    expect(texto).not.toMatch(/[—–]/);
+    expect(await semRolagemHorizontal(page)).toBe(true);
+  }
+  // o cabeçalho leva às seções que existem nesta página também
+  for (const ancora of ['#como-funciona', '#recursos', '#preco', '#duvidas']) {
+    await expect(page.locator(ancora)).toHaveCount(1);
+  }
+});
+
+test('sitemap e robots: landing e páginas por tipo, painel fora', async ({ request }) => {
+  const sitemap = await (await request.get('/sitemap.xml')).text();
+  for (const [caminho] of SEGMENTOS) expect(sitemap).toContain(`${caminho}</loc>`);
+  const robots = await (await request.get('/robots.txt')).text();
+  expect(robots).toMatch(/Disallow: \/app/);
+  expect(robots).toMatch(/Sitemap: .*\/sitemap\.xml/);
+});
+
 test('logado, o topo leva ao painel', async ({ page }) => {
   await entrar(page, 'dono@demo.local', SENHA_SEED);
   await page.goto('/');

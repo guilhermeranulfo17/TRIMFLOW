@@ -25,7 +25,10 @@ import {
   origemDoParametro,
   pendenciasDoContexto,
   perguntasAutomaticas,
+  descricaoDaVitrine,
   serializarJsonLd,
+  tituloDaVitrine,
+  vitrineIndexavel,
 } from '@/domain/publico';
 import { BannerTeste } from '@/components/publico/banner-teste';
 import { IconeWhatsApp } from '@/components/publico/icone-whatsapp';
@@ -38,7 +41,7 @@ import { PacotesPublicos } from '@/components/publico/pagina/pacotes';
 import { RegistroFunil } from '@/components/publico/registro-funil';
 import { RodapePublico } from '@/components/publico/rodape';
 import { urlPublicaMidia } from '@/lib/midia';
-import { siteUrl } from '@/server/env';
+import { demoSlug, siteUrl } from '@/server/env';
 import { carregarBuffet, carregarPagina, carregarVitrine } from '@/server/publico/carregar';
 import { ehModoTeste, marcarLinkTestado } from '@/server/publico/sessao';
 import { exigirBuffet } from './buscar';
@@ -56,15 +59,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const [buffet, pagina] = await Promise.all([carregarBuffet(slug), carregarPagina(slug)]);
   if (!buffet) return { title: 'Buffet não encontrado' };
-  const titulo = pagina?.slogan ? `${buffet.nome} · ${pagina.slogan}` : buffet.nome;
-  const descricao =
-    buffet.sobre?.slice(0, 160) ??
-    `Monte o orçamento da sua festa no ${buffet.nome} em poucos minutos, pelo celular.`;
+  // cidade no título e na descrição: quem procura buffet procura "buffet em <cidade>" (§98)
+  const titulo = tituloDaVitrine(buffet, pagina?.slogan);
+  const descricao = descricaoDaVitrine(buffet);
   return {
     title: { absolute: titulo },
     description: descricao,
     alternates: { canonical: `${siteUrl()}/b/${slug}` },
     openGraph: { title: buffet.nome, description: descricao, type: 'website', locale: 'pt_BR' },
+    // demonstração e contas de apresentação não são buffets de verdade: fora do Google
+    ...(!vitrineIndexavel(slug, demoSlug()) && { robots: { index: false, follow: false } }),
   };
 }
 

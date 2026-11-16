@@ -11,7 +11,17 @@
 export type TipoRota = 'pagina' | 'pagina_estatica' | 'arquivo';
 
 /** Páginas pré-renderizadas no build (ver a saída do `next build`: ○ e ●). */
-export const PAGINAS_ESTATICAS = ['/', '/termos', '/privacidade', '/subprocessadores'] as const;
+export const PAGINAS_ESTATICAS = [
+  '/',
+  '/termos',
+  '/privacidade',
+  '/subprocessadores',
+  // páginas por tipo de buffet (§98), estáticas como a landing
+  '/sistema-para-buffet-infantil',
+  '/sistema-para-buffet-de-casamento',
+  '/sistema-para-buffet-de-eventos',
+  '/sistema-para-buffet-em-domicilio',
+] as const;
 
 /** Respostas que não são HTML: JSON das APIs, PDFs, ZIP, imagens geradas, QR. */
 export function tipoDaRota(pathname: string): TipoRota {
@@ -43,6 +53,8 @@ export type OpcoesCsp = {
   desenvolvimento?: boolean;
   /** só em HTTPS: pede ao navegador para trocar http:// por https:// nos recursos */
   https?: boolean;
+  /** origens dos pixels ligados (GA4, Meta): só carregam depois do aceite dos cookies (§98) */
+  pixels?: { script: string[]; connect: string[]; img: string[] } | null;
 };
 
 function origem(url: string | null | undefined): string | null {
@@ -78,14 +90,16 @@ export function montarCsp(o: OpcoesCsp): string {
       ? [`'self'`, `'nonce-${o.nonce}'`, `'strict-dynamic'`]
       : [`'self'`, `'unsafe-inline'`];
   if (o.desenvolvimento) script.push(`'unsafe-eval'`);
+  // com 'strict-dynamic' a lista de origens é ignorada (vale o nonce); nas estáticas, vale ela
+  script.push(...(o.pixels?.script ?? []));
 
   const diretivas: [string, (string | null)[]][] = [
     ['default-src', [`'self'`]],
     ['script-src', script],
     ['style-src', [`'self'`, `'unsafe-inline'`]],
-    ['img-src', [`'self'`, 'data:', 'blob:', supabase]],
+    ['img-src', [`'self'`, 'data:', 'blob:', supabase, ...(o.pixels?.img ?? [])]],
     ['font-src', [`'self'`, 'data:']],
-    ['connect-src', [`'self'`, supabase, supabaseWs, sentry]],
+    ['connect-src', [`'self'`, supabase, supabaseWs, sentry, ...(o.pixels?.connect ?? [])]],
     ['media-src', [`'self'`, supabase]],
     ['frame-src', [`'self'`]],
     ['worker-src', [`'self'`, 'blob:']],
