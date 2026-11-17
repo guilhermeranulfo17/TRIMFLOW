@@ -86,12 +86,18 @@ describe('aceite sem reserva (item 1)', () => {
     await emTransacao(sql, async (tx) => {
       const c = await cenarioPublico(tx, IDS.empresaA);
       const p = await preReservado(tx, c);
-      await comoDono(tx, () => tx`select public.cancelar_reserva(${p.reserva}, 'cliente desistiu')`);
+      await comoDono(
+        tx,
+        () => tx`select public.cancelar_reserva(${p.reserva}, 'cliente desistiu')`,
+      );
       expect(['enviado', 'visualizado']).toContain(await statusDe(tx, p.orcamento));
 
       const q = await preReservado(tx, await cenarioPublico(tx, IDS.empresaA));
       await comoDono(tx, () => tx`select public.confirmar_reserva(${q.reserva}, 0)`);
-      await comoDono(tx, () => tx`select public.cancelar_reserva(${q.reserva}, 'cliente desistiu')`);
+      await comoDono(
+        tx,
+        () => tx`select public.cancelar_reserva(${q.reserva}, 'cliente desistiu')`,
+      );
       expect(await statusDe(tx, q.orcamento)).toBe('aceito');
       const d = await diagnostico(tx);
       expect(d.find((x) => x.orcamento_id === q.orcamento)?.situacao).toBe('reserva_cancelada');
@@ -111,9 +117,13 @@ describe('aceite sem reserva (item 1)', () => {
       await tx`alter table public.reservas disable trigger reservas_reabrir_aceite`;
       await tx`update public.reservas set status = 'vencida' where id = ${pr.reserva}`;
       await tx`alter table public.reservas enable trigger reservas_reabrir_aceite`;
-      expect((await diagnostico(tx, false)).map((d) => d.situacao)).toContain('pre_reserva_vencida');
+      expect((await diagnostico(tx, false)).map((d) => d.situacao)).toContain(
+        'pre_reserva_vencida',
+      );
       await tx`update public.empresas set isenta = true where id = ${IDS.empresaA}`;
-      expect((await diagnostico(tx, false)).some((d) => d.orcamento_id === pr.orcamento)).toBe(false);
+      expect((await diagnostico(tx, false)).some((d) => d.orcamento_id === pr.orcamento)).toBe(
+        false,
+      );
       expect((await diagnostico(tx, true)).some((d) => d.orcamento_id === pr.orcamento)).toBe(true);
     });
   });

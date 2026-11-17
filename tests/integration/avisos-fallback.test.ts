@@ -34,7 +34,9 @@ describe('e-mail de reserva dos avisos críticos (item 2)', () => {
       await tx`delete from public.push_inscricoes where usuario_id = ${IDS.donoA}`;
       await tx`update public.preferencias_avisos set whatsapp_ativo = false where usuario_id = ${IDS.donoA}`;
       const id = await criar(tx, 'pre_reserva_vencendo', await leadDe(tx), 'fallback:1');
-      expect(await entregas(tx, id)).toEqual([{ canal: 'email', status: 'pendente', erro_codigo: null }]);
+      expect(await entregas(tx, id)).toEqual([
+        { canal: 'email', status: 'pendente', erro_codigo: null },
+      ]);
     });
   });
 
@@ -62,11 +64,13 @@ describe('e-mail de reserva dos avisos críticos (item 2)', () => {
       const antes = await entregas(tx, id);
       expect(antes.map((e) => e.canal)).toEqual(['push', 'whatsapp']);
 
-      const [w] = await tx`select id from public.avisos_entregas where aviso_id = ${id} and canal = 'whatsapp'`;
+      const [w] =
+        await tx`select id from public.avisos_entregas where aviso_id = ${id} and canal = 'whatsapp'`;
       await tx`select public.concluir_entrega(${w!.id}, 'ignorado', 'CANAL_DESLIGADO')`;
       // push ainda pendente: espera
       expect((await entregas(tx, id)).some((e) => e.canal === 'email')).toBe(false);
-      const [p] = await tx`select id from public.avisos_entregas where aviso_id = ${id} and canal = 'push'`;
+      const [p] =
+        await tx`select id from public.avisos_entregas where aviso_id = ${id} and canal = 'push'`;
       await tx`update public.avisos_entregas set tentativas = 5 where id = ${p!.id}`;
       await tx`select public.concluir_entrega(${p!.id}, 'erro', 'PUSH_500')`;
       expect(await entregas(tx, id)).toEqual([
@@ -77,9 +81,11 @@ describe('e-mail de reserva dos avisos críticos (item 2)', () => {
 
       // outro lead (o mesmo lead em 10 minutos agrupa no mesmo aviso)
       const id2 = await criar(tx, 'pre_reserva_vencendo', await leadDe(tx, 1), 'fallback:4');
-      const [p2] = await tx`select id from public.avisos_entregas where aviso_id = ${id2} and canal = 'push'`;
+      const [p2] =
+        await tx`select id from public.avisos_entregas where aviso_id = ${id2} and canal = 'push'`;
       await tx`select public.concluir_entrega(${p2!.id}, 'enviado')`;
-      const [w2] = await tx`select id from public.avisos_entregas where aviso_id = ${id2} and canal = 'whatsapp'`;
+      const [w2] =
+        await tx`select id from public.avisos_entregas where aviso_id = ${id2} and canal = 'whatsapp'`;
       await tx`select public.concluir_entrega(${w2!.id}, 'ignorado', 'CANAL_DESLIGADO')`;
       expect((await entregas(tx, id2)).some((e) => e.canal === 'email')).toBe(false);
     });
@@ -106,11 +112,17 @@ describe('e-mail de reserva dos avisos críticos (item 2)', () => {
         on conflict (usuario_id) do update set whatsapp_ativo = true,
           whatsapp_numero = '+5534990000001', whatsapp_aceite_em = now()`;
       const id = await criar(tx, 'resumo_diario', null, 'fallback:7');
-      const [w] = await tx`select id from public.avisos_entregas where aviso_id = ${id} and canal = 'whatsapp'`;
+      const [w] =
+        await tx`select id from public.avisos_entregas where aviso_id = ${id} and canal = 'whatsapp'`;
       await tx`select public.concluir_entrega(${w!.id}, 'ignorado', 'CANAL_DESLIGADO')`;
-      const linhas = await tx`select canal, status, motivo, total::int from public.interno_entregas_resumo(30, true)`;
+      const linhas =
+        await tx`select canal, status, motivo, total::int from public.interno_entregas_resumo(30, true)`;
       expect(linhas).toContainEqual(
-        expect.objectContaining({ canal: 'whatsapp', status: 'ignorado', motivo: 'CANAL_DESLIGADO' }),
+        expect.objectContaining({
+          canal: 'whatsapp',
+          status: 'ignorado',
+          motivo: 'CANAL_DESLIGADO',
+        }),
       );
       const [r] = await tx`select public.interno_canais_retrato(true) as r`;
       expect(r!.r).toEqual(expect.objectContaining({ usuarios_com_whatsapp: expect.any(Number) }));
