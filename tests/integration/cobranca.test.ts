@@ -389,16 +389,21 @@ describe('eventos do Asaas', () => {
 });
 
 describe('situação e avisos de teste', () => {
-  it('teste acabando a 3 dias e a 1 dia (uma vez cada); quem assinou não recebe', async () => {
+  it('teste acabando a 3 dias e a 1 dia (uma vez cada); pendente recebe para pagar, paga não', async () => {
     await emTransacao(sql, async (tx) => {
       const e = await novaEmpresa(tx, { trialDias: 2 });
-      const assinou = await novaEmpresa(tx, { trialDias: 2 });
-      await novaAssinatura(tx, assinou.id);
+      const pendente = await novaEmpresa(tx, { trialDias: 2 });
+      await novaAssinatura(tx, pendente.id);
+      const pagou = await novaEmpresa(tx, { trialDias: 2 });
+      await novaAssinatura(tx, pagou.id, { status: 'ativa', pagoAte: '2099-12-31' });
       await tx`select public.atualizar_situacoes()`;
       await tx`select public.atualizar_situacoes()`;
       const a = await avisos(tx, e.id, 'teste_acabando');
       expect(a.map((x) => x.dados)).toEqual([{ dias: 2 }]);
-      expect(await avisos(tx, assinou.id, 'teste_acabando')).toHaveLength(0);
+      // §99: assinatura pendente (não paga) também é avisada, com o pedido de pagar a fatura
+      const p = await avisos(tx, pendente.id, 'teste_acabando');
+      expect(p.map((x) => x.dados)).toEqual([{ dias: 2, fatura_pendente: true }]);
+      expect(await avisos(tx, pagou.id, 'teste_acabando')).toHaveLength(0);
       await tx`select public.atualizar_situacoes(now() + interval '1 day 12 hours')`;
       expect(await avisos(tx, e.id, 'teste_acabando')).toHaveLength(2);
       await tx`select public.atualizar_situacoes(now() + interval '3 days')`;

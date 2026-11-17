@@ -114,7 +114,8 @@ function variaveis(tipo: TipoAviso, d: DadosAviso, agora: Date, fuso: string) {
     case 'teste':
       return {};
     case 'teste_acabando':
-      return { dias: num(d.dias) ?? 1 };
+      // §99: quem clicou em "Assinar" e não pagou também recebe, com texto próprio
+      return { dias: num(d.dias) ?? 1, faturaPendente: d.fatura_pendente === true ? 1 : 0 };
     case 'fatura_criada':
     case 'pagamento_falhou':
     case 'pagamento_confirmado': {
@@ -255,7 +256,9 @@ export function textoAviso(
       const dias = Number(v.dias);
       return {
         titulo: dias <= 1 ? 'Seu teste acaba amanhã' : `Seu teste acaba em ${dias} dias`,
-        corpo: 'Assine para continuar recebendo pedidos pelo link sem interrupção.',
+        corpo: Number(v.faturaPendente)
+          ? 'Sua assinatura está esperando o pagamento. Pague a fatura para continuar recebendo pedidos pelo link sem interrupção.'
+          : 'Assine para continuar recebendo pedidos pelo link sem interrupção.',
         caminho,
       };
     }

@@ -175,6 +175,13 @@ describe('textos', () => {
     );
     expect(resumoTemConteudo({ sinal_pendente: 1 })).toBe(true);
   });
+  it('teste acabando com fatura pendente pede o pagamento (§99)', () => {
+    expect(textoAviso('teste_acabando', { dias: 3 }).corpo).toMatch(/^Assine/);
+    expect(textoAviso('teste_acabando', { dias: 1, fatura_pendente: true })).toMatchObject({
+      titulo: 'Seu teste acaba amanhã',
+      corpo: expect.stringMatching(/^Sua assinatura está esperando o pagamento/),
+    });
+  });
   it('dados faltando nunca viram "undefined"', () => {
     for (const t of TIPOS_AVISO) {
       const { titulo, corpo } = textoAviso(t, {});
