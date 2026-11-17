@@ -1,6 +1,7 @@
 import 'server-only';
 import { sql } from 'drizzle-orm';
 import { mascararDocumento } from '@/domain/cobranca/documento';
+import { contaForaDasMetricas } from '@/domain/interno/contas';
 import { mrrDaAssinatura, resumoInterno, type ResumoInterno } from '@/domain/cobranca/mrr';
 import type { Situacao } from '@/domain/cobranca/situacao';
 import { obterDb } from '@/server/db/client';
@@ -18,6 +19,8 @@ export type EmpresaInterna = {
   situacao: Situacao;
   trialAte: Date | null;
   isenta: boolean;
+  /** demonstração, apresentação ou cortesia: fora das métricas por padrão (§99) */
+  contaDeTeste: boolean;
   criadoEm: Date;
   onboardingPasso: number;
   onboardingConcluido: boolean;
@@ -49,6 +52,11 @@ function paraEmpresa(l: Linha): EmpresaInterna {
     situacao: l.plano as Situacao,
     trialAte: data(l.trial_ate),
     isenta: Boolean(l.isenta),
+    contaDeTeste: contaForaDasMetricas({
+      ehDemo: Boolean(l.eh_demo),
+      ehApresentacao: Boolean(l.eh_apresentacao),
+      isenta: Boolean(l.isenta),
+    }),
     criadoEm: new Date(l.criado_em as string),
     onboardingPasso: Number(l.onboarding_passo ?? 1),
     onboardingConcluido: !!l.onboarding_concluido_em,
@@ -71,7 +79,8 @@ function paraEmpresa(l: Linha): EmpresaInterna {
 }
 
 const CONSULTA = sql`
-  select e.id, e.nome, e.slug, e.plano, e.trial_ate, e.isenta, e.criado_em, e.onboarding_passo,
+  select e.id, e.nome, e.slug, e.plano, e.trial_ate, e.isenta, e.eh_demo, e.eh_apresentacao,
+    e.criado_em, e.onboarding_passo,
     e.onboarding_concluido_em, e.suspensa_manual_em,
     a.plano_codigo, a.ciclo, a.valor_centavos, a.status as ass_status, a.cancelamento_motivo,
     (select max(au.last_sign_in_at) from public.usuarios u join auth.users au on au.id = u.id
@@ -86,14 +95,21 @@ const CONSULTA = sql`
   from public.empresas e
   left join lateral (select * from public._assinatura_referencia(e.id)) a on true`;
 
-/** Empresas reais (a de demonstração e as de apresentação ficam fora da lista e das métricas). */
-export async function listarEmpresasInternas(busca?: string | null): Promise<EmpresaInterna[]> {
+/**
+ * Empresas reais: demonstração, apresentação e cortesia (isenta) ficam fora da lista e das
+ * métricas por padrão (§99, domain/interno/contas); `incluirTeste` traz todas.
+ */
+export async function listarEmpresasInternas(
+  busca?: string | null,
+  incluirTeste = false,
+): Promise<EmpresaInterna[]> {
   const termo = busca?.trim() ? `%${busca.trim().toLowerCase()}%` : null;
+  const filtroTeste = incluirTeste ? sql`true` : sql`not public._empresa_fora_das_metricas(e.id)`;
   const linhas = await obterDb().execute<Linha>(
     termo
-      ? sql`${CONSULTA} where not e.eh_demo and not e.eh_apresentacao and (lower(e.nome) like ${termo} or e.slug like ${termo})
+      ? sql`${CONSULTA} where ${filtroTeste} and (lower(e.nome) like ${termo} or e.slug like ${termo})
           order by e.criado_em desc limit 500`
-      : sql`${CONSULTA} where not e.eh_demo and not e.eh_apresentacao order by e.criado_em desc limit 500`,
+      : sql`${CONSULTA} where ${filtroTeste} order by e.criado_em desc limit 500`,
   );
   return [...linhas].map(paraEmpresa);
 }

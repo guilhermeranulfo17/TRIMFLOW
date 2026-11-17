@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AREAS_USO } from '@/domain/uso/areas';
 import { formatData } from '@/domain/dates';
+import { incluirContasDeTeste } from '@/domain/interno/contas';
 import { cn } from '@/lib/utils';
 import { exigirAdmin } from '@/server/interno/guard';
 import { carregarRadar } from '@/server/interno/radar';
@@ -21,9 +22,14 @@ const CALOR = [
 const curto = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 
 /** /interno/radar: mapa de calor do uso do painel pelos buffets (§92). */
-export default async function PaginaRadar() {
+export default async function PaginaRadar({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await exigirAdmin();
-  const { radar, empresas } = await carregarRadar(8);
+  const incluirTeste = incluirContasDeTeste((await searchParams).teste);
+  const { radar, empresas } = await carregarRadar(8, incluirTeste);
   const poucoUsadas = radar.linhas.filter((l) => l.total > 0 && l.alcance < 20);
   const nuncaUsadas = radar.linhas.filter((l) => l.total === 0 && l.area !== 'outra');
 
@@ -36,9 +42,18 @@ export default async function PaginaRadar() {
         <h1 className="text-2xl font-bold">Radar de uso</h1>
         <p className="text-muted-foreground text-sm">
           Quantas vezes cada área do painel foi aberta pelos buffets nas últimas 8 semanas (só
-          contagem, sem dado pessoal; demo e contas de apresentação ficam fora).{' '}
-          {radar.empresasAtivas} {radar.empresasAtivas === 1 ? 'empresa usou' : 'empresas usaram'} o
-          painel no período.
+          contagem, sem dado pessoal;{' '}
+          {incluirTeste
+            ? 'incluindo a cortesia'
+            : 'demo, contas de apresentação e cortesia ficam fora'}
+          ). {radar.empresasAtivas}{' '}
+          {radar.empresasAtivas === 1 ? 'empresa usou' : 'empresas usaram'} o painel no período.{' '}
+          <Link
+            href={incluirTeste ? '/interno/radar' : '/interno/radar?teste=1'}
+            className="font-semibold underline"
+          >
+            {incluirTeste ? 'Tirar contas de teste' : 'Incluir contas de teste'}
+          </Link>
         </p>
       </header>
 

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { BotaoSairInterno } from '@/components/interno/acoes-empresa';
 import { rotuloMotivo } from '@/domain/cobranca/motivos-cancelamento';
 import { formatData } from '@/domain/dates';
+import { incluirContasDeTeste } from '@/domain/interno/contas';
 import { formatBp } from '@/domain/percent';
 import { formatBRL } from '@/domain/money';
 import { diasRestantesTeste, rotuloPlano } from '@/domain/plano';
@@ -21,8 +22,11 @@ export default async function PaginaInterna({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const admin = await exigirAdmin();
-  const busca = um((await searchParams).q);
-  const empresas = await listarEmpresasInternas(busca);
+  const params = await searchParams;
+  const busca = um(params.q);
+  // §99: demonstração, apresentação e cortesia fora das métricas por padrão
+  const incluirTeste = incluirContasDeTeste(params.teste);
+  const empresas = await listarEmpresasInternas(busca, incluirTeste);
   const r = await visaoGeralInterna(empresas);
   const cartoes = [
     { rotulo: 'MRR', valor: formatBRL(r.mrrCentavos) },
@@ -35,6 +39,9 @@ export default async function PaginaInterna({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Orkestra interno</h1>
         <div className="flex flex-wrap items-center gap-3 text-sm">
+          <Link href="/interno/diagnostico" className="font-semibold underline">
+            Diagnóstico
+          </Link>
           <Link href="/interno/radar" className="font-semibold underline">
             Radar de uso
           </Link>
@@ -45,6 +52,18 @@ export default async function PaginaInterna({
           <BotaoSairInterno />
         </div>
       </header>
+
+      <p className="text-muted-foreground text-sm" data-testid="filtro-contas-teste">
+        {incluirTeste
+          ? 'Números e lista incluindo demonstração, apresentação e cortesia.'
+          : 'Demonstração, apresentação e cortesia ficam fora dos números e da lista.'}{' '}
+        <Link
+          href={incluirTeste ? '/interno' : '/interno?teste=1'}
+          className="font-semibold underline"
+        >
+          {incluirTeste ? 'Tirar contas de teste' : 'Incluir contas de teste'}
+        </Link>
+      </p>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {cartoes.map((c) => (
@@ -71,6 +90,7 @@ export default async function PaginaInterna({
 
       <section className="flex flex-col gap-3">
         <form className="flex gap-2" role="search">
+          {incluirTeste && <input type="hidden" name="teste" value="1" />}
           <input
             name="q"
             defaultValue={busca ?? ''}
@@ -106,6 +126,7 @@ export default async function PaginaInterna({
                   <span>{e.leads30d} leads (30 dias)</span>
                   <span>{e.reservas} reservas</span>
                   {e.isenta && <span>cortesia</span>}
+                  {e.contaDeTeste && !e.isenta && <span>conta de teste</span>}
                   {e.suporteAte && <span className="text-primary-texto">suporte liberado</span>}
                 </span>
               </Link>
