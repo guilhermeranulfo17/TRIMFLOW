@@ -2343,3 +2343,71 @@ tests/unit/proposta/pdf-premium.test.ts` grava os quatro PDFs (elegante e alegre
   landing. Antes de ligar os ids em produção, o advogado inclui a seção de cookies (Google e
   Meta, finalidade, prazo, como recusar), e `VERSAO_DOCUMENTOS` sobe. Passo a passo em
   `docs/SEO_E_PIXELS.md`.
+
+## 99. Ajustes da análise semanal de 16/11/2026 (novembro de 2026)
+
+Nove achados da análise semanal, em ordem de prioridade. Verificações e correções de dados
+(sempre somente leitura ou terminando em ROLLBACK, nunca executadas por nós) em
+`docs/operacao/2026-11-17/`; o resumo operacional está em `docs/OPERACAO_2026-11-17.md`.
+
+- **Aceite sem reserva (item 1).** O aceite marca o orçamento "aceito" e cria a pré-reserva; quando
+  ela vencia ou era cancelada, o lead voltava para "em andamento", mas o orçamento ficava "aceito"
+  e travado (o cliente recebia PUBLICO_ORCAMENTO_FECHADO e o dono ORCAMENTO_ESTADO_INVALIDO).
+  Regra nova (trigger `reservas_reabrir_aceite`, migration `20261120000001`): pré-reserva que deixa
+  de valer sem outra reserva viva no orçamento faz ele voltar para "visualizado" (ou "enviado"),
+  com auditoria `orcamento.aceite_reaberto`. Escolhemos reabrir em vez de só avisar: o aviso
+  `pre_reserva_vencendo` já existe (12 h antes) e agora tem e-mail de reserva; reabrir destrava os
+  dois lados sem tela nova. Reserva confirmada cancelada não reabre. `aceito_em` fica como
+  histórico. Diagnóstico `interno_aceitos_sem_reserva`.
+- **Avisos fora do painel (item 2).** Canais: push liga com `NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
+  `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` (e só gera entrega para quem tem inscrição); WhatsApp com
+  `WHATSAPP_TOKEN` e `WHATSAPP_PHONE_NUMBER_ID` (e só para quem ligou o WhatsApp em Minha conta);
+  e-mail com `RESEND_API_KEY` e `EMAIL_REMETENTE`. Sem as variáveis, a entrega vira "ignorado"
+  com `CANAL_DESLIGADO` (decidido em `server/avisos/processar.ts`, `enviarUma`). Novo: os avisos
+  críticos `pagamento_falhou`, `conta_suspensa` e `pre_reserva_vencendo` têm o e-mail como reserva
+  (`TIPOS_EMAIL_RESERVA` = `_aviso_email_reserva`, equivalência): sem canal externo na criação, ou
+  com push/WhatsApp terminando "ignorado"/"falhou" sem outra entrega viva, o e-mail entra na fila.
+  A regra "aviso de lead nunca vai por e-mail" muda só para a reserva e sem conteúdo do cliente:
+  o e-mail de `pre_reserva_vencendo` é genérico (sem nome, data ou valor), com o link do lead.
+  O "ignorado" deixou de ser silencioso: motivo em `erro_codigo` (já existia), log
+  `avisos.canal_desligado` por canal e o diagnóstico `interno_entregas_resumo`. Ao abrir Minha
+  conta → Avisos, o aparelho reenvia a inscrição de push (upsert) e cura endpoint trocado ou
+  apagado no banco.
+- **Segurança (item 3).** As 87 SECURITY DEFINER executáveis por `authenticated` foram revisadas:
+  todas com guard e `search_path` fixo (tabela em `docs/SEGURANCA_FUNCOES.md`; o teste
+  `seguranca-funcoes` exige classificar toda função nova). Como o app não usa a API de dados do
+  Supabase, a correção definitiva do alerta é tirar o `public` dos Exposed schemas (decisão do
+  dono, passo a passo no documento). As 8 tabelas com RLS e sem policy são só do servidor: ficam
+  sem policy, com o motivo no comentário. `publico.tentativas` fica onde está (schema das funções
+  do link, fora da API). pg_net recriado no schema `extensions` (migration tolerante a falha).
+  Teste `isolamento-empresas` varre toda tabela com `empresa_id` (anon, dono A, dono B) e chama
+  as funções do painel com ids de outra empresa conferindo a impressão digital dos dados.
+- **Asaas (item 4).** Tudo já vinha de variáveis. Trava nova: na produção da Vercel
+  (`VERCEL_ENV=production`) com o Asaas no sandbox, `depsCobranca` devolve null (nada é criado ou
+  alterado; log `cobranca.sandbox_em_producao`), a tela de Plano mostra o WhatsApp de vendas e o
+  `/api/saude` acusa `asaas`. O webhook continua recebendo. Checklist da virada em
+  `docs/COBRANCA.md`.
+- **Sinal zero (item 5).** Confirmar sem sinal continua permitido (campo opcional de propósito).
+  Novo "sinal pendente" (`domain/financeiro/sinal` = `_sinal_pendente`, equivalência): selo na
+  Agenda (só o dono; o Financeiro é só dele) e contagem `sinal_pendente` no resumo diário do dono
+  (painel, push e e-mail; o modelo do WhatsApp não muda).
+- **Exclusão LGPD (item 6).** Rotina conferida (pg_cron 06:40 UTC → `/api/lgpd/processar` →
+  Storage, Auth, `lgpd_excluir_empresa`). Teste novo prova que nenhuma tabela com `empresa_id`
+  guarda linha da empresa depois. Lacuna corrigida: o pedido de exclusão cancela também as
+  assinaturas das soluções (antes só a do plano). Retenção legal: decisão pendente (ver
+  `docs/OPERACAO_2026-11-17.md`).
+- **Contas de teste fora das métricas (item 7).** `contaForaDasMetricas` =
+  `_empresa_fora_das_metricas` (demo, apresentação e cortesia/isenta). O /interno (visão geral,
+  lista, radar e diagnóstico) tira essas contas por padrão, com "Incluir contas de teste"
+  (`?teste=1`). `interno_metricas_plataforma` é a base da análise semanal. Os Números de cada
+  buffet são da própria empresa e não mudam.
+- **Fim do teste (item 8).** "Teste acabando" a 3 dias e 1 dia, com e-mail; corrigido para chegar
+  também a quem tem assinatura pendente (antes só sem assinatura nenhuma). Suspensão do trial
+  vencido mantém leitura, exportação e o Plano; `conta_suspensa` leva ao Plano ("Assinar e
+  voltar").
+- **Índices (item 9).** Das 43 FKs apontadas, só 4 ganham índice (empresa_id de avisos,
+  avisos_entregas, notas e orcamento_itens: filtro do diagnóstico e exclusão em cascata); as outras
+  já têm índice na primeira coluna ou não são filtro de tela. Índices "nunca usados" ficam até
+  haver tráfego (`docs/operacao/2026-11-17/09_indices.sql`).
+- **/interno → Diagnóstico.** Tela nova só de leitura com os checks acima, sem dado do cliente
+  final, pela conexão administrativa (funções `interno_*`, sem EXECUTE para anon/authenticated).

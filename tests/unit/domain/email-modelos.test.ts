@@ -92,15 +92,22 @@ describe('modelos de e-mail', () => {
     );
   });
 
-  it.each(TIPOS_EMAIL_RESERVA)('%s (e-mail de reserva, §99) monta e-mail com link absoluto', (tipo) => {
-    expect(podeIrPorEmail(tipo)).toBe(true);
-    const e = montarEmail(tipo, { lead_nome: 'Ana Sigilo', data: '2026-12-01' }, {
-      site: SITE,
-      leadId: '7f1c6a2e-1b1a-4c55-9d3e-2a8f1e0c9b11',
-    })!;
-    expect(e.html).toMatch(/href="https:\/\/orkestra\.app\//);
-    expect(e.html).not.toMatch(/undefined|null|NaN/);
-  });
+  it.each(TIPOS_EMAIL_RESERVA)(
+    '%s (e-mail de reserva, §99) monta e-mail com link absoluto',
+    (tipo) => {
+      expect(podeIrPorEmail(tipo)).toBe(true);
+      const e = montarEmail(
+        tipo,
+        { lead_nome: 'Ana Sigilo', data: '2026-12-01' },
+        {
+          site: SITE,
+          leadId: '7f1c6a2e-1b1a-4c55-9d3e-2a8f1e0c9b11',
+        },
+      )!;
+      expect(e.html).toMatch(/href="https:\/\/orkestra\.app\//);
+      expect(e.html).not.toMatch(/undefined|null|NaN/);
+    },
+  );
 
   it('aviso de lead por e-mail de reserva não leva dado do cliente, só o link do lead', () => {
     const e = montarEmail(

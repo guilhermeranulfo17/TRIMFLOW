@@ -61,6 +61,7 @@ src/
     robots.ts, sitemap.ts  indexação (landing, termos, privacidade e vitrines)
     api/cobranca/    asaas (webhook, token no header) e reconciliar (POST, Bearer CRON_SECRET)
     interno/         equipe Orkestra (ORKESTRA_ADMINS + MFA): entrar, mfa, visão geral, radar (§92),
+                     diagnostico (checks da análise semanal, §99),
                      empresas/[id] (ações auditadas, "Entrar como esta empresa")
                      e apresentacoes (uma conta de apresentação por modelo, §88)
     manifest.ts      PWA (ícones em public/icones; service worker em public/sw.js)
@@ -136,6 +137,7 @@ src/
     email/           modelos dos e-mails da conta (HTML + texto, links absolutos)
     lgpd/            CSV das exportações
     seguranca/       CSP, nonce e cabeçalhos (middleware), 308 do domínio antigo
+    interno/         contas fora das métricas do /interno (demo, apresentação, cortesia)
     observabilidade/ log estruturado (mascaramento), limpeza do Sentry, avaliação da saúde
   server/
     db/              client, schema (espelho das migrations), tenant (comUsuario, lerComo,
@@ -291,6 +293,10 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   na lista de exceções do teste, com justificativa). Função nova de escrita para
   `authenticated` entra na lista do teste `cobranca.test.ts`.
 - **/interno e suporte:** só `ORKESTRA_ADMINS` com MFA (aal2); ações em `auditoria_interna`.
+  Métricas e listas do /interno (e a análise semanal) tiram demonstração, apresentação e
+  cortesia (`_empresa_fora_das_metricas` = `domain/interno/contas`, equivalência), com "Incluir
+  contas de teste" (`?teste=1`). Leituras de diagnóstico só por funções `interno_*` sem EXECUTE
+  para anon/authenticated (§99).
   Suporte só com consentimento vigente do dono (7 dias), sessão de 2 h, faixa vermelha e
   `dados.suporte` na auditoria (GUC `orkestra.suporte_admin` ligada por `comUsuario`).
 - **Números:** métricas em `public.numeros`/`numeros_ocupacao` e em `domain/numeros`, com teste
@@ -355,7 +361,11 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   estática entra em `PAGINAS_ESTATICAS`. Login, cadastro, recuperar senha, webhook e rotas do cron
   passam por `dentroDoLimite`/`autorizadoPorCron`. MFA do dono: marca `app_metadata.mfa` (só a
   Admin API grava) + `aal2`. Nunca `<Link>` para rota que muda estado (`/auth/sair`): o prefetch
-  executa. Toda tabela nova cai no `rls-revisao.test.ts` (escrita direta só com motivo).
+  executa. Toda tabela nova cai no `rls-revisao.test.ts` (escrita direta só com motivo) e no
+  `isolamento-empresas.test.ts`. Função SECURITY DEFINER nova executável por `authenticated`
+  entra classificada em `seguranca-funcoes.test.ts` (e em `docs/SEGURANCA_FUNCOES.md`) e precisa
+  de guard (`auth.uid()` direto ou um helper que o lê). Tabela com RLS e sem policy só com o
+  motivo no comentário (§99).
 - **Logs (Etapa 9B, §65):** no servidor só `logar(nivel, evento, { ids e códigos })` (ESLint
   proíbe `console`); erro entra por `codigoDoErro`, nunca a mensagem nem o objeto.
 - Nada de service role nem `DATABASE_URL` no navegador (nunca prefixo `NEXT_PUBLIC_`).
@@ -376,6 +386,12 @@ validam entrada, chamam o domínio, leem e gravam no banco.
   `ocultarConta` (quantidade por convidado) nunca mostra a conta ao cliente (proposta e contrato).
 - O preço é calculado **sempre no servidor** com `calcularOrcamento`; "hoje" e o limite de
   desconto vêm do servidor, nunca do navegador. O banco confere de novo o limite do vendedor.
+- **Aceite (§99):** pré-reserva de orçamento que vence ou é cancelada (sem outra reserva viva)
+  devolve o orçamento de "aceito" para "visualizado"/"enviado" (trigger `reservas_reabrir_aceite`).
+  Avisos `pagamento_falhou`, `conta_suspensa` e `pre_reserva_vencendo` têm o e-mail como reserva
+  (`TIPOS_EMAIL_RESERVA` = `_aviso_email_reserva`); aviso de lead por e-mail vai sem dado do
+  cliente. Sinal pendente: `domain/financeiro/sinal` = `_sinal_pendente` (equivalência). Asaas no
+  sandbox não cobra na produção da Vercel (`configAsaasParaCobrar`).
 - **Versões:** alterar um orçamento cria uma versão nova (mesmo número, outra linha, outro
   token); a anterior vira `substituido` e nunca muda. Token antigo abre a vigente. Tudo passa
   por `_orcamento_concluir` (ver `docs/ARQUITETURA.md` §32–33).

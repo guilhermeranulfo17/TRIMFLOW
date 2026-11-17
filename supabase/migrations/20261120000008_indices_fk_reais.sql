@@ -2,12 +2,14 @@
 --
 -- O advisor lista 43 FKs sem índice "de cobertura exata". Revisadas uma a uma (lista completa e
 -- decisão em docs/OPERACAO_2026-11-17.md, item 9):
---   * 22 já têm índice na PRIMEIRA coluna da FK (ex.: faixas_preco(pacote_id), cobrancas
+--   * 14 já têm índice na PRIMEIRA coluna da FK (ex.: faixas_preco(pacote_id), cobrancas
 --     (assinatura_id), push_inscricoes(usuario_id)). O advisor reclama porque a FK composta
 --     (x, empresa_id) não está coberta exatamente, mas joins, filtros e o ON DELETE usam o índice
 --     da primeira coluna. Nenhum índice novo.
---   * As de criado_por/feita_por/confirmada_por/cancelada_por/autor_id/concedido_por, cupom_id e
---     plano_codigo: nenhuma tela filtra por elas (só junta para mostrar o nome, pela PK do pai).
+--   * 15 de autor/usuário (criado_por, feita_por, confirmada_por, cancelada_por, autor_id,
+--     concedido_por, usuario_id de atividades), cupom_id e plano_codigo: nenhuma tela filtra por
+--     elas (só junta para mostrar o nome, pela PK do pai). Nenhum índice novo.
+--   * 8 de empresa_id em tabelas pequenas e 2 de bloqueios (turno/espaço): só o ON DELETE usaria.
 --     Nenhum índice novo.
 --   * Ficam as FKs só de empresa_id de tabelas que crescem com o uso e que agora entram em filtro de
 --     verdade: o diagnóstico do /interno filtra avisos_entregas e avisos por empresa (contas de teste

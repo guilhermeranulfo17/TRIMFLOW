@@ -106,3 +106,52 @@ curl -i -X POST https://www.sistemaorkestra.com.br/api/avisos/processar \
   -H "Authorization: Bearer $CRON_SECRET"
 # 200 {"ok":true,...}; sem o cabeçalho ou com outro segredo: 401
 ```
+
+## Quando cada canal sai (análise de 17/11/2026, §99)
+
+A decisão de cada entrega fica em `src/server/avisos/processar.ts` (`enviarUma`): canal sem as
+variáveis abaixo = entrega "ignorado" com `CANAL_DESLIGADO`. O motivo fica em
+`avisos_entregas.erro_codigo`, o log registra `avisos.canal_desligado` e o /interno →
+Diagnóstico mostra a contagem por canal, status e motivo.
+
+| Canal    | Liga com (Vercel, Production)                                        | E só gera entrega quando                                                                                    |
+| -------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Painel   | sempre                                                               | sempre (é a fonte da verdade)                                                                               |
+| Push     | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | o tipo tem push na preferência (ou no padrão) **e** o usuário ativou o push em algum aparelho               |
+| WhatsApp | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`                         | o tipo tem modelo aprovado, está na preferência, o usuário ligou o WhatsApp em Minha conta e o plano inclui |
+| E-mail   | `RESEND_API_KEY`, `EMAIL_REMETENTE`                                  | avisos da conta (só o dono) ou, como reserva, os avisos críticos abaixo                                     |
+
+**E-mail de reserva:** `pagamento_falhou`, `conta_suspensa` e `pre_reserva_vencendo` vão por
+e-mail (para o próprio destinatário) quando nenhum canal externo foi enfileirado ou quando o push
+e o WhatsApp terminam "ignorado" ou "falhou". O e-mail de `pre_reserva_vencendo` não leva nada do
+cliente (nem nome, nem data): só o aviso e o link do lead.
+
+**Push de ponta a ponta:** inscrição (`inscrever_push`, Minha conta → Avisos), fila
+(`_aviso_criar` cria a entrega só se houver inscrição), envio (`web-push`, `criarCanalPush`),
+erro (5 tentativas: 1, 5, 15 e 60 min, depois "falhou") e inscrição morta (404/410: o banco apaga
+o endpoint). Desde o §99 o aparelho reenvia a inscrição ao abrir Minha conta → Avisos. Falta (anotado
+em `docs/PROXIMOS_PASSOS.md`): tratar `pushsubscriptionchange` no service worker e lembrar o
+usuário de ativar o push quando ele não tem nenhum aparelho inscrito. No iPhone, push só funciona
+com o app instalado na tela inicial (iOS 16.4+).
+
+### WhatsApp: o que você precisa decidir (o código está pronto, o canal está desligado)
+
+O canal fala só com a **API oficial da Meta (Cloud API)**, por `fetch`, sem SDK. Não usamos API não
+oficial (Z-API, Evolution, Baileys). Para ligar:
+
+1. **Provedor:** Cloud API direto da Meta (sem intermediário, cobrança por conversa da Meta) ou um
+   BSP oficial (Twilio, Gupshup, 360dialog, Zenvia...). O código atual chama
+   `graph.facebook.com` direto; um BSP exige adaptar `server/avisos/canais/whatsapp.ts`.
+2. **Número:** um número dedicado do Orkestra (não pode estar em uso no app WhatsApp comum),
+   verificado no Meta Business Manager, com nome de exibição aprovado.
+3. **Modelos:** cadastrar e aprovar os 5 modelos de utilidade de `docs/WHATSAPP_MODELOS.md`
+   (pré-reserva pedida, visita pedida, pré-reserva vencendo, resumo do dia, teste), em pt_BR, com
+   o botão de URL `https://www.sistemaorkestra.com.br/app/{{1}}`.
+4. **Token permanente:** usuário de sistema no Business Manager com permissão
+   `whatsapp_business_messaging`; o token vai em `WHATSAPP_TOKEN` (secreto) e o id do número em
+   `WHATSAPP_PHONE_NUMBER_ID`. Redeploy.
+5. **Custo:** conversas de utilidade são cobradas pela Meta por conversa; o resumo diário é o que
+   mais gera volume (um por usuário por dia).
+
+Depois de ligar: Minha conta → Avisos → "Enviar aviso de teste" e conferir no /interno →
+Diagnóstico que as entregas de WhatsApp saem como "enviado".

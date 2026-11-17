@@ -387,3 +387,19 @@ tema escuro, e a etiqueta passa para junto do nome.
 - **API de Conversões da Meta** (servidor) e conversões do Google Ads, se os anúncios pedirem.
 - **Conteúdo:** artigos ("como montar orçamento de buffet", "preço de buffet infantil por
   pessoa") e páginas por cidade, só quando houver texto de verdade para elas.
+
+## Depois dos ajustes da análise de 16/11/2026 (ARQUITETURA §99)
+
+- **Push:** tratar `pushsubscriptionchange` no service worker (hoje o aparelho só reenvia a
+  inscrição quando o usuário abre Minha conta → Avisos) e lembrar no painel quem não tem nenhum
+  aparelho com push ativo.
+- **WhatsApp:** ligar o canal depois das decisões (provedor, número, modelos, token:
+  `docs/AVISOS_CONFIGURACAO.md`). Se for um BSP, adaptar `server/avisos/canais/whatsapp.ts`.
+- **Segurança:** tirar o `public` dos Exposed schemas do Supabase (o app não usa a API de dados) e
+  ligar a proteção contra senha vazada (`docs/SEGURANCA_FUNCOES.md` §3).
+- **Retenção legal na exclusão da conta:** se o advogado confirmar a guarda fiscal de 5 anos,
+  criar a tabela de retenção mínima das faturas antes de `lgpd_excluir_empresa` apagar.
+- **Resumo diário no WhatsApp:** o modelo tem 5 variáveis fixas; a contagem de "sinal pendente"
+  vai só no painel, push e e-mail. Se quiser no WhatsApp, aprovar um modelo novo na Meta.
+- **Índices:** reavaliar os 51 "nunca usados" com 2 a 3 meses de tráfego
+  (`docs/operacao/2026-11-17/09_indices.sql`).
