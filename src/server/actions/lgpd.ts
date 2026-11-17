@@ -7,10 +7,10 @@ import { redirect, unstable_rethrow } from 'next/navigation';
 import { VERSAO_DOCUMENTOS } from '@/domain/legal/versao';
 import { AcessoNegadoError, exigirPerfil } from '@/server/auth/guards';
 import type { UsuarioAtual } from '@/server/auth/sessao';
-import { cancelarAssinatura } from '@/server/cobranca/fluxos';
 import { processarAvisosSemFalhar } from '@/server/avisos/processar';
 import { depsCobranca } from '@/server/cobranca/deps';
 import { comUsuario } from '@/server/db/tenant';
+import { cancelarCobrancasDaConta } from '@/server/lgpd/cobrancas';
 import { logar } from '@/server/log';
 import { idValido, NAO_ENCONTRADO, type ResultadoAcao } from './empresa/comum';
 
@@ -85,8 +85,8 @@ export async function salvarRetencaoLeads(meses: number): Promise<ResultadoAcao>
 }
 
 /**
- * Exclusão da conta em 30 dias. Antes, cancela a assinatura no Asaas (nada de cobrança nova); se
- * o Asaas recusar, o pedido não é registrado.
+ * Exclusão da conta em 30 dias. Antes, cancela no Asaas a assinatura do plano e as das soluções
+ * contratadas (nada de cobrança nova); se o Asaas recusar, o pedido não é registrado.
  */
 export async function solicitarExclusaoDaConta(confirmacao: string): Promise<ResultadoAcao> {
   return acaoLgpd('solicitar_exclusao', async (dono) => {
@@ -99,14 +99,11 @@ export async function solicitarExclusaoDaConta(confirmacao: string): Promise<Res
     }
     const deps = depsCobranca();
     if (deps) {
-      const r = await cancelarAssinatura(deps, {
+      const r = await cancelarCobrancasDaConta(deps, {
         empresaId: dono.empresa.id,
         usuarioId: dono.id,
-        motivo: 'outro',
-        texto: 'Exclusão da conta (LGPD)',
       });
-      if (!r.ok && r.erro !== 'Não há assinatura para cancelar.')
-        return { ok: false, erro: r.erro };
+      if (!r.ok) return { ok: false, erro: r.erro };
     }
     await comUsuario(dono.id, (tx) => tx.execute(sql`select public.solicitar_exclusao_conta()`));
     after(processarAvisosSemFalhar);
