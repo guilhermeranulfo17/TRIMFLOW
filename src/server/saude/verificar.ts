@@ -1,7 +1,7 @@
 import 'server-only';
 import { sql } from 'drizzle-orm';
 import { avaliarSaude, type JobCron, type Saude } from '@/domain/observabilidade/saude';
-import { configAsaas } from '@/server/cobranca/config';
+import { configAsaasParaCobrar } from '@/server/cobranca/config';
 import { obterDb } from '@/server/db/client';
 import { chaveContratos } from '@/server/env';
 import { lerPrecosVitrine } from '@/server/marketing/carregar';
@@ -28,7 +28,8 @@ export const depsSaude = (): DepsSaude => ({
     return linha!.j;
   },
   lerPlanos: () => lerPrecosVitrine(),
-  asaasConfigurado: () => configAsaas() !== null,
+  // §99: o sandbox na produção conta como não configurado (o monitor acusa)
+  asaasConfigurado: () => configAsaasParaCobrar().config !== null,
   contratosChave: () => chaveContratos() !== null,
 });
 

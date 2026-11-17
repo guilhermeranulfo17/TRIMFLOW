@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { cobrancaDisponivel, configAsaas, URL_ASAAS } from '@/server/cobranca/config';
+import {
+  asaasSandboxEmProducao,
+  cobrancaDisponivel,
+  configAsaas,
+  configAsaasParaCobrar,
+  URL_ASAAS,
+} from '@/server/cobranca/config';
 import { tokenConfere } from '@/server/cobranca/webhook';
 
 describe('configAsaas', () => {
@@ -29,5 +35,21 @@ describe('configAsaas', () => {
     expect(tokenConfere('abcd', 'abc')).toBe(false);
     expect(tokenConfere(null, 'abc')).toBe(false);
     expect(tokenConfere('', '')).toBe(false);
+  });
+
+  it('trava (§99): sandbox na produção da Vercel não cria cobrança; preview e local seguem', () => {
+    const prod = { ...base, VERCEL_ENV: 'production' };
+    expect(asaasSandboxEmProducao(configAsaas(prod), prod)).toBe(true);
+    expect(configAsaasParaCobrar(prod)).toEqual({ config: null, motivo: 'SANDBOX_EM_PRODUCAO' });
+    expect(configAsaasParaCobrar({ ...base, VERCEL_ENV: 'preview' }).config?.ambiente).toBe(
+      'sandbox',
+    );
+    expect(configAsaasParaCobrar(base).motivo).toBeNull();
+    const real = { ...prod, ASAAS_AMBIENTE: 'producao' };
+    expect(configAsaasParaCobrar(real)).toEqual({
+      config: expect.objectContaining({ urlBase: URL_ASAAS.producao }),
+      motivo: null,
+    });
+    expect(configAsaasParaCobrar({ VERCEL_ENV: 'production' }).motivo).toBe('DESLIGADA');
   });
 });
