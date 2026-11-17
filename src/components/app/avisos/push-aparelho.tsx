@@ -54,6 +54,16 @@ export function PushAparelho({
       const sub = await reg?.pushManager.getSubscription();
       setEndpoint(sub?.endpoint ?? null);
       setEstado(sub ? 'ativo' : 'inativo');
+      // §99: o aparelho tem inscrição; reenvia (upsert idempotente) para o servidor voltar a ter o
+      // endpoint se o navegador trocou a inscrição ou se o banco apagou uma inscrição morta
+      if (sub && Notification.permission === 'granted') {
+        const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+        void inscreverPush({
+          endpoint: json.endpoint,
+          keys: json.keys,
+          aparelho: nomeDoAparelho(),
+        }).catch(() => undefined);
+      }
     })();
   }, [chavePublica]);
 
