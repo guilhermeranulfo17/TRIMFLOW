@@ -108,6 +108,8 @@ function variaveis(tipo: TipoAviso, d: DadosAviso, agora: Date, fuso: string) {
         tarefas: num(d.tarefas_hoje) ?? 0,
         atrasadas: num(d.atrasadas) ?? 0,
         novos: num(d.novos_ontem) ?? 0,
+        // §99: só no painel, push e e-mail (o modelo do WhatsApp tem 5 variáveis fixas)
+        sinalPendente: num(d.sinal_pendente) ?? 0,
       };
     case 'teste':
       return {};
@@ -227,6 +229,7 @@ export function textoAviso(
       ];
       const hoje = juntar(partes);
       const novos = Number(v.novos);
+      const semSinal = Number(v.sinalPendente);
       return {
         titulo: 'Seu dia no Orkestra',
         corpo: juntar(
@@ -234,6 +237,8 @@ export function textoAviso(
             hoje ? `Hoje: ${hoje}.` : 'Nada vencendo hoje.',
             novos > 0 &&
               `Ontem ${novos === 1 ? 'chegou 1 lead novo' : `chegaram ${novos} leads novos`}.`,
+            semSinal > 0 &&
+              `${semSinal === 1 ? '1 reserva confirmada está' : `${semSinal} reservas confirmadas estão`} sem sinal.`,
           ],
           ' ',
         ),
@@ -347,9 +352,14 @@ export function textoAviso(
 
 /** Resumo do dia tem algo a dizer? (zerado não é enviado) */
 export function resumoTemConteudo(d: DadosAviso): boolean {
-  return ['novos_ontem', 'pre_reservas_hoje', 'visitas_hoje', 'tarefas_hoje', 'atrasadas'].some(
-    (k) => (num(d[k]) ?? 0) > 0,
-  );
+  return [
+    'novos_ontem',
+    'pre_reservas_hoje',
+    'visitas_hoje',
+    'tarefas_hoje',
+    'atrasadas',
+    'sinal_pendente',
+  ].some((k) => (num(d[k]) ?? 0) > 0);
 }
 
 /*

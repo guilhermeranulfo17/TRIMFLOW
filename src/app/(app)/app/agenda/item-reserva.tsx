@@ -55,6 +55,7 @@ export function ItemReserva({
         <p className="font-semibold break-words">{reserva.clienteNome}</p>
         <span className="flex items-center gap-1.5">
           {reserva.veioDoLink && <SeloLink />}
+          {reserva.sinalPendente && <SeloSinalPendente />}
           {reserva.contratoStatus && <SeloStatusContrato status={reserva.contratoStatus} curto />}
           <SeloEstado estado={pre ? 'pre_reservado' : 'reservado'} />
         </span>
@@ -232,6 +233,19 @@ export function SeloLink() {
       data-testid="selo-link"
     >
       Veio do link
+    </span>
+  );
+}
+
+/** §99: reserva confirmada sem sinal, sem recebimento e sem plano de pagamento (só o dono vê). */
+export function SeloSinalPendente() {
+  return (
+    <span
+      className="bg-alerta/10 text-alerta border-alerta/30 rounded-full border px-2 py-0.5 text-xs font-semibold"
+      data-testid="selo-sinal-pendente"
+      title="Confirmada sem sinal: registre o sinal ou monte o plano de pagamento no Financeiro"
+    >
+      Sinal pendente
     </span>
   );
 }

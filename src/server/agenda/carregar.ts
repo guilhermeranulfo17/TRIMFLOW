@@ -3,6 +3,8 @@ import { formatPhoneBR } from '@/domain/phone';
 import { and, asc, between, eq, gt, isNotNull, lte, or, sql } from 'drizzle-orm';
 import type { EstadoSlot, StatusReserva, TipoReserva } from '@/domain/agenda';
 import type { StatusContrato } from '@/domain/contratos/estados';
+import { hojeNoFuso } from '@/domain/dates';
+import { sinalPendente } from '@/domain/financeiro/sinal';
 import type { UsuarioAtual } from '@/server/auth/sessao';
 import { bloqueios, espacos, leads, reservas, tiposEvento, turnos } from '@/server/db/schema';
 import { comUsuario, naTransacao, type Tx } from '@/server/db/tenant';
@@ -62,6 +64,11 @@ export type ReservaAgenda = {
   leadId: string | null;
   /** Etapa 10: status do contrato mais recente da reserva (ou do orçamento dela) */
   contratoStatus: StatusContrato | null;
+  /**
+   * §99: confirmada sem sinal, sem recebimento e sem plano de pagamento. Só para o dono (o
+   * Financeiro é só dele; para o vendedor fica sempre false).
+   */
+  sinalPendente: boolean;
 };
 
 export type BloqueioAgenda = {
@@ -170,7 +177,13 @@ const ocupando = () =>
     or(eq(reservas.tipo, 'confirmada'), gt(reservas.expiraEm, sql`now()`)),
   );
 
-async function reservasTx(tx: Tx, filtro: ReturnType<typeof and>): Promise<ReservaAgenda[]> {
+async function reservasTx(
+  tx: Tx,
+  usuario: UsuarioAtual,
+  filtro: ReturnType<typeof and>,
+): Promise<ReservaAgenda[]> {
+  const dono = usuario.perfil === 'dono';
+  const hoje = hojeNoFuso(usuario.empresa.fuso);
   const linhas = await tx
     .select({
       r: reservas,
@@ -178,13 +191,17 @@ async function reservasTx(tx: Tx, filtro: ReturnType<typeof and>): Promise<Reser
       leadNome: leads.nome,
       // função da empresa do usuário (o vendedor vê só o status, não o contrato)
       contratoStatus: sql<StatusContrato | null>`public.status_contrato_da_reserva(${reservas.id}, ${reservas.orcamentoId})`,
+      // §99: Financeiro (RLS só do dono; para o vendedor as duas leituras vêm vazias)
+      recebido: sql<number>`(select coalesce(sum(rc.valor_centavos), 0)::integer from public.recebimentos rc
+        where rc.reserva_id = ${reservas.id} and rc.estornado_em is null)`,
+      temPlano: sql<boolean>`exists (select 1 from public.reserva_parcelas p where p.reserva_id = ${reservas.id})`,
     })
     .from(reservas)
     .leftJoin(tiposEvento, eq(tiposEvento.id, reservas.tipoEventoId))
     .leftJoin(leads, eq(leads.id, reservas.leadId))
     .where(and(ocupando(), filtro))
     .orderBy(asc(reservas.inicio));
-  return linhas.map(({ r, tipoEventoNome, leadNome, contratoStatus }) => ({
+  return linhas.map(({ r, tipoEventoNome, leadNome, contratoStatus, recebido, temPlano }) => ({
     id: r.id,
     data: r.data,
     turnoId: r.turnoId,
@@ -206,6 +223,17 @@ async function reservasTx(tx: Tx, filtro: ReturnType<typeof and>): Promise<Reser
     leadNome,
     leadId: r.leadId,
     contratoStatus,
+    sinalPendente:
+      dono &&
+      sinalPendente({
+        tipo: r.tipo,
+        status: r.status,
+        sinalCentavos: r.sinalCentavos,
+        recebidoCentavos: Number(recebido),
+        temPlano: Boolean(temPlano),
+        data: r.data,
+        hoje,
+      }),
   }));
 }
 
@@ -229,14 +257,14 @@ export async function reservasAtivasDoLead(
   leadId: string,
   tx?: Tx,
 ): Promise<ReservaAgenda[]> {
-  return naTransacao(usuario.id, tx, (tx) => reservasTx(tx, eq(reservas.leadId, leadId)));
+  return naTransacao(usuario.id, tx, (tx) => reservasTx(tx, usuario, eq(reservas.leadId, leadId)));
 }
 
 /** Reservas e bloqueios de um período (lista do celular). */
 export async function carregarPeriodo(usuario: UsuarioAtual, de: string, ate: string, tx?: Tx) {
   return naTransacao(usuario.id, tx, async (tx) => {
     const [lista, bloq] = await Promise.all([
-      reservasTx(tx, between(reservas.data, de, ate)),
+      reservasTx(tx, usuario, between(reservas.data, de, ate)),
       bloqueiosTx(tx, de, ate),
     ]);
     return { reservas: lista, bloqueios: bloq };
@@ -252,6 +280,7 @@ export async function preReservasVencendo(
   return naTransacao(usuario.id, tx, (tx) =>
     reservasTx(
       tx,
+      usuario,
       and(
         eq(reservas.tipo, 'pre_reserva'),
         isNotNull(reservas.expiraEm),
@@ -265,7 +294,7 @@ export async function carregarDia(usuario: UsuarioAtual, data: string): Promise<
   return comUsuario(usuario.id, async (tx) => {
     const [slots, lista, bloq] = await Promise.all([
       disponibilidadeTx(tx, usuario.empresa.id, data, data, null),
-      reservasTx(tx, eq(reservas.data, data)),
+      reservasTx(tx, usuario, eq(reservas.data, data)),
       bloqueiosTx(tx, data, data),
     ]);
     return { data, slots, reservas: lista, bloqueios: bloq };

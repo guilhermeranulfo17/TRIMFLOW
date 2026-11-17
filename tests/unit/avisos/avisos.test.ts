@@ -169,6 +169,11 @@ describe('textos', () => {
     );
     expect(resumoTemConteudo(d)).toBe(true);
     expect(resumoTemConteudo({ novos_ontem: 0 })).toBe(false);
+    // §99: reservas confirmadas sem sinal (só o dono recebe a contagem)
+    expect(textoAviso('resumo_diario', { sinal_pendente: 2 }).corpo).toBe(
+      'Nada vencendo hoje. 2 reservas confirmadas estão sem sinal.',
+    );
+    expect(resumoTemConteudo({ sinal_pendente: 1 })).toBe(true);
   });
   it('dados faltando nunca viram "undefined"', () => {
     for (const t of TIPOS_AVISO) {

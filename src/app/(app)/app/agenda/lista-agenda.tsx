@@ -6,7 +6,7 @@ import { SeloEstado } from '@/components/app/agenda/estados';
 import { prazoRestante } from '@/domain/agenda';
 import { diaDaSemana, formatData } from '@/domain/dates';
 import type { BaseAgenda, BloqueioAgenda, ReservaAgenda } from '@/server/agenda/carregar';
-import { SeloLink } from './item-reserva';
+import { SeloLink, SeloSinalPendente } from './item-reserva';
 
 /** Lista do celular: eventos, pré-reservas e bloqueios agrupados por data. */
 export function ListaAgenda({
@@ -71,6 +71,7 @@ export function ListaAgenda({
                     </span>
                     <span className="flex items-center gap-1.5">
                       {r.veioDoLink && <SeloLink />}
+                      {r.sinalPendente && <SeloSinalPendente />}
                       {r.contratoStatus && <SeloStatusContrato status={r.contratoStatus} curto />}
                       <SeloEstado
                         estado={r.tipo === 'pre_reserva' ? 'pre_reservado' : 'reservado'}
