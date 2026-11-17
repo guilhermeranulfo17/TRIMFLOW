@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { TIPOS_AVISO, TIPOS_COM_EMAIL, recebeEmail } from '@/domain/avisos/canais';
+import {
+  podeIrPorEmail,
+  recebeEmail,
+  TIPOS_AVISO,
+  TIPOS_COM_EMAIL,
+  TIPOS_EMAIL_RESERVA,
+} from '@/domain/avisos/canais';
 import { escaparHtml, montarEmail } from '@/domain/email/modelos';
 
 const SITE = 'https://orkestra.app';
@@ -73,8 +79,8 @@ describe('modelos de e-mail', () => {
     expect(e.texto).toContain('03/11/2026');
   });
 
-  it('avisos de lead nunca viram e-mail', () => {
-    for (const t of TIPOS_AVISO.filter((x) => !recebeEmail(x))) {
+  it('avisos de lead nunca viram e-mail com conteúdo (só a reserva genérica do §99)', () => {
+    for (const t of TIPOS_AVISO.filter((x) => !podeIrPorEmail(x))) {
       expect(montarEmail(t, {}, { site: SITE })).toBeNull();
     }
     expect(recebeEmail('pre_reserva_pedida')).toBe(false);
@@ -84,5 +90,34 @@ describe('modelos de e-mail', () => {
     expect(escaparHtml(`<a href="x">'&'</a>`)).toBe(
       '&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;',
     );
+  });
+
+  it.each(TIPOS_EMAIL_RESERVA)('%s (e-mail de reserva, §99) monta e-mail com link absoluto', (tipo) => {
+    expect(podeIrPorEmail(tipo)).toBe(true);
+    const e = montarEmail(tipo, { lead_nome: 'Ana Sigilo', data: '2026-12-01' }, {
+      site: SITE,
+      leadId: '7f1c6a2e-1b1a-4c55-9d3e-2a8f1e0c9b11',
+    })!;
+    expect(e.html).toMatch(/href="https:\/\/orkestra\.app\//);
+    expect(e.html).not.toMatch(/undefined|null|NaN/);
+  });
+
+  it('aviso de lead por e-mail de reserva não leva dado do cliente, só o link do lead', () => {
+    const e = montarEmail(
+      'pre_reserva_vencendo',
+      { lead_nome: 'Ana Sigilo', data: '2026-12-01', expira_em: '2026-11-18T10:00:00Z' },
+      { site: SITE, leadId: '7f1c6a2e-1b1a-4c55-9d3e-2a8f1e0c9b11' },
+    )!;
+    for (const parte of [e.assunto, e.html, e.texto]) {
+      expect(parte).not.toContain('Ana');
+      expect(parte).not.toContain('01/12');
+    }
+    expect(e.texto).toContain(`${SITE}/app/leads/7f1c6a2e-1b1a-4c55-9d3e-2a8f1e0c9b11`);
+    expect(e.texto).toContain('não chegou por notificação');
+  });
+
+  it('pre_reserva_vencendo só vai por e-mail como reserva', () => {
+    expect(recebeEmail('pre_reserva_vencendo')).toBe(false);
+    expect(podeIrPorEmail('pre_reserva_vencendo')).toBe(true);
   });
 });

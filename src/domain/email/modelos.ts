@@ -1,5 +1,5 @@
 import { textoAviso, type DadosAviso } from '../avisos/textos';
-import { recebeEmail, type TipoAviso } from '../avisos/canais';
+import { podeIrPorEmail, recebeEmail, type TipoAviso } from '../avisos/canais';
 
 /*
  * E-mails do produto (Etapa 9B, B.4). O texto é o mesmo do aviso (painel e push); aqui só vira um
@@ -36,15 +36,36 @@ const ROTULO_BOTAO: Partial<Record<TipoAviso, string>> = {
   contrato_assinado: 'Ver o contrato',
 };
 
-/** Monta o e-mail de um aviso de conta. null se o tipo não vai por e-mail. */
+/**
+ * Aviso que só vai por e-mail como reserva (§99): texto genérico, sem nenhum dado do cliente
+ * final (nome, data, valor). O link leva ao lead no painel, onde está o resto.
+ */
+const TEXTO_RESERVA: Partial<Record<TipoAviso, { titulo: string; corpo: string; botao: string }>> =
+  {
+    pre_reserva_vencendo: {
+      titulo: 'Pré-reserva vencendo',
+      corpo:
+        'Uma pré-reserva vence nas próximas horas. Abra o lead para confirmar com o sinal ou estender o prazo antes que a data fique livre.',
+      botao: 'Abrir o lead',
+    },
+  };
+
+/** Monta o e-mail de um aviso de conta (ou de reserva). null se o tipo não vai por e-mail. */
 export function montarEmail(
   tipo: TipoAviso,
   dados: DadosAviso,
-  o: { site: string; fuso?: string; agora?: Date },
+  o: { site: string; fuso?: string; agora?: Date; leadId?: string | null },
 ): EmailMontado | null {
-  if (!recebeEmail(tipo)) return null;
+  if (!podeIrPorEmail(tipo)) return null;
   const site = o.site.replace(/\/+$/, '');
-  const t = textoAviso(tipo, dados, { fuso: o.fuso, agora: o.agora });
+  const reserva = recebeEmail(tipo) ? undefined : TEXTO_RESERVA[tipo];
+  const t = reserva
+    ? {
+        ...textoAviso(tipo, {}, { leadId: o.leadId, fuso: o.fuso, agora: o.agora }),
+        titulo: reserva.titulo,
+        corpo: reserva.corpo,
+      }
+    : textoAviso(tipo, dados, { fuso: o.fuso, agora: o.agora });
   const destino = `${site}${t.caminho}`;
   const linkFatura =
     (tipo === 'fatura_criada' || tipo === 'pagamento_falhou') &&
@@ -56,7 +77,7 @@ export function montarEmail(
     tipo === 'boas_vindas' && typeof dados.slug === 'string' && /^[a-z0-9-]+$/.test(dados.slug)
       ? `${site}/b/${dados.slug}`
       : null;
-  const botao = ROTULO_BOTAO[tipo] ?? 'Abrir o Orkestra';
+  const botao = reserva?.botao ?? ROTULO_BOTAO[tipo] ?? 'Abrir o Orkestra';
   const urlBotao = linkFatura ?? destino;
 
   const linhas = [
@@ -64,7 +85,10 @@ export function montarEmail(
     linkBuffet ? `O link do seu buffet: ${linkBuffet}` : null,
     `${botao}: ${urlBotao}`,
   ].filter(Boolean) as string[];
-  const texto = `${t.titulo}\n\n${linhas.join('\n\n')}\n\n--\nOrkestra · ${site}\nVocê recebe este e-mail porque é o dono de uma conta no Orkestra.\n`;
+  const rodape = reserva
+    ? 'Você recebe este e-mail porque o aviso não chegou por notificação neste aparelho nem pelo WhatsApp.'
+    : 'Você recebe este e-mail porque é o dono de uma conta no Orkestra.';
+  const texto = `${t.titulo}\n\n${linhas.join('\n\n')}\n\n--\nOrkestra · ${site}\n${rodape}\n`;
 
   const paragrafo = (conteudo: string) =>
     `<p style="margin:0 0 16px;font-size:16px;line-height:24px;color:${GRAFITE}">${conteudo}</p>`;
@@ -87,7 +111,7 @@ ${linkBuffet ? paragrafo(`O link do seu buffet: <a href="${escaparHtml(linkBuffe
 </td></tr></table>
 </td></tr>
 <tr><td style="padding:16px 24px 24px;border-top:1px solid #e6e7e3">
-<p style="margin:0;font-size:12px;line-height:18px;color:${CINZA}">Você recebe este e-mail porque é o dono de uma conta no Orkestra. <a href="${escaparHtml(site)}/app/conta/avisos" style="color:${CINZA}">Minha conta</a> · <a href="${escaparHtml(site)}/privacidade" style="color:${CINZA}">Privacidade</a></p>
+<p style="margin:0;font-size:12px;line-height:18px;color:${CINZA}">${escaparHtml(rodape)} <a href="${escaparHtml(site)}/app/conta/avisos" style="color:${CINZA}">Minha conta</a> · <a href="${escaparHtml(site)}/privacidade" style="color:${CINZA}">Privacidade</a></p>
 </td></tr>
 </table>
 </td></tr></table>

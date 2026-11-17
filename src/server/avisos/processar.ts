@@ -57,6 +57,9 @@ export async function processarAvisos(
 ): Promise<Resumo> {
   const canais = o.canais ?? canaisPadrao();
   const resumo: Resumo = { processadas: 0, enviadas: 0, erros: 0, ignoradas: 0 };
+  // §99: "ignorado" não é mais silencioso. O motivo vai para avisos_entregas.erro_codigo e o
+  // canal desligado aparece no log (só canal e quantidade) e no /interno → Diagnóstico.
+  const desligados: Partial<Record<CanalEntrega, number>> = {};
   for (let lote = 0; lote < (o.lotes ?? 3); lote++) {
     const linhas = await reservarEntregasAvisos<LinhaFila>(o.limite ?? 50);
     if (linhas.length === 0) break;
@@ -87,11 +90,15 @@ export async function processarAvisos(
         resumo.processadas += 1;
         if (r.resultado === 'enviado') resumo.enviadas += 1;
         else if (r.resultado === 'erro') resumo.erros += 1;
-        else resumo.ignoradas += 1;
+        else {
+          resumo.ignoradas += 1;
+          if (r.erro === 'CANAL_DESLIGADO') desligados[l.canal] = (desligados[l.canal] ?? 0) + 1;
+        }
       }),
     );
   }
   if (resumo.processadas > 0) logar('info', 'avisos.fila_processada', { ...resumo });
+  if (Object.keys(desligados).length > 0) logar('aviso', 'avisos.canal_desligado', desligados);
   return resumo;
 }
 

@@ -21,7 +21,11 @@ export function criarCanalEmail(
     async enviar(e: EntregaParaEnviar): Promise<ResultadoEnvio> {
       if (!config || !o.site) return { resultado: 'ignorado', erro: 'CANAL_DESLIGADO' };
       if (!e.email) return { resultado: 'ignorado', erro: 'SEM_EMAIL' };
-      const email = montarEmail(e.aviso.tipo, e.aviso.dados, { site: o.site, fuso: e.fuso });
+      const email = montarEmail(e.aviso.tipo, e.aviso.dados, {
+        site: o.site,
+        fuso: e.fuso,
+        leadId: e.aviso.leadId,
+      });
       if (!email) return { resultado: 'ignorado', erro: 'SEM_MODELO' };
       let r: Response;
       try {

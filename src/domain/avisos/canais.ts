@@ -74,6 +74,25 @@ export const TIPOS_COM_EMAIL = [
 export const recebeEmail = (tipo: TipoAviso): boolean =>
   (TIPOS_COM_EMAIL as readonly TipoAviso[]).includes(tipo);
 
+/**
+ * Avisos críticos com o e-mail como reserva (análise de 17/11/2026, §99): se o push e o WhatsApp
+ * não saírem (canal desligado, sem inscrição, sem número ou falha), a fila manda por e-mail para o
+ * próprio destinatário. ESPELHO de public._aviso_email_reserva. Aviso de lead vai sem dado do
+ * cliente (só o link), como manda a regra de "avisos de lead nunca vão por e-mail" com conteúdo.
+ */
+export const TIPOS_EMAIL_RESERVA = [
+  'pagamento_falhou',
+  'conta_suspensa',
+  'pre_reserva_vencendo',
+] as const satisfies readonly TipoAviso[];
+
+export const temEmailReserva = (tipo: TipoAviso): boolean =>
+  (TIPOS_EMAIL_RESERVA as readonly TipoAviso[]).includes(tipo);
+
+/** O canal e-mail sabe montar este tipo (sempre por e-mail ou como reserva). */
+export const podeIrPorEmail = (tipo: TipoAviso): boolean =>
+  recebeEmail(tipo) || temEmailReserva(tipo);
+
 export const CANAIS_EXTERNOS = ['push', 'whatsapp'] as const;
 export type CanalExterno = (typeof CANAIS_EXTERNOS)[number];
 export type CanalAviso = 'painel' | CanalExterno;
